@@ -18,10 +18,12 @@ import {
   Search,
   Flame,
   Award,
+  Send,
+  PlusCircle,
+  CheckCircle,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 
-// 1. KAMUS TIPE DATA UNTUK TYPESCRIPT (Mencegah Error saat Build di Vercel)
 interface KuisItem {
   tanya: string;
   opsi: string[];
@@ -52,8 +54,8 @@ interface JenjangItem {
   kelas: KelasItem[];
 }
 
-// 2. DATA KURIKULUM CONTOH (TK SAMPAI KULIAH)
-const DATA_JENJANG: JenjangItem[] = [
+// DATA KURIKULUM AWAL
+const DATA_JENJANG_AWAL: JenjangItem[] = [
   {
     id: "tk",
     nama: "TK & PAUD",
@@ -78,21 +80,6 @@ const DATA_JENJANG: JenjangItem[] = [
           opsi: ["2 Apel", "3 Apel", "4 Apel", "5 Apel"],
           jawabanBenar: 1,
           pembahasan: "Hebat sekali! 2 apel ditambah 1 apel menjadi 3 apel yang segar!",
-        },
-      },
-      {
-        id: "tk-2",
-        judul: "Petualangan Huruf Vokal (A, I, U, E, O)",
-        kategori: "Membaca Permulaan",
-        durasi: "6 Menit",
-        videoUrl: "https://www.youtube.com/embed/bGetqbqDVaA",
-        rangkuman:
-          "Huruf vokal adalah huruf hidup yang membuat kata bisa dibaca. A untuk Ayam, I untuk Ikan, U untuk Udang, E untuk Elang, dan O untuk Obat!",
-        kuis: {
-          tanya: "Hewan 'IKAN' diawali oleh huruf apa ya?",
-          opsi: ["Huruf A", "Huruf I", "Huruf U", "Huruf O"],
-          jawabanBenar: 1,
-          pembahasan: "Pintar! I-K-A-N diawali dengan huruf I.",
         },
       },
     ],
@@ -121,21 +108,6 @@ const DATA_JENJANG: JenjangItem[] = [
           opsi: ["20", "22", "24", "28"],
           jawabanBenar: 2,
           pembahasan: "Tepat! 6 x 4 = 24 (6 + 6 + 6 + 6 = 24).",
-        },
-      },
-      {
-        id: "sd-2",
-        judul: "Mengapa Langit Berwarna Biru & Proses Hujan",
-        kategori: "Sains / IPA",
-        durasi: "8 Menit",
-        videoUrl: "https://www.youtube.com/embed/yT22Kk2_8h4",
-        rangkuman:
-          "Air laut menguap karena panas matahari (Evaporasi), berkumpul menjadi awan (Kondensasi), lalu turun kembali menjadi titik-titik hujan (Presipitasi).",
-        kuis: {
-          tanya: "Proses menguapnya air laut karena panas sinar matahari disebut...",
-          opsi: ["Evaporasi", "Fotosintesis", "Reboisasi", "Imigrasi"],
-          jawabanBenar: 0,
-          pembahasan: "Benar! Evaporasi adalah proses penguapan air akibat suhu panas.",
         },
       },
     ],
@@ -232,13 +204,22 @@ const DATA_JENJANG: JenjangItem[] = [
 ];
 
 export default function AplikasiHibahIlmu() {
-  // State yang sudah diberi Tipe Data TypeScript dengan benar
+  const [daftarJenjang, setDaftarJenjang] = useState<JenjangItem[]>(DATA_JENJANG_AWAL);
   const [jenjangAktif, setJenjangAktif] = useState<JenjangItem | null>(null);
   const [kelasAktif, setKelasAktif] = useState<KelasItem | null>(null);
   const [jawabanTerpilih, setJawabanTerpilih] = useState<number | null>(null);
   const [statusKuis, setStatusKuis] = useState<"benar" | "salah" | null>(null);
   const [poinPahalaBelajar, setPoinPahalaBelajar] = useState<number>(120);
   const [kataKunci, setKataKunci] = useState<string>("");
+  const [tampilkanFormKontribusi, setTampilkanFormKontribusi] = useState<boolean>(false);
+
+  // Form State untuk Relawan Sumbang Materi
+  const [targetJenjangId, setTargetJenjangId] = useState<string>("sd");
+  const [judulMateriBaru, setJudulMateriBaru] = useState<string>("");
+  const [kategoriBaru, setKategoriBaru] = useState<string>("");
+  const [urlVideoBaru, setUrlVideoBaru] = useState<string>("");
+  const [rangkumanBaru, setRangkumanBaru] = useState<string>("");
+  const [berhasilKirim, setBerhasilKirim] = useState<boolean>(false);
 
   const lemparkanKonfeti = () => {
     confetti({
@@ -267,9 +248,60 @@ export default function AplikasiHibahIlmu() {
     setStatusKuis(null);
   };
 
+  const handleSubmitMateri = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!judulMateriBaru || !urlVideoBaru) return;
+
+    // Ubah link YouTube biasa jadi format embed jika diperlukan
+    let finalEmbedUrl = urlVideoBaru;
+    if (urlVideoBaru.includes("watch?v=")) {
+      finalEmbedUrl = urlVideoBaru.replace("watch?v=", "embed/");
+    } else if (urlVideoBaru.includes("youtu.be/")) {
+      finalEmbedUrl = urlVideoBaru.replace("youtu.be/", "www.youtube.com/embed/");
+    }
+
+    const kelasBaru: KelasItem = {
+      id: "materi-" + Date.now(),
+      judul: judulMateriBaru,
+      kategori: kategoriBaru || "Umum",
+      durasi: "10 Menit",
+      videoUrl: finalEmbedUrl,
+      rangkuman: rangkumanBaru || "Materi sumbangan amal jariyah dari relawan untuk kemajuan pendidikan Indonesia.",
+      kuis: {
+        tanya: "Apa inti sari dari materi '" + judulMateriBaru + "' yang baru saja kamu pelajari?",
+        opsi: ["Sangat bermanfaat", "Kurang jelas", "Perlu diskusi", "Semua salah"],
+        jawabanBenar: 0,
+        pembahasan: "Hebat! Setiap ilmu yang dibagikan dengan tulus akan menjadi amal jariyah yang tak terputus.",
+      },
+    };
+
+    setDaftarJenjang((prev) =>
+      prev.map((item) => {
+        if (item.id === targetJenjangId) {
+          return {
+            ...item,
+            kelas: [kelasBaru, ...item.kelas],
+          };
+        }
+        return item;
+      })
+    );
+
+    setBerhasilKirim(true);
+    lemparkanKonfeti();
+    setTimeout(() => {
+      setBerhasilKirim(false);
+      setTampilkanFormKontribusi(false);
+      setJudulMateriBaru("");
+      setKategoriBaru("");
+      setUrlVideoBaru("");
+      setRangkumanBaru("");
+    }, 2500);
+  };
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-800 relative overflow-x-hidden selection:bg-emerald-500 selection:text-white">
-      {/* Latar Belakang Cahaya Aurora Warna-Warni yang Lembut & Elegan */}
+      {/* Latar Belakang Cahaya Aurora Warna-Warni */}
       <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
         <div className="absolute -top-40 -left-40 w-96 h-96 bg-purple-300/30 rounded-full blur-3xl" />
         <div className="absolute top-20 right-0 w-[28rem] h-[28rem] bg-emerald-300/25 rounded-full blur-3xl" />
@@ -277,13 +309,14 @@ export default function AplikasiHibahIlmu() {
         <div className="absolute -bottom-20 right-10 w-80 h-80 bg-pink-300/25 rounded-full blur-3xl" />
       </div>
 
-      {/* Navigasi Glassmorphism Atas */}
+      {/* Header Glassmorphism */}
       <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/75 border-b border-slate-200/80 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex justify-between items-center">
           <div
             onClick={() => {
               setJenjangAktif(null);
               setKelasAktif(null);
+              setTampilkanFormKontribusi(false);
             }}
             className="flex items-center gap-3 cursor-pointer group"
           >
@@ -306,7 +339,17 @@ export default function AplikasiHibahIlmu() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Indikator Poin Semangat Belajar */}
+            <button
+              onClick={() => {
+                setTampilkanFormKontribusi(true);
+                setJenjangAktif(null);
+                setKelasAktif(null);
+              }}
+              className="hidden sm:flex items-center gap-1.5 text-xs font-bold bg-indigo-50 border border-indigo-200 text-indigo-700 px-3.5 py-2 rounded-full hover:bg-indigo-100 transition shadow-2xs"
+            >
+              <PlusCircle className="w-4 h-4" /> Sumbang Materi
+            </button>
+
             <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200/80 text-amber-800 px-3.5 py-1.5 rounded-full text-sm font-bold shadow-2xs">
               <Flame className="w-4 h-4 text-orange-500 fill-orange-500" />
               <span>{poinPahalaBelajar} XP</span>
@@ -317,17 +360,136 @@ export default function AplikasiHibahIlmu() {
               className="flex items-center gap-1.5 text-sm font-semibold bg-gradient-to-r from-rose-500 to-pink-600 text-white px-4 py-2 rounded-full shadow-md shadow-rose-500/20 hover:opacity-95 transition"
             >
               <Heart className="w-4 h-4 fill-white" />
-              <span className="hidden sm:inline">Donasi Sukarela</span>
+              <span className="hidden sm:inline">Donasi</span>
             </a>
           </div>
         </div>
       </header>
 
-      {/* Konten Dinamis Berdasarkan Navigasi Pengguna */}
+      {/* Konten Utama */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
         <AnimatePresence mode="wait">
+          {/* TAMPILAN 0: FORM KONTRIBUSI RELAWAN */}
+          {tampilkanFormKontribusi && (
+            <motion.div
+              key="form-kontribusi"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="max-w-2xl mx-auto bg-white rounded-3xl p-8 border border-slate-200 shadow-xl"
+            >
+              <button
+                onClick={() => setTampilkanFormKontribusi(false)}
+                className="inline-flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-slate-900 mb-6"
+              >
+                <ArrowLeft className="w-4 h-4" /> Kembali ke Beranda
+              </button>
+
+              <div className="text-center mb-8">
+                <span className="bg-indigo-100 text-indigo-700 text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-wider">
+                  Gerakan Amal Jariyah Relawan
+                </span>
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mt-3 mb-2">
+                  Sumbangkan Materi Pelajaran
+                </h2>
+                <p className="text-slate-600 text-sm">
+                  Punya penjelasan video atau rangkuman materi bermanfaat? Mari bagikan ke HibahIlmu agar bisa membantu ribuan siswa di Indonesia secara gratis.
+                </p>
+              </div>
+
+              {berhasilKirim ? (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-center text-emerald-900">
+                  <CheckCircle className="w-12 h-12 text-emerald-600 mx-auto mb-2" />
+                  <h3 className="font-bold text-lg mb-1">Materi Berhasil Ditambahkan!</h3>
+                  <p className="text-sm">Terima kasih atas kebaikan hatimu. Pahala jariyah terus mengalir untukmu.</p>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmitMateri} className="space-y-5">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
+                      Pilih Jenjang Pendidikan
+                    </label>
+                    <select
+                      value={targetJenjangId}
+                      onChange={(e) => setTargetJenjangId(e.target.value)}
+                      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    >
+                      {DATA_JENJANG_AWAL.map((j) => (
+                        <option key={j.id} value={j.id}>
+                          {j.nama}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
+                      Judul Materi / Pelajaran
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={judulMateriBaru}
+                      onChange={(e) => setJudulMateriBaru(e.target.value)}
+                      placeholder="Contoh: Rumus Cepat Luas Lingkaran & Segitiga"
+                      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
+                      Kategori Mata Pelajaran
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={kategoriBaru}
+                      onChange={(e) => setKategoriBaru(e.target.value)}
+                      placeholder="Contoh: Matematika / Fisika / Pemrograman"
+                      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
+                      Link Video YouTube Materi
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={urlVideoBaru}
+                      onChange={(e) => setUrlVideoBaru(e.target.value)}
+                      placeholder="Contoh: https://www.youtube.com/watch?v=xxxx"
+                      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
+                      Rangkuman Singkat Materi
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={rangkumanBaru}
+                      onChange={(e) => setRangkumanBaru(e.target.value)}
+                      placeholder="Tuliskan poin-poin penting materi di sini..."
+                      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-3.5 rounded-xl shadow-md hover:opacity-95 transition"
+                  >
+                    🚀 Publikasikan Materi Sekarang
+                  </button>
+                </form>
+              )}
+            </motion.div>
+          )}
+
           {/* TAMPILAN 1: BERANDA UTAMA */}
-          {!jenjangAktif && !kelasAktif && (
+          {!jenjangAktif && !kelasAktif && !tampilkanFormKontribusi && (
             <motion.div
               key="beranda"
               initial={{ opacity: 0, y: 15 }}
@@ -358,7 +520,7 @@ export default function AplikasiHibahIlmu() {
                 </p>
 
                 {/* Kotak Pencarian Materi */}
-                <div className="max-w-xl mx-auto relative mb-10">
+                <div className="max-w-xl mx-auto relative mb-6">
                   <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
@@ -367,6 +529,16 @@ export default function AplikasiHibahIlmu() {
                     placeholder="Cari pelajaran (contoh: Matematika, Next.js, Berhitung)..."
                     className="w-full pl-12 pr-4 py-4 bg-white/95 border border-slate-200 rounded-2xl shadow-lg shadow-slate-200/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm sm:text-base transition"
                   />
+                </div>
+
+                {/* Tombol Mobile Kontribusi */}
+                <div className="sm:hidden mb-10">
+                  <button
+                    onClick={() => setTampilkanFormKontribusi(true)}
+                    className="inline-flex items-center gap-2 bg-indigo-600 text-white font-bold px-5 py-2.5 rounded-xl text-sm shadow-md"
+                  >
+                    <PlusCircle className="w-4 h-4" /> Ingin Sumbang Materi?
+                  </button>
                 </div>
 
                 {/* Statistik Kepercayaan */}
@@ -399,58 +571,54 @@ export default function AplikasiHibahIlmu() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {DATA_JENJANG.map((jenjang, idx) => (
-                  <motion.div
-                    key={jenjang.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.08 }}
-                    whileHover={{ y: -8 }}
-                    onClick={() => setJenjangAktif(jenjang)}
-                    className="group cursor-pointer bg-white/90 backdrop-blur-md rounded-3xl p-6 border border-slate-200/80 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between relative overflow-hidden"
-                  >
-                    {/* Pita Warna Atas */}
-                    <div
-                      className={`h-2 w-full bg-gradient-to-r ${jenjang.gradien} absolute top-0 left-0`}
-                    />
+                {daftarJenjang
+                  .filter((jenjang) =>
+                    jenjang.nama.toLowerCase().includes(kataKunci.toLowerCase()) ||
+                    jenjang.deskripsi.toLowerCase().includes(kataKunci.toLowerCase())
+                  )
+                  .map((jenjang, idx) => (
+                    <motion.div
+                      key={jenjang.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.08 }}
+                      whileHover={{ y: -8 }}
+                      onClick={() => setJenjangAktif(jenjang)}
+                      className="group cursor-pointer bg-white/90 backdrop-blur-md rounded-3xl p-6 border border-slate-200/80 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between relative overflow-hidden"
+                    >
+                      <div className={`h-2 w-full bg-gradient-to-r ${jenjang.gradien} absolute top-0 left-0`} />
 
-                    <div>
-                      <div className="flex items-center justify-between mb-5 mt-2">
-                        <div
-                          className={`p-3.5 rounded-2xl bg-gradient-to-br ${jenjang.gradien} shadow-lg`}
-                        >
-                          {jenjang.ikon}
+                      <div>
+                        <div className="flex items-center justify-between mb-5 mt-2">
+                          <div className={`p-3.5 rounded-2xl bg-gradient-to-br ${jenjang.gradien} shadow-lg`}>
+                            {jenjang.ikon}
+                          </div>
+                          <span className={`text-xs font-bold px-3 py-1 rounded-full ${jenjang.badge}`}>
+                            {jenjang.kelas.length} Modul
+                          </span>
                         </div>
-                        <span
-                          className={`text-xs font-bold px-3 py-1 rounded-full ${jenjang.badge}`}
-                        >
-                          {jenjang.kelas.length} Modul Tersedia
+
+                        <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                          {jenjang.tagline}
+                        </div>
+                        <h3 className="text-2xl font-extrabold text-slate-900 mb-2 group-hover:text-emerald-600 transition">
+                          {jenjang.nama}
+                        </h3>
+                        <p className="text-slate-600 text-sm leading-relaxed mb-6">
+                          {jenjang.deskripsi}
+                        </p>
+                      </div>
+
+                      <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+                        <span className={`text-sm font-bold ${jenjang.teksWarna}`}>
+                          Masuk Kelas Sekarang
                         </span>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center bg-gradient-to-r ${jenjang.gradien} text-white group-hover:translate-x-1 transition`}>
+                          →
+                        </div>
                       </div>
-
-                      <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-                        {jenjang.tagline}
-                      </div>
-                      <h3 className="text-2xl font-extrabold text-slate-900 mb-2 group-hover:text-emerald-600 transition">
-                        {jenjang.nama}
-                      </h3>
-                      <p className="text-slate-600 text-sm leading-relaxed mb-6">
-                        {jenjang.deskripsi}
-                      </p>
-                    </div>
-
-                    <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                      <span className={`text-sm font-bold ${jenjang.teksWarna}`}>
-                        Masuk Kelas Sekarang
-                      </span>
-                      <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center bg-gradient-to-r ${jenjang.gradien} text-white group-hover:translate-x-1 transition`}
-                      >
-                        →
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  ))}
               </div>
             </motion.div>
           )}
@@ -470,10 +638,7 @@ export default function AplikasiHibahIlmu() {
                 <ArrowLeft className="w-4 h-4" /> Kembali ke Semua Jenjang
               </button>
 
-              {/* Header Jenjang */}
-              <div
-                className={`rounded-3xl p-8 text-white bg-gradient-to-r ${jenjangAktif.gradien} shadow-xl mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6`}
-              >
+              <div className={`rounded-3xl p-8 text-white bg-gradient-to-r ${jenjangAktif.gradien} shadow-xl mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6`}>
                 <div>
                   <span className="bg-white/20 backdrop-blur-md text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full">
                     {jenjangAktif.tagline}
@@ -492,7 +657,6 @@ export default function AplikasiHibahIlmu() {
                 </div>
               </div>
 
-              {/* Daftar Modul Pelajaran */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {jenjangAktif.kelas.map((item: KelasItem) => (
                   <motion.div
@@ -532,7 +696,7 @@ export default function AplikasiHibahIlmu() {
             </motion.div>
           )}
 
-          {/* TAMPILAN 3: RUANG TONTON VIDEO MATERI & KUIS INTERAKTIF */}
+          {/* TAMPILAN 3: RUANG TONTON VIDEO & KUIS */}
           {kelasAktif && jenjangAktif && (
             <motion.div
               key="ruang-belajar"
@@ -548,7 +712,6 @@ export default function AplikasiHibahIlmu() {
               </button>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Kolom Kiri: Video & Rangkuman Materi */}
                 <div className="lg:col-span-2 space-y-6">
                   <div className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-200 shadow-sm">
                     <div className="aspect-video w-full rounded-2xl overflow-hidden bg-slate-900 mb-5 shadow-inner">
@@ -576,7 +739,6 @@ export default function AplikasiHibahIlmu() {
                   </div>
                 </div>
 
-                {/* Kolom Kanan: Kuis Interaktif Berhadiah */}
                 <div className="lg:col-span-1">
                   <div className="bg-white rounded-3xl p-6 border-2 border-indigo-100 shadow-md sticky top-24">
                     <div className="flex items-center justify-between mb-4">
@@ -617,7 +779,6 @@ export default function AplikasiHibahIlmu() {
                       })}
                     </div>
 
-                    {/* Umpan Balik Jawaban */}
                     {statusKuis === "benar" && (
                       <motion.div
                         initial={{ opacity: 0, y: 10 }}
@@ -672,14 +833,12 @@ export default function AplikasiHibahIlmu() {
               >
                 ☕ Dukung via QRIS / Saweria (Sukarela)
               </button>
-              <a
-                href="https://github.com/pandakode-dev/hibahilmu"
-                target="_blank"
-                rel="noreferrer"
+              <button
+                onClick={() => setTampilkanFormKontribusi(true)}
                 className="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold px-6 py-3.5 rounded-2xl transition text-sm sm:text-base flex items-center gap-2"
               >
-                <Code className="w-5 h-5" /> Kontribusi Materi di GitHub
-              </a>
+                <PlusCircle className="w-5 h-5" /> Sumbang Materi Pelajaran
+              </button>
             </div>
           </div>
         </div>
