@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BookOpen,
@@ -16,14 +16,44 @@ import {
   ArrowLeft,
   Trophy,
   Search,
-  Star,
   Flame,
   Award,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 
-// DATA KURIKULUM CONTOH (TK SAMPAI KULIAH)
-const DATA_JENJANG = [
+// 1. KAMUS TIPE DATA UNTUK TYPESCRIPT (Mencegah Error saat Build di Vercel)
+interface KuisItem {
+  tanya: string;
+  opsi: string[];
+  jawabanBenar: number;
+  pembahasan: string;
+}
+
+interface KelasItem {
+  id: string;
+  judul: string;
+  kategori: string;
+  durasi: string;
+  videoUrl: string;
+  rangkuman: string;
+  kuis: KuisItem;
+}
+
+interface JenjangItem {
+  id: string;
+  nama: string;
+  tagline: string;
+  deskripsi: string;
+  gradien: string;
+  bgLembut: string;
+  teksWarna: string;
+  badge: string;
+  ikon: React.ReactNode;
+  kelas: KelasItem[];
+}
+
+// 2. DATA KURIKULUM CONTOH (TK SAMPAI KULIAH)
+const DATA_JENJANG: JenjangItem[] = [
   {
     id: "tk",
     nama: "TK & PAUD",
@@ -202,12 +232,13 @@ const DATA_JENJANG = [
 ];
 
 export default function AplikasiHibahIlmu() {
-  const [jenjangAktif, setJenjangAktif] = useState(null);
-  const [kelasAktif, setKelasAktif] = useState(null);
-  const [jawabanTerpilih, setJawabanTerpilih] = useState(null);
-  const [statusKuis, setStatusKuis] = useState(null); // null | "benar" | "salah"
-  const [poinPahalaBelajar, setPoinPahalaBelajar] = useState(120);
-  const [kataKunci, setKataKunci] = useState("");
+  // State yang sudah diberi Tipe Data TypeScript dengan benar
+  const [jenjangAktif, setJenjangAktif] = useState<JenjangItem | null>(null);
+  const [kelasAktif, setKelasAktif] = useState<KelasItem | null>(null);
+  const [jawabanTerpilih, setJawabanTerpilih] = useState<number | null>(null);
+  const [statusKuis, setStatusKuis] = useState<"benar" | "salah" | null>(null);
+  const [poinPahalaBelajar, setPoinPahalaBelajar] = useState<number>(120);
+  const [kataKunci, setKataKunci] = useState<string>("");
 
   const lemparkanKonfeti = () => {
     confetti({
@@ -217,7 +248,8 @@ export default function AplikasiHibahIlmu() {
     });
   };
 
-  const cekJawabanKuis = (indeksOpsi) => {
+  const cekJawabanKuis = (indeksOpsi: number) => {
+    if (!kelasAktif) return;
     setJawabanTerpilih(indeksOpsi);
     if (indeksOpsi === kelasAktif.kuis.jawabanBenar) {
       setStatusKuis("benar");
@@ -228,7 +260,7 @@ export default function AplikasiHibahIlmu() {
     }
   };
 
-  const bukaKelas = (jenjang, kelas) => {
+  const bukaKelas = (jenjang: JenjangItem, kelas: KelasItem) => {
     setJenjangAktif(jenjang);
     setKelasAktif(kelas);
     setJawabanTerpilih(null);
@@ -462,7 +494,7 @@ export default function AplikasiHibahIlmu() {
 
               {/* Daftar Modul Pelajaran */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {jenjangAktif.kelas.map((item) => (
+                {jenjangAktif.kelas.map((item: KelasItem) => (
                   <motion.div
                     key={item.id}
                     whileHover={{ y: -4 }}
@@ -501,7 +533,7 @@ export default function AplikasiHibahIlmu() {
           )}
 
           {/* TAMPILAN 3: RUANG TONTON VIDEO MATERI & KUIS INTERAKTIF */}
-          {kelasAktif && (
+          {kelasAktif && jenjangAktif && (
             <motion.div
               key="ruang-belajar"
               initial={{ opacity: 0, scale: 0.98 }}
@@ -559,7 +591,7 @@ export default function AplikasiHibahIlmu() {
                     </h3>
 
                     <div className="space-y-3 mb-6">
-                      {kelasAktif.kuis.opsi.map((teksOpsi, idx) => {
+                      {kelasAktif.kuis.opsi.map((teksOpsi: string, idx: number) => {
                         const dipilih = jawabanTerpilih === idx;
                         return (
                           <button
