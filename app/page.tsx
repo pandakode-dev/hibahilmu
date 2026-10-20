@@ -30,9 +30,9 @@ import {
   JenjangItem,
   KelasItem,
 } from "../data/kurikulum";
-import RuangKelas from "../components/RuangKelas";
-import FiturTryout from "../components/FiturTryout";
-import KomunitasDanDonasi from "../components/KomunitasDanDonasi";
+import RuangKelas from "@/components/RuangKelas";
+import FiturTryout from "@/components/FiturTryout";
+import KomunitasDanDonasi from "@/components/KomunitasDanDonasi";
 
 export default function AplikasiHibahIlmu() {
   // Navigasi Menu Utama: "beranda" | "tryout" | "forum" | "transparansi" | "sumbang"
