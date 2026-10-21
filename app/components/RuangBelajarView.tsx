@@ -18,8 +18,6 @@ import {
   Brain,
   Lock,
   GitBranch,
-  Baby,
-  Shapes,
   Compass,
   MessageSquare,
   HeartHandshake,
@@ -27,6 +25,9 @@ import {
   Quote,
   ShieldCheck,
   FileText,
+  Layers,
+  Cpu,
+  Globe,
 } from "lucide-react";
 import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";
@@ -92,8 +93,14 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
   onKirimUlasanMateri,
   onBukaAuthAtauDashboard,
 }) => {
-  // State Efek 3D Tilt Card di Hero Landing Page
+  // State Efek 3D Utama di Hero
   const [rotasi3D, setRotasi3D] = useState({ x: 8, y: -12 });
+  // State Efek 3D Kartu Showcase & Jenjang
+  const [kartu3DAktif, setKartu3DAktif] = useState<{
+    id: string;
+    x: number;
+    y: number;
+  } | null>(null);
 
   const [kataKunci, setKataKunci] = useState("");
   const [modeVisualSkillTree, setModeVisualSkillTree] = useState(false);
@@ -116,6 +123,9 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
     [kuisId: string]: { [idxKiri: number]: string };
   }>({});
   const [statusKuisTerjawab, setStatusKuisTerjawab] = useState<{ [id: string]: boolean }>({});
+  const [pesanEvaluasiKuis, setPesanEvaluasiKuis] = useState<{
+    [id: string]: { tipe: "sukses" | "gagal"; teks: string };
+  }>({});
   const [petunjukSocratic, setPetunjukSocratic] = useState<{ [id: string]: string }>({});
 
   // State Ulasan & Chat
@@ -137,9 +147,18 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
     const y = e.clientY - rect.top;
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
-    const rotateX = ((y - centerY) / centerY) * -14;
-    const rotateY = ((x - centerX) / centerX) * 14;
+    const rotateX = ((y - centerY) / centerY) * -15;
+    const rotateY = ((x - centerX) / centerX) * 15;
     setRotasi3D({ x: rotateX, y: rotateY });
+  };
+
+  const handleMouseMoveKartu3D = (id: string, e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const rotateX = ((y - rect.height / 2) / (rect.height / 2)) * -10;
+    const rotateY = ((x - rect.width / 2) / (rect.width / 2)) * 10;
+    setKartu3DAktif({ id, x: rotateX, y: rotateY });
   };
 
   const handleToggleAudiobook = (htmlMateri: string, judul: string) => {
@@ -163,7 +182,7 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
   };
 
   // ============================================================================
-  // 1. TAMPILAN RUANG KELAS DETAIL (VIDEO, AUDIOBOOK, FLASHCARDS, 5 TIPE KUIS)
+  // 1. TAMPILAN RUANG KELAS DETAIL (VIDEO, AUDIOBOOK, 3D FLASHCARDS, 5 TIPE KUIS)
   // ============================================================================
   if (kelasAktif && userLogin) {
     const flashcards = kelasAktif.flashcards || [];
@@ -267,36 +286,42 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
           </div>
         </div>
 
-        {/* FLASHCARDS SPACED REPETITION */}
+        {/* 3D FLIP FLASHCARDS SPACED REPETITION */}
         {flashcards.length > 0 && kartuSaatIni && (
           <div className="bg-gradient-to-br from-indigo-900 via-slate-900 to-emerald-950 text-white rounded-3xl p-8 shadow-xl space-y-5">
             <div className="flex flex-wrap justify-between items-center gap-4">
               <div>
                 <span className="bg-amber-400 text-slate-950 text-xs font-black px-3 py-1 rounded-full uppercase">
-                  Spaced Repetition Flashcards
+                  3D Spaced Repetition Flashcards
                 </span>
                 <h3 className="text-xl font-black mt-2 flex items-center gap-2">
-                  <Brain className="w-5 h-5 text-emerald-400" /> Kartu Hafalan Pintar (Kartu{" "}
+                  <Brain className="w-5 h-5 text-emerald-400" /> Kartu Hafalan 3D Interaktif (Kartu{" "}
                   {indeksFlashcard + 1} dari {flashcards.length})
                 </h3>
               </div>
               <div className="text-xs text-slate-300">
-                Klik kartu untuk membalik pertanyaan &amp; jawaban
+                Klik kartu untuk efek putar 3D pertanyaan &amp; jawaban
               </div>
             </div>
 
             <div
               onClick={() => setBalikKartu(!balikKartu)}
-              className="min-h-[180px] rounded-2xl bg-white/10 hover:bg-white/15 border-2 border-white/20 p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-all"
+              style={{
+                transform: balikKartu
+                  ? "perspective(1000px) rotateX(360deg) scale(1.01)"
+                  : "perspective(1000px) rotateX(0deg) scale(1)",
+                transition: "transform 0.45s cubic-bezier(0.22, 1, 0.36, 1)",
+              }}
+              className="min-h-[190px] rounded-2xl bg-white/10 hover:bg-white/15 border-2 border-white/25 p-8 flex flex-col items-center justify-center text-center cursor-pointer shadow-2xl"
             >
               <span className="text-xs uppercase font-black tracking-widest text-amber-300 mb-2">
-                {balikKartu ? "JAWABAN / DEFINISI:" : "PERTANYAAN / KONSEP:"}
+                {balikKartu ? "✨ JAWABAN / DEFINISI:" : "❓ PERTANYAAN / KONSEP:"}
               </span>
               <p className="text-xl sm:text-2xl font-black">
                 {balikKartu ? kartuSaatIni.belakang : kartuSaatIni.depan}
               </p>
               <span className="text-xs text-slate-300 mt-4 flex items-center gap-1">
-                <RotateCw className="w-3.5 h-3.5" /> Ketuk untuk membalik kartu
+                <RotateCw className="w-3.5 h-3.5" /> Ketuk untuk membalik kartu 3D
               </span>
             </div>
 
@@ -356,7 +381,7 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
           </div>
         )}
 
-        {/* KUIS EVALUASI (MENDUKUNG 5 JENIS SOAL + AI SOCRATIC HINT) */}
+        {/* KUIS EVALUASI (5 FORMAT SOAL ANTI-ERROR + FEEDBACK LANGSUNG) */}
         <div className="bg-white text-slate-800 rounded-3xl p-8 border border-slate-200/90 space-y-6">
           <h3 className="font-black text-lg flex items-center gap-2">
             <Trophy className="w-5 h-5 text-amber-500" /> Evaluasi Pemahaman Materi (
@@ -366,6 +391,22 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
           <div className="space-y-6">
             {kelasAktif.daftarKuis.map((kuis, idx) => {
               const sudahBenar = statusKuisTerjawab[kuis.id];
+              const infoEval = pesanEvaluasiKuis[kuis.id];
+
+              // Pastikan soal mencocokkan selalu memiliki pasangan default jika kosong
+              const daftarPasanganValid =
+                kuis.pasangan && kuis.pasangan.length > 0
+                  ? kuis.pasangan
+                  : [
+                      { kiri: "Pernyataan 1", kanan: "Pasangan A" },
+                      { kiri: "Pernyataan 2", kanan: "Pasangan B" },
+                    ];
+
+              // Urutkan opsi kanan secara alfabetis agar tidak selalu sejajar lurus dengan kiri
+              const opsiKananTeracak = [...daftarPasanganValid]
+                .map((p) => p.kanan)
+                .sort((a, b) => a.localeCompare(b));
+
               return (
                 <div
                   key={kuis.id}
@@ -381,10 +422,9 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
                         onClick={() =>
                           setPetunjukSocratic({
                             ...petunjukSocratic,
-                            [kuis.id]: `💡 Petunjuk AI Socratic: Perhatikan kembali konsep inti pada kalimat "${kuis.pembahasan.slice(
-                              0,
-                              45
-                            )}..." sebelum memilih jawaban akhir.`,
+                            [kuis.id]: `💡 Petunjuk AI Socratic: Perhatikan kembali konsep inti pada kalimat "${(
+                              kuis.pembahasan || "rangkuman materi di atas"
+                            ).slice(0, 50)}..." sebelum menentukan jawaban.`,
                           })
                         }
                         className="px-3 py-1 rounded-lg bg-amber-100 text-amber-900 text-xs font-black flex items-center gap-1 cursor-pointer"
@@ -403,11 +443,18 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
                     </div>
                   )}
 
-                  {/* 1 & 2: PILIHAN GANDA & BENAR/SALAH */}
+                  {/* 1 & 3: PILIHAN GANDA & BENAR/SALAH */}
                   {(kuis.tipe === "pilihan_ganda" || kuis.tipe === "benar_salah") && (
                     <div className="space-y-2.5">
-                      {(kuis.opsi.length > 0 ? kuis.opsi : ["Benar", "Salah"]).map(
-                        (teksOpsi, opsiIdx) => (
+                      {(kuis.tipe === "benar_salah"
+                        ? ["Benar", "Salah"]
+                        : kuis.opsi.length > 0
+                        ? kuis.opsi
+                        : ["Opsi A", "Opsi B", "Opsi C", "Opsi D"]
+                      ).map((teksOpsi, opsiIdx) => {
+                        const dipilih = jawabanPilihanTunggal[kuis.id] === opsiIdx;
+                        const apakahKunci = opsiIdx === (kuis.jawabanBenar ?? 0);
+                        return (
                           <button
                             key={opsiIdx}
                             onClick={() => {
@@ -415,33 +462,62 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
                                 ...jawabanPilihanTunggal,
                                 [kuis.id]: opsiIdx,
                               });
-                              if (opsiIdx === kuis.jawabanBenar) {
-                                if (!statusKuisTerjawab[kuis.id]) tambahXP(kuis.poin);
+                              if (apakahKunci) {
+                                if (!statusKuisTerjawab[kuis.id]) tambahXP(kuis.poin || 50);
                                 setStatusKuisTerjawab({ ...statusKuisTerjawab, [kuis.id]: true });
+                                setPesanEvaluasiKuis({
+                                  ...pesanEvaluasiKuis,
+                                  [kuis.id]: {
+                                    tipe: "sukses",
+                                    teks: `✓ Jawaban Tepat! ${kuis.pembahasan}`,
+                                  },
+                                });
+                              } else {
+                                setPesanEvaluasiKuis({
+                                  ...pesanEvaluasiKuis,
+                                  [kuis.id]: {
+                                    tipe: "gagal",
+                                    teks: "✕ Jawaban belum tepat. Silakan pilih opsi lainnya atau klik Petunjuk AI Socratic!",
+                                  },
+                                });
                               }
                             }}
-                            className={`w-full text-left p-4 rounded-xl border-2 font-semibold text-base transition cursor-pointer ${
-                              jawabanPilihanTunggal[kuis.id] === opsiIdx
-                                ? opsiIdx === kuis.jawabanBenar
+                            className={`w-full text-left p-4 rounded-xl border-2 font-semibold text-base transition cursor-pointer flex justify-between items-center ${
+                              dipilih
+                                ? apakahKunci
                                   ? "border-emerald-500 bg-emerald-50 text-emerald-950"
                                   : "border-rose-500 bg-rose-50 text-rose-950"
                                 : "border-slate-200 bg-white text-slate-800 hover:border-slate-300"
                             }`}
                           >
-                            {teksOpsi}
+                            <span>
+                              {kuis.tipe === "pilihan_ganda" && (
+                                <b className="mr-2">{String.fromCharCode(65 + opsiIdx)}.</b>
+                              )}
+                              {teksOpsi}
+                            </span>
+                            {dipilih && (
+                              <span className="text-xs font-black">
+                                {apakahKunci ? "✓ BENAR" : "✕ SALAH"}
+                              </span>
+                            )}
                           </button>
-                        )
-                      )}
+                        );
+                      })}
                     </div>
                   )}
 
-                  {/* 3: PILIHAN JAMAK (MULTI-SELECT CHECKBOX) */}
+                  {/* 2: PILIHAN JAMAK (MULTI-SELECT CHECKBOX) */}
                   {kuis.tipe === "pilihan_jamak" && (
                     <div className="space-y-2.5">
                       <p className="text-xs text-slate-500 font-bold">
-                        * Pilih lebih dari satu jawaban yang benar, lalu klik Verifikasi:
+                        * Centang semua jawaban yang benar, lalu klik tombol Verifikasi Pilihan
+                        Jamak:
                       </p>
-                      {kuis.opsi.map((teksOpsi, opsiIdx) => {
+                      {(kuis.opsi.length > 0
+                        ? kuis.opsi
+                        : ["Pernyataan 1", "Pernyataan 2", "Pernyataan 3", "Pernyataan 4"]
+                      ).map((teksOpsi, opsiIdx) => {
                         const terpilih = (jawabanPilihanJamak[kuis.id] || []).includes(opsiIdx);
                         return (
                           <label
@@ -474,16 +550,35 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
                       <button
                         type="button"
                         onClick={() => {
-                          const kunci = (kuis.jawabanJamak || [0, 1]).sort().join(",");
-                          const userJwb = (jawabanPilihanJamak[kuis.id] || []).sort().join(",");
+                          const kunciArray =
+                            kuis.jawabanJamak && kuis.jawabanJamak.length > 0
+                              ? kuis.jawabanJamak
+                              : [0, 1];
+                          const kunci = [...kunciArray].sort().join(",");
+                          const userJwb = [...(jawabanPilihanJamak[kuis.id] || [])]
+                            .sort()
+                            .join(",");
                           if (userJwb === kunci) {
-                            if (!statusKuisTerjawab[kuis.id]) tambahXP(kuis.poin);
+                            if (!statusKuisTerjawab[kuis.id]) tambahXP(kuis.poin || 50);
                             setStatusKuisTerjawab({ ...statusKuisTerjawab, [kuis.id]: true });
+                            setPesanEvaluasiKuis({
+                              ...pesanEvaluasiKuis,
+                              [kuis.id]: {
+                                tipe: "sukses",
+                                teks: `✓ Kombinasi Pilihan Jamak Benar! ${kuis.pembahasan}`,
+                              },
+                            });
                           } else {
-                            alert("Kombinasi pilihan jamak belum tepat, silakan cek kembali!");
+                            setPesanEvaluasiKuis({
+                              ...pesanEvaluasiKuis,
+                              [kuis.id]: {
+                                tipe: "gagal",
+                                teks: "✕ Kombinasi jawaban yang Anda centang belum tepat. Coba periksa kembali!",
+                              },
+                            });
                           }
                         }}
-                        className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-xs font-black"
+                        className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl text-xs font-black cursor-pointer"
                       >
                         Verifikasi Pilihan Jamak
                       </button>
@@ -492,91 +587,150 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
 
                   {/* 4: ISIAN SINGKAT (SMART FUZZY AUTO-GRADER) */}
                   {kuis.tipe === "isian_singkat" && (
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                       <input
                         type="text"
                         value={jawabanIsianTeks[kuis.id] || ""}
                         onChange={(e) =>
                           setJawabanIsianTeks({ ...jawabanIsianTeks, [kuis.id]: e.target.value })
                         }
-                        placeholder="Ketik jawaban singkat (Smart Fuzzy Auto-Grader aktif)..."
-                        className="flex-1 p-3.5 bg-white border rounded-xl text-sm font-bold"
+                        placeholder="Ketik jawaban singkat Anda di sini..."
+                        className="flex-1 p-3.5 bg-white border border-slate-300 rounded-xl text-sm font-bold"
                       />
                       <button
+                        type="button"
                         onClick={() => {
                           const input = (jawabanIsianTeks[kuis.id] || "").trim().toLowerCase();
                           const kunci = (kuis.jawabanTeks || "").trim().toLowerCase();
                           if (
                             input &&
-                            (input === kunci || kunci.includes(input) || input.includes(kunci))
+                            (!kunci ||
+                              input === kunci ||
+                              kunci.includes(input) ||
+                              input.includes(kunci))
                           ) {
-                            if (!statusKuisTerjawab[kuis.id]) tambahXP(kuis.poin);
+                            if (!statusKuisTerjawab[kuis.id]) tambahXP(kuis.poin || 50);
                             setStatusKuisTerjawab({ ...statusKuisTerjawab, [kuis.id]: true });
+                            setPesanEvaluasiKuis({
+                              ...pesanEvaluasiKuis,
+                              [kuis.id]: {
+                                tipe: "sukses",
+                                teks: `✓ Jawaban Tepat (Kunci: ${kuis.jawabanTeks || input})! ${
+                                  kuis.pembahasan
+                                }`,
+                              },
+                            });
                           } else {
-                            alert("Jawaban belum tepat, coba periksa kembali rangkuman materi!");
+                            setPesanEvaluasiKuis({
+                              ...pesanEvaluasiKuis,
+                              [kuis.id]: {
+                                tipe: "gagal",
+                                teks: "✕ Jawaban isian belum sesuai dengan kata kunci konsep materi.",
+                              },
+                            });
                           }
                         }}
-                        className="bg-indigo-600 text-white px-5 py-3 rounded-xl font-bold text-xs"
+                        className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-black text-xs cursor-pointer"
                       >
-                        Cek Jawaban
+                        Cek Jawaban Isian
                       </button>
                     </div>
                   )}
 
-                  {/* 5: MENCOCOKKAN PASANGAN (MATCHING PAIRS) */}
+                  {/* 5: MENCOCOKKAN PASANGAN (MATCHING PAIRS BEBAS ERROR) */}
                   {kuis.tipe === "mencocokkan" && (
                     <div className="space-y-3">
-                      {(kuis.pasangan || []).map((pas, pIdx) => (
-                        <div
-                          key={pIdx}
-                          className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center bg-white p-3 rounded-xl border"
-                        >
-                          <div className="font-bold text-sm text-slate-800">{pas.kiri}</div>
-                          <select
-                            value={jawabanCocok[kuis.id]?.[pIdx] || ""}
-                            onChange={(e) =>
-                              setJawabanCocok({
-                                ...jawabanCocok,
-                                [kuis.id]: {
-                                  ...(jawabanCocok[kuis.id] || {}),
-                                  [pIdx]: e.target.value,
-                                },
-                              })
-                            }
-                            className="p-2.5 border rounded-lg bg-slate-50 text-sm font-semibold"
+                      <p className="text-xs text-slate-500 font-bold">
+                        * Pasangkan setiap pernyataan di sebelah kiri dengan pasangan yang tepat di
+                        sebelah kanan:
+                      </p>
+                      {daftarPasanganValid.map((pas, pIdx) => {
+                        const pilihanUserSaatIni = jawabanCocok[kuis.id]?.[pIdx] || "";
+                        const sudahSesuai = pilihanUserSaatIni === pas.kanan;
+                        return (
+                          <div
+                            key={pIdx}
+                            className={`grid grid-cols-1 sm:grid-cols-12 gap-3 items-center p-3.5 rounded-xl border-2 ${
+                              sudahBenar && sudahSesuai
+                                ? "bg-emerald-50 border-emerald-400"
+                                : "bg-white border-slate-200"
+                            }`}
                           >
-                            <option value="">-- Pilih Pasangan --</option>
-                            {(kuis.pasangan || []).map((opsiPas, oIdx) => (
-                              <option key={oIdx} value={opsiPas.kanan}>
-                                {opsiPas.kanan}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      ))}
+                            <div className="sm:col-span-5 font-bold text-sm text-slate-900">
+                              {pIdx + 1}. {pas.kiri}
+                            </div>
+                            <div className="sm:col-span-1 text-center font-black text-indigo-600 hidden sm:block">
+                              ↔
+                            </div>
+                            <div className="sm:col-span-6">
+                              <select
+                                value={pilihanUserSaatIni}
+                                onChange={(e) =>
+                                  setJawabanCocok({
+                                    ...jawabanCocok,
+                                    [kuis.id]: {
+                                      ...(jawabanCocok[kuis.id] || {}),
+                                      [pIdx]: e.target.value,
+                                    },
+                                  })
+                                }
+                                className="w-full p-2.5 border border-slate-300 rounded-xl bg-slate-50 text-sm font-bold text-slate-800"
+                              >
+                                <option value="">-- Pilih Pasangan Jawaban --</option>
+                                {opsiKananTeracak.map((teksKanan, oIdx) => (
+                                  <option key={oIdx} value={teksKanan}>
+                                    {teksKanan}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                        );
+                      })}
                       <button
                         type="button"
                         onClick={() => {
-                          const semuaCocok = (kuis.pasangan || []).every(
-                            (pas, pIdx) => jawabanCocok[kuis.id]?.[pIdx] === pas.kanan
+                          const semuaCocok = daftarPasanganValid.every(
+                            (pas, pIdx) =>
+                              (jawabanCocok[kuis.id]?.[pIdx] || "").trim() === pas.kanan.trim()
                           );
                           if (semuaCocok) {
-                            if (!statusKuisTerjawab[kuis.id]) tambahXP(kuis.poin);
+                            if (!statusKuisTerjawab[kuis.id]) tambahXP(kuis.poin || 50);
                             setStatusKuisTerjawab({ ...statusKuisTerjawab, [kuis.id]: true });
+                            setPesanEvaluasiKuis({
+                              ...pesanEvaluasiKuis,
+                              [kuis.id]: {
+                                tipe: "sukses",
+                                teks: `✓ Semua Pasangan Tepat 100%! ${kuis.pembahasan}`,
+                              },
+                            });
                           } else {
-                            alert("Masih ada pasangan yang belum sesuai!");
+                            setPesanEvaluasiKuis({
+                              ...pesanEvaluasiKuis,
+                              [kuis.id]: {
+                                tipe: "gagal",
+                                teks: "✕ Masih ada pasangan yang belum cocok atau belum dipilih. Silakan periksa kembali!",
+                              },
+                            });
                           }
                         }}
-                        className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-xs font-black"
+                        className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl text-xs font-black cursor-pointer"
                       >
-                        Periksa Pasangan
+                        Periksa Semua Pasangan
                       </button>
                     </div>
                   )}
 
-                  {sudahBenar && (
-                    <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-950 text-sm font-semibold">
-                      ✓ Luar Biasa! Pembahasan: {kuis.pembahasan}
+                  {/* KOTAK FEEDBACK HASIL PENGERJAAN SOAL */}
+                  {infoEval && (
+                    <div
+                      className={`p-4 rounded-xl border text-sm font-bold ${
+                        infoEval.tipe === "sukses"
+                          ? "bg-emerald-50 border-emerald-300 text-emerald-950"
+                          : "bg-rose-50 border-rose-300 text-rose-900"
+                      }`}
+                    >
+                      {infoEval.teks}
                     </div>
                   )}
                 </div>
@@ -678,7 +832,7 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
   }
 
   // ============================================================================
-  // 2. TAMPILAN LANDING PAGE UTAMA (HERO 3D INTERAKTIF + 100% GRATIS + MUTIARA)
+  // 2. TAMPILAN LANDING PAGE UTAMA (DIPERBANYAK EFEK 3D INTERAKTIF)
   // ============================================================================
   const semuaKelasFlat = daftarJenjang.flatMap((j) =>
     j.kelas.map((k) => ({ ...k, namaJenjang: j.nama }))
@@ -688,9 +842,8 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
     <div className="space-y-14">
       {!jenjangAktif && (
         <>
-          {/* HERO SECTION 2 KOLOM DENGAN KARTU 3D INTERAKTIF PERSIS SCREENSHOT */}
+          {/* HERO SECTION 2 KOLOM DENGAN PORTAL KARTU 3D BERLAPIS (MULTI-LAYER 3D) */}
           <section className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center pt-2">
-            {/* Kolom Kiri: Headline & Tombol CTA */}
             <div className="lg:col-span-7 space-y-6">
               <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-4 py-1.5 rounded-full text-xs font-extrabold text-emerald-800 shadow-2xs">
                 <Sparkles className="w-4 h-4 text-emerald-600" />
@@ -730,19 +883,24 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
               </div>
             </div>
 
-            {/* Kolom Kanan: Kartu 3D Interaktif Persis Screenshot */}
-            <div className="lg:col-span-5 flex justify-center">
+            {/* Kolom Kanan: Kartu 3D Interaktif Multi-Layer */}
+            <div className="lg:col-span-5 flex justify-center relative">
               <div
                 onMouseMove={handleMouseMove3D}
                 onMouseLeave={() => setRotasi3D({ x: 8, y: -12 })}
                 style={{
-                  transform: `perspective(1000px) rotateX(${rotasi3D.x}deg) rotateY(${rotasi3D.y}deg)`,
+                  transform: `perspective(1100px) rotateX(${rotasi3D.x}deg) rotateY(${rotasi3D.y}deg)`,
+                  transformStyle: "preserve-3d",
                   transition: "transform 0.15s ease-out",
                 }}
-                className="w-full max-w-md rounded-[2.2rem] bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 text-white p-7 shadow-2xl border-4 border-slate-700/80 space-y-5 cursor-grab select-none"
+                className="w-full max-w-md rounded-[2.2rem] bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 text-white p-7 shadow-[0_30px_70px_-15px_rgba(16,185,129,0.45)] border-4 border-slate-700/80 space-y-5 cursor-grab select-none relative"
               >
-                <div className="flex items-center gap-3.5">
-                  <div className="w-14 h-14 rounded-2xl bg-white p-1.5 shadow-md shrink-0 flex items-center justify-center overflow-hidden">
+                {/* Floating Badge 3D Layer Atas */}
+                <div
+                  style={{ transform: "translateZ(40px)" }}
+                  className="flex items-center gap-3.5"
+                >
+                  <div className="w-14 h-14 rounded-2xl bg-white p-1.5 shadow-xl shrink-0 flex items-center justify-center overflow-hidden">
                     <img
                       src="/hibahilmu.jpg"
                       alt="HibahIlmu"
@@ -762,12 +920,16 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
                   </div>
                 </div>
 
-                <div className="p-5 rounded-2xl bg-white/10 border border-white/15 space-y-2.5 backdrop-blur-md">
+                {/* Kotak Kutipan Mutiara 3D Layer Tengah */}
+                <div
+                  style={{ transform: "translateZ(55px)" }}
+                  className="p-5 rounded-2xl bg-white/10 border border-white/20 space-y-2.5 backdrop-blur-md shadow-xl"
+                >
                   <div className="flex justify-between items-center text-[11px] font-bold">
                     <span className="text-slate-300 flex items-center gap-1">
                       <Bot className="w-3.5 h-3.5 text-emerald-400" /> AI Socratic &amp; Auto-Grader
                     </span>
-                    <span className="text-amber-300 font-black">9 Fitur Baru Aktif</span>
+                    <span className="text-amber-300 font-black">100% Wakaf Gratis</span>
                   </div>
                   <p className="text-sm font-extrabold italic leading-relaxed text-white">
                     &ldquo;Sebaik-baik manusia adalah yang paling bermanfaat bagi sesama melalui
@@ -775,19 +937,94 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
                   </p>
                 </div>
 
-                <div className="bg-emerald-500 text-slate-950 px-4 py-3 rounded-2xl flex items-center justify-between text-xs font-black">
+                {/* Bar Bawah 3D Layer */}
+                <div
+                  style={{ transform: "translateZ(35px)" }}
+                  className="bg-emerald-500 text-slate-950 px-4 py-3 rounded-2xl flex items-center justify-between text-xs font-black shadow-lg"
+                >
                   <span className="flex items-center gap-1.5">
                     ★ Gerakkan Kursor di Kartu 3D
                   </span>
                   <span className="bg-slate-950 text-white px-2.5 py-1 rounded-lg text-[10px]">
-                    3D Aktif
+                    3D Interaktif Aktif
                   </span>
                 </div>
               </div>
             </div>
           </section>
 
-          {/* BANNER PANGGILAN KOLABORASI PENGAJAR & PRAKTISI PERSIS SCREENSHOT */}
+          {/* SEKSI BARU: 3 KARTU SHOWCASE TEKNOLOGI 3D INTERAKTIF */}
+          <section className="space-y-4">
+            <div className="text-center max-w-2xl mx-auto">
+              <span className="text-xs font-black uppercase tracking-widest text-indigo-600">
+                INTERACTIVE 3D LEARNING EXPERIENCE
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-black mt-1">
+                Sentuh &amp; Gerakkan Kursor pada Kartu Fitur 3D Kami
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+              {[
+                {
+                  id: "3d-1",
+                  ikon: <Cpu className="w-7 h-7 text-white" />,
+                  gradien: "from-indigo-600 to-violet-700",
+                  badge: "AI ENGINE",
+                  judul: "AI Quiz Generator & Rubric",
+                  deskripsi:
+                    "Ubah rangkuman materi menjadi 5 format soal otomatis dan koreksi esai siswa dengan AI Rubric Assistant.",
+                },
+                {
+                  id: "3d-2",
+                  ikon: <Layers className="w-7 h-7 text-white" />,
+                  gradien: "from-emerald-600 to-teal-700",
+                  badge: "5 TIPE KUIS",
+                  judul: "Multi-Format Interactive Quiz",
+                  deskripsi:
+                    "Mendukung Pilihan Ganda, Pilihan Jamak, Benar/Salah, Isian Singkat Fuzzy, dan Mencocokkan Pasangan.",
+                },
+                {
+                  id: "3d-3",
+                  ikon: <Globe className="w-7 h-7 text-white" />,
+                  gradien: "from-amber-500 to-orange-600",
+                  badge: "100% GRATIS",
+                  judul: "Wakaf Ilmu Terbuka Nasional",
+                  deskripsi:
+                    "Tanpa biaya langganan selamanya. Setiap pendidik bisa menghibahkan modul, RPP, dan soal tryout CBT.",
+                },
+              ].map((item) => {
+                const sedangAktif = kartu3DAktif?.id === item.id;
+                return (
+                  <div
+                    key={item.id}
+                    onMouseMove={(e) => handleMouseMoveKartu3D(item.id, e)}
+                    onMouseLeave={() => setKartu3DAktif(null)}
+                    style={{
+                      transform: sedangAktif
+                        ? `perspective(900px) rotateX(${kartu3DAktif.x}deg) rotateY(${kartu3DAktif.y}deg) translateZ(10px)`
+                        : "perspective(900px) rotateX(0deg) rotateY(0deg)",
+                      transition: "transform 0.15s ease-out",
+                    }}
+                    className={`rounded-3xl bg-gradient-to-br ${item.gradien} text-white p-7 shadow-xl border border-white/15 space-y-4 cursor-pointer select-none`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-inner">
+                        {item.ikon}
+                      </div>
+                      <span className="text-[10px] font-black uppercase bg-black/25 px-3 py-1 rounded-full">
+                        {item.badge} • 3D CARD
+                      </span>
+                    </div>
+                    <h3 className="text-xl font-black">{item.judul}</h3>
+                    <p className="text-xs text-white/90 leading-relaxed">{item.deskripsi}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* BANNER PANGGILAN KOLABORASI PENGAJAR & PRAKTISI */}
           <section className="rounded-[2.2rem] bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950 text-white p-8 sm:p-12 shadow-xl flex flex-col lg:flex-row items-center justify-between gap-8">
             <div className="space-y-4 max-w-2xl">
               <span className="inline-flex items-center gap-1.5 bg-amber-400 text-slate-950 text-xs font-black px-3.5 py-1 rounded-full uppercase">
@@ -952,13 +1189,13 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
         </div>
       )}
 
-      {/* KATALOG JENJANG PENDIDIKAN DENGAN GARIS ATAS BERWARNA PERSIS SCREENSHOT */}
+      {/* KATALOG JENJANG PENDIDIKAN DENGAN EFEK HOVER 3D TILT */}
       {!jenjangAktif ? (
         <section id="katalog-jenjang" className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
               <span className="text-xs font-black uppercase tracking-wider text-emerald-700">
-                KURIKULUM TERBUKA NASIONAL
+                KURIKULUM TERBUKA NASIONAL (3D INTERACTIVE CARDS)
               </span>
               <h2 className="text-2xl sm:text-4xl font-black mt-1">
                 Pilih Jenjang Pendidikan &amp; Ruang Kelas
@@ -977,43 +1214,53 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {daftarJenjang.map((jenjang) => (
-              <div
-                key={jenjang.id}
-                onClick={() => {
-                  setJenjangAktif(jenjang);
-                  setSubJenjangAktif("semua");
-                }}
-                className="group bg-white text-slate-800 rounded-3xl overflow-hidden border border-slate-200/90 shadow-xs hover:shadow-xl transition-all cursor-pointer flex flex-col justify-between"
-              >
-                <div>
-                  {/* Garis Warna Gradien di Bagian Atas Kartu Persis Screenshot */}
-                  <div className={`h-2 w-full bg-gradient-to-r ${jenjang.gradien}`} />
-                  <div className="p-7 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div
-                        className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${jenjang.gradien} text-white flex items-center justify-center shadow-md`}
-                      >
-                        {renderIkonJenjang(jenjang.ikonNama)}
+            {daftarJenjang.map((jenjang) => {
+              const sedang3D = kartu3DAktif?.id === jenjang.id;
+              return (
+                <div
+                  key={jenjang.id}
+                  onMouseMove={(e) => handleMouseMoveKartu3D(jenjang.id, e)}
+                  onMouseLeave={() => setKartu3DAktif(null)}
+                  onClick={() => {
+                    setJenjangAktif(jenjang);
+                    setSubJenjangAktif("semua");
+                  }}
+                  style={{
+                    transform: sedang3D
+                      ? `perspective(900px) rotateX(${kartu3DAktif.x}deg) rotateY(${kartu3DAktif.y}deg) translateY(-4px)`
+                      : "perspective(900px) rotateX(0deg) rotateY(0deg)",
+                    transition: "transform 0.15s ease-out",
+                  }}
+                  className="group bg-white text-slate-800 rounded-3xl overflow-hidden border border-slate-200/90 shadow-xs hover:shadow-2xl transition-all cursor-pointer flex flex-col justify-between"
+                >
+                  <div>
+                    <div className={`h-2.5 w-full bg-gradient-to-r ${jenjang.gradien}`} />
+                    <div className="p-7 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div
+                          className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${jenjang.gradien} text-white flex items-center justify-center shadow-md`}
+                        >
+                          {renderIkonJenjang(jenjang.ikonNama)}
+                        </div>
+                        <span
+                          className={`text-[11px] font-black uppercase px-3 py-1 rounded-full border ${jenjang.badge}`}
+                        >
+                          {jenjang.subJenjang.length} TINGKAT KELAS
+                        </span>
                       </div>
-                      <span
-                        className={`text-[11px] font-black uppercase px-3 py-1 rounded-full border ${jenjang.badge}`}
-                      >
-                        {jenjang.subJenjang.length} TINGKAT KELAS
-                      </span>
+                      <h3 className="text-xl font-black group-hover:text-emerald-600 transition">
+                        {jenjang.nama}
+                      </h3>
+                      <p className="text-sm text-slate-600 leading-relaxed">{jenjang.deskripsi}</p>
                     </div>
-                    <h3 className="text-xl font-black group-hover:text-emerald-600 transition">
-                      {jenjang.nama}
-                    </h3>
-                    <p className="text-sm text-slate-600 leading-relaxed">{jenjang.deskripsi}</p>
+                  </div>
+                  <div className="px-7 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs font-extrabold text-slate-600">
+                    <span>{jenjang.kelas.length} Modul Terverifikasi</span>
+                    <span className="text-emerald-600">Buka Kelas 3D →</span>
                   </div>
                 </div>
-                <div className="px-7 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs font-extrabold text-slate-600">
-                  <span>{jenjang.kelas.length} Modul Terverifikasi</span>
-                  <span className="text-emerald-600">Buka Kelas →</span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       ) : (
@@ -1035,7 +1282,6 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
             <p className="text-white/90 text-base mt-1">{jenjangAktif.deskripsi}</p>
           </div>
 
-          {/* Filter Sub-Jenjang / Tingkat Kelas */}
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap gap-2">
               <button

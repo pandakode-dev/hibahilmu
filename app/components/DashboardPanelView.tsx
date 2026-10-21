@@ -29,6 +29,7 @@ import {
   Trash2,
   Users,
   Timer,
+  CheckCircle2,
 } from "lucide-react";
 import {
   AkunPengguna,
@@ -119,6 +120,7 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
   rppList,
   setRppList,
   bankSoalKolektif,
+  setBankSoalKolektif,
   daftarKelompok,
   setDaftarKelompok,
   jadwalLive,
@@ -149,17 +151,14 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
     "akun" | "beasiswa" | "kategori" | "cv" | "log"
   >("akun");
 
-  // State Modal Edit & Tambah User oleh Super Admin
   const [akunDieditAdmin, setAkunDieditAdmin] = useState<AkunPengguna | null>(null);
   const [bukaModalTambahAkun, setBukaModalTambahAkun] = useState(false);
   const [bukaModalImportCsvAkun, setBukaModalImportCsvAkun] = useState(false);
   const [teksCsvAkun, setTeksCsvAkun] = useState(TEMPLATE_CSV_AKUN);
 
-  // State Tambah Kategori/Sub-Jenjang oleh Admin
   const [jenjangIndukKategoriBaru, setJenjangIndukKategoriBaru] = useState("sma");
   const [namaSubJenjangBaru, setNamaSubJenjangBaru] = useState("");
 
-  // Tab Studio Guru (Lengkap 8 Tab)
   const [guruTabAktif, setGuruTabAktif] = useState<
     | "materi"
     | "tryout_qr"
@@ -203,6 +202,13 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
     },
   ]);
 
+  // State Form Tambah Bank Soal Kolektif Baru
+  const [topikBankSoalBaru, setTopikBankSoalBaru] = useState("");
+  const [tanyaBankSoalBaru, setTanyaBankSoalBaru] = useState("");
+  const [opsiBankSoalBaru, setOpsiBankSoalBaru] = useState<string[]>(["", "", "", ""]);
+  const [kunciBankSoalBaru, setKunciBankSoalBaru] = useState<number>(0);
+  const [bahasBankSoalBaru, setBahasBankSoalBaru] = useState("");
+
   // State RPP
   const [judulRppBaru, setJudulRppBaru] = useState("");
   const [mapelRppBaru, setMapelRppBaru] = useState("");
@@ -223,7 +229,7 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
   const [alamatTryoutBaru, setAlamatTryoutBaru] = useState(
     "Gedung CBT Center R.101 / Online Fullscreen"
   );
-  const [soalTryoutDraft] = useState<SoalTryout[]>([
+  const [soalTryoutDraft, setSoalTryoutDraft] = useState<SoalTryout[]>([
     {
       id: "td-1",
       pertanyaan: "Contoh Pertanyaan Tryout",
@@ -246,7 +252,7 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
     [id: string]: string;
   }>({});
   const [judulKaryaBaru, setJudulKaryaBaru] = useState("");
-  const [kategoriKaryaBaru, setKategoriKaryaBaru] = useState("Proyek Sains & IT");
+  const [kategoriKaryaBaru] = useState("Proyek Sains & IT");
   const [deskripsiKaryaBaru, setDeskripsiKaryaBaru] = useState("");
   const [linkKaryaBaru, setLinkKaryaBaru] = useState("https://github.com");
   const [alasanBeasiswaInput, setAlasanBeasiswaInput] = useState("");
@@ -300,7 +306,7 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
     document.body.removeChild(link);
   };
 
-  // AI Quiz Generator 3 Soal Multi-Tipe Otomatis
+  // AI Quiz Generator 4 Soal Multi-Tipe (Termasuk Mencocokkan Pasangan)
   const handleAiGenerateQuiz = () => {
     const teks = bersihkanTagHtml(rangkumanMateri).trim();
     const topik = judulMateri.trim() || "Materi Pembelajaran";
@@ -336,6 +342,19 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
       },
       {
         id: "ai-3-" + Date.now(),
+        tipe: "mencocokkan",
+        tanya: `[AI Generated] Pasangkan konsep berikut dengan definisi yang tepat pada topik "${topik}"!`,
+        opsi: [],
+        jawabanBenar: 0,
+        pasangan: [
+          { kiri: `Topik Utama Modul`, kanan: topik },
+          { kiri: `Poin Inti Pembahasan`, kanan: fakta1.slice(0, 50) },
+        ],
+        pembahasan: `Pasangan konsep dan definisi telah sesuai dengan rangkuman ${topik}.`,
+        poin: 70,
+      },
+      {
+        id: "ai-4-" + Date.now(),
         tipe: "isian_singkat",
         tanya: `[AI Generated] Sebutkan topik atau kata kunci utama dari modul pembelajaran ini!`,
         opsi: [],
@@ -345,11 +364,13 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
         poin: 60,
       },
     ]);
-    alert("⚡ AI Quiz Generator berhasil menyusun 3 soal multi-format dari rangkuman Anda!");
+    alert(
+      "⚡ AI Quiz Generator berhasil menyusun 4 soal lengkap (Pilihan Ganda, Benar/Salah, Mencocokkan, & Isian Singkat)!"
+    );
   };
 
   // ============================================================================
-  // KOMPONEN PROFIL & CV 2 KOLOM PERSIS SCREENSHOT
+  // KOMPONEN PROFIL & CV 2 KOLOM
   // ============================================================================
   const renderProfilDanCV = () => {
     if (!userLogin) return null;
@@ -360,7 +381,6 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
 
     return (
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Kolom Kiri: Kartu Preview Profil & CV Bergradasi Biru-Hijau Persis Screenshot */}
         <div className="lg:col-span-5 bg-white text-slate-800 rounded-3xl overflow-hidden border border-slate-200/90 shadow-md">
           <div className="h-28 bg-gradient-to-r from-indigo-600 via-blue-600 to-emerald-500" />
           <div className="px-7 pb-7 -mt-12 space-y-4">
@@ -415,7 +435,6 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
           </div>
         </div>
 
-        {/* Kolom Kanan: Form Edit Foto Profil, Biodata & CV Lengkap */}
         <div className="lg:col-span-7 bg-white text-slate-800 rounded-3xl p-8 border border-slate-200/90 shadow-xs space-y-5">
           <h3 className="text-xl font-black flex items-center gap-2">
             <Briefcase className="w-5 h-5 text-indigo-600" /> Edit Foto Profil, Biodata &amp; CV
@@ -739,7 +758,7 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
   }
 
   // ============================================================================
-  // 2. STUDIO GURU (LENGKAP 8 TAB + 5 JENIS SOAL KUIS + IMPORT CSV)
+  // 2. STUDIO GURU (PERBAIKAN LENGKAP PENENTU KUNCI JAWABAN 5 FORMAT KUIS)
   // ============================================================================
   if (userLogin.role === "guru" || (userLogin.role === "admin" && adminModeGuru)) {
     return (
@@ -778,7 +797,6 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
           </div>
         </div>
 
-        {/* Navigasi Tab Studio Guru Persis Screenshot */}
         <div className="flex gap-2 border-b border-slate-200 pb-3 overflow-x-auto">
           {[
             { id: "materi", label: "1. Hibahkan Materi & AI Quiz", icon: <BookOpen className="w-4 h-4" /> },
@@ -818,7 +836,7 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
 
         {guruTabAktif === "cv" && renderProfilDanCV()}
 
-        {/* TAB 1: HIBAHKAN MATERI BARU + 5 JENIS SOAL KUIS LENGKAP PERSIS SCREENSHOT */}
+        {/* TAB 1: HIBAHKAN MATERI BARU + EDITOR KUNCI JAWABAN 5 JENIS SOAL */}
         {guruTabAktif === "materi" && (
           <div className="bg-white text-slate-800 p-8 rounded-[2rem] border border-slate-200 max-w-5xl space-y-6 shadow-xs">
             <h2 className="text-2xl font-black">
@@ -826,11 +844,10 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
             </h2>
             {notifGuru && (
               <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-2xl font-black">
-                ✓ Materi terverifikasi berhasil diterbitkan ke ruang belajar!
+                ✓ Materi beserta kuis berhasil diterbitkan ke ruang belajar!
               </div>
             )}
 
-            {/* Modal Import CSV Soal Kuis */}
             {bukaModalImportCsvKuis && (
               <div className="p-5 bg-indigo-50 border-2 border-indigo-200 rounded-2xl space-y-3 text-xs">
                 <div className="font-black text-sm text-indigo-950">
@@ -965,19 +982,25 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
 
               <RichTextEditorPro value={rangkumanMateri} onChange={setRangkumanMateri} />
 
-              {/* KOTAK PEMBUATAN KUIS MULTI-FORMAT PERSIS SCREENSHOT */}
+              {/* EDITOR DAFTAR KUIS LENGKAP DENGAN PENENTU KUNCI JAWABAN BENAR */}
               <div className="p-6 bg-white border-2 border-slate-200 rounded-2xl space-y-5">
                 <div className="flex flex-wrap justify-between items-center gap-3">
-                  <span className="font-black text-base">
-                    Daftar Kuis Materi ({daftarKuisDraft.length} Soal)
-                  </span>
+                  <div>
+                    <span className="font-black text-base">
+                      Daftar Kuis Materi ({daftarKuisDraft.length} Soal)
+                    </span>
+                    <p className="text-xs text-slate-500">
+                      Pilih jenis soal dan klik tombol hijau pada opsi untuk menentukan{" "}
+                      <b>Kunci Jawaban Benar</b>.
+                    </p>
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
                       onClick={handleAiGenerateQuiz}
                       className="bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-2xs cursor-pointer"
                     >
-                      <Wand2 className="w-4 h-4" /> ⚡ AI Generate 3 Soal dari Rangkuman
+                      <Wand2 className="w-4 h-4" /> ⚡ AI Generate 4 Soal dari Rangkuman
                     </button>
                     <button
                       type="button"
@@ -989,18 +1012,17 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
                   </div>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-5">
                   {daftarKuisDraft.map((kuis, kIdx) => (
                     <div
                       key={kuis.id}
-                      className="p-5 border border-slate-300 rounded-2xl bg-slate-50/60 space-y-3 text-sm"
+                      className="p-5 border-2 border-slate-200 rounded-2xl bg-slate-50/70 space-y-4 text-sm"
                     >
-                      <div className="flex flex-wrap justify-between items-center gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className="font-black text-xs">
-                            Soal #{kIdx + 1} ({kuis.tipe})
+                      <div className="flex flex-wrap justify-between items-center gap-2 border-b pb-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-black text-xs bg-slate-900 text-white px-2.5 py-1 rounded-md">
+                            Soal #{kIdx + 1}
                           </span>
-                          {/* Pemilih 5 Jenis Soal */}
                           <select
                             value={kuis.tipe}
                             onChange={(e) => {
@@ -1015,11 +1037,13 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
                                           tipeBaru === "benar_salah"
                                             ? ["Benar", "Salah"]
                                             : ["", "", "", ""],
+                                        jawabanBenar: 0,
+                                        jawabanJamak: tipeBaru === "pilihan_jamak" ? [0, 1] : undefined,
                                         pasangan:
                                           tipeBaru === "mencocokkan"
                                             ? [
-                                                { kiri: "Konsep A", kanan: "Definisi A" },
-                                                { kiri: "Konsep B", kanan: "Definisi B" },
+                                                { kiri: "Rumus Gaya", kanan: "F = m . a" },
+                                                { kiri: "Satuan Gaya", kanan: "Newton (N)" },
                                               ]
                                             : undefined,
                                       }
@@ -1027,13 +1051,15 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
                                 )
                               );
                             }}
-                            className="px-2.5 py-1 border rounded-lg bg-white text-xs font-bold text-indigo-900"
+                            className="px-3 py-1.5 border border-indigo-200 rounded-lg bg-white text-xs font-black text-indigo-950"
                           >
-                            <option value="pilihan_ganda">1. Pilihan Ganda</option>
-                            <option value="pilihan_jamak">2. Pilihan Jamak (Multi-Select)</option>
+                            <option value="pilihan_ganda">1. Pilihan Ganda (1 Kunci Benar)</option>
+                            <option value="pilihan_jamak">
+                              2. Pilihan Jamak (Banyak Kunci Benar)
+                            </option>
                             <option value="benar_salah">3. Benar / Salah</option>
-                            <option value="isian_singkat">4. Isian Singkat (Fuzzy Grader)</option>
-                            <option value="mencocokkan">5. Mencocokkan Pasangan</option>
+                            <option value="isian_singkat">4. Isian Singkat (Teks Kunci)</option>
+                            <option value="mencocokkan">5. Mencocokkan Pasangan (Kiri ↔ Kanan)</option>
                           </select>
                         </div>
 
@@ -1044,10 +1070,11 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
                           }
                           className="text-xs font-black text-rose-600 hover:underline"
                         >
-                          Hapus
+                          Hapus Soal
                         </button>
                       </div>
 
+                      {/* Input Pertanyaan */}
                       <input
                         type="text"
                         value={kuis.tanya}
@@ -1058,48 +1085,300 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
                             )
                           )
                         }
-                        placeholder="Ketik pertanyaan..."
-                        className="w-full p-3 border border-slate-300 rounded-xl bg-white"
+                        placeholder="Ketik kalimat pertanyaan soal di sini..."
+                        className="w-full p-3.5 border border-slate-300 rounded-xl bg-white font-bold"
                       />
 
-                      {(kuis.tipe === "pilihan_ganda" || kuis.tipe === "pilihan_jamak") && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                          {kuis.opsi.map((op, oIdx) => (
-                            <input
-                              key={oIdx}
-                              type="text"
-                              value={op}
-                              onChange={(e) => {
-                                const opsiBaru = [...kuis.opsi];
-                                opsiBaru[oIdx] = e.target.value;
+                      {/* TIPE 1: PILIHAN GANDA + TOMBOL PILIH KUNCI JAWABAN BENAR */}
+                      {kuis.tipe === "pilihan_ganda" && (
+                        <div className="space-y-2">
+                          <div className="text-xs font-black text-emerald-800">
+                            Klik tombol &ldquo;Kunci Benar&rdquo; di samping opsi yang merupakan
+                            jawaban benar:
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {kuis.opsi.map((op, oIdx) => {
+                              const adalahKunci = kuis.jawabanBenar === oIdx;
+                              return (
+                                <div
+                                  key={oIdx}
+                                  className={`flex items-center gap-2 p-2 rounded-xl border-2 bg-white ${
+                                    adalahKunci ? "border-emerald-500 bg-emerald-50/40" : "border-slate-200"
+                                  }`}
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setDaftarKuisDraft(
+                                        daftarKuisDraft.map((item, idx) =>
+                                          idx === kIdx ? { ...item, jawabanBenar: oIdx } : item
+                                        )
+                                      )
+                                    }
+                                    className={`px-2.5 py-2 rounded-lg text-[11px] font-black shrink-0 cursor-pointer ${
+                                      adalahKunci
+                                        ? "bg-emerald-600 text-white"
+                                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                                    }`}
+                                  >
+                                    {adalahKunci ? "✓ Kunci Benar" : `Pilih ${String.fromCharCode(65 + oIdx)}`}
+                                  </button>
+                                  <input
+                                    type="text"
+                                    value={op}
+                                    onChange={(e) => {
+                                      const opsiBaru = [...kuis.opsi];
+                                      opsiBaru[oIdx] = e.target.value;
+                                      setDaftarKuisDraft(
+                                        daftarKuisDraft.map((item, idx) =>
+                                          idx === kIdx ? { ...item, opsi: opsiBaru } : item
+                                        )
+                                      );
+                                    }}
+                                    placeholder={`Teks Opsi ${String.fromCharCode(65 + oIdx)}...`}
+                                    className="w-full p-1.5 text-xs font-semibold bg-transparent focus:outline-none"
+                                  />
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* TIPE 2: PILIHAN JAMAK + CHECKBOX KUNCI JAWABAN BENAR */}
+                      {kuis.tipe === "pilihan_jamak" && (
+                        <div className="space-y-2">
+                          <div className="text-xs font-black text-indigo-800">
+                            Centang kotak di samping opsi yang termasuk Kunci Jawaban Benar (bisa
+                            lebih dari satu):
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {kuis.opsi.map((op, oIdx) => {
+                              const jamakSaatIni = kuis.jawabanJamak || [0, 1];
+                              const dicentangKunci = jamakSaatIni.includes(oIdx);
+                              return (
+                                <div
+                                  key={oIdx}
+                                  className={`flex items-center gap-2 p-2.5 rounded-xl border-2 bg-white ${
+                                    dicentangKunci ? "border-indigo-500 bg-indigo-50/40" : "border-slate-200"
+                                  }`}
+                                >
+                                  <label className="flex items-center gap-1.5 text-[11px] font-black text-indigo-900 shrink-0 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={dicentangKunci}
+                                      onChange={() => {
+                                        const baru = dicentangKunci
+                                          ? jamakSaatIni.filter((x) => x !== oIdx)
+                                          : [...jamakSaatIni, oIdx];
+                                        setDaftarKuisDraft(
+                                          daftarKuisDraft.map((item, idx) =>
+                                            idx === kIdx ? { ...item, jawabanJamak: baru } : item
+                                          )
+                                        );
+                                      }}
+                                      className="w-4 h-4 accent-indigo-600"
+                                    />
+                                    <span>Kunci</span>
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={op}
+                                    onChange={(e) => {
+                                      const opsiBaru = [...kuis.opsi];
+                                      opsiBaru[oIdx] = e.target.value;
+                                      setDaftarKuisDraft(
+                                        daftarKuisDraft.map((item, idx) =>
+                                          idx === kIdx ? { ...item, opsi: opsiBaru } : item
+                                        )
+                                      );
+                                    }}
+                                    placeholder={`Pernyataan ${oIdx + 1}...`}
+                                    className="w-full p-1 text-xs font-semibold bg-transparent focus:outline-none"
+                                  />
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* TIPE 3: BENAR / SALAH + TOMBOL KUNCI */}
+                      {kuis.tipe === "benar_salah" && (
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-black text-slate-700">
+                            Tentukan Kunci Pernyataan Ini:
+                          </span>
+                          {["Benar", "Salah"].map((labelBS, bsIdx) => (
+                            <button
+                              key={labelBS}
+                              type="button"
+                              onClick={() =>
                                 setDaftarKuisDraft(
                                   daftarKuisDraft.map((item, idx) =>
-                                    idx === kIdx ? { ...item, opsi: opsiBaru } : item
+                                    idx === kIdx
+                                      ? { ...item, opsi: ["Benar", "Salah"], jawabanBenar: bsIdx }
+                                      : item
                                   )
-                                );
-                              }}
-                              placeholder={`Opsi ${String.fromCharCode(65 + oIdx)}`}
-                              className="p-3 border border-slate-300 rounded-xl bg-white text-xs"
-                            />
+                                )
+                              }
+                              className={`px-4 py-2 rounded-xl text-xs font-black cursor-pointer ${
+                                kuis.jawabanBenar === bsIdx
+                                  ? "bg-emerald-600 text-white shadow-sm"
+                                  : "bg-white border text-slate-700"
+                              }`}
+                            >
+                              {kuis.jawabanBenar === bsIdx ? `✓ Kunci: ${labelBS}` : labelBS}
+                            </button>
                           ))}
                         </div>
                       )}
 
+                      {/* TIPE 4: ISIAN SINGKAT */}
                       {kuis.tipe === "isian_singkat" && (
+                        <div className="space-y-1">
+                          <label className="text-xs font-black text-emerald-800">
+                            Kunci Jawaban Teks Singkat (Smart Fuzzy Auto-Grader):
+                          </label>
+                          <input
+                            type="text"
+                            value={kuis.jawabanTeks || ""}
+                            onChange={(e) =>
+                              setDaftarKuisDraft(
+                                daftarKuisDraft.map((item, idx) =>
+                                  idx === kIdx ? { ...item, jawabanTeks: e.target.value } : item
+                                )
+                              )
+                            }
+                            placeholder="Ketik kata kunci jawaban yang benar (Misal: hukum newton)..."
+                            className="w-full p-3 border-2 border-emerald-400 rounded-xl bg-emerald-50/40 text-xs font-bold"
+                          />
+                        </div>
+                      )}
+
+                      {/* TIPE 5: MENCOCOKKAN PASANGAN (EDITOR BARIS KIRI ↔ KANAN LENGKAP) */}
+                      {kuis.tipe === "mencocokkan" && (
+                        <div className="space-y-3 bg-white p-4 rounded-xl border border-indigo-200">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-black text-indigo-900">
+                              Daftar Pasangan Kiri (Pertanyaan) ↔ Kanan (Pasangan Jawaban Benar):
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const listPasangan = kuis.pasangan || [];
+                                setDaftarKuisDraft(
+                                  daftarKuisDraft.map((item, idx) =>
+                                    idx === kIdx
+                                      ? {
+                                          ...item,
+                                          pasangan: [
+                                            ...listPasangan,
+                                            { kiri: "", kanan: "" },
+                                          ],
+                                        }
+                                      : item
+                                  )
+                                );
+                              }}
+                              className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-lg text-xs font-black"
+                            >
+                              + Tambah Baris Pasangan
+                            </button>
+                          </div>
+
+                          {(kuis.pasangan || []).map((pas, pIdx) => (
+                            <div
+                              key={pIdx}
+                              className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center"
+                            >
+                              <input
+                                type="text"
+                                value={pas.kiri}
+                                onChange={(e) => {
+                                  const pasBaru = [...(kuis.pasangan || [])];
+                                  pasBaru[pIdx] = { ...pasBaru[pIdx], kiri: e.target.value };
+                                  setDaftarKuisDraft(
+                                    daftarKuisDraft.map((item, idx) =>
+                                      idx === kIdx ? { ...item, pasangan: pasBaru } : item
+                                    )
+                                  );
+                                }}
+                                placeholder={`Item Kiri #${pIdx + 1} (Misal: Rumus Gaya)`}
+                                className="sm:col-span-5 p-2.5 border rounded-lg text-xs font-bold bg-slate-50"
+                              />
+                              <span className="sm:col-span-1 text-center font-black text-emerald-600">
+                                ↔
+                              </span>
+                              <input
+                                type="text"
+                                value={pas.kanan}
+                                onChange={(e) => {
+                                  const pasBaru = [...(kuis.pasangan || [])];
+                                  pasBaru[pIdx] = { ...pasBaru[pIdx], kanan: e.target.value };
+                                  setDaftarKuisDraft(
+                                    daftarKuisDraft.map((item, idx) =>
+                                      idx === kIdx ? { ...item, pasangan: pasBaru } : item
+                                    )
+                                  );
+                                }}
+                                placeholder={`Pasangan Benar #${pIdx + 1} (Misal: F = m . a)`}
+                                className="sm:col-span-5 p-2.5 border border-emerald-300 rounded-lg text-xs font-bold bg-emerald-50/40"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const pasBaru = (kuis.pasangan || []).filter(
+                                    (_, i) => i !== pIdx
+                                  );
+                                  setDaftarKuisDraft(
+                                    daftarKuisDraft.map((item, idx) =>
+                                      idx === kIdx ? { ...item, pasangan: pasBaru } : item
+                                    )
+                                  );
+                                }}
+                                className="sm:col-span-1 text-xs font-black text-rose-600"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Input Pembahasan & Bobot Poin XP */}
+                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 pt-1">
                         <input
                           type="text"
-                          value={kuis.jawabanTeks || ""}
+                          value={kuis.pembahasan}
                           onChange={(e) =>
                             setDaftarKuisDraft(
                               daftarKuisDraft.map((item, idx) =>
-                                idx === kIdx ? { ...item, jawabanTeks: e.target.value } : item
+                                idx === kIdx ? { ...item, pembahasan: e.target.value } : item
                               )
                             )
                           }
-                          placeholder="Kunci jawaban teks singkat..."
-                          className="w-full p-3 border border-emerald-300 rounded-xl bg-emerald-50/40 text-xs font-bold"
+                          placeholder="Tulis penjelasan / pembahasan kunci jawaban..."
+                          className="sm:col-span-9 p-2.5 border rounded-xl bg-white text-xs"
                         />
-                      )}
+                        <div className="sm:col-span-3 flex items-center gap-1.5 bg-white border rounded-xl px-3 py-2">
+                          <span className="text-xs font-bold text-slate-500">Poin XP:</span>
+                          <input
+                            type="number"
+                            value={kuis.poin}
+                            onChange={(e) =>
+                              setDaftarKuisDraft(
+                                daftarKuisDraft.map((item, idx) =>
+                                  idx === kIdx
+                                    ? { ...item, poin: Number(e.target.value) || 50 }
+                                    : item
+                                )
+                              )
+                            }
+                            className="w-full font-black text-xs text-amber-700 focus:outline-none"
+                          />
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1120,7 +1399,7 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
                       },
                     ])
                   }
-                  className="px-4 py-2 border-2 border-slate-300 rounded-xl text-xs font-black hover:bg-slate-50 cursor-pointer"
+                  className="px-4 py-2.5 border-2 border-slate-300 rounded-xl text-xs font-black hover:bg-slate-50 cursor-pointer"
                 >
                   + Tambah Soal Manual
                 </button>
@@ -1133,6 +1412,168 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
                 Terbitkan Materi Terverifikasi Sekarang
               </button>
             </form>
+          </div>
+        )}
+
+        {/* TAB 5: BANK SOAL KOLEKTIF BERSAMA (DILENGKAPI FORM SUMBANG SOAL + KUNCI & OPSI) */}
+        {guruTabAktif === "bank_soal" && (
+          <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-6">
+            <div>
+              <h3 className="text-2xl font-black">Bank Soal Kolektif Bersama</h3>
+              <p className="text-sm text-slate-500">
+                Gudang soal kolaborasi seluruh pengajar lengkap dengan opsi, kunci jawaban benar,
+                dan pembahasan.
+              </p>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!tanyaBankSoalBaru.trim()) return;
+                const soalBaru: SoalTryout = {
+                  id: "bank-" + Date.now(),
+                  rumus: topikBankSoalBaru || "Sains & Akademik",
+                  pertanyaan: tanyaBankSoalBaru,
+                  opsi: opsiBankSoalBaru.map((o, i) => o || `Opsi ${String.fromCharCode(65 + i)}`),
+                  jawabanBenar: kunciBankSoalBaru,
+                  pembahasan: bahasBankSoalBaru || "Sesuai konsep dasar materi.",
+                  penyumbangNama: userLogin.nama,
+                };
+                setBankSoalKolektif([soalBaru, ...bankSoalKolektif]);
+                setTanyaBankSoalBaru("");
+                setTopikBankSoalBaru("");
+                setBahasBankSoalBaru("");
+                alert("✓ Soal berhasil ditambahkan ke Bank Soal Kolektif!");
+              }}
+              className="p-6 bg-slate-50 border-2 border-slate-200 rounded-2xl space-y-4 text-sm"
+            >
+              <div className="font-black text-base">
+                + Sumbang Soal Baru ke Bank Soal Kolektif
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <input
+                  type="text"
+                  required
+                  value={topikBankSoalBaru}
+                  onChange={(e) => setTopikBankSoalBaru(e.target.value)}
+                  placeholder="Topik / Kategori (Misal: TPA Verbal / AI & RL)..."
+                  className="p-3 border rounded-xl bg-white font-bold"
+                />
+                <input
+                  type="text"
+                  required
+                  value={tanyaBankSoalBaru}
+                  onChange={(e) => setTanyaBankSoalBaru(e.target.value)}
+                  placeholder="Pertanyaan Soal..."
+                  className="md:col-span-2 p-3 border rounded-xl bg-white font-bold"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {opsiBankSoalBaru.map((op, oIdx) => (
+                  <div
+                    key={oIdx}
+                    className={`flex items-center gap-2 p-2 rounded-xl border-2 bg-white ${
+                      kunciBankSoalBaru === oIdx ? "border-emerald-500" : "border-slate-200"
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setKunciBankSoalBaru(oIdx)}
+                      className={`px-2.5 py-1.5 rounded-lg text-xs font-black shrink-0 ${
+                        kunciBankSoalBaru === oIdx
+                          ? "bg-emerald-600 text-white"
+                          : "bg-slate-100 text-slate-600"
+                      }`}
+                    >
+                      {kunciBankSoalBaru === oIdx
+                        ? "✓ Kunci"
+                        : `Opsi ${String.fromCharCode(65 + oIdx)}`}
+                    </button>
+                    <input
+                      type="text"
+                      value={op}
+                      onChange={(e) => {
+                        const baru = [...opsiBankSoalBaru];
+                        baru[oIdx] = e.target.value;
+                        setOpsiBankSoalBaru(baru);
+                      }}
+                      placeholder={`Isi Opsi ${String.fromCharCode(65 + oIdx)}...`}
+                      className="w-full text-xs font-semibold focus:outline-none"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="text"
+                  value={bahasBankSoalBaru}
+                  onChange={(e) => setBahasBankSoalBaru(e.target.value)}
+                  placeholder="Pembahasan Kunci Jawaban..."
+                  className="flex-1 p-3 border rounded-xl bg-white text-xs"
+                />
+                <button
+                  type="submit"
+                  className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black text-xs"
+                >
+                  Simpan ke Bank Soal
+                </button>
+              </div>
+            </form>
+
+            <div className="space-y-4">
+              {bankSoalKolektif.map((bs) => (
+                <div
+                  key={bs.id}
+                  className="p-6 border border-slate-300 rounded-2xl bg-white space-y-3"
+                >
+                  <div className="flex flex-wrap justify-between items-center gap-2">
+                    <span className="text-xs font-black text-indigo-600">
+                      {bs.rumus || "Bank Soal"} • {bs.penyumbangNama || "Tim Kontributor"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSoalTryoutDraft([...soalTryoutDraft, bs]);
+                        alert("✓ Soal berhasil dimasukkan ke Draft Paket Tryout CBT!");
+                      }}
+                      className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-lg text-xs font-black cursor-pointer"
+                    >
+                      + Masukkan ke Draft Tryout CBT
+                    </button>
+                  </div>
+
+                  <p className="font-black text-base text-slate-900">{bs.pertanyaan}</p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                    {bs.opsi.map((op, idx) => (
+                      <div
+                        key={idx}
+                        className={`p-2.5 rounded-xl border text-xs font-bold flex justify-between ${
+                          idx === bs.jawabanBenar
+                            ? "bg-emerald-50 border-emerald-400 text-emerald-950"
+                            : "bg-slate-50 border-slate-200 text-slate-600"
+                        }`}
+                      >
+                        <span>
+                          {String.fromCharCode(65 + idx)}. {op}
+                        </span>
+                        {idx === bs.jawabanBenar && (
+                          <span className="text-emerald-700 font-black">✓ Kunci Benar</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {bs.pembahasan && (
+                    <div className="text-xs text-slate-500 bg-slate-50 p-3 rounded-xl border">
+                      <b>Pembahasan:</b> {bs.pembahasan}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -1250,12 +1691,10 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
 
         {guruTabAktif === "rpp_repo" && (
           <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-6">
-            <div>
-              <h2 className="text-2xl font-black flex items-center gap-2">
-                <FolderArchive className="w-6 h-6 text-indigo-600" /> Bank RPP, Modul Ajar
-                Kurikulum Merdeka &amp; RPS Kampus
-              </h2>
-            </div>
+            <h2 className="text-2xl font-black flex items-center gap-2">
+              <FolderArchive className="w-6 h-6 text-indigo-600" /> Bank RPP, Modul Ajar Kurikulum
+              Merdeka &amp; RPS Kampus
+            </h2>
 
             <form
               onSubmit={(e) => {
@@ -1540,7 +1979,9 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
             </div>
 
             <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-5">
-              <h3 className="text-2xl font-black">Rancang Paket Tryout CBT Baru</h3>
+              <h3 className="text-2xl font-black">
+                Rancang Paket Tryout CBT Baru ({soalTryoutDraft.length} Soal di Draft)
+              </h3>
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -1620,33 +2061,16 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
             </div>
           </div>
         )}
-
-        {guruTabAktif === "bank_soal" && (
-          <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-4">
-            <h3 className="text-xl font-black">Bank Soal Kolektif Bersama</h3>
-            {bankSoalKolektif.map((bs) => (
-              <div key={bs.id} className="p-4 border rounded-2xl flex justify-between items-center">
-                <div>
-                  <span className="text-xs font-bold text-indigo-600">
-                    {bs.rumus} • {bs.penyumbangNama}
-                  </span>
-                  <p className="font-bold">{bs.pertanyaan}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     );
   }
 
   // ============================================================================
-  // 3. PANEL SUPER ADMIN PERSIS SCREENSHOT (EDIT USER & KATEGORI KELAS, CSV, DLL.)
+  // 3. PANEL SUPER ADMIN
   // ============================================================================
   if (userLogin.role === "admin") {
     return (
       <div className="space-y-8">
-        {/* Banner Gelap Super Admin Persis Screenshot */}
         <div className="bg-[#0B1120] text-white p-8 sm:p-10 rounded-[2rem] space-y-6 shadow-2xl">
           <div>
             <span className="bg-amber-400 text-slate-950 text-xs font-black px-3.5 py-1 rounded-full uppercase">
@@ -1689,7 +2113,6 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
           </div>
         </div>
 
-        {/* 5 Tab Navigasi Super Admin Persis Screenshot */}
         <div className="flex gap-2 border-b border-slate-200 pb-3 overflow-x-auto">
           {[
             { id: "akun", label: `Data Akun (${daftarAkun.length})` },
@@ -1714,7 +2137,6 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
           ))}
         </div>
 
-        {/* MODAL IMPORT CSV AKUN */}
         {bukaModalImportCsvAkun && (
           <div className="bg-white text-slate-800 p-6 rounded-3xl border-2 border-indigo-500 space-y-4 text-sm">
             <h3 className="font-black text-lg">Import Massal Akun Guru &amp; Siswa via CSV</h3>
@@ -1762,7 +2184,6 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
           </div>
         )}
 
-        {/* MODAL TAMBAH AKUN MANUAL OLEH ADMIN */}
         {bukaModalTambahAkun && (
           <div className="bg-white text-slate-800 p-6 rounded-3xl border-2 border-emerald-500 space-y-4 text-sm">
             <h3 className="font-black text-lg">Tambah Akun Pengguna Baru</h3>
@@ -1823,7 +2244,6 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
           </div>
         )}
 
-        {/* MODAL EDIT USER & PENENTUAN KATEGORI KELAS OLEH ADMIN */}
         {akunDieditAdmin && (
           <div className="bg-white text-slate-800 p-8 rounded-3xl border-2 border-indigo-600 shadow-2xl space-y-6">
             <div className="flex justify-between items-center border-b pb-3">
@@ -1900,7 +2320,6 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
               </div>
             </div>
 
-            {/* CHECKBOX PENENTUAN KATEGORI KELAS / SUB-JENJANG USER */}
             <div className="space-y-2">
               <div className="text-xs font-black uppercase text-slate-700">
                 {akunDieditAdmin.role === "siswa"
@@ -2007,7 +2426,6 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
                     )}
                   </div>
 
-                  {/* Tombol Ikon Edit (Pensil Biru) & Hapus (Merah) Persis Screenshot */}
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setAkunDieditAdmin(akun)}
@@ -2034,7 +2452,6 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
           </div>
         )}
 
-        {/* TAB KATEGORI & PRODI OLEH SUPER ADMIN */}
         {adminTabAktif === "kategori" && (
           <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-6">
             <h3 className="text-xl font-black">
