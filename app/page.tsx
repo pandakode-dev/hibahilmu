@@ -452,6 +452,26 @@ export default function AplikasiHibahIlmu() {
     setSelectedAkunIds([]);
   };
 
+  // --- FUNGSI YANG SEBELUMNYA HILANG ---
+  const togglePilihAkun = (id: string) => {
+    setSelectedAkunIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const bukaModalEditAkun = (akun: AkunPengguna) => {
+    setIdEditAkun(akun.id);
+    setNamaFormAdmin(akun.nama);
+    setEmailFormAdmin(akun.email);
+    setPassFormAdmin(""); // Sengaja dikosongkan, diisi jika ingin ubah password
+    setRoleFormAdmin(akun.role);
+    setStatusFormAdmin(akun.status);
+    setInfoFormAdmin(akun.infoTambahan);
+    setAksesMengajarForm(akun.aksesMengajar || []);
+    setModalAdminAkun(true);
+  };
+  // ------------------------------------
+
   const handleImportJson = (e: React.FormEvent) => {
     e.preventDefault();
     try {
