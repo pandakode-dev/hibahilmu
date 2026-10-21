@@ -169,7 +169,7 @@ export interface RiwayatPercobaanTryout {
   skor: number;
   jumlahPelanggaran: number;
   waktuSelesai: string;
-  status Akhir: "Selesai Normal" | "Diskualifikasi (Auto-Submit)";
+  statusAkhir: "Selesai Normal" | "Diskualifikasi (Auto-Submit)";
 }
 
 export interface JawabanDiskusi {
@@ -218,7 +218,7 @@ export interface AkunPengguna {
   infoTambahan: string;
   waktuDaftar: string;
   aksesMengajar?: string[];
-  minatSubJenjang?: string[]; // Kelas/SubJenjang yang diikuti siswa
+  minatSubJenjang?: string[];
   cv?: BiodataCV;
 }
 
@@ -291,7 +291,7 @@ const TEMPLATE_CSV_KUIS = `tipe,tanya,opsi_atau_pasangan,kunci,pembahasan,poin,g
 pilihan_ganda,Ibukota provinsi Riau adalah...,Pekanbaru|Dumai|Padang|Medan,0,Pekanbaru adalah ibukota provinsi Riau,50,
 pilihan_jamak,Pilih bilangan prima di bawah ini (Lebih dari 1),2|4|5|9,0|2,Angka 2 dan 5 adalah bilangan prima,60,
 benar_salah,Air mendidih pada suhu 100 derajat Celcius di tekanan 1 atm.,Benar|Salah,0,Pada tekanan 1 atm titik didih air adalah 100 C,30,
-isian_singkat,Berapakah hasil dari 15 ditambah 25?,,40,15 + 15 = 40,40,
+isian_singkat,Berapakah hasil dari 15 ditambah 25?,,40,15 + 25 = 40,40,
 mencocokkan,Cocokkan negara dengan ibukotanya!,Indonesia:Jakarta|Jepang:Tokyo|Mesir:Kairo,0,Pasangan ibukota negara,70,`;
 
 const TEMPLATE_CSV_TRYOUT = `pertanyaan,opsi_dipisah_garis_tegak,indeks_kunci,pembahasan,rumus_atau_petunjuk
@@ -525,7 +525,12 @@ const PAKET_TRYOUT_AWAL: PaketTryout[] = [
         id: "tpa-1",
         pertanyaan: "SINONIM: Kata 'EKLEKTIK' memiliki arti yang paling dekat dengan...",
         rumus: "Subtes Kemampuan Verbal TPA",
-        opsi: ["Memilih yang terbaik dari berbagai sumber", "Sangat kuno", "Bersifat memaksa", "Tidak beraturan"],
+        opsi: [
+          "Memilih yang terbaik dari berbagai sumber",
+          "Sangat kuno",
+          "Bersifat memaksa",
+          "Tidak beraturan",
+        ],
         jawabanBenar: 0,
         pembahasan: "Eklektik berarti bersifat memilih yang terbaik dari berbagai sumber atau metode.",
       },
@@ -539,7 +544,8 @@ const PAKET_TRYOUT_AWAL: PaketTryout[] = [
       },
       {
         id: "tpa-3",
-        pertanyaan: "SILOGISME: Semua mahasiswa wajib memiliki kartu perpustakaan. Sebagian mahasiswa menyukai diskusi ilmiah. Kesimpulannya adalah...",
+        pertanyaan:
+          "SILOGISME: Semua mahasiswa wajib memiliki kartu perpustakaan. Sebagian mahasiswa menyukai diskusi ilmiah. Kesimpulannya adalah...",
         opsi: [
           "Sebagian mahasiswa yang menyukai diskusi ilmiah wajib memiliki kartu perpustakaan.",
           "Semua yang memiliki kartu perpustakaan menyukai diskusi.",
@@ -547,7 +553,8 @@ const PAKET_TRYOUT_AWAL: PaketTryout[] = [
           "Tidak dapat ditarik kesimpulan.",
         ],
         jawabanBenar: 0,
-        pembahasan: "Karena semua mahasiswa wajib punya kartu, maka sebagian mahasiswa yang suka diskusi pasti wajib punya kartu.",
+        pembahasan:
+          "Karena semua mahasiswa wajib punya kartu, maka sebagian mahasiswa yang suka diskusi pasti wajib punya kartu.",
       },
     ],
   },
@@ -571,15 +578,18 @@ const PAKET_TRYOUT_AWAL: PaketTryout[] = [
         rumus: "Subject-Verb Agreement (Singular Subject)",
         opsi: ["has", "is having", "which is having", "it has"],
         jawabanBenar: 0,
-        pembahasan: "Kalimat membutuhkan kata kerja tunggal (has) untuk subjek tunggal 'The North Pole'.",
+        pembahasan:
+          "Kalimat membutuhkan kata kerja tunggal (has) untuk subjek tunggal 'The North Pole'.",
       },
       {
         id: "tf-2",
-        pertanyaan: "_____ heated by solar energy have special collectors on the roofs to trap sunlight.",
+        pertanyaan:
+          "_____ heated by solar energy have special collectors on the roofs to trap sunlight.",
         rumus: "Reduced Adjective Clause (Passive)",
         opsi: ["A home is", "Homes are", "A home", "Homes"],
         jawabanBenar: 3,
-        pembahasan: "Kata kerja utamanya adalah 'have' (jamak), sehingga butuh subjek jamak 'Homes' diikuti participle 'heated'.",
+        pembahasan:
+          "Kata kerja utamanya adalah 'have' (jamak), sehingga butuh subjek jamak 'Homes' diikuti participle 'heated'.",
       },
     ],
   },
@@ -622,9 +632,11 @@ const AKUN_DEFAULT: AkunPengguna[] = [
     aksesMengajar: ["sma-11-ipa", "pt-ti", "pt-tpa", "pt-toefl"],
     minatSubJenjang: ["pt-ti", "pt-tpa"],
     cv: {
-      fotoUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80",
+      fotoUrl:
+        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80",
       headline: "System Architect & EdTech Founder",
-      bioSingkat: "Mengembangkan ekosistem pendidikan terbuka gratis yang terverifikasi dan akuntabel.",
+      bioSingkat:
+        "Mengembangkan ekosistem pendidikan terbuka gratis yang terverifikasi dan akuntabel.",
       asalSekolahKampus: "Program Pascasarjana MTTK",
       pendidikanTerakhir: "Magister Teknik",
       skills: ["Next.js", "TypeScript", "Big Data", "Reinforcement Learning"],
@@ -645,7 +657,8 @@ const AKUN_DEFAULT: AkunPengguna[] = [
     aksesMengajar: ["sma-10", "sma-11-ipa", "sma-12-ipa", "sd-4", "pt-tpa", "pt-toefl"],
     minatSubJenjang: ["sma-11-ipa"],
     cv: {
-      fotoUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80",
+      fotoUrl:
+        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80",
       headline: "Pendidik Fisika & Instruktur TPA/UTBK",
       bioSingkat: "Berpengalaman 10 tahun mengajar Fisika Mekanika dan menyusun modul TPA.",
       asalSekolahKampus: "SMAN 1 Nusantara",
@@ -668,7 +681,8 @@ const AKUN_DEFAULT: AkunPengguna[] = [
     aksesMengajar: [],
     minatSubJenjang: ["sma-11-ipa", "pt-toefl"],
     cv: {
-      fotoUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&auto=format&fit=crop&q=80",
+      fotoUrl:
+        "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&auto=format&fit=crop&q=80",
       headline: "Siswi Kelas 11 MIPA & Penggemar Sains",
       bioSingkat: "Fokus mengikuti kelas 11 MIPA dan persiapan TOEFL.",
       asalSekolahKampus: "SMAN 2 Harapan Bangsa",
@@ -686,7 +700,8 @@ const NOTIF_AWAL: NotifikasiItem[] = [
     id: "notif-1",
     targetUserId: "sis-1",
     judul: "Jadwal Tryout TPA & Fisika",
-    pesan: "Simulasi Tryout menggunakan sistem Fullscreen Anti-Cheat. Dilarang menekan Alt+Tab saat ujian!",
+    pesan:
+      "Simulasi Tryout menggunakan sistem Fullscreen Anti-Cheat. Dilarang menekan Alt+Tab saat ujian!",
     pengirim: "Bapak Budi Santoso, M.Pd",
     namaKelas: "Kelas Intensif Fisika 11 MIPA A",
     waktu: "Hari ini, 09:00",
@@ -940,12 +955,11 @@ export default function AplikasiHibahIlmu() {
   const [jenjangAktif, setJenjangAktif] = useState<JenjangItem | null>(null);
   const [subJenjangAktif, setSubJenjangAktif] = useState<string>("semua");
   const [kelasAktif, setKelasAktif] = useState<KelasItem | null>(null);
-  const [kataKunci, setKataKunci] = useState<string>("");
   const [hanyaMateriDiikuti, setHanyaMateriDiikuti] = useState<boolean>(true);
 
   const [daftarAkun, setDaftarAkun] = useState<AkunPengguna[]>(AKUN_DEFAULT);
   const [userLogin, setUserLogin] = useState<AkunPengguna | null>(null);
-  const [adminModeGuru, setAdminModeGuru] = useState<boolean>(false); // Sakelar Admin buka Mode Guru
+  const [adminModeGuru, setAdminModeGuru] = useState<boolean>(false);
   const [logAktivitas, setLogAktivitas] = useState<LogAktivitas[]>(LOG_AWAL);
   const [daftarKelompok, setDaftarKelompok] = useState<KelompokBelajar[]>(KELOMPOK_AWAL);
 
@@ -1033,14 +1047,11 @@ export default function AplikasiHibahIlmu() {
       ],
     },
   ]);
-  const [filterMapelForum, setFilterMapelForum] = useState<string>("Semua");
-  const [cariForum, setCariForum] = useState<string>("");
   const [judulTanyaBaru, setJudulTanyaBaru] = useState<string>("");
   const [jenjangTanyaBaru, setJenjangTanyaBaru] = useState<string>("SMA / SMK");
   const [mapelBaru, setMapelBaru] = useState<string>("Matematika");
   const [tanyaBaru, setTanyaBaru] = useState<string>("");
   const [gambarTanyaBaru, setGambarTanyaBaru] = useState<string>("");
-  const [balasanInput, setBalasanInput] = useState<{ [key: string]: string }>({});
 
   // State Auth Form
   const [modeAuth, setModeAuth] = useState<"login" | "register">("login");
@@ -1070,7 +1081,6 @@ export default function AplikasiHibahIlmu() {
   );
   const [infoFormAdmin, setInfoFormAdmin] = useState("");
   const [aksesMengajarForm, setAksesMengajarForm] = useState<string[]>([]);
-  const [filterLog, setFilterLog] = useState<string>("semua");
 
   const [selectedAkunIds, setSelectedAkunIds] = useState<string[]>([]);
   const [modalImportAkun, setModalImportAkun] = useState<boolean>(false);
@@ -1085,7 +1095,6 @@ export default function AplikasiHibahIlmu() {
   // State Admin Rombel
   const [namaKelompokAdmin, setNamaKelompokAdmin] = useState("");
   const [guruKelompokAdmin, setGuruKelompokAdmin] = useState("");
-  const [searchSiswaAdmin, setSearchSiswaAdmin] = useState<{ [key: string]: string }>({});
 
   // State Guru Buat Materi, Tryout & Multi-Soal Kuis
   const [guruTabAktif, setGuruTabAktif] = useState<"materi" | "tryout_builder" | "kelas" | "cv">(
@@ -1122,7 +1131,6 @@ export default function AplikasiHibahIlmu() {
     },
   ]);
   const [modalImportKuis, setModalImportKuis] = useState(false);
-  const [modeImportKuisFormat, setModeImportKuisFormat] = useState<"csv" | "json">("csv");
   const [teksImportKuis, setTeksImportKuis] = useState("");
 
   // State Guru Kelola Kelas & Kirim Pengumuman ke Murid
@@ -1239,7 +1247,6 @@ export default function AplikasiHibahIlmu() {
     };
   }, [sedangUjian, paketTryoutAktif, jawabanUserTryout]);
 
-  // Timer Hitung Mundur Tryout
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (sedangUjian && !ujianSelesai && sisaWaktu > 0) {
@@ -1347,7 +1354,6 @@ export default function AplikasiHibahIlmu() {
     });
   };
 
-  // --- FUNGSI PILIH MINAT KELAS SISWA ---
   const toggleMinatSubJenjangSiswa = (subId: string) => {
     if (!userLogin) return;
     const minatSaatIni = userLogin.minatSubJenjang || [];
@@ -1363,7 +1369,6 @@ export default function AplikasiHibahIlmu() {
     localStorage.setItem("hibah_user_aktif", JSON.stringify(userUpdate));
   };
 
-  // --- FUNGSI SIMPAN PROFIL & CV ---
   const handleSimpanBiodataCV = (e: React.FormEvent) => {
     e.preventDefault();
     if (!userLogin) return;
@@ -1405,7 +1410,6 @@ export default function AplikasiHibahIlmu() {
     setTimeout(() => setNotifSimpanCV(false), 3000);
   };
 
-  // --- FUNGSI MULTI-TIPE KUIS UNTUK GURU ---
   const tambahSoalDraftBaru = (tipePilih: TipeSoal) => {
     const soalBaru: KuisItem = {
       id: "draft-" + Date.now() + "-" + Math.random().toString(36).substring(2, 6),
@@ -1562,7 +1566,6 @@ export default function AplikasiHibahIlmu() {
     }
   };
 
-  // --- FUNGSI GURU MERANCANG PAKET TRYOUT CBT (TPA / TOEP / TOEFL / UTBK) ---
   const tambahSoalTryoutDraft = () => {
     setSoalTryoutDraft((prev) => [
       ...prev,
@@ -1640,7 +1643,6 @@ export default function AplikasiHibahIlmu() {
     setJudulTryoutBaru("");
   };
 
-  // --- FUNGSI MULAI & SELESAIKAN TRYOUT DENGAN ANTI-CHEAT ---
   const mulaiUjianTryout = (paket: PaketTryout) => {
     if (!userLogin) {
       setMenuAktif("dashboard");
@@ -1658,9 +1660,7 @@ export default function AplikasiHibahIlmu() {
     }
 
     if (paket.wajibFullscreen && document.documentElement.requestFullscreen) {
-      document.documentElement.requestFullscreen().catch(() => {
-        // Fallback jika browser memblokir
-      });
+      document.documentElement.requestFullscreen().catch(() => {});
     }
 
     setPaketTryoutAktif(paket);
@@ -1713,7 +1713,7 @@ export default function AplikasiHibahIlmu() {
         hour: "2-digit",
         minute: "2-digit",
       }),
-      "status Akhir": statusAkhir,
+      statusAkhir,
     };
 
     const updateRiwayat = [riwayatBaru, ...riwayatTryout];
@@ -1730,7 +1730,6 @@ export default function AplikasiHibahIlmu() {
     if (benar > 0) tambahXP(benar * 40);
   };
 
-  // --- FUNGSI AUTENTIKASI ---
   const loginCepat = (akun: AkunPengguna) => {
     setPesanError("");
     if (akun.status === "pending") return setPesanError("Akun menunggu persetujuan Admin.");
@@ -1788,7 +1787,6 @@ export default function AplikasiHibahIlmu() {
     setModeAuth("login");
   };
 
-  // --- FUNGSI ADMIN ---
   const ubahStatusAkun = (id: string, status: "approved" | "rejected" | "pending") => {
     const update = (daftarAkun || []).map((a) => (a.id === id ? { ...a, status } : a));
     setDaftarAkun(update);
@@ -1955,7 +1953,6 @@ export default function AplikasiHibahIlmu() {
     setNamaKategoriBaru("");
   };
 
-  // --- FUNGSI ROMBEL & PENGUMUMAN KELAS ---
   const handleAdminBuatKelompok = (e: React.FormEvent) => {
     e.preventDefault();
     if (!namaKelompokAdmin.trim() || !guruKelompokAdmin) return;
@@ -2033,14 +2030,6 @@ export default function AplikasiHibahIlmu() {
     }
   };
 
-  const handleHapusSiswaDariKelompok = (kelompokId: string, siswaId: string) => {
-    const update = daftarKelompok.map((k) =>
-      k.id === kelompokId ? { ...k, siswaIds: k.siswaIds.filter((id) => id !== siswaId) } : k
-    );
-    setDaftarKelompok(update);
-    localStorage.setItem("hibah_kelompok", JSON.stringify(update));
-  };
-
   const handleHapusKelompok = (kelompokId: string) => {
     if (!confirm("Yakin ingin menghapus ruang kelas ini?")) return;
     const update = daftarKelompok.filter((k) => k.id !== kelompokId);
@@ -2048,8 +2037,6 @@ export default function AplikasiHibahIlmu() {
     localStorage.setItem("hibah_kelompok", JSON.stringify(update));
   };
 
-  // --- FUNGSI GURU / ADMIN BUAT MATERI TERVERIFIKASI ---
-  // Jika Admin sedang mengaktifkan Mode Guru, Admin punya akses ke semua kelas
   const opsiKelasGuru = (daftarJenjang || []).flatMap((j) =>
     j.subJenjang
       .filter((sj) =>
@@ -2143,9 +2130,6 @@ export default function AplikasiHibahIlmu() {
   );
   const jumlahNotifBelumDibaca = notifikasiUserAktif.filter((n) => !n.dibaca).length;
 
-  // ==========================================
-  // SUB-RENDERER: PROFIL & CV BUILDER
-  // ==========================================
   const renderProfilDanCV = () => {
     if (!userLogin) return null;
     const cvData = userLogin.cv;
@@ -2388,9 +2372,6 @@ export default function AplikasiHibahIlmu() {
     );
   };
 
-  // ==========================================
-  // SUB-RENDERER: GERBANG REGISTRASI & LOGIN
-  // ==========================================
   const renderAuthView = () => (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
@@ -2535,7 +2516,9 @@ export default function AplikasiHibahIlmu() {
               value={infoReg}
               onChange={(e) => setInfoReg(e.target.value)}
               placeholder={
-                roleReg === "guru" ? "Bidang Keahlian & Asal Instansi..." : "Asal Sekolah / Kampus..."
+                roleReg === "guru"
+                  ? "Bidang Keahlian & Asal Instansi..."
+                  : "Asal Sekolah / Kampus..."
               }
               className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold"
             />
@@ -2623,9 +2606,6 @@ export default function AplikasiHibahIlmu() {
     </motion.div>
   );
 
-  // ==========================================
-  // SUB-RENDERER: STUDIO GURU (JUGA BISA DIAKSES ADMIN)
-  // ==========================================
   const renderGuruView = () => (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
       <div className="bg-gradient-to-r from-indigo-700 via-purple-700 to-indigo-900 text-white p-8 rounded-[2rem] flex flex-wrap justify-between items-center gap-6 shadow-2xl">
@@ -2719,7 +2699,6 @@ export default function AplikasiHibahIlmu() {
 
       {guruTabAktif === "cv" && renderProfilDanCV()}
 
-      {/* TAB 2 GURU: PERANCANG TRYOUT MANDIRI (TPA, TOEP, TOEFL, UTBK) */}
       {guruTabAktif === "tryout_builder" && (
         <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm space-y-8">
           <div>
@@ -2833,7 +2812,6 @@ export default function AplikasiHibahIlmu() {
               </div>
             </div>
 
-            {/* Import Cepat CSV untuk Soal Tryout */}
             <div className="p-5 bg-slate-50 border rounded-2xl space-y-3">
               <div className="flex flex-wrap justify-between items-center gap-2">
                 <span className="text-xs font-black text-slate-800">
@@ -2865,7 +2843,6 @@ export default function AplikasiHibahIlmu() {
               </div>
             </div>
 
-            {/* Daftar Butir Soal Tryout */}
             <div className="space-y-4">
               <div className="font-black text-sm">
                 Butir Soal Ujian ({soalTryoutDraft.length} Soal)
@@ -3097,7 +3074,6 @@ export default function AplikasiHibahIlmu() {
                 <RichTextEditorPro value={rangkumanMateri} onChange={setRangkumanMateri} />
               </div>
 
-              {/* BUILDER 5 TIPE SOAL KUIS */}
               <div className="p-6 border-2 border-indigo-100 rounded-3xl bg-slate-50 space-y-5">
                 <div className="flex flex-wrap justify-between items-center gap-3 border-b border-slate-200 pb-4">
                   <div>
@@ -3456,9 +3432,6 @@ export default function AplikasiHibahIlmu() {
     </motion.div>
   );
 
-  // ==========================================
-  // SUB-RENDERER: ADMIN VIEW (DENGAN SAKELAR MODE GURU)
-  // ==========================================
   const renderAdminView = () => {
     if (adminModeGuru) {
       return renderGuruView();
@@ -3735,9 +3708,6 @@ export default function AplikasiHibahIlmu() {
     );
   };
 
-  // ==========================================
-  // SUB-RENDERER: SISWA VIEW (PILIH MATERI YANG DIIKUTI)
-  // ==========================================
   const renderSiswaView = () => {
     const kelasSaya = daftarKelompok.filter((k) =>
       userLogin ? k.siswaIds.includes(userLogin.id) : false
@@ -3889,9 +3859,6 @@ export default function AplikasiHibahIlmu() {
     );
   };
 
-  // ==========================================
-  // RENDER UTAMA
-  // ==========================================
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans relative overflow-x-hidden">
       <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
@@ -4023,7 +3990,6 @@ export default function AplikasiHibahIlmu() {
 
       {/* MAIN CONTENT */}
       <main className="max-w-7xl mx-auto px-4 py-10">
-        {/* GERBANG WAJIB REGISTRASI JIKA BELUM LOGIN */}
         {!userLogin ? (
           renderAuthView()
         ) : (
@@ -4036,7 +4002,6 @@ export default function AplikasiHibahIlmu() {
               </div>
             )}
 
-            {/* MENU TRYOUT CBT PRO (TPA, TOEP, TOEFL, UTBK & FULLSCREEN ANTI-CHEAT) */}
             {menuAktif === "tryout" && (
               <div className="max-w-5xl mx-auto">
                 {!sedangUjian && !ujianSelesai && (
@@ -4165,15 +4130,14 @@ export default function AplikasiHibahIlmu() {
                   </div>
                 )}
 
-                {/* SAAT UJIAN BERLANGSUNG (PROCTORED FULLSCREEN) */}
                 {sedangUjian && paketTryoutAktif && (
                   <div className="space-y-4">
-                    {/* Banner Status Keamanan Anti-Cheat */}
                     <div className="p-4 rounded-2xl bg-slate-900 text-white flex flex-wrap justify-between items-center gap-4">
                       <div className="flex items-center gap-2.5 text-xs">
                         <Eye className="w-5 h-5 text-emerald-400" />
                         <span>
-                          <b>Proctoring Aktif:</b> {paketTryoutAktif.judul} ({paketTryoutAktif.alamatLokasi})
+                          <b>Proctoring Aktif:</b> {paketTryoutAktif.judul} (
+                          {paketTryoutAktif.alamatLokasi})
                         </span>
                       </div>
                       <div className="flex items-center gap-3">
@@ -4391,7 +4355,6 @@ export default function AplikasiHibahIlmu() {
               </div>
             )}
 
-            {/* MENU FORUM DISKUSI & TANYA PR */}
             {menuAktif === "forum" && (
               <div className="max-w-4xl mx-auto space-y-6">
                 <div className="bg-white p-8 border rounded-3xl shadow-sm">
@@ -4519,7 +4482,6 @@ export default function AplikasiHibahIlmu() {
               </div>
             )}
 
-            {/* BERANDA RUANG KELAS (DENGAN FILTER MATERI SESUAI MINAT SISWA & INFO PENGUPLOAD) */}
             {menuAktif === "beranda" && (
               <div>
                 {!jenjangAktif && !kelasAktif && (
@@ -4697,7 +4659,6 @@ export default function AplikasiHibahIlmu() {
                               <p className="text-sm text-slate-500 line-clamp-2 mb-3">
                                 {bersihkanTagHtml(k.rangkuman)}
                               </p>
-                              {/* Badge Pertanggungjawaban Pengupload */}
                               <div className="p-2.5 bg-slate-50 border rounded-xl text-[11px] text-slate-600">
                                 Diunggah oleh: <b>{k.pembuatNama}</b> ({k.pembuatEmail}) •{" "}
                                 {k.tanggalUpload}
@@ -4774,7 +4735,6 @@ export default function AplikasiHibahIlmu() {
                         </div>
                       </div>
 
-                      {/* PANEL EVALUASI 5 TIPE SOAL KUIS */}
                       <div className="lg:col-span-5 space-y-4">
                         <div className="bg-white p-6 rounded-3xl border-2 border-indigo-100 shadow-md">
                           <h3 className="font-black text-base flex items-center gap-2 mb-4">
