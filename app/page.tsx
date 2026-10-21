@@ -33,19 +33,19 @@ import {
   KeyRound,
   UserPlus,
   Trash2,
-  Send,
-  HelpCircle,
-  Play,
   Edit3,
   UserX2,
   UserCheck2,
   Upload,
-  Download,
-  FileSpreadsheet,
+  Layers,
+  Lock,
+  Play,
+  BookMarked,
+  FileSpreadsheet
 } from "lucide-react";
 import confetti from "canvas-confetti";
 
-// --- INTERFACE & STRUKTUR DATA ---
+// --- 1. INTERFACE & STRUKTUR DATA ---
 interface KuisItem {
   tanya: string;
   opsi: string[];
@@ -53,10 +53,15 @@ interface KuisItem {
   pembahasan: string;
 }
 
+export interface SubJenjang {
+  id: string;
+  nama: string;
+}
+
 interface KelasItem {
   id: string;
+  subJenjangId: string;
   judul: string;
-  kategori: string;
   level: "Pemula" | "Menengah" | "Mahir";
   durasi: string;
   videoUrl: string;
@@ -74,6 +79,7 @@ interface JenjangItem {
   gradien: string;
   badge: string;
   ikonNama: string;
+  subJenjang: SubJenjang[];
   kelas: KelasItem[];
 }
 
@@ -106,6 +112,7 @@ export interface AkunPengguna {
   status: "pending" | "approved" | "rejected";
   infoTambahan: string;
   waktuDaftar: string;
+  aksesMengajar?: string[];
 }
 
 export interface LogAktivitas {
@@ -114,35 +121,34 @@ export interface LogAktivitas {
   namaPelaku: string;
   rolePelaku: "admin" | "guru" | "siswa";
   aksi: string;
-  kategori: "belajar" | "materi" | "akun" | "komunitas";
+  kategori: "belajar" | "materi" | "akun" | "komunitas" | "sistem";
 }
 
-// --- DATA KURIKULUM AWAL ---
-const DATA_JENJANG_AWAL: JenjangItem[] = [
+// --- 2. DATA AWAL ---
+const STRUKTUR_AWAL: JenjangItem[] = [
   {
     id: "tk",
     nama: "TK & PAUD",
     tagline: "Dunia Bermain & Imajinasi",
-    deskripsi: "Mengenal huruf, angka, warna, dan budi pekerti lewat animasi ceria.",
+    deskripsi: "Mengenal huruf, angka, warna, dan budi pekerti.",
     gradien: "from-pink-500 via-rose-500 to-orange-400",
     badge: "bg-rose-100 text-rose-700",
     ikonNama: "sparkles",
+    subJenjang: [
+      { id: "tk-playgroup", nama: "Playgroup" },
+      { id: "tk-a", nama: "TK Kelas A" },
+      { id: "tk-b", nama: "TK Kelas B" },
+    ],
     kelas: [
       {
-        id: "tk-1",
-        judul: "Mengenal Angka & Berhitung Ceria 1-10",
-        kategori: "Berhitung Dasar",
+        id: "materi-tk-1",
+        subJenjangId: "tk-a",
+        judul: "Mengenal Angka 1-10",
         level: "Pemula",
         durasi: "5 Menit",
         videoUrl: "https://www.youtube.com/embed/DR-cfDsHCGA",
-        rangkuman: "Mari belajar menghitung buah-buahan! Angka 1 seperti tiang listrik, angka 2 seperti bebek berenang.",
-        rumusMatematika: "2 🍎 + 1 🍎 = 3 🍎 (Tiga Apel Segar)",
-        kuis: {
-          tanya: "Jika Budi punya 2 apel merah lalu diberi Ibu 1 apel lagi, berapa jumlah apel Budi sekarang?",
-          opsi: ["2 Apel", "3 Apel", "4 Apel", "5 Apel"],
-          jawabanBenar: 1,
-          pembahasan: "Hebat sekali! 2 apel ditambah 1 apel menjadi 3 apel!",
-        },
+        rangkuman: "Belajar menghitung buah-buahan ceria.",
+        kuis: { tanya: "2 Apel + 1 Apel = ?", opsi: ["2 Apel", "3 Apel", "4 Apel", "5 Apel"], jawabanBenar: 1, pembahasan: "2 + 1 = 3" },
       },
     ],
   },
@@ -150,80 +156,52 @@ const DATA_JENJANG_AWAL: JenjangItem[] = [
     id: "sd",
     nama: "SD / MI",
     tagline: "Fondasi Logika & Sains",
-    deskripsi: "Matematika dasar, eksperimen sains seru, Bahasa Indonesia & kisah inspiratif.",
+    deskripsi: "Matematika dasar, eksperimen sains, dan Bahasa Indonesia.",
     gradien: "from-amber-500 via-orange-500 to-red-500",
     badge: "bg-amber-100 text-amber-800",
     ikonNama: "book",
-    kelas: [
-      {
-        id: "sd-1",
-        judul: "Rahasia Perkalian Cepat & Luas Bangun Datar",
-        kategori: "Matematika SD",
-        level: "Pemula",
-        durasi: "10 Menit",
-        videoUrl: "https://www.youtube.com/embed/mvOkMYCygps",
-        rangkuman: "Perkalian adalah penjumlahan yang berulang! Digunakan juga untuk menghitung luas persegi panjang dan segitiga.",
-        rumusMatematika: "Luas Segitiga = ½ × Alas (a) × Tinggi (t)",
-        kuis: {
-          tanya: "Sebuah segitiga memiliki alas 6 cm dan tinggi 4 cm. Berapakah luasnya?",
-          opsi: ["10 cm²", "12 cm²", "24 cm²", "18 cm²"],
-          jawabanBenar: 1,
-          pembahasan: "Tepat! Luas = ½ × 6 × 4 = 12 cm².",
-        },
-      },
+    subJenjang: [
+      { id: "sd-1", nama: "Kelas 1 SD" }, { id: "sd-2", nama: "Kelas 2 SD" }, { id: "sd-3", nama: "Kelas 3 SD" },
+      { id: "sd-4", nama: "Kelas 4 SD" }, { id: "sd-5", nama: "Kelas 5 SD" }, { id: "sd-6", nama: "Kelas 6 SD" },
     ],
+    kelas: [],
   },
   {
     id: "smp",
     nama: "SMP / MTs",
     tagline: "Eksplorasi & Penalaran",
-    deskripsi: "Aljabar, Fisika terapan, Biologi sel, Bahasa Inggris, dan IPS Terpadu.",
+    deskripsi: "Aljabar, Fisika terapan, Biologi sel, dan IPS Terpadu.",
     gradien: "from-cyan-500 via-blue-500 to-indigo-600",
     badge: "bg-sky-100 text-sky-800",
     ikonNama: "compass",
-    kelas: [
-      {
-        id: "smp-1",
-        judul: "Persamaan Aljabar & Teorema Pythagoras",
-        kategori: "Matematika SMP",
-        level: "Menengah",
-        durasi: "12 Menit",
-        videoUrl: "https://www.youtube.com/embed/NybHckSEQBI",
-        rangkuman: "Aljabar menggunakan variabel x atau y untuk mencari angka misterius. Pythagoras membantu mencari sisi miring segitiga siku-siku.",
-        rumusMatematika: "Rumus Pythagoras: a² + b² = c²  ⟹  c = √(a² + b²)",
-        kuis: {
-          tanya: "Jika segitiga siku-siku memiliki alas a = 3 cm dan tinggi b = 4 cm, berapakah sisi miringnya (c)?",
-          opsi: ["c = 5 cm", "c = 6 cm", "c = 7 cm", "c = 25 cm"],
-          jawabanBenar: 0,
-          pembahasan: "Luar biasa! c = √(3² + 4²) = √25 = 5 cm.",
-        },
-      },
+    subJenjang: [
+      { id: "smp-7", nama: "Kelas 7 SMP" }, { id: "smp-8", nama: "Kelas 8 SMP" }, { id: "smp-9", nama: "Kelas 9 SMP" },
     ],
+    kelas: [],
   },
   {
     id: "sma",
     nama: "SMA / SMK",
     tagline: "Persiapan Masa Depan",
-    deskripsi: "Kalkulus, Fisika mekanika, Kimia, Ekonomi, dan persiapan lolos PTN impian.",
+    deskripsi: "Kalkulus, Fisika mekanika, Kimia, Ekonomi & UTBK.",
     gradien: "from-violet-600 via-purple-600 to-fuchsia-600",
     badge: "bg-purple-100 text-purple-800",
     ikonNama: "school",
+    subJenjang: [
+      { id: "sma-10", nama: "Kelas 10 Umum" }, { id: "sma-11-ipa", nama: "Kelas 11 MIPA" }, { id: "sma-11-ips", nama: "Kelas 11 IPS" },
+      { id: "sma-12-ipa", nama: "Kelas 12 MIPA" }, { id: "sma-12-ips", nama: "Kelas 12 IPS" },
+    ],
     kelas: [
       {
-        id: "sma-1",
-        judul: "Fisika Mekanika, Hukum Newton & Energi Kinetik",
-        kategori: "Fisika SMA",
+        id: "materi-sma-1",
+        subJenjangId: "sma-11-ipa",
+        judul: "Hukum Newton & Energi Kinetik",
         level: "Mahir",
         durasi: "15 Menit",
         videoUrl: "https://www.youtube.com/embed/aircAruvnKk",
-        rangkuman: "Gaya berbanding lurus dengan massa dan percepatan benda. Energi kinetik bergantung pada kuadrat kecepatan.",
-        rumusMatematika: "Hukum II Newton: ∑F = m · a\nEnergi Kinetik: Ek = ½ · m · v²",
-        kuis: {
-          tanya: "Sebuah benda bermassa 4 kg bergerak dengan kecepatan 3 m/s. Berapakah Energi Kinetiknya (Ek)?",
-          opsi: ["6 Joule", "12 Joule", "18 Joule", "36 Joule"],
-          jawabanBenar: 2,
-          pembahasan: "Tepat! Ek = ½ · 4 · (3²) = 2 · 9 = 18 Joule.",
-        },
+        rangkuman: "Gaya berbanding lurus dengan massa dan percepatan benda.",
+        rumusMatematika: "Ek = ½ · m · v²",
+        kuis: { tanya: "Benda 4 kg, kecepatan 3 m/s. Berapa Ek?", opsi: ["6 J", "12 J", "18 J", "36 J"], jawabanBenar: 2, pembahasan: "Ek = ½ · 4 · (3²) = 18 Joule." },
       },
     ],
   },
@@ -231,179 +209,88 @@ const DATA_JENJANG_AWAL: JenjangItem[] = [
     id: "kuliah",
     nama: "Kuliah & Karier",
     tagline: "Keahlian Profesional & IT",
-    deskripsi: "Pemrograman Web (Panda Kode), Artificial Intelligence, Bisnis & Desain.",
+    deskripsi: "Pemrograman Web, AI, Bisnis & Desain.",
     gradien: "from-emerald-500 via-teal-600 to-cyan-700",
     badge: "bg-emerald-100 text-emerald-800",
     ikonNama: "graduation",
+    subJenjang: [
+      { id: "pt-ti", nama: "S1 Teknik Informatika" }, { id: "pt-si", nama: "S1 Sistem Informasi" }, { id: "pt-dkv", nama: "S1 DKV" },
+    ],
     kelas: [
       {
-        id: "kuliah-1",
-        judul: "Fullstack Next.js & React (Panda Kode)",
-        kategori: "Teknik Informatika",
+        id: "materi-kuliah-1",
+        subJenjangId: "pt-ti",
+        judul: "Fullstack Next.js Dasar",
         level: "Mahir",
         durasi: "20 Menit",
         videoUrl: "https://www.youtube.com/embed/SqcY0GlETPk",
-        rangkuman: "React menggunakan komponen dan Hook seperti useState untuk memperbarui data layar secara instan.",
-        contohKode: `// Contoh Kode React Hook oleh Panda Kode
-import { useState } from "react";
-export default function App() {
-  const [xp, setXp] = useState(0);
-  return <button onClick={() => setXp(xp + 10)}>XP: {xp}</button>;
-}`,
-        kuis: {
-          tanya: "Hook apa yang digunakan di React/Next.js untuk menyimpan data yang bisa berubah-ubah di dalam komponen?",
-          opsi: ["useRouter()", "useState()", "useDatabase()", "useStyle()"],
-          jawabanBenar: 1,
-          pembahasan: "Mantap! useState() adalah fondasi utama membuat aplikasi interaktif.",
-        },
+        rangkuman: "React menggunakan komponen dan Hook seperti useState.",
+        contohKode: `const [xp, setXp] = useState(0);`,
+        kuis: { tanya: "Hook untuk menyimpan data berubah-ubah?", opsi: ["useRouter", "useState", "useEffect", "useMemo"], jawabanBenar: 1, pembahasan: "useState() adalah fondasi utama." },
       },
     ],
   },
 ];
 
 const BANK_SOAL_TRYOUT: SoalTryout[] = [
-  {
-    id: "to-1",
-    jenjang: "SD / MI",
-    pertanyaan: "Hasil operasi hitung campuran dari 25 + (12 × 3) - 10 adalah...",
-    rumus: "Ingat KABATAKU: Kerjakan tanda kurung dan perkalian dulu!",
-    opsi: ["51", "101", "61", "45"],
-    jawabanBenar: 0,
-    pembahasan: "12 × 3 = 36. Lalu 25 + 36 - 10 = 51.",
-  },
-  {
-    id: "to-2",
-    jenjang: "SMP / MTs",
-    pertanyaan: "Jika f(x) = 3x - 5, maka berapakah nilai dari f(4)?",
-    rumus: "Substitusikan x = 4 ke dalam fungsi f(x)",
-    opsi: ["5", "7", "12", "17"],
-    jawabanBenar: 1,
-    pembahasan: "f(4) = 3(4) - 5 = 12 - 5 = 7.",
-  },
-  {
-    id: "to-3",
-    jenjang: "Kuliah IT",
-    pertanyaan: "Perintah Git untuk mengirim (upload) commit lokal ke GitHub adalah...",
-    opsi: ["git pull", "git push", "git init", "git clone"],
-    jawabanBenar: 1,
-    pembahasan: "git push digunakan untuk mengunggah perubahan ke repositori GitHub.",
-  },
+  { id: "to-1", jenjang: "SD", pertanyaan: "25 + (12 × 3) - 10 = ...", rumus: "KABATAKU", opsi: ["51", "101", "61", "45"], jawabanBenar: 0, pembahasan: "12×3=36. 25+36-10=51." },
+  { id: "to-2", jenjang: "SMP", pertanyaan: "f(x) = 3x - 5. f(4)?", rumus: "Substitusi x=4", opsi: ["5", "7", "12", "17"], jawabanBenar: 1, pembahasan: "3(4)-5=7." },
 ];
 
 const AKUN_DEFAULT: AkunPengguna[] = [
-  {
-    id: "adm-1",
-    nama: "Admin Panda Kode",
-    email: "admin@hibahilmu.id",
-    password: "123",
-    role: "admin",
-    status: "approved",
-    infoTambahan: "Founder & Super Admin HibahIlmu",
-    waktuDaftar: "Permanen",
-  },
-  {
-    id: "gru-1",
-    nama: "Bapak Budi Santoso, M.Pd",
-    email: "guru@hibahilmu.id",
-    password: "123",
-    role: "guru",
-    status: "approved",
-    infoTambahan: "Guru Matematika & Fisika SMA",
-    waktuDaftar: "Kemarin, 09:00",
-  },
-  {
-    id: "sis-1",
-    nama: "Aisyah Putri",
-    email: "siswa@hibahilmu.id",
-    password: "123",
-    role: "siswa",
-    status: "approved",
-    infoTambahan: "Siswi Kelas 11 SMA",
-    waktuDaftar: "Kemarin, 14:20",
-  },
+  { id: "adm-1", nama: "Admin Panda Kode", email: "admin@hibahilmu.id", password: "123", role: "admin", status: "approved", infoTambahan: "Super Admin", waktuDaftar: "Permanen", aksesMengajar: [] },
+  { id: "gru-1", nama: "Budi Santoso", email: "guru@hibahilmu.id", password: "123", role: "guru", status: "approved", infoTambahan: "Guru SMA", waktuDaftar: "Kemarin", aksesMengajar: ["sma-11-ipa", "sma-12-ipa"] },
+  { id: "sis-1", nama: "Aisyah", email: "siswa@hibahilmu.id", password: "123", role: "siswa", status: "approved", infoTambahan: "Siswi SMA", waktuDaftar: "Kemarin", aksesMengajar: [] },
 ];
 
 const LOG_AWAL: LogAktivitas[] = [
-  {
-    id: "log-1",
-    waktu: "06:30 WIB",
-    namaPelaku: "Bapak Budi Santoso, M.Pd",
-    rolePelaku: "guru",
-    aksi: "Mengunggah modul materi baru pada jenjang SMA",
-    kategori: "materi",
-  },
-  {
-    id: "log-2",
-    waktu: "Kemarin",
-    namaPelaku: "Aisyah Putri",
-    rolePelaku: "siswa",
-    aksi: "Menyelesaikan modul kuis interaktif (+50 XP)",
-    kategori: "belajar",
-  },
+  { id: "log-1", waktu: "06:30", namaPelaku: "Budi Santoso", rolePelaku: "guru", aksi: "Mengunggah materi", kategori: "materi" },
 ];
 
-// --- 3. KOMPONEN UTAMA APLIKASI ---
+// --- 3. KOMPONEN UTAMA ---
 export default function AplikasiHibahIlmu() {
   const [menuAktif, setMenuAktif] = useState<string>("beranda");
-  const [daftarJenjang, setDaftarJenjang] = useState<JenjangItem[]>(DATA_JENJANG_AWAL);
+  const [daftarJenjang, setDaftarJenjang] = useState<JenjangItem[]>(STRUKTUR_AWAL);
   const [jenjangAktif, setJenjangAktif] = useState<JenjangItem | null>(null);
+  const [subJenjangAktif, setSubJenjangAktif] = useState<string>("semua");
   const [kelasAktif, setKelasAktif] = useState<KelasItem | null>(null);
   const [kataKunci, setKataKunci] = useState<string>("");
 
-  // State Auth & Dashboard Multi-Role
   const [daftarAkun, setDaftarAkun] = useState<AkunPengguna[]>(AKUN_DEFAULT);
   const [userLogin, setUserLogin] = useState<AkunPengguna | null>(null);
   const [logAktivitas, setLogAktivitas] = useState<LogAktivitas[]>(LOG_AWAL);
 
   const [poinXP, setPoinXP] = useState<number>(150);
   const [materiSelesai, setMateriSelesai] = useState<string[]>([]);
-
-  // State Ruang Kelas (Catatan & Kuis)
   const [catatanSiswa, setCatatanSiswa] = useState<string>("");
-  const [statusSimpanCatatan, setStatusSimpanCatatan] = useState<boolean>(false);
+  const [statusSimpanCatatan, setStatusSimpanCatatan] = useState(false);
   const [jawabanKuis, setJawabanKuis] = useState<number | null>(null);
   const [statusKuis, setStatusKuis] = useState<"benar" | "salah" | null>(null);
 
-  // State Tryout
-  const [sedangUjian, setSedangUjian] = useState<boolean>(false);
-  const [ujianSelesai, setUjianSelesai] = useState<boolean>(false);
-  const [sisaWaktu, setSisaWaktu] = useState<number>(180);
+  const [sedangUjian, setSedangUjian] = useState(false);
+  const [ujianSelesai, setUjianSelesai] = useState(false);
+  const [sisaWaktu, setSisaWaktu] = useState(180);
   const [jawabanUserTryout, setJawabanUserTryout] = useState<{ [key: number]: number }>({});
-  const [skorTryout, setSkorTryout] = useState<number>(0);
+  const [skorTryout, setSkorTryout] = useState(0);
 
-  // State Forum PR
-  const [daftarDiskusi, setDaftarDiskusi] = useState<DiskusiPR[]>([
-    {
-      id: "pr-1",
-      penanya: "Rizky (SMP)",
-      jenjang: "SMP",
-      mapel: "Matematika",
-      pertanyaan: "Bagaimana cara cepat membedakan rumus Luas dan Keliling Lingkaran?",
-      waktu: "1 jam lalu",
-      jawaban: [
-        { penjawab: "Panda Kode (Mentor)", isi: "Luas selalu pangkat dua (π × r²), keliling tidak ada pangkat (2 × π × r)." },
-      ],
-    },
-  ]);
-  const [tanyaBaru, setTanyaBaru] = useState<string>("");
-  const [mapelBaru, setMapelBaru] = useState<string>("Matematika");
+  const [daftarDiskusi, setDaftarDiskusi] = useState<DiskusiPR[]>([]);
+  const [tanyaBaru, setTanyaBaru] = useState("");
+  const [mapelBaru, setMapelBaru] = useState("");
   const [balasanInput, setBalasanInput] = useState<{ [key: string]: string }>({});
 
-  // State Auth Manual / Register
   const [modeAuth, setModeAuth] = useState<"login" | "register">("login");
   const [emailLogin, setEmailLogin] = useState("");
   const [passwordLogin, setPasswordLogin] = useState("");
   const [pesanError, setPesanError] = useState("");
   const [pesanSukses, setPesanSukses] = useState("");
+  
   const [namaReg, setNamaReg] = useState("");
   const [emailReg, setEmailReg] = useState("");
   const [passwordReg, setPasswordReg] = useState("");
   const [roleReg, setRoleReg] = useState<"siswa" | "guru" | "admin">("siswa");
   const [infoReg, setInfoReg] = useState("");
-  const [filterLog, setFilterLog] = useState<string>("semua");
 
-  // State Admin Tambah & Edit Akun
-  const [modalAdminAkun, setModalAdminAkun] = useState<boolean>(false);
+  const [modalAdminAkun, setModalAdminAkun] = useState(false);
   const [idEditAkun, setIdEditAkun] = useState<string | null>(null);
   const [namaFormAdmin, setNamaFormAdmin] = useState("");
   const [emailFormAdmin, setEmailFormAdmin] = useState("");
@@ -411,17 +298,19 @@ export default function AplikasiHibahIlmu() {
   const [roleFormAdmin, setRoleFormAdmin] = useState<"admin" | "guru" | "siswa">("siswa");
   const [statusFormAdmin, setStatusFormAdmin] = useState<"approved" | "pending" | "rejected">("approved");
   const [infoFormAdmin, setInfoFormAdmin] = useState("");
+  const [aksesMengajarForm, setAksesMengajarForm] = useState<string[]>([]);
 
-  // State Admin Checkbox Bulk Delete & Import JSON/CSV
   const [selectedAkunIds, setSelectedAkunIds] = useState<string[]>([]);
-  const [modalImportAkun, setModalImportAkun] = useState<boolean>(false);
-  const [teksImportJson, setTeksImportJson] = useState<string>("");
-  const [notifImport, setNotifImport] = useState<string>("");
+  const [modalImportAkun, setModalImportAkun] = useState(false);
+  const [teksImportJson, setTeksImportJson] = useState("");
+  const [notifImport, setNotifImport] = useState("");
 
-  // State Guru Buat Materi
-  const [jenjangPilih, setJenjangPilih] = useState("sd");
+  const [modalKategori, setModalKategori] = useState(false);
+  const [targetJenjangKategori, setTargetJenjangKategori] = useState("sma");
+  const [namaKategoriBaru, setNamaKategoriBaru] = useState("");
+
+  const [subJenjangPilih, setSubJenjangPilih] = useState("");
   const [judulMateri, setJudulMateri] = useState("");
-  const [mapelMateri, setMapelMateri] = useState("");
   const [levelMateri, setLevelMateri] = useState<"Pemula" | "Menengah" | "Mahir">("Pemula");
   const [videoMateri, setVideoMateri] = useState("");
   const [rangkumanMateri, setRangkumanMateri] = useState("");
@@ -431,7 +320,7 @@ export default function AplikasiHibahIlmu() {
   const [opsiB, setOpsiB] = useState("");
   const [opsiC, setOpsiC] = useState("");
   const [opsiD, setOpsiD] = useState("");
-  const [kunciKuis, setKunciKuis] = useState<number>(0);
+  const [kunciKuis, setKunciKuis] = useState(0);
   const [notifGuru, setNotifGuru] = useState(false);
 
   useEffect(() => {
@@ -440,18 +329,20 @@ export default function AplikasiHibahIlmu() {
     const savedAkunList = localStorage.getItem("hibah_daftar_akun");
     const savedUserAktif = localStorage.getItem("hibah_user_aktif");
     const savedLogs = localStorage.getItem("hibah_log_aktivitas");
+    const savedStruktur = localStorage.getItem("hibah_struktur");
 
     if (savedXP) setPoinXP(parseInt(savedXP, 10));
     if (savedSelesai) setMateriSelesai(JSON.parse(savedSelesai));
     if (savedAkunList) setDaftarAkun(JSON.parse(savedAkunList));
     if (savedUserAktif) setUserLogin(JSON.parse(savedUserAktif));
     if (savedLogs) setLogAktivitas(JSON.parse(savedLogs));
+    if (savedStruktur) setDaftarJenjang(JSON.parse(savedStruktur));
   }, []);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (sedangUjian && !ujianSelesai && sisaWaktu > 0) {
-      interval = setInterval(() => setSisaWaktu((p) => p - 1), 1000);
+      interval = setInterval(() => setSisaWaktu(p => p - 1), 1000);
     } else if (sisaWaktu === 0 && sedangUjian) {
       selesaikanTryout();
     }
@@ -467,61 +358,33 @@ export default function AplikasiHibahIlmu() {
     }
   }, [kelasAktif]);
 
-  const catatLog = (
-    namaPelaku: string,
-    rolePelaku: "admin" | "guru" | "siswa",
-    aksi: string,
-    kategori: "belajar" | "materi" | "akun" | "komunitas"
-  ) => {
-    const jam = new Date().toLocaleTimeString("id-ID", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    const logBaru: LogAktivitas = {
-      id: "log-" + Date.now(),
-      waktu: `${jam} WIB`,
-      namaPelaku,
-      rolePelaku,
-      aksi,
-      kategori,
-    };
-    setLogAktivitas((prev) => {
-      const safePrev = prev || [];
-      const terbaru = [logBaru, ...safePrev];
+  const catatLog = (namaPelaku: string, rolePelaku: "admin" | "guru" | "siswa", aksi: string, kategori: "belajar" | "materi" | "akun" | "komunitas" | "sistem") => {
+    const jam = new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+    const logBaru: LogAktivitas = { id: "log-" + Date.now(), waktu: `${jam} WIB`, namaPelaku, rolePelaku, aksi, kategori };
+    setLogAktivitas(prev => {
+      const terbaru = [logBaru, ...(prev || [])];
       localStorage.setItem("hibah_log_aktivitas", JSON.stringify(terbaru));
       return terbaru;
     });
   };
 
-  const lemparkanKonfeti = () => {
-    confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
-  };
-
   const tambahXP = (tambahan: number) => {
-    setPoinXP((prev) => {
+    setPoinXP(prev => {
       const totalBaru = (prev || 0) + tambahan;
       localStorage.setItem("hibah_xp", totalBaru.toString());
       return totalBaru;
     });
-    lemparkanKonfeti();
+    confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
   };
 
   const toggleSelesaiMateri = (kelasId: string) => {
-    setMateriSelesai((prev) => {
+    setMateriSelesai(prev => {
       const safePrev = prev || [];
       const sudahAda = safePrev.includes(kelasId);
-      let daftarBaru: string[];
-      if (sudahAda) {
-        daftarBaru = safePrev.filter((id) => id !== kelasId);
-      } else {
-        daftarBaru = [...safePrev, kelasId];
+      let daftarBaru = sudahAda ? safePrev.filter(id => id !== kelasId) : [...safePrev, kelasId];
+      if (!sudahAda) {
         tambahXP(30);
-        catatLog(
-          userLogin?.nama || "Siswa",
-          userLogin?.role || "siswa",
-          `Menandai selesai modul pelajaran (ID: ${kelasId})`,
-          "belajar"
-        );
+        catatLog(userLogin?.nama || "Siswa", userLogin?.role || "siswa", `Selesai modul ${kelasId}`, "belajar");
       }
       localStorage.setItem("hibah_selesai", JSON.stringify(daftarBaru));
       return daftarBaru;
@@ -530,39 +393,20 @@ export default function AplikasiHibahIlmu() {
 
   const loginCepat = (akun: AkunPengguna) => {
     setPesanError("");
-    if (akun.status === "pending") {
-      setPesanError("Akun kamu masih menunggu persetujuan Admin.");
-      return;
-    }
-    if (akun.status === "rejected") {
-      setPesanError("Akun ini sedang disuspend (dibekukan). Hubungi Admin.");
-      return;
-    }
+    if (akun.status === "pending") return setPesanError("Menunggu persetujuan Admin.");
+    if (akun.status === "rejected") return setPesanError("Akun disuspend.");
     setUserLogin(akun);
     localStorage.setItem("hibah_user_aktif", JSON.stringify(akun));
-    catatLog(akun.nama, akun.role, `Berhasil masuk ke Dashboard ${akun.role.toUpperCase()}`, "akun");
+    catatLog(akun.nama, akun.role, `Login ke Dashboard`, "akun");
   };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setPesanError("");
-    const safeAkunList = daftarAkun || [];
-    const akunDitemukan = safeAkunList.find(
-      (a) => a.email.toLowerCase() === emailLogin.toLowerCase() && a.password === passwordLogin
-    );
-
-    if (!akunDitemukan) {
-      setPesanError("Email atau Password salah.");
-      return;
-    }
-    if (akunDitemukan.status === "pending") {
-      setPesanError("⏳ Akun menunggu persetujuan Admin.");
-      return;
-    }
-    if (akunDitemukan.status === "rejected") {
-      setPesanError("❌ Akun ini telah disuspend (dibekukan oleh Admin).");
-      return;
-    }
+    const akunDitemukan = (daftarAkun || []).find(a => a.email.toLowerCase() === emailLogin.toLowerCase() && a.password === passwordLogin);
+    if (!akunDitemukan) return setPesanError("Email atau Password salah.");
+    if (akunDitemukan.status === "pending") return setPesanError("Akun pending.");
+    if (akunDitemukan.status === "rejected") return setPesanError("Akun disuspend.");
     setUserLogin(akunDitemukan);
     localStorage.setItem("hibah_user_aktif", JSON.stringify(akunDitemukan));
     catatLog(akunDitemukan.nama, akunDitemukan.role, `Login ke sistem`, "akun");
@@ -571,959 +415,523 @@ export default function AplikasiHibahIlmu() {
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
     setPesanError("");
-    const safeAkunList = daftarAkun || [];
-    const sudahAda = safeAkunList.some((a) => a.email.toLowerCase() === emailReg.toLowerCase());
-    if (sudahAda) {
-      setPesanError("Email sudah terdaftar.");
-      return;
-    }
-
+    if ((daftarAkun || []).some(a => a.email.toLowerCase() === emailReg.toLowerCase())) return setPesanError("Email sudah terdaftar.");
+    
     const akunBaru: AkunPengguna = {
-      id: "usr-" + Date.now(),
-      nama: namaReg,
-      email: emailReg,
-      password: passwordReg,
-      role: roleReg,
-      status: "pending",
-      infoTambahan: infoReg || (roleReg === "guru" ? "Relawan" : "Siswa"),
-      waktuDaftar: "Baru saja",
+      id: "usr-" + Date.now(), nama: namaReg, email: emailReg, password: passwordReg,
+      role: roleReg, status: "pending", infoTambahan: infoReg || "Baru", waktuDaftar: "Baru saja", aksesMengajar: []
     };
-
-    const daftarTerbaru = [akunBaru, ...safeAkunList];
+    const daftarTerbaru = [akunBaru, ...(daftarAkun || [])];
     setDaftarAkun(daftarTerbaru);
     localStorage.setItem("hibah_daftar_akun", JSON.stringify(daftarTerbaru));
-    catatLog(namaReg, roleReg === "admin" ? "admin" : roleReg, `Mendaftar akun baru (Menunggu Approval)`, "akun");
-    setPesanSukses("✅ Pendaftaran terkirim! Menunggu persetujuan Admin.");
-    setNamaReg("");
-    setEmailReg("");
-    setPasswordReg("");
-    setInfoReg("");
+    catatLog(namaReg, roleReg, `Mendaftar akun`, "akun");
+    setPesanSukses("Pendaftaran terkirim!");
     setModeAuth("login");
   };
 
-  const ubahStatusAkun = (idTarget: string, statusBaru: "approved" | "rejected" | "pending") => {
-    const safeAkunList = daftarAkun || [];
-    const target = safeAkunList.find((a) => a.id === idTarget);
-    if (!target) return;
-
-    const daftarTerbaru = safeAkunList.map((akun) =>
-      akun.id === idTarget ? { ...akun, status: statusBaru } : akun
-    );
-    setDaftarAkun(daftarTerbaru);
-    localStorage.setItem("hibah_daftar_akun", JSON.stringify(daftarTerbaru));
-    
-    let aksiLog = `Mengubah status akun ${target.nama} menjadi ${statusBaru}`;
-    if (statusBaru === "rejected") aksiLog = `Men-suspend (membekukan) akun ${target.nama}`;
-    if (statusBaru === "approved") aksiLog = `Menyetujui / Mengaktifkan kembali akun ${target.nama}`;
-
-    catatLog(userLogin?.nama || "Admin", "admin", aksiLog, "akun");
+  const ubahStatusAkun = (id: string, status: "approved" | "rejected" | "pending") => {
+    const update = (daftarAkun || []).map(a => a.id === id ? { ...a, status } : a);
+    setDaftarAkun(update);
+    localStorage.setItem("hibah_daftar_akun", JSON.stringify(update));
+    catatLog(userLogin?.nama || "Admin", "admin", `Ubah status akun menjadi ${status}`, "akun");
   };
 
-  const hapusAkun = (idTarget: string) => {
-    const safeAkunList = daftarAkun || [];
-    const target = safeAkunList.find((a) => a.id === idTarget);
-    if (!target || target.role === "admin") return;
-
-    const daftarTerbaru = safeAkunList.filter((a) => a.id !== idTarget);
-    setDaftarAkun(daftarTerbaru);
-    localStorage.setItem("hibah_daftar_akun", JSON.stringify(daftarTerbaru));
-    catatLog(userLogin?.nama || "Admin", "admin", `Menghapus permanen akun ${target.nama}`, "akun");
+  const hapusAkun = (id: string) => {
+    const update = (daftarAkun || []).filter(a => a.id !== id);
+    setDaftarAkun(update);
+    localStorage.setItem("hibah_daftar_akun", JSON.stringify(update));
+    catatLog(userLogin?.nama || "Admin", "admin", `Hapus akun`, "akun");
   };
 
-  // FITUR HAPUS AKUN SEKALIGUS (BULK DELETE)
   const hapusAkunSekaligus = () => {
-    if (selectedAkunIds.length === 0) return;
-    if (!confirm(`Yakin ingin menghapus ${selectedAkunIds.length} akun yang dipilih secara permanen?`)) return;
-
-    const safeAkunList = daftarAkun || [];
-    // Jangan biarkan admin utama terhapus
-    const daftarTerbaru = safeAkunList.filter(
-      (a) => !selectedAkunIds.includes(a.id) || a.role === "admin"
-    );
-    setDaftarAkun(daftarTerbaru);
-    localStorage.setItem("hibah_daftar_akun", JSON.stringify(daftarTerbaru));
-    catatLog(userLogin?.nama || "Admin", "admin", `Melakukan hapus massal (bulk delete) pada ${selectedAkunIds.length} akun`, "akun");
+    if (!confirm(`Hapus ${selectedAkunIds.length} akun?`)) return;
+    const update = (daftarAkun || []).filter(a => !selectedAkunIds.includes(a.id) || a.role === "admin");
+    setDaftarAkun(update);
+    localStorage.setItem("hibah_daftar_akun", JSON.stringify(update));
+    catatLog(userLogin?.nama || "Admin", "admin", `Bulk delete akun`, "akun");
     setSelectedAkunIds([]);
   };
 
-  const togglePilihAkun = (id: string) => {
-    setSelectedAkunIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
-  };
-
-  // FITUR IMPORT AKUN MASSAL (JSON TEMPLATE)
   const handleImportJson = (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const parsedData = JSON.parse(teksImportJson);
-      if (!Array.isArray(parsedData)) {
-        alert("Format JSON harus berupa Array [...]");
-        return;
-      }
-
-      const safeAkunList = daftarAkun || [];
-      const akunBaruMasuk: AkunPengguna[] = parsedData.map((item, idx) => ({
-        id: "import-" + Date.now() + "-" + idx,
-        nama: item.nama || "Tanpa Nama",
-        email: item.email || `user${idx}@hibahilmu.id`,
-        password: item.password || "123",
-        role: item.role === "guru" || item.role === "admin" ? item.role : "siswa",
-        status: "approved",
-        infoTambahan: item.infoTambahan || "Diimpor massal",
-        waktuDaftar: "Massal Import",
+      const akunBaruMasuk: AkunPengguna[] = parsedData.map((item: any, idx: number) => ({
+        id: "import-" + Date.now() + "-" + idx, nama: item.nama || "User", email: item.email || `u${idx}@h.id`,
+        password: item.password || "123", role: item.role || "siswa", status: "approved", infoTambahan: "Import", waktuDaftar: "Import"
       }));
-
-      const gabungan = [...akunBaruMasuk, ...safeAkunList];
+      const gabungan = [...akunBaruMasuk, ...(daftarAkun || [])];
       setDaftarAkun(gabungan);
       localStorage.setItem("hibah_daftar_akun", JSON.stringify(gabungan));
-      catatLog(userLogin?.nama || "Admin", "admin", `Berhasil mengimpor ${akunBaruMasuk.length} akun baru secara massal`, "akun");
-      
-      setNotifImport(`✅ Sukses mengimpor ${akunBaruMasuk.length} akun baru!`);
-      setTeksImportJson("");
-      setTimeout(() => {
-        setNotifImport("");
-        setModalImportAkun(false);
-      }, 2500);
+      setNotifImport(`✅ Sukses import ${akunBaruMasuk.length} akun`);
+      setTimeout(() => setModalImportAkun(false), 2000);
     } catch (err) {
-      alert("Format JSON tidak valid! Periksa kembali tanda kurung dan tanda kutipnya.");
+      alert("JSON tidak valid!");
     }
   };
 
-  const templateJsonContoh = JSON.stringify(
-    [
-      {
-        nama: "Dewi Lestari, S.Pd",
-        email: "dewi.guru@hibahilmu.id",
-        password: "123",
-        role: "guru",
-        infoTambahan: "Guru Bahasa Indonesia",
-      },
-      {
-        nama: "Ahmad Fauzi",
-        email: "ahmad.siswa@hibahilmu.id",
-        password: "123",
-        role: "siswa",
-        infoTambahan: "Kelas 12 IPA",
-      },
-    ],
-    null,
-    2
-  );
-
-  const handleSimpanAkunAdmin = (e: React.FormEvent) => {
+  const simpanAkunAdmin = (e: React.FormEvent) => {
     e.preventDefault();
-    const safeAkunList = daftarAkun || [];
-
     if (idEditAkun) {
-      const daftarTerbaru = safeAkunList.map((a) =>
-        a.id === idEditAkun
-          ? {
-              ...a,
-              nama: namaFormAdmin,
-              email: emailFormAdmin,
-              password: passFormAdmin || a.password,
-              role: roleFormAdmin,
-              status: statusFormAdmin,
-              infoTambahan: infoFormAdmin,
-            }
-          : a
-      );
-      setDaftarAkun(daftarTerbaru);
-      localStorage.setItem("hibah_daftar_akun", JSON.stringify(daftarTerbaru));
-      catatLog(userLogin?.nama || "Admin", "admin", `Mengedit data akun: ${namaFormAdmin} (${roleFormAdmin})`, "akun");
+      const update = (daftarAkun || []).map(a => a.id === idEditAkun ? {
+        ...a, nama: namaFormAdmin, email: emailFormAdmin, password: passFormAdmin || a.password,
+        role: roleFormAdmin, status: statusFormAdmin, infoTambahan: infoFormAdmin, aksesMengajar: aksesMengajarForm
+      } : a);
+      setDaftarAkun(update);
+      localStorage.setItem("hibah_daftar_akun", JSON.stringify(update));
     } else {
       const akunBaru: AkunPengguna = {
-        id: "adm-usr-" + Date.now(),
-        nama: namaFormAdmin,
-        email: emailFormAdmin,
-        password: passFormAdmin || "123",
-        role: roleFormAdmin,
-        status: statusFormAdmin,
-        infoTambahan: infoFormAdmin || "Dibuat oleh Admin",
-        waktuDaftar: "Oleh Admin",
+        id: "adm-usr-" + Date.now(), nama: namaFormAdmin, email: emailFormAdmin, password: passFormAdmin || "123",
+        role: roleFormAdmin, status: statusFormAdmin, infoTambahan: infoFormAdmin, waktuDaftar: "Oleh Admin", aksesMengajar: aksesMengajarForm
       };
-      const daftarTerbaru = [akunBaru, ...safeAkunList];
-      setDaftarAkun(daftarTerbaru);
-      localStorage.setItem("hibah_daftar_akun", JSON.stringify(daftarTerbaru));
-      catatLog(userLogin?.nama || "Admin", "admin", `Membuat akun baru: ${namaFormAdmin} sebagai ${roleFormAdmin.toUpperCase()}`, "akun");
+      setDaftarAkun([akunBaru, ...(daftarAkun || [])]);
     }
-
     setModalAdminAkun(false);
-    setIdEditAkun(null);
-    setNamaFormAdmin("");
-    setEmailFormAdmin("");
-    setPassFormAdmin("");
-    setInfoFormAdmin("");
   };
 
-  const bukaModalTambahAkun = () => {
-    setIdEditAkun(null);
-    setNamaFormAdmin("");
-    setEmailFormAdmin("");
-    setPassFormAdmin("");
-    setRoleFormAdmin("siswa");
-    setStatusFormAdmin("approved");
-    setInfoFormAdmin("");
-    setModalAdminAkun(true);
+  const tambahKategoriBaru = (e: React.FormEvent) => {
+    e.preventDefault();
+    const idBaru = `sub-${Date.now()}`;
+    const update = daftarJenjang.map(j => j.id === targetJenjangKategori ? { ...j, subJenjang: [...j.subJenjang, { id: idBaru, nama: namaKategoriBaru }] } : j);
+    setDaftarJenjang(update);
+    localStorage.setItem("hibah_struktur", JSON.stringify(update));
+    setModalKategori(false);
+    setNamaKategoriBaru("");
   };
 
-  const bukaModalEditAkun = (akun: AkunPengguna) => {
-    setIdEditAkun(akun.id);
-    setNamaFormAdmin(akun.nama);
-    setEmailFormAdmin(akun.email);
-    setPassFormAdmin("");
-    setRoleFormAdmin(akun.role);
-    setStatusFormAdmin(akun.status);
-    setInfoFormAdmin(akun.infoTambahan);
-    setModalAdminAkun(true);
-  };
+  const opsiKelasGuru = (daftarJenjang || []).flatMap(j => 
+    j.subJenjang.filter(sj => userLogin?.aksesMengajar?.includes(sj.id)).map(sj => ({ ...sj, namaInduk: j.nama }))
+  );
 
   const handleGuruBuatMateri = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userLogin) return;
-
-    let finalEmbed = videoMateri;
-    if (videoMateri.includes("watch?v=")) finalEmbed = videoMateri.replace("watch?v=", "embed/");
-
+    if (!userLogin || !subJenjangPilih) return;
+    let finalEmbed = videoMateri.includes("watch?v=") ? videoMateri.replace("watch?v=", "embed/") : videoMateri;
+    
     const modulBaru: KelasItem = {
-      id: "mdl-" + Date.now(),
-      judul: `${judulMateri} (Oleh: ${userLogin.nama})`,
-      kategori: mapelMateri || userLogin.infoTambahan,
-      level: levelMateri,
-      durasi: "12 Menit",
-      videoUrl: finalEmbed,
-      rangkuman: rangkumanMateri,
-      rumusMatematika: rumusMateri || undefined,
-      kuis: {
-        tanya: pertanyaanKuis || `Kesimpulan materi ${judulMateri}?`,
-        opsi: [opsiA || "Paham", opsiB || "Kurang", opsiC || "Lanjut", opsiD || "Review"],
-        jawabanBenar: kunciKuis,
-        pembahasan: `Disusun oleh Guru ${userLogin.nama}.`,
-      },
+      id: "mdl-" + Date.now(), subJenjangId: subJenjangPilih, judul: judulMateri, level: levelMateri,
+      durasi: "15 Menit", videoUrl: finalEmbed, rangkuman: rangkumanMateri, rumusMatematika: rumusMateri,
+      kuis: { tanya: pertanyaanKuis, opsi: [opsiA, opsiB, opsiC, opsiD], jawabanBenar: kunciKuis, pembahasan: "Selesai" }
     };
 
-    setDaftarJenjang((prev) =>
-      (prev || []).map((j) => (j.id === jenjangPilih ? { ...j, kelas: [modulBaru, ...j.kelas] } : j))
-    );
-    catatLog(userLogin.nama, "guru", `Menerbitkan modul: "${judulMateri}"`, "materi");
-    setNotifGuru(true);
-    setJudulMateri("");
-    setMapelMateri("");
-    setVideoMateri("");
-    setRangkumanMateri("");
-    setRumusMateri("");
-    setPertanyaanKuis("");
-    setTimeout(() => setNotifGuru(false), 3000);
+    const update = daftarJenjang.map(j => j.subJenjang.some(sj => sj.id === subJenjangPilih) ? { ...j, kelas: [modulBaru, ...j.kelas] } : j);
+    setDaftarJenjang(update);
+    localStorage.setItem("hibah_struktur", JSON.stringify(update));
+    setNotifGuru(true); setTimeout(() => setNotifGuru(false), 3000);
   };
 
   const selesaikanTryout = () => {
     let benar = 0;
-    BANK_SOAL_TRYOUT.forEach((soal, idx) => {
-      if (jawabanUserTryout[idx] === soal.jawabanBenar) benar++;
-    });
-    const nilai = Math.round((benar / BANK_SOAL_TRYOUT.length) * 100);
-    setSkorTryout(nilai);
-    setUjianSelesai(true);
-    setSedangUjian(false);
+    BANK_SOAL_TRYOUT.forEach((soal, idx) => { if (jawabanUserTryout[idx] === soal.jawabanBenar) benar++; });
+    setSkorTryout(Math.round((benar / BANK_SOAL_TRYOUT.length) * 100));
+    setUjianSelesai(true); setSedangUjian(false);
     if (benar > 0) tambahXP(benar * 40);
   };
 
-  const renderIkonJenjang = (nama: string) => {
-    switch (nama) {
-      case "sparkles":
-        return <Sparkles className="w-7 h-7 text-white" />;
-      case "book":
-        return <BookOpen className="w-7 h-7 text-white" />;
-      case "compass":
-        return <Compass className="w-7 h-7 text-white" />;
-      case "school":
-        return <School className="w-7 h-7 text-white" />;
-      default:
-        return <GraduationCap className="w-7 h-7 text-white" />;
-    }
+  const renderIkon = (nama: string) => {
+    if (nama === "sparkles") return <Sparkles className="w-6 h-6 text-white"/>;
+    if (nama === "book") return <BookOpen className="w-6 h-6 text-white"/>;
+    if (nama === "compass") return <Compass className="w-6 h-6 text-white"/>;
+    if (nama === "school") return <School className="w-6 h-6 text-white"/>;
+    return <GraduationCap className="w-6 h-6 text-white"/>;
   };
 
-  const safeAkunList = daftarAkun || [];
-  const safeLogList = logAktivitas || [];
-  const jumlahPending = safeAkunList.filter((a) => a.status === "pending").length;
-
+  // --- HTML RENDER ---
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-slate-800 relative overflow-x-hidden selection:bg-emerald-500 selection:text-white">
-      <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
-        <div className="absolute -top-40 -left-40 w-96 h-96 bg-purple-300/30 rounded-full blur-3xl" />
-        <div className="absolute top-20 right-0 w-[28rem] h-[28rem] bg-emerald-300/25 rounded-full blur-3xl" />
-      </div>
-
-      {/* HEADER ATAS */}
-      <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/85 border-b border-slate-200/80 shadow-2xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap justify-between items-center gap-3">
-          <div
-            onClick={() => {
-              setMenuAktif("beranda");
-              setJenjangAktif(null);
-              setKelasAktif(null);
-            }}
-            className="flex items-center gap-3 cursor-pointer group"
-          >
-            <div className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white w-10 h-10 rounded-2xl flex items-center justify-center text-xl shadow-md group-hover:scale-105 transition">
-              🐼
-            </div>
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans">
+      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
+          <div onClick={() => { setMenuAktif("beranda"); setJenjangAktif(null); setKelasAktif(null); }} className="flex items-center gap-3 cursor-pointer">
+            <div className="bg-emerald-600 text-white w-10 h-10 rounded-xl flex items-center justify-center text-xl">🐼</div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold text-xl tracking-tight text-emerald-800">
-                  HibahIlmu
-                </span>
-                <span className="text-[10px] uppercase bg-emerald-600 text-white px-2 py-0.5 rounded-full font-bold">
-                  Gratis
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-500 hidden sm:block">Pengabdian Masyarakat</p>
+              <div className="font-extrabold text-xl text-emerald-900 leading-none">HibahIlmu</div>
+              <div className="text-[10px] text-emerald-600 font-bold uppercase mt-0.5">LMS Open Source</div>
             </div>
           </div>
-
-          <nav className="flex items-center gap-1 sm:gap-2 overflow-x-auto py-1">
-            {[
-              { id: "beranda", label: "Ruang Kelas", ikon: <BookOpen className="w-4 h-4" /> },
-              { id: "tryout", label: "Tryout Ujian", ikon: <Timer className="w-4 h-4" /> },
-              { id: "forum", label: "Tanya PR", ikon: <MessageSquare className="w-4 h-4" /> },
-              { id: "transparansi", label: "Donasi Umat", ikon: <ShieldCheck className="w-4 h-4" /> },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => {
-                  setMenuAktif(tab.id);
-                  setJenjangAktif(null);
-                  setKelasAktif(null);
-                }}
-                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition shrink-0 ${
-                  menuAktif === tab.id ? "bg-slate-900 text-white shadow-xs" : "text-slate-600 hover:bg-slate-100"
-                }`}
-              >
-                {tab.ikon}
-                <span>{tab.label}</span>
-              </button>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-2.5">
-            <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-800 px-3 py-1.5 rounded-full text-xs font-extrabold">
-              <Flame className="w-4 h-4 text-orange-500 fill-orange-500" />
-              <span>{poinXP} XP</span>
-            </div>
-
-            <button
-              onClick={() => {
-                setMenuAktif("dashboard");
-                setJenjangAktif(null);
-                setKelasAktif(null);
-              }}
-              className={`relative flex items-center gap-1.5 text-xs font-extrabold px-4 py-2 rounded-full shadow-sm transition ${
-                userLogin
-                  ? userLogin.role === "admin"
-                    ? "bg-slate-900 text-amber-300"
-                    : userLogin.role === "guru"
-                    ? "bg-indigo-600 text-white"
-                    : "bg-emerald-600 text-white"
-                  : "bg-emerald-600 text-white"
-              }`}
-            >
-              <LayoutDashboard className="w-3.5 h-3.5" />
-              <span>{userLogin ? `Dashboard ${userLogin.role.toUpperCase()}` : "Daftar / Masuk"}</span>
-              {jumlahPending > 0 && (
-                <span className="ml-1 bg-rose-500 text-white text-[10px] px-1.5 py-0.2 rounded-full">
-                  {jumlahPending}
-                </span>
-              )}
+          <nav className="flex items-center gap-2 overflow-x-auto">
+            <button onClick={() => { setMenuAktif("beranda"); setJenjangAktif(null); setKelasAktif(null); }} className={`px-4 py-2 rounded-xl text-xs font-bold ${menuAktif === "beranda" ? "bg-slate-900 text-white" : "text-slate-600"}`}>Ruang Kelas</button>
+            <button onClick={() => setMenuAktif("tryout")} className={`px-4 py-2 rounded-xl text-xs font-bold ${menuAktif === "tryout" ? "bg-slate-900 text-white" : "text-slate-600"}`}>Tryout</button>
+            <button onClick={() => setMenuAktif("forum")} className={`px-4 py-2 rounded-xl text-xs font-bold ${menuAktif === "forum" ? "bg-slate-900 text-white" : "text-slate-600"}`}>Forum</button>
+            <button onClick={() => setMenuAktif("transparansi")} className={`px-4 py-2 rounded-xl text-xs font-bold ${menuAktif === "transparansi" ? "bg-slate-900 text-white" : "text-slate-600"}`}>Donasi</button>
+            <button onClick={() => setMenuAktif("dashboard")} className={`px-4 py-2 rounded-xl text-xs font-bold ${menuAktif === "dashboard" ? "bg-emerald-600 text-white" : "bg-emerald-100 text-emerald-800"}`}>
+              {userLogin ? `Panel ${userLogin.role}` : "Login"}
             </button>
-          </div>
+          </nav>
         </div>
       </header>
 
-      {/* KONTEN UTAMA */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
-        {/* ==================== DASHBOARD & AUTH ==================== */}
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        
+        {/* ==================== 1. DASHBOARD ==================== */}
         {menuAktif === "dashboard" && (
           <div>
             {!userLogin ? (
-              <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
-                <div className="lg:col-span-7 bg-white rounded-3xl p-6 sm:p-8 border shadow-lg">
-                  <div className="flex gap-2 p-1.5 bg-slate-100 rounded-2xl mb-6">
-                    <button onClick={() => { setModeAuth("login"); setPesanError(""); }} className={`flex-1 py-2.5 rounded-xl text-xs font-bold ${modeAuth === "login" ? "bg-white shadow-xs" : "text-slate-500"}`}>Masuk</button>
-                    <button onClick={() => { setModeAuth("register"); setPesanError(""); }} className={`flex-1 py-2.5 rounded-xl text-xs font-bold ${modeAuth === "register" ? "bg-white shadow-xs" : "text-slate-500"}`}>Daftar</button>
-                  </div>
-                  {pesanError && <div className="mb-4 p-3 bg-rose-50 text-rose-800 rounded-xl text-xs font-semibold">{pesanError}</div>}
-                  {pesanSukses && <div className="mb-4 p-3 bg-emerald-50 text-emerald-900 rounded-xl text-xs font-semibold">{pesanSukses}</div>}
-
-                  {modeAuth === "login" ? (
-                    <form onSubmit={handleLogin} className="space-y-4">
-                      <input type="email" required value={emailLogin} onChange={(e) => setEmailLogin(e.target.value)} placeholder="Email..." className="w-full p-3 bg-slate-50 border rounded-xl text-sm" />
-                      <input type="password" required value={passwordLogin} onChange={(e) => setPasswordLogin(e.target.value)} placeholder="Password..." className="w-full p-3 bg-slate-50 border rounded-xl text-sm" />
-                      <button type="submit" className="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl text-sm">Masuk</button>
-                    </form>
-                  ) : (
-                    <form onSubmit={handleRegister} className="space-y-4">
-                      <div className="grid grid-cols-3 gap-2">
-                        <button type="button" onClick={() => setRoleReg("siswa")} className={`p-2 border rounded-xl font-bold text-xs ${roleReg === "siswa" ? "bg-emerald-50 border-emerald-600" : ""}`}>Siswa</button>
-                        <button type="button" onClick={() => setRoleReg("guru")} className={`p-2 border rounded-xl font-bold text-xs ${roleReg === "guru" ? "bg-indigo-50 border-indigo-600" : ""}`}>Guru</button>
-                        <button type="button" onClick={() => setRoleReg("admin")} className={`p-2 border rounded-xl font-bold text-xs ${roleReg === "admin" ? "bg-amber-50 border-amber-600" : ""}`}>Admin</button>
-                      </div>
-                      <input type="text" required value={namaReg} onChange={(e) => setNamaReg(e.target.value)} placeholder="Nama Lengkap..." className="w-full p-3 bg-slate-50 border rounded-xl text-sm" />
-                      <input type="email" required value={emailReg} onChange={(e) => setEmailReg(e.target.value)} placeholder="Email..." className="w-full p-3 bg-slate-50 border rounded-xl text-sm" />
-                      <input type="password" required value={passwordReg} onChange={(e) => setPasswordReg(e.target.value)} placeholder="Password..." className="w-full p-3 bg-slate-50 border rounded-xl text-sm" />
-                      <input type="text" required value={infoReg} onChange={(e) => setInfoReg(e.target.value)} placeholder={roleReg === "guru" ? "Mata Pelajaran..." : "Sekolah / Info..."} className="w-full p-3 bg-slate-50 border rounded-xl text-sm" />
-                      <button type="submit" className="w-full bg-slate-900 text-white font-bold py-3 rounded-xl text-sm">Daftar Akun</button>
-                    </form>
-                  )}
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-md mx-auto bg-white p-8 rounded-3xl shadow border">
+                <div className="flex gap-2 mb-6 bg-slate-100 p-1.5 rounded-2xl">
+                  <button onClick={() => setModeAuth("login")} className={`flex-1 py-2 rounded-xl text-xs font-bold ${modeAuth === "login" ? "bg-white shadow" : ""}`}>Masuk</button>
+                  <button onClick={() => setModeAuth("register")} className={`flex-1 py-2 rounded-xl text-xs font-bold ${modeAuth === "register" ? "bg-white shadow" : ""}`}>Daftar</button>
                 </div>
-
-                <div className="lg:col-span-5 bg-slate-900 text-white rounded-3xl p-6 shadow-xl flex flex-col justify-between">
-                  <div>
-                    <span className="text-xs bg-amber-400 text-slate-950 font-bold px-2 py-0.5 rounded-md">Demo 1-Klik</span>
-                    <h3 className="text-lg font-black mt-2 mb-4">Masuk Cepat:</h3>
-                    <div className="space-y-2">
-                      {safeAkunList.filter((a) => a.status === "approved").map((akun) => (
-                        <button key={akun.id} onClick={() => loginCepat(akun)} className="w-full text-left p-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 flex justify-between items-center text-xs">
-                          <span>{akun.nama} ({akun.role})</span>
-                          <span className="text-amber-300 font-bold">Masuk →</span>
-                        </button>
-                      ))}
+                {pesanError && <div className="mb-4 p-3 bg-rose-50 text-rose-700 text-xs rounded-xl font-bold">{pesanError}</div>}
+                {pesanSukses && <div className="mb-4 p-3 bg-emerald-50 text-emerald-700 text-xs rounded-xl font-bold">{pesanSukses}</div>}
+                
+                {modeAuth === "login" ? (
+                  <form onSubmit={handleLogin} className="space-y-4">
+                    <input type="email" required value={emailLogin} onChange={e => setEmailLogin(e.target.value)} placeholder="Email..." className="w-full p-3 bg-slate-50 border rounded-xl text-sm" />
+                    <input type="password" required value={passwordLogin} onChange={e => setPasswordLogin(e.target.value)} placeholder="Password..." className="w-full p-3 bg-slate-50 border rounded-xl text-sm" />
+                    <button type="submit" className="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl">Masuk</button>
+                  </form>
+                ) : (
+                  <form onSubmit={handleRegister} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-2">
+                      <button type="button" onClick={() => setRoleReg("siswa")} className={`p-2 border rounded-xl text-xs font-bold ${roleReg === "siswa" ? "bg-emerald-50 border-emerald-500" : ""}`}>Siswa</button>
+                      <button type="button" onClick={() => setRoleReg("guru")} className={`p-2 border rounded-xl text-xs font-bold ${roleReg === "guru" ? "bg-indigo-50 border-indigo-500" : ""}`}>Guru</button>
                     </div>
-                  </div>
+                    <input type="text" required value={namaReg} onChange={e => setNamaReg(e.target.value)} placeholder="Nama Lengkap" className="w-full p-3 bg-slate-50 border rounded-xl text-sm" />
+                    <input type="email" required value={emailReg} onChange={e => setEmailReg(e.target.value)} placeholder="Email" className="w-full p-3 bg-slate-50 border rounded-xl text-sm" />
+                    <input type="password" required value={passwordReg} onChange={e => setPasswordReg(e.target.value)} placeholder="Password" className="w-full p-3 bg-slate-50 border rounded-xl text-sm" />
+                    <button type="submit" className="w-full bg-slate-900 text-white font-bold py-3 rounded-xl">Daftar Akun</button>
+                  </form>
+                )}
+                <div className="mt-8 pt-6 border-t">
+                  <div className="text-[10px] font-bold text-slate-400 mb-2">DEMO LOGIN:</div>
+                  {daftarAkun.filter(a => a.status === "approved").slice(0, 3).map(a => (
+                    <button key={a.id} onClick={() => loginCepat(a)} className="w-full text-left text-xs bg-slate-100 hover:bg-slate-200 py-2 px-3 mb-2 rounded-lg font-bold flex justify-between">
+                      <span>{a.nama}</span> <span className="uppercase text-emerald-600">{a.role}</span>
+                    </button>
+                  ))}
                 </div>
               </motion.div>
             ) : userLogin.role === "admin" ? (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                <div className="bg-slate-900 text-white p-6 rounded-3xl flex flex-wrap justify-between items-center gap-4 shadow-lg">
+                <div className="bg-slate-900 text-white p-6 rounded-3xl flex justify-between items-center shadow-lg">
                   <div>
-                    <span className="bg-amber-400 text-slate-950 text-xs font-black px-3 py-1 rounded-full uppercase">👑 Super Admin</span>
-                    <h1 className="text-2xl font-black mt-2">Pusat Kendali Akun HibahIlmu</h1>
-                    <p className="text-xs text-slate-300">Kelola pendaftaran, edit data, suspend, import & hapus sekaligus.</p>
+                    <h1 className="text-2xl font-black">Panel Admin</h1>
+                    <p className="text-slate-400 text-sm">Kelola Akun & Hierarki</p>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <button onClick={() => setModalImportAkun(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm">
-                      <Upload className="w-4 h-4" /> Import Akun Massal
-                    </button>
-                    <button onClick={bukaModalTambahAkun} className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm">
-                      <UserPlus className="w-4 h-4" /> Tambah Akun
-                    </button>
-                    <button onClick={() => { setUserLogin(null); localStorage.removeItem("hibah_user_aktif"); }} className="bg-rose-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5">
-                      <LogOut className="w-4 h-4" /> Keluar
-                    </button>
+                  <div className="flex gap-2">
+                    <button onClick={() => setModalImportAkun(true)} className="bg-indigo-600 px-4 py-2 rounded-xl text-xs font-bold text-white flex items-center gap-1"><Upload className="w-4 h-4"/> Import</button>
+                    <button onClick={() => { setIdEditAkun(null); setModalAdminAkun(true); }} className="bg-emerald-600 px-4 py-2 rounded-xl text-xs font-bold text-white flex items-center gap-1"><UserPlus className="w-4 h-4"/> Tambah</button>
+                    <button onClick={() => { setUserLogin(null); localStorage.removeItem("hibah_user_aktif"); }} className="bg-rose-600 px-4 py-2 rounded-xl text-xs font-bold">Keluar</button>
                   </div>
                 </div>
 
-                {/* MODAL ADMIN TAMBAH / EDIT AKUN */}
-                {modalAdminAkun && (
-                  <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-                    <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl">
-                      <h3 className="text-xl font-black mb-4">{idEditAkun ? "Edit Data Akun Pengguna" : "Buat Akun Baru (Oleh Admin)"}</h3>
-                      <form onSubmit={handleSimpanAkunAdmin} className="space-y-3 text-xs">
-                        <div>
-                          <label className="font-bold block mb-1">Nama Lengkap</label>
-                          <input type="text" required value={namaFormAdmin} onChange={(e) => setNamaFormAdmin(e.target.value)} placeholder="Nama..." className="w-full p-2.5 border rounded-xl" />
-                        </div>
-                        <div>
-                          <label className="font-bold block mb-1">Email</label>
-                          <input type="email" required value={emailFormAdmin} onChange={(e) => setEmailFormAdmin(e.target.value)} placeholder="Email..." className="w-full p-2.5 border rounded-xl" />
-                        </div>
-                        <div>
-                          <label className="font-bold block mb-1">Password {idEditAkun && "(Kosongkan jika tidak diubah)"}</label>
-                          <input type="password" value={passFormAdmin} onChange={(e) => setPassFormAdmin(e.target.value)} placeholder="Password..." className="w-full p-2.5 border rounded-xl" />
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="font-bold block mb-1">Peran (Role)</label>
-                            <select value={roleFormAdmin} onChange={(e) => setRoleFormAdmin(e.target.value as any)} className="w-full p-2.5 border rounded-xl font-bold">
-                              <option value="siswa">Siswa</option>
-                              <option value="guru">Guru Relawan</option>
-                              <option value="admin">Admin</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="font-bold block mb-1">Status Akun</label>
-                            <select value={statusFormAdmin} onChange={(e) => setStatusFormAdmin(e.target.value as any)} className="w-full p-2.5 border rounded-xl font-bold">
-                              <option value="approved">Approved (Aktif)</option>
-                              <option value="pending">Pending</option>
-                              <option value="rejected">Suspended (Dibekukan)</option>
-                            </select>
-                          </div>
-                        </div>
-                        <div>
-                          <label className="font-bold block mb-1">Info Tambahan (Mapel / Sekolah)</label>
-                          <input type="text" value={infoFormAdmin} onChange={(e) => setInfoFormAdmin(e.target.value)} placeholder="Info..." className="w-full p-2.5 border rounded-xl" />
-                        </div>
-                        <div className="flex gap-2 pt-3">
-                          <button type="submit" className="flex-1 bg-emerald-600 text-white font-bold py-2.5 rounded-xl text-xs">Simpan Akun</button>
-                          <button type="button" onClick={() => setModalAdminAkun(false)} className="px-4 py-2.5 bg-slate-100 rounded-xl font-bold">Batal</button>
-                        </div>
-                      </form>
-                    </motion.div>
-                  </div>
-                )}
-
-                {/* MODAL IMPORT AKUN MASSAL */}
-                {modalImportAkun && (
-                  <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-                    <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="bg-white rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-2xl space-y-4">
-                      <div className="flex justify-between items-center">
-                        <h3 className="text-xl font-black flex items-center gap-2"><FileSpreadsheet className="w-5 h-5 text-indigo-600" /> Import Akun Massal (JSON)</h3>
-                        <button onClick={() => setModalImportAkun(false)} className="text-slate-400 hover:text-slate-700 font-bold">✕</button>
-                      </div>
-
-                      <p className="text-xs text-slate-600 leading-relaxed">
-                        Salin dan tempel format template JSON di bawah ini (atau sesuaikan dengan data siswa/guru Anda), lalu klik <b>Proses Import</b>.
-                      </p>
-
-                      {notifImport && (
-                        <div className="p-3 bg-emerald-50 text-emerald-900 font-bold text-xs rounded-xl">{notifImport}</div>
-                      )}
-
-                      <form onSubmit={handleImportJson} className="space-y-3">
-                        <div>
-                          <div className="flex justify-between items-center mb-1">
-                            <label className="text-xs font-bold">Contoh Template JSON:</label>
-                            <button type="button" onClick={() => setTeksImportJson(templateJsonContoh)} className="text-[11px] text-indigo-600 font-bold hover:underline">Muat Template Contoh</button>
-                          </div>
-                          <textarea rows={7} value={teksImportJson} onChange={(e) => setTeksImportJson(e.target.value)} placeholder="Tempel kode JSON di sini..." className="w-full p-3 font-mono text-xs bg-slate-900 text-emerald-300 rounded-xl" />
-                        </div>
-                        <div className="flex gap-2">
-                          <button type="submit" className="flex-1 bg-indigo-600 text-white font-bold py-3 rounded-xl text-xs">Proses Import Akun</button>
-                          <button type="button" onClick={() => setModalImportAkun(false)} className="px-4 py-3 bg-slate-100 rounded-xl font-bold text-xs">Tutup</button>
-                        </div>
-                      </form>
-                    </motion.div>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                  {/* TABEL MANAJEMEN AKUN (BULK DELETE & SINGLE ACTIONS) */}
-                  <div className="lg:col-span-7 bg-white p-6 rounded-3xl border shadow-sm space-y-4">
-                    <div className="flex flex-wrap justify-between items-center gap-2">
-                      <h2 className="text-base font-black">
-                        Kelola Akun ({safeAkunList.length})
-                      </h2>
-                      {selectedAkunIds.length > 0 && (
-                        <button onClick={hapusAkunSekaligus} className="bg-rose-600 text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-sm">
-                          <Trash2 className="w-4 h-4" /> Hapus {selectedAkunIds.length} Akun Terpilih
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="space-y-2.5 max-h-[30rem] overflow-y-auto pr-1">
-                      {safeAkunList.map((akun) => (
-                        <div key={akun.id} className="p-3.5 bg-slate-50 border rounded-2xl flex justify-between items-center text-xs gap-2">
-                          <div className="flex items-center gap-3">
-                            {akun.role !== "admin" && (
-                              <input type="checkbox" checked={selectedAkunIds.includes(akun.id)} onChange={() => togglePilihAkun(akun.id)} className="w-4 h-4 accent-emerald-600 cursor-pointer" />
-                            )}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="bg-white p-6 rounded-3xl border shadow-sm">
+                    <h2 className="font-black text-lg mb-4 flex justify-between items-center">
+                      <span>Manajemen Akun</span>
+                      {selectedAkunIds.length > 0 && <button onClick={hapusAkunSekaligus} className="text-xs bg-rose-600 text-white px-2 py-1 rounded">Hapus Terpilih</button>}
+                    </h2>
+                    <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                      {daftarAkun.map(akun => (
+                        <div key={akun.id} className="p-3 bg-slate-50 border rounded-xl flex justify-between items-center text-xs">
+                          <div className="flex items-center gap-2">
+                            {akun.role !== "admin" && <input type="checkbox" checked={selectedAkunIds.includes(akun.id)} onChange={() => togglePilihAkun(akun.id)} />}
                             <div>
-                              <div className="font-extrabold text-sm flex items-center gap-1.5">
-                                {akun.nama}
-                                <span className={`text-[10px] uppercase px-2 py-0.5 rounded font-bold ${akun.role === "admin" ? "bg-amber-100 text-amber-900" : akun.role === "guru" ? "bg-indigo-100 text-indigo-900" : "bg-emerald-100 text-emerald-900"}`}>{akun.role}</span>
-                                <span className={`text-[10px] uppercase px-2 py-0.5 rounded font-bold ${akun.status === "approved" ? "bg-emerald-100 text-emerald-700" : akun.status === "pending" ? "bg-amber-100 text-amber-700" : "bg-rose-100 text-rose-700"}`}>{akun.status === "rejected" ? "Suspended" : akun.status}</span>
-                              </div>
-                              <div className="text-slate-500 mt-0.5">{akun.email} • {akun.infoTambahan}</div>
+                              <div className="font-bold text-sm">{akun.nama} <span className="text-[10px] bg-slate-200 px-1 rounded">{akun.role}</span> <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1 rounded">{akun.status}</span></div>
+                              <div className="text-slate-500">{akun.email}</div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            {akun.status === "approved" ? (
-                              <button onClick={() => ubahStatusAkun(akun.id, "rejected")} title="Suspend Akun" className="p-2 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl">
-                                <UserX2 className="w-4 h-4" />
-                              </button>
-                            ) : (
-                              <button onClick={() => ubahStatusAkun(akun.id, "approved")} title="Aktifkan Akun" className="p-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl">
-                                <UserCheck2 className="w-4 h-4" />
-                              </button>
-                            )}
-                            <button onClick={() => bukaModalEditAkun(akun)} title="Edit Akun" className="p-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl">
-                              <Edit3 className="w-4 h-4" />
-                            </button>
-                            {akun.role !== "admin" && (
-                              <button onClick={() => hapusAkun(akun.id)} title="Hapus Permanen" className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl">
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            )}
+                          <div className="flex gap-1">
+                            {akun.status === "pending" && <button onClick={() => ubahStatusAkun(akun.id, "approved")} className="p-1.5 bg-emerald-100 text-emerald-700 rounded"><UserCheck className="w-4 h-4"/></button>}
+                            <button onClick={() => bukaModalEditAkun(akun)} className="p-1.5 bg-blue-100 text-blue-700 rounded"><Edit3 className="w-4 h-4"/></button>
+                            {akun.role !== "admin" && <button onClick={() => hapusAkun(akun.id)} className="p-1.5 bg-rose-100 text-rose-700 rounded"><Trash2 className="w-4 h-4"/></button>}
                           </div>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  {/* LOG AKTIVITAS */}
-                  <div className="lg:col-span-5 bg-white p-6 rounded-3xl border shadow-sm">
-                    <h2 className="text-base font-black mb-3 flex items-center gap-2"><Activity className="w-5 h-5 text-emerald-600" /> Log Aktivitas Real-Time</h2>
-                    <div className="space-y-2 max-h-[30rem] overflow-y-auto text-xs pr-1">
-                      {safeLogList.map((l) => (
-                        <div key={l.id} className="p-2.5 bg-slate-50 border rounded-xl flex justify-between gap-2">
-                          <span><b>[{l.rolePelaku}] {l.namaPelaku}:</b> {l.aksi}</span>
-                          <span className="font-mono text-slate-400 shrink-0">{l.waktu}</span>
+                  <div className="bg-white p-6 rounded-3xl border shadow-sm">
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="font-black text-lg">Manajemen Kelas</h2>
+                      <button onClick={() => setModalKategori(true)} className="bg-slate-900 text-white text-xs px-3 py-1.5 rounded-lg font-bold">Tambah</button>
+                    </div>
+                    <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+                      {daftarJenjang.map(j => (
+                        <div key={j.id} className="p-3 border rounded-xl">
+                          <h3 className="font-bold text-sm mb-2">{j.nama}</h3>
+                          <div className="flex flex-wrap gap-2">
+                            {j.subJenjang.map(sj => <span key={sj.id} className="bg-slate-100 text-xs px-2 py-1 rounded border">{sj.nama}</span>)}
+                          </div>
                         </div>
                       ))}
                     </div>
                   </div>
                 </div>
+
+                {modalAdminAkun && (
+                  <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+                      <h3 className="font-black text-lg mb-4">Edit Akun</h3>
+                      <form onSubmit={simpanAkunAdmin} className="space-y-3 text-xs">
+                        <input type="text" required value={namaFormAdmin} onChange={e=>setNamaFormAdmin(e.target.value)} placeholder="Nama" className="w-full p-2 border rounded" />
+                        <input type="email" required value={emailFormAdmin} onChange={e=>setEmailFormAdmin(e.target.value)} placeholder="Email" className="w-full p-2 border rounded" />
+                        <select value={roleFormAdmin} onChange={e=>setRoleFormAdmin(e.target.value as any)} className="w-full p-2 border rounded font-bold">
+                          <option value="siswa">Siswa</option><option value="guru">Guru</option><option value="admin">Admin</option>
+                        </select>
+                        <select value={statusFormAdmin} onChange={e=>setStatusFormAdmin(e.target.value as any)} className="w-full p-2 border rounded font-bold">
+                          <option value="approved">Aktif</option><option value="pending">Pending</option><option value="rejected">Suspend</option>
+                        </select>
+                        {roleFormAdmin === "guru" && (
+                          <div className="p-3 bg-indigo-50 border rounded-xl">
+                            <label className="font-bold mb-2 block">Hak Akses Kelas:</label>
+                            {daftarJenjang.map(j => (
+                              <div key={j.id} className="mb-2">
+                                <div className="text-[10px] font-bold text-slate-500 uppercase">{j.nama}</div>
+                                <div className="grid grid-cols-2 gap-1">
+                                  {j.subJenjang.map(sj => (
+                                    <label key={sj.id} className="flex gap-1 items-center"><input type="checkbox" checked={aksesMengajarForm.includes(sj.id)} onChange={() => setAksesMengajarForm(p => p.includes(sj.id) ? p.filter(x => x!==sj.id) : [...p, sj.id])}/> {sj.nama}</label>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <div className="flex gap-2 pt-2">
+                          <button type="submit" className="flex-1 bg-emerald-600 text-white font-bold py-2 rounded">Simpan</button>
+                          <button type="button" onClick={()=>setModalAdminAkun(false)} className="px-4 py-2 bg-slate-200 rounded font-bold">Batal</button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
+                
+                {modalImportAkun && (
+                  <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl p-6 max-w-md w-full">
+                      <h3 className="font-black mb-2">Import JSON</h3>
+                      <textarea rows={6} value={teksImportJson} onChange={e=>setTeksImportJson(e.target.value)} placeholder='[{"nama":"Budi", "email":"budi@a.com"}]' className="w-full p-2 text-xs border rounded font-mono bg-slate-50"></textarea>
+                      <div className="flex gap-2 mt-3">
+                        <button onClick={handleImportJson} className="flex-1 bg-indigo-600 text-white py-2 rounded font-bold">Import</button>
+                        <button onClick={()=>setModalImportAkun(false)} className="px-4 py-2 bg-slate-200 rounded font-bold">Batal</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {modalKategori && (
+                  <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl p-6 max-w-xs w-full">
+                      <h3 className="font-black mb-3">Tambah Kelas Baru</h3>
+                      <form onSubmit={tambahKategoriBaru} className="space-y-3">
+                        <select value={targetJenjangKategori} onChange={e=>setTargetJenjangKategori(e.target.value)} className="w-full p-2 border rounded text-sm">
+                          {daftarJenjang.map(j => <option key={j.id} value={j.id}>{j.nama}</option>)}
+                        </select>
+                        <input type="text" required value={namaKategoriBaru} onChange={e=>setNamaKategoriBaru(e.target.value)} placeholder="Nama Kelas..." className="w-full p-2 border rounded text-sm" />
+                        <div className="flex gap-2">
+                          <button type="submit" className="flex-1 bg-slate-900 text-white font-bold py-2 rounded">Simpan</button>
+                          <button type="button" onClick={()=>setModalKategori(false)} className="px-4 py-2 bg-slate-200 font-bold rounded">Batal</button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
               </motion.div>
             ) : userLogin.role === "guru" ? (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
                 <div className="bg-indigo-900 text-white p-6 rounded-3xl flex justify-between items-center shadow-lg">
-                  <div>
-                    <span className="bg-white/20 text-xs font-bold px-3 py-1 rounded-full uppercase">👨‍🏫 Dashboard Guru</span>
-                    <h1 className="text-2xl font-black mt-2">Selamat Mengajar, {userLogin.nama}!</h1>
-                    <p className="text-xs text-indigo-200">Terbitkan modul materi dan kuis interaktif.</p>
-                  </div>
-                  <button onClick={() => { setUserLogin(null); localStorage.removeItem("hibah_user_aktif"); }} className="bg-white/20 text-white text-xs font-bold px-4 py-2 rounded-xl">Keluar</button>
+                  <div><h1 className="text-2xl font-black">Studio Pengajar</h1><p className="text-sm">Akses {opsiKelasGuru.length} kelas.</p></div>
+                  <button onClick={() => { setUserLogin(null); localStorage.removeItem("hibah_user_aktif"); }} className="bg-white/20 px-4 py-2 rounded-xl text-xs font-bold">Keluar</button>
                 </div>
-
                 <div className="bg-white p-6 rounded-3xl border shadow-sm max-w-2xl">
-                  <h2 className="text-lg font-black mb-4 flex items-center gap-2"><PlusCircle className="w-5 h-5 text-indigo-600" /> Studio Guru</h2>
-                  {notifGuru && <div className="mb-4 p-3 bg-emerald-50 text-emerald-900 text-xs font-bold rounded-xl">Materi berhasil diterbitkan!</div>}
+                  {notifGuru && <div className="p-3 bg-emerald-50 text-emerald-800 text-xs font-bold rounded-xl mb-4">Materi terbit!</div>}
                   <form onSubmit={handleGuruBuatMateri} className="space-y-3 text-xs">
-                    <select value={jenjangPilih} onChange={(e) => setJenjangPilih(e.target.value)} className="w-full p-3 bg-slate-50 border rounded-xl font-semibold">
-                      {(daftarJenjang || []).map((j) => <option key={j.id} value={j.id}>{j.nama}</option>)}
+                    <select required value={subJenjangPilih} onChange={e=>setSubJenjangPilih(e.target.value)} className="w-full p-3 border border-indigo-200 bg-indigo-50 rounded-xl font-bold text-indigo-900">
+                      <option value="" disabled>-- Pilih Kelas --</option>
+                      {opsiKelasGuru.map(sj => <option key={sj.id} value={sj.id}>{sj.namaInduk} - {sj.nama}</option>)}
                     </select>
-                    <input type="text" required value={judulMateri} onChange={(e) => setJudulMateri(e.target.value)} placeholder="Judul Materi..." className="w-full p-3 bg-slate-50 border rounded-xl text-sm" />
-                    <input type="text" required value={mapelMateri} onChange={(e) => setMapelMateri(e.target.value)} placeholder="Mata Pelajaran..." className="w-full p-3 bg-slate-50 border rounded-xl text-sm" />
-                    <input type="text" required value={videoMateri} onChange={(e) => setVideoMateri(e.target.value)} placeholder="Link YouTube..." className="w-full p-3 bg-slate-50 border rounded-xl text-sm" />
-                    <textarea rows={2} required value={rangkumanMateri} onChange={(e) => setRangkumanMateri(e.target.value)} placeholder="Rangkuman..." className="w-full p-3 bg-slate-50 border rounded-xl text-sm" />
-                    <button type="submit" className="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl text-sm">Terbitkan Materi</button>
+                    <div className="grid grid-cols-2 gap-3">
+                      <input type="text" required value={judulMateri} onChange={e=>setJudulMateri(e.target.value)} placeholder="Judul" className="p-3 border rounded-xl" />
+                      <select value={levelMateri} onChange={(e) => setLevelMateri(e.target.value as any)} className="p-3 border rounded-xl font-bold"><option value="Pemula">Pemula</option><option value="Menengah">Menengah</option><option value="Mahir">Mahir</option></select>
+                    </div>
+                    <input type="url" required value={videoMateri} onChange={e=>setVideoMateri(e.target.value)} placeholder="Link YouTube" className="w-full p-3 border rounded-xl" />
+                    <textarea rows={2} required value={rangkumanMateri} onChange={e=>setRangkumanMateri(e.target.value)} placeholder="Rangkuman" className="w-full p-3 border rounded-xl" />
+                    <div className="p-4 bg-slate-50 border rounded-xl space-y-3">
+                      <div className="font-bold text-slate-700">Kuis:</div>
+                      <input type="text" required value={pertanyaanKuis} onChange={e=>setPertanyaanKuis(e.target.value)} placeholder="Pertanyaan..." className="w-full p-2 border rounded" />
+                      <div className="grid grid-cols-2 gap-2">
+                        <input type="text" required value={opsiA} onChange={e=>setOpsiA(e.target.value)} placeholder="A" className="p-2 border rounded" />
+                        <input type="text" required value={opsiB} onChange={e=>setOpsiB(e.target.value)} placeholder="B" className="p-2 border rounded" />
+                        <input type="text" required value={opsiC} onChange={e=>setOpsiC(e.target.value)} placeholder="C" className="p-2 border rounded" />
+                        <input type="text" required value={opsiD} onChange={e=>setOpsiD(e.target.value)} placeholder="D" className="p-2 border rounded" />
+                      </div>
+                      <select value={kunciKuis} onChange={e=>setKunciKuis(Number(e.target.value))} className="w-full p-2 border rounded font-bold"><option value={0}>A</option><option value={1}>B</option><option value={2}>C</option><option value={3}>D</option></select>
+                    </div>
+                    <button type="submit" className="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl shadow-lg">Publikasikan Materi</button>
                   </form>
                 </div>
               </motion.div>
             ) : (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
                 <div className="bg-emerald-700 text-white p-6 rounded-3xl flex justify-between items-center shadow-lg">
-                  <div>
-                    <span className="bg-white/20 text-xs font-bold px-3 py-1 rounded-full uppercase">🎓 Dashboard Siswa</span>
-                    <h1 className="text-2xl font-black mt-2">Semangat Belajar, {userLogin.nama}!</h1>
-                    <p className="text-xs text-emerald-100">Total XP: {poinXP} XP • Selesai: {materiSelesai.length} modul</p>
-                  </div>
-                  <button onClick={() => { setUserLogin(null); localStorage.removeItem("hibah_user_aktif"); }} className="bg-white/20 text-white text-xs font-bold px-4 py-2 rounded-xl">Keluar</button>
-                </div>
-
-                <div className="bg-white p-6 rounded-3xl border shadow-sm">
-                  <h2 className="text-base font-black mb-3">Riwayat Aktivitasmu</h2>
-                  <div className="space-y-2 text-xs">
-                    {safeLogList
-                      .filter((l) => l.namaPelaku === userLogin.nama || l.rolePelaku === "siswa")
-                      .map((log) => (
-                        <div key={log.id} className="p-3 bg-slate-50 border rounded-xl flex justify-between">
-                          <span>✅ {log.aksi}</span>
-                          <span className="font-mono text-slate-400">{log.waktu}</span>
-                        </div>
-                      ))}
-                  </div>
+                  <div><h1 className="text-2xl font-black">Halo, {userLogin.nama}!</h1><p className="text-sm">Total XP: {poinXP}</p></div>
+                  <button onClick={() => { setUserLogin(null); localStorage.removeItem("hibah_user_aktif"); }} className="bg-white/20 px-4 py-2 rounded-xl text-xs font-bold">Keluar</button>
                 </div>
               </motion.div>
             )}
           </div>
         )}
 
-        {/* 2. TRYOUT UJIAN */}
+        {/* ==================== 2. TRYOUT ==================== */}
         {menuAktif === "tryout" && (
-          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="max-w-4xl mx-auto">
-            <div className="rounded-3xl p-8 bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-xl mb-8 flex justify-between items-center">
-              <div>
-                <span className="bg-white/20 px-3 py-1 rounded-full text-xs font-bold">Simulasi Ujian</span>
-                <h1 className="text-3xl font-black mt-2">Tryout & Latihan Berwaktu</h1>
-              </div>
-              {sedangUjian && (
-                <div className="bg-slate-900/80 px-5 py-3 rounded-2xl text-center">
-                  <div className="text-xs text-amber-300 font-bold">Waktu</div>
-                  <div className="font-mono text-2xl font-black text-white">
-                    {Math.floor(sisaWaktu / 60)}:{sisaWaktu % 60 < 10 ? "0" : ""}{sisaWaktu % 60}
-                  </div>
-                </div>
-              )}
-            </div>
-
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-3xl mx-auto">
             {!sedangUjian && !ujianSelesai && (
-              <div className="bg-white rounded-3xl p-8 border text-center shadow-sm">
-                <Award className="w-16 h-16 text-indigo-600 mx-auto mb-4" />
-                <h2 className="text-2xl font-extrabold mb-2">Mulai Simulasi Tryout?</h2>
-                <button onClick={() => { setJawabanUserTryout({}); setSisaWaktu(180); setUjianSelesai(false); setSedangUjian(true); }} className="bg-indigo-600 text-white font-bold px-8 py-4 rounded-2xl shadow-lg inline-flex items-center gap-2">
-                  <Play className="w-5 h-5 fill-white" /> Mulai Sekarang
-                </button>
+              <div className="bg-white rounded-3xl p-8 border text-center">
+                <Timer className="w-16 h-16 text-indigo-600 mx-auto mb-4" />
+                <h2 className="text-2xl font-black mb-4">Simulasi Tryout</h2>
+                <button onClick={() => { setJawabanUserTryout({}); setSisaWaktu(180); setUjianSelesai(false); setSedangUjian(true); }} className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold">Mulai Sekarang</button>
               </div>
             )}
-
             {sedangUjian && (
-              <div className="space-y-6">
-                {BANK_SOAL_TRYOUT.map((soal, idx) => (
-                  <div key={soal.id} className="bg-white rounded-3xl p-6 border">
-                    <h3 className="font-bold text-lg mb-3">{soal.pertanyaan}</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {soal.opsi.map((pilihan, opsiIdx) => (
-                        <button key={opsiIdx} onClick={() => setJawabanUserTryout((prev) => ({ ...prev, [idx]: opsiIdx }))} className={`p-3.5 rounded-2xl border-2 text-left font-semibold text-sm ${jawabanUserTryout[idx] === opsiIdx ? "border-indigo-600 bg-indigo-50" : "border-slate-200"}`}>
-                          {pilihan}
-                        </button>
+              <div className="space-y-4">
+                <div className="text-right text-rose-600 font-bold font-mono text-xl">{Math.floor(sisaWaktu/60)}:{(sisaWaktu%60).toString().padStart(2,'0')}</div>
+                {BANK_SOAL_TRYOUT.map((soal, i) => (
+                  <div key={soal.id} className="bg-white p-6 rounded-2xl border">
+                    <p className="font-bold mb-3">{soal.pertanyaan}</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {soal.opsi.map((ops, idx) => (
+                        <button key={idx} onClick={() => setJawabanUserTryout(p => ({...p, [i]: idx}))} className={`p-3 rounded-xl border text-sm font-semibold text-left ${jawabanUserTryout[i] === idx ? "bg-indigo-50 border-indigo-500" : ""}`}>{ops}</button>
                       ))}
                     </div>
                   </div>
                 ))}
-                <button onClick={selesaikanTryout} className="w-full bg-emerald-600 text-white font-extrabold py-4 rounded-2xl shadow-lg">Kumpulkan Jawaban</button>
+                <button onClick={selesaikanTryout} className="w-full bg-emerald-600 text-white font-bold py-4 rounded-2xl shadow">Kumpulkan</button>
               </div>
             )}
-
             {ujianSelesai && (
-              <div className="bg-white rounded-3xl p-8 border border-emerald-200 text-center shadow-md">
-                <Trophy className="w-16 h-16 text-amber-500 mx-auto mb-3" />
-                <div className="text-3xl font-black mb-2">Skor Anda: {skorTryout} / 100</div>
-                <button onClick={() => { setUjianSelesai(false); setSedangUjian(false); }} className="bg-slate-900 text-white font-bold px-6 py-3 rounded-xl mt-4">Ulangi Tryout</button>
+              <div className="bg-white p-8 rounded-3xl border text-center">
+                <Trophy className="w-16 h-16 text-amber-500 mx-auto mb-4"/>
+                <h2 className="text-2xl font-black">Skor: {skorTryout}</h2>
+                <button onClick={() => setUjianSelesai(false)} className="mt-4 bg-slate-900 text-white px-6 py-2 rounded-xl font-bold">Kembali</button>
               </div>
             )}
           </motion.div>
         )}
 
-        {/* 3. FORUM TANYA PR */}
+        {/* ==================== 3. FORUM ==================== */}
         {menuAktif === "forum" && (
-          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="max-w-4xl mx-auto space-y-6">
-            <div className="bg-emerald-600 rounded-3xl p-6 sm:p-8 text-white shadow-lg">
-              <h1 className="text-2xl sm:text-3xl font-black mb-2">Forum Tanya PR</h1>
-              <p className="text-emerald-50 text-sm">Tanyakan tugas sekolahmu di sini.</p>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-3xl mx-auto space-y-6">
+            <div className="bg-white p-6 border rounded-3xl">
+              <h2 className="font-black text-lg mb-3">Tanya PR</h2>
+              <form onSubmit={e => { e.preventDefault(); if(tanyaBaru.trim()) { setDaftarDiskusi([{id: "pr-"+Date.now(), penanya: userLogin?.nama || "Siswa", jenjang: "Umum", mapel: mapelBaru, pertanyaan: tanyaBaru, waktu: "Baru saja", jawaban: []}, ...daftarDiskusi]); setTanyaBaru(""); tambahXP(20); } }}>
+                <input type="text" value={mapelBaru} onChange={e=>setMapelBaru(e.target.value)} placeholder="Mapel" className="w-full p-3 border rounded-xl text-sm mb-2" />
+                <textarea rows={2} required value={tanyaBaru} onChange={e=>setTanyaBaru(e.target.value)} placeholder="Tanya..." className="w-full p-3 border rounded-xl text-sm mb-2" />
+                <button type="submit" className="bg-emerald-600 text-white px-6 py-2 rounded-xl font-bold text-sm">Kirim</button>
+              </form>
             </div>
-            <form onSubmit={(e) => { e.preventDefault(); if (!tanyaBaru.trim()) return; setDaftarDiskusi([{ id: "pr-" + Date.now(), penanya: userLogin?.nama || "Pelajar", jenjang: "Umum", mapel: mapelBaru, pertanyaan: tanyaBaru, waktu: "Baru saja", jawaban: [] }, ...daftarDiskusi]); setTanyaBaru(""); tambahXP(20); }} className="bg-white rounded-3xl p-6 border space-y-3">
-              <input type="text" value={mapelBaru} onChange={(e) => setMapelBaru(e.target.value)} placeholder="Mapel..." className="w-full p-3 bg-slate-50 border rounded-xl text-sm" />
-              <textarea rows={3} required value={tanyaBaru} onChange={(e) => setTanyaBaru(e.target.value)} placeholder="Tuliskan soal PR..." className="w-full p-3 bg-slate-50 border rounded-xl text-sm" />
-              <button type="submit" className="bg-emerald-600 text-white font-bold px-6 py-2.5 rounded-xl text-sm">Kirim Pertanyaan (+20 XP)</button>
-            </form>
-
-            <div className="space-y-4">
-              {daftarDiskusi.map((item) => (
-                <div key={item.id} className="bg-white rounded-3xl p-6 border">
-                  <div className="font-bold text-sm mb-2">{item.mapel} • {item.penanya}</div>
-                  <p className="text-sm mb-3">{item.pertanyaan}</p>
-                  <div className="space-y-2 pl-4 border-l-2 border-emerald-200 mb-3">
-                    {item.jawaban.map((jwb, i) => (
-                      <div key={i} className="bg-emerald-50 p-3 rounded-xl text-xs"><b>{jwb.penjawab}:</b> {jwb.isi}</div>
-                    ))}
-                  </div>
-                  <div className="flex gap-2">
-                    <input type="text" value={balasanInput[item.id] || ""} onChange={(e) => setBalasanInput({ ...balasanInput, [item.id]: e.target.value })} placeholder="Bantu jawab..." className="flex-1 px-3 py-2 bg-slate-50 border rounded-xl text-xs" />
-                    <button onClick={() => { const isi = balasanInput[item.id]; if (!isi) return; setDaftarDiskusi(daftarDiskusi.map((d) => d.id === item.id ? { ...d, jawaban: [...d.jawaban, { penjawab: userLogin?.nama || "Relawan", isi }] } : d)); setBalasanInput({ ...balasanInput, [item.id]: "" }); tambahXP(35); }} className="bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold">Jawab</button>
-                  </div>
+            {daftarDiskusi.map(d => (
+              <div key={d.id} className="bg-white p-5 border rounded-2xl">
+                <div className="font-bold text-sm mb-1">{d.mapel} • {d.penanya}</div>
+                <p className="text-sm mb-3">{d.pertanyaan}</p>
+                <div className="space-y-2 mb-3 pl-3 border-l-2 border-emerald-200">
+                  {d.jawaban.map((j, i) => <div key={i} className="text-xs bg-emerald-50 p-2 rounded"><b>{j.penjawab}:</b> {j.isi}</div>)}
                 </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* 4. DONASI & TRANSPARANSI */}
-        {menuAktif === "transparansi" && (
-          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="max-w-4xl mx-auto space-y-6">
-            <div className="bg-gradient-to-br from-slate-900 to-emerald-950 rounded-3xl p-8 text-white text-center shadow-xl">
-              <ShieldCheck className="w-12 h-12 text-emerald-400 mx-auto mb-3" />
-              <h1 className="text-3xl font-black mb-2">Transparansi Dana Umat</h1>
-              <p className="text-slate-300 text-sm max-w-xl mx-auto mb-6">Donasi sukarela digunakan untuk server dan domain <strong>hibahilmu.id</strong>.</p>
-              <div className="bg-white/10 p-5 rounded-2xl max-w-md mx-auto text-left">
-                <div className="flex justify-between text-xs font-bold mb-1 text-emerald-300">
-                  <span>Terkumpul: Rp 850.000</span>
-                  <span>Target: Rp 1.500.000</span>
-                </div>
-                <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
-                  <div className="w-[56%] h-full bg-emerald-400 rounded-full" />
+                <div className="flex gap-2">
+                  <input type="text" value={balasanInput[d.id] || ""} onChange={e => setBalasanInput({...balasanInput, [d.id]: e.target.value})} placeholder="Jawab..." className="flex-1 p-2 border rounded-lg text-xs" />
+                  <button onClick={() => { if(balasanInput[d.id]) { setDaftarDiskusi(daftarDiskusi.map(x => x.id === d.id ? {...x, jawaban: [...x.jawaban, {penjawab: userLogin?.nama || "User", isi: balasanInput[d.id]}]} : x)); setBalasanInput({...balasanInput, [d.id]: ""}); tambahXP(30); } }} className="bg-slate-900 text-white px-4 py-2 rounded-lg text-xs font-bold">Kirim</button>
                 </div>
               </div>
+            ))}
+          </motion.div>
+        )}
+
+        {/* ==================== 4. TRANSPARANSI ==================== */}
+        {menuAktif === "transparansi" && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-2xl mx-auto bg-slate-900 text-white p-8 rounded-3xl text-center">
+            <ShieldCheck className="w-12 h-12 text-emerald-400 mx-auto mb-4"/>
+            <h2 className="text-2xl font-black mb-2">Transparansi Dana</h2>
+            <p className="text-slate-300 text-sm mb-6">Murni untuk server & operasional gratis.</p>
+            <div className="bg-white/10 p-4 rounded-xl text-left">
+              <div className="flex justify-between text-xs font-bold text-emerald-300 mb-2"><span>Terkumpul: Rp 850.000</span><span>Target: Rp 1.500.000</span></div>
+              <div className="w-full h-3 bg-slate-800 rounded-full"><div className="w-[56%] h-full bg-emerald-400 rounded-full"></div></div>
             </div>
           </motion.div>
         )}
 
-        {/* 5. RUANG KELAS UTAMA */}
+        {/* ==================== 5. BERANDA KELAS ==================== */}
         {menuAktif === "beranda" && (
-          <>
+          <React.Fragment>
             {!jenjangAktif && !kelasAktif && (
-              <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}>
-                <div className="text-center max-w-4xl mx-auto mb-12 pt-2">
-                  <h1 className="text-4xl sm:text-6xl font-black text-slate-900 mb-5 leading-tight">
-                    Satu Platform Sejuta Ilmu, <br />
-                    <span className="text-emerald-600">100% Gratis Selamanya.</span>
-                  </h1>
-                  <p className="text-slate-600 mb-8">Pilih jenjang pendidikanmu dan mulai belajar interaktif sekarang!</p>
-                  <div className="max-w-xl mx-auto relative">
-                    <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      value={kataKunci}
-                      onChange={(e) => setKataKunci(e.target.value)}
-                      placeholder="Cari pelajaran..."
-                      className="w-full pl-12 pr-4 py-4 bg-white border rounded-2xl shadow-md text-sm"
-                    />
-                  </div>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <div className="text-center mb-10 pt-4">
+                  <h1 className="text-4xl sm:text-5xl font-black mb-4">Satu Platform,<br/><span className="text-emerald-600">Gratis Selamanya.</span></h1>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {daftarJenjang
-                    .filter((j) => j.nama.toLowerCase().includes(kataKunci.toLowerCase()))
-                    .map((jenjang, idx) => (
-                      <motion.div
-                        key={jenjang.id}
-                        whileHover={{ y: -6 }}
-                        onClick={() => setJenjangAktif(jenjang)}
-                        className="cursor-pointer bg-white rounded-3xl p-6 border shadow-xs hover:shadow-xl transition flex flex-col justify-between relative overflow-hidden"
-                      >
-                        <div className={`h-2 w-full bg-gradient-to-r ${jenjang.gradien} absolute top-0 left-0`} />
-                        <div>
-                          <div className="flex justify-between mb-5 mt-2">
-                            <div className={`p-3.5 rounded-2xl bg-gradient-to-br ${jenjang.gradien} shadow-md`}>
-                              {renderIkonJenjang(jenjang.ikonNama)}
-                            </div>
-                            <span className={`text-xs font-bold px-3 py-1 rounded-full ${jenjang.badge}`}>
-                              {jenjang.kelas.length} Modul
-                            </span>
-                          </div>
-                          <h3 className="text-2xl font-extrabold mb-2">{jenjang.nama}</h3>
-                          <p className="text-slate-600 text-sm">{jenjang.deskripsi}</p>
-                        </div>
-                        <div className="pt-4 border-t mt-4 flex justify-between items-center text-sm font-bold text-emerald-600">
-                          <span>Buka Kelas</span>
-                          <span>→</span>
-                        </div>
-                      </motion.div>
-                    ))}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {daftarJenjang.map(j => (
+                    <motion.div key={j.id} whileHover={{ y: -4 }} onClick={() => { setJenjangAktif(j); setSubJenjangAktif("semua"); }} className="cursor-pointer bg-white p-6 rounded-3xl border shadow-sm">
+                      <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${j.gradien} flex items-center justify-center mb-4`}>{renderIkon(j.ikonNama)}</div>
+                      <h3 className="font-black text-xl mb-2">{j.nama}</h3>
+                      <p className="text-sm text-slate-500 mb-4">{j.deskripsi}</p>
+                      <div className="text-xs font-bold text-emerald-600">Buka Kelas →</div>
+                    </motion.div>
+                  ))}
                 </div>
               </motion.div>
             )}
 
             {jenjangAktif && !kelasAktif && (
-              <motion.div initial={{ opacity: 0, x: 25 }} animate={{ opacity: 1, x: 0 }}>
-                <button
-                  onClick={() => setJenjangAktif(null)}
-                  className="inline-flex items-center gap-2 text-sm font-bold text-slate-600 bg-white px-4 py-2 rounded-xl border mb-6 shadow-2xs"
-                >
-                  <ArrowLeft className="w-4 h-4" /> Kembali ke Semua Jenjang
-                </button>
-                <div className={`rounded-3xl p-8 text-white bg-gradient-to-r ${jenjangAktif.gradien} shadow-xl mb-8`}>
-                  <h1 className="text-3xl font-black mb-2">{jenjangAktif.nama}</h1>
-                  <p className="text-white/90 text-sm">{jenjangAktif.deskripsi}</p>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <button onClick={() => setJenjangAktif(null)} className="mb-6 bg-white px-4 py-2 border rounded-xl text-sm font-bold shadow-sm flex items-center gap-2"><ArrowLeft className="w-4 h-4"/> Kembali</button>
+                <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+                  <button onClick={() => setSubJenjangAktif("semua")} className={`px-4 py-2 border rounded-xl text-sm font-bold whitespace-nowrap ${subJenjangAktif === "semua" ? "bg-slate-900 text-white" : "bg-white"}`}>Semua</button>
+                  {jenjangAktif.subJenjang.map(sj => (
+                    <button key={sj.id} onClick={() => setSubJenjangAktif(sj.id)} className={`px-4 py-2 border rounded-xl text-sm font-bold whitespace-nowrap ${subJenjangAktif === sj.id ? "bg-slate-900 text-white" : "bg-white"}`}>{sj.nama}</button>
+                  ))}
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {jenjangAktif.kelas.map((item) => {
-                    const selesai = materiSelesai.includes(item.id);
-                    return (
-                      <div
-                        key={item.id}
-                        onClick={() => setKelasAktif(item)}
-                        className={`bg-white rounded-3xl p-6 border-2 shadow-xs hover:shadow-lg cursor-pointer transition flex flex-col justify-between ${
-                          selesai ? "border-emerald-400" : "border-slate-200"
-                        }`}
-                      >
-                        <div>
-                          <div className="flex justify-between items-center mb-3">
-                            <span className="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-700">⚡ {item.level}</span>
-                            {selesai && <span className="text-xs font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">✔ Selesai</span>}
-                          </div>
-                          <h3 className="text-xl font-bold mb-2">{item.judul}</h3>
-                          <p className="text-sm text-slate-600 line-clamp-2">{item.rangkuman}</p>
-                        </div>
-                        <div className="pt-4 border-t mt-4 flex justify-between items-center text-sm font-bold text-emerald-600">
-                          <span className="flex items-center gap-1.5"><PlayCircle className="w-5 h-5" /> Mulai Belajar</span>
-                          <span className="text-xs bg-amber-50 text-amber-700 px-2 py-1 rounded-lg">+50 XP</span>
-                        </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {jenjangAktif.kelas.filter(k => subJenjangAktif === "semua" || k.subJenjangId === subJenjangAktif).map(k => (
+                    <div key={k.id} onClick={() => setKelasAktif(k)} className="bg-white p-6 border rounded-3xl cursor-pointer hover:shadow-lg transition">
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-xs font-bold bg-slate-100 px-2 py-1 rounded">{jenjangAktif.subJenjang.find(s=>s.id === k.subJenjangId)?.nama || "Umum"}</span>
+                        {materiSelesai.includes(k.id) && <span className="text-xs font-bold text-emerald-600">✔ Selesai</span>}
                       </div>
-                    );
-                  })}
+                      <h3 className="font-bold text-lg mb-2">{k.judul}</h3>
+                      <p className="text-sm text-slate-500 mb-4 line-clamp-2">{k.rangkuman}</p>
+                      <div className="text-sm font-bold text-indigo-600 flex items-center gap-1"><PlayCircle className="w-4 h-4"/> Mulai Belajar</div>
+                    </div>
+                  ))}
+                  {jenjangAktif.kelas.filter(k => subJenjangAktif === "semua" || k.subJenjangId === subJenjangAktif).length === 0 && (
+                    <div className="col-span-1 md:col-span-2 text-center py-10 border-2 border-dashed rounded-3xl text-slate-400">Belum ada materi.</div>
+                  )}
                 </div>
               </motion.div>
             )}
 
             {kelasAktif && jenjangAktif && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <button
-                  onClick={() => setKelasAktif(null)}
-                  className="inline-flex items-center gap-2 text-sm font-bold text-slate-600 bg-white px-4 py-2 rounded-xl border mb-6 shadow-2xs"
-                >
-                  <ArrowLeft className="w-4 h-4" /> Kembali ke Daftar Materi
-                </button>
-                <div className="flex justify-end mb-4">
-                  <button
-                    onClick={() => toggleSelesaiMateri(kelasAktif.id)}
-                    className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm shadow-sm ${
-                      materiSelesai.includes(kelasAktif.id) ? "bg-emerald-600 text-white" : "bg-white border-2 border-slate-300 text-slate-700"
-                    }`}
-                  >
-                    {materiSelesai.includes(kelasAktif.id) ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
-                    {materiSelesai.includes(kelasAktif.id) ? "Materi Selesai (+30 XP)" : "Tandai Selesai"}
+                <div className="flex justify-between items-center mb-6">
+                  <button onClick={() => setKelasAktif(null)} className="bg-white px-4 py-2 border rounded-xl text-sm font-bold flex items-center gap-2"><ArrowLeft className="w-4 h-4"/> Kembali</button>
+                  <button onClick={() => toggleSelesaiMateri(kelasAktif.id)} className={`px-4 py-2 rounded-xl text-sm font-bold ${materiSelesai.includes(kelasAktif.id) ? "bg-emerald-600 text-white" : "bg-white border"}`}>
+                    {materiSelesai.includes(kelasAktif.id) ? "✔ Selesai" : "Tandai Selesai"}
                   </button>
                 </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-white rounded-3xl p-6 border shadow-sm">
-                      <div className="aspect-video w-full rounded-2xl overflow-hidden bg-slate-900 mb-4">
-                        <iframe src={kelasAktif.videoUrl} title={kelasAktif.judul} className="w-full h-full" allowFullScreen />
-                      </div>
-                      <h1 className="text-2xl font-extrabold mb-3">{kelasAktif.judul}</h1>
-                      <p className="text-slate-700 text-sm mb-4">{kelasAktif.rangkuman}</p>
-                      {kelasAktif.rumusMatematika && (
-                        <div className="bg-slate-900 text-amber-300 font-mono text-sm p-4 rounded-xl mb-4 whitespace-pre-wrap">
-                          {kelasAktif.rumusMatematika}
-                        </div>
-                      )}
-                      {kelasAktif.contohKode && (
-                        <div className="bg-slate-900 text-emerald-300 font-mono text-xs p-4 rounded-xl overflow-x-auto">
-                          <pre>{kelasAktif.contohKode}</pre>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="bg-amber-50 rounded-3xl p-6 border border-amber-200">
-                      <h3 className="font-bold mb-2 flex items-center gap-2"><FileEdit className="w-5 h-5 text-amber-600" /> Buku Catatan Pribadi</h3>
-                      <textarea
-                        rows={3}
-                        value={catatanSiswa}
-                        onChange={(e) => setCatatanSiswa(e.target.value)}
-                        placeholder="Tulis catatanmu di sini..."
-                        className="w-full p-3 bg-white border border-amber-300 rounded-xl text-sm mb-3"
-                      />
-                      <button onClick={() => { localStorage.setItem(`catatan_${kelasAktif.id}`, catatanSiswa); setStatusSimpanCatatan(true); setTimeout(() => setStatusSimpanCatatan(false), 2000); }} className="bg-amber-500 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs">
-                        Simpan Catatan
-                      </button>
-                      {statusSimpanCatatan && <span className="ml-3 text-xs text-emerald-700 font-bold">✔ Tersimpan!</span>}
+                    <div className="bg-white p-6 rounded-3xl border">
+                      <div className="aspect-video bg-slate-900 rounded-xl mb-4 overflow-hidden"><iframe src={kelasAktif.videoUrl} className="w-full h-full" allowFullScreen></iframe></div>
+                      <h1 className="text-2xl font-black mb-2">{kelasAktif.judul}</h1>
+                      <p className="text-sm text-slate-700">{kelasAktif.rangkuman}</p>
+                      {kelasAktif.rumusMatematika && <div className="mt-4 p-4 bg-slate-900 text-amber-300 font-mono text-xs rounded-xl whitespace-pre-wrap">{kelasAktif.rumusMatematika}</div>}
                     </div>
                   </div>
-
                   <div className="lg:col-span-1">
-                    <div className="bg-white rounded-3xl p-6 border-2 border-indigo-100 shadow-md sticky top-24">
-                      <h3 className="font-bold text-base mb-4">{kelasAktif.kuis.tanya}</h3>
-                      <div className="space-y-3 mb-4">
+                    <div className="bg-white p-6 rounded-3xl border-2 border-indigo-100">
+                      <h3 className="font-bold mb-4">{kelasAktif.kuis.tanya}</h3>
+                      <div className="space-y-2">
                         {kelasAktif.kuis.opsi.map((opsi, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => {
-                              setJawabanKuis(idx);
-                              if (idx === kelasAktif.kuis.jawabanBenar) {
-                                if (statusKuis !== "benar") tambahXP(50);
-                                setStatusKuis("benar");
-                              } else {
-                                setStatusKuis("salah");
-                              }
-                            }}
-                            className={`w-full text-left p-3 rounded-xl border-2 font-semibold text-xs transition ${
-                              jawabanKuis === idx
-                                ? statusKuis === "benar"
-                                  ? "border-emerald-500 bg-emerald-50 text-emerald-900"
-                                  : "border-rose-500 bg-rose-50 text-rose-900"
-                                : "border-slate-200"
-                            }`}
-                          >
-                            {opsi}
-                          </button>
+                          <button key={idx} onClick={() => { setJawabanKuis(idx); setStatusKuis(idx === kelasAktif.kuis.jawabanBenar ? "benar" : "salah"); if(idx === kelasAktif.kuis.jawabanBenar && statusKuis !== "benar") tambahXP(50); }} className={`w-full text-left p-3 border rounded-xl text-sm font-semibold ${jawabanKuis === idx ? (statusKuis === "benar" ? "bg-emerald-50 border-emerald-500 text-emerald-900" : "bg-rose-50 border-rose-500 text-rose-900") : "hover:bg-slate-50"}`}>{opsi}</button>
                         ))}
                       </div>
-                      {statusKuis === "benar" && <div className="p-3 bg-emerald-50 rounded-xl text-xs text-emerald-900 font-bold">🎉 Benar! (+50 XP)</div>}
-                      {statusKuis === "salah" && <div className="p-3 bg-rose-50 rounded-xl text-xs text-rose-900 font-bold">Belum tepat, coba lagi!</div>}
+                      {statusKuis === "benar" && <div className="mt-3 text-xs font-bold text-emerald-600">🎉 Benar! (+50 XP)</div>}
+                      {statusKuis === "salah" && <div className="mt-3 text-xs font-bold text-rose-600">❌ Coba lagi!</div>}
                     </div>
                   </div>
                 </div>
               </motion.div>
             )}
-          </>
+          </React.Fragment>
         )}
       </main>
-
-      <footer className="border-t bg-white/70 py-6 text-center text-xs text-slate-500 mt-16">
-        Dibangun dengan cinta oleh 🐼 <strong>Panda Kode</strong> • HibahIlmu.id
-      </footer>
     </div>
   );
 }
