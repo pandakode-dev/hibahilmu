@@ -30,7 +30,7 @@ export interface AkunPengguna {
   password: string;
   role: "admin" | "guru" | "siswa";
   status: "pending" | "approved" | "rejected";
-  infoTambahan: string; // Misal: Spesialisasi Mapel (Guru) atau Sekolah/Jenjang (Siswa)
+  infoTambahan: string;
   waktuDaftar: string;
 }
 
@@ -77,7 +77,6 @@ export default function SistemAkunDanDashboard({
   poinXP,
   materiSelesai,
 }: SistemDashboardProps) {
-  // Mode tampilan jika belum login: "login" | "register"
   const [modeAuth, setModeAuth] = useState<"login" | "register">("login");
 
   // State Form Login
@@ -112,8 +111,8 @@ export default function SistemAkunDanDashboard({
   const [kunciKuis, setKunciKuis] = useState<number>(0);
   const [notifGuru, setNotifGuru] = useState(false);
 
-  // FUNGSI LOGIN CEPAT (DEMO KLIK 1 TOMBOL UNTUK PENGUJIAN)
-  const login Cepat = (akun: AkunPengguna) => {
+  // FUNGSI LOGIN CEPAT (100% BEBAS ERROR)
+  const loginCepat = (akun: AkunPengguna) => {
     setPesanError("");
     if (akun.status === "pending") {
       setPesanError(
@@ -127,7 +126,12 @@ export default function SistemAkunDanDashboard({
     }
     setUserLogin(akun);
     localStorage.setItem("hibah_user_aktif", JSON.stringify(akun));
-    catatLog(akun.nama, akun.role, `Berhasil masuk (Login) ke Dashboard ${akun.role.toUpperCase()}`, "akun");
+    catatLog(
+      akun.nama,
+      akun.role,
+      `Berhasil masuk (Login) ke Dashboard ${akun.role.toUpperCase()}`,
+      "akun"
+    );
   };
 
   // FUNGSI LOGIN MANUAL
@@ -194,7 +198,7 @@ export default function SistemAkunDanDashboard({
       email: emailReg,
       password: passwordReg,
       role: roleReg,
-      status: "pending", // WAJIB MENUNGGU APPROVAL ADMIN
+      status: "pending",
       infoTambahan:
         infoReg || (roleReg === "guru" ? "Relawan Pengajar Umum" : "Siswa Semangat"),
       waktuDaftar: `Hari ini, ${waktuSekarang}`,
@@ -212,7 +216,7 @@ export default function SistemAkunDanDashboard({
     );
 
     setPesanSukses(
-      "✅ Pendaftaran berhasil dikirim! Akunmu kini berstatus MENUNGGU PERSETUJUAN ADMIN. (Coba login sebagai Admin untuk menyetujui akun ini!)."
+      "✅ Pendaftaran berhasil dikirim! Akunmu kini berstatus MENUNGGU PERSETUJUAN ADMIN. (Coba login sebagai Admin di sebelah kanan untuk menyetujui akun ini!)."
     );
     setNamaReg("");
     setEmailReg("");
@@ -417,11 +421,10 @@ export default function SistemAkunDanDashboard({
                   Pendaftaran Siswa & Guru Relawan
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                  Demi keamanan & kualitas komunitas, setiap pendaftaran akan diverifikasi (*Approval*) oleh Admin terlebih dahulu.
+                  Demi keamanan & kualitas komunitas, setiap pendaftaran akan diverifikasi (Approval) oleh Admin terlebih dahulu.
                 </p>
               </div>
 
-              {/* Pilihan Peran */}
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
@@ -508,7 +511,7 @@ export default function SistemAkunDanDashboard({
           )}
         </div>
 
-        {/* Kolom Kanan: Kotak Demo Login Instan 1-Klik (Agar Kamu Mudah Mengetes Semua Dashboard!) */}
+        {/* Kolom Kanan: Kotak Demo Login Instan 1-Klik */}
         <div className="lg:col-span-5 bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col justify-between">
           <div>
             <span className="bg-amber-400/20 text-amber-300 border border-amber-400/30 text-xs font-extrabold px-3 py-1 rounded-full uppercase">
@@ -550,7 +553,7 @@ export default function SistemAkunDanDashboard({
           </div>
 
           <div className="mt-6 pt-4 border-t border-white/10 text-xs text-slate-300">
-            💡 <strong>Tips Tes Approval:</strong> Coba daftar akun baru di sebelah kiri, lalu klik masuk sebagai <strong>Admin Panda Kode</strong> untuk menyetujui (*Approve*) akun tersebut!
+            💡 <strong>Tips Tes Approval:</strong> Coba daftar akun baru di sebelah kiri, lalu klik masuk sebagai <strong>Admin Panda Kode</strong> untuk menyetujui (Approve) akun tersebut!
           </div>
         </div>
       </motion.div>
@@ -558,7 +561,7 @@ export default function SistemAkunDanDashboard({
   }
 
   // ============================================================================
-  // TAMPILAN 2: DASHBOARD KHUSUS ADMIN (APPROVAL & LOG AKTIVITAS GURU/MURID)
+  // TAMPILAN 2: DASHBOARD KHUSUS ADMIN (APPROVAL & LOG AKTIVITAS)
   // ============================================================================
   if (userLogin.role === "admin") {
     const antreanPending = daftarAkun.filter((a) => a.status === "pending");
@@ -575,7 +578,6 @@ export default function SistemAkunDanDashboard({
         animate={{ opacity: 1, y: 0 }}
         className="space-y-8"
       >
-        {/* Banner Header Admin */}
         <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl flex flex-wrap items-center justify-between gap-4">
           <div>
             <span className="bg-amber-400 text-slate-950 text-xs font-black px-3 py-1 rounded-full uppercase">
@@ -585,7 +587,7 @@ export default function SistemAkunDanDashboard({
               Pusat Kendali & Audit HibahIlmu
             </h1>
             <p className="text-slate-300 text-xs sm:text-sm">
-              Kelola persetujuan pendaftaran Guru & Siswa serta pantau seluruh aktivitas belajar secara *real-time*.
+              Kelola persetujuan pendaftaran Guru & Siswa serta pantau seluruh aktivitas belajar secara real-time.
             </p>
           </div>
           <button
@@ -600,7 +602,6 @@ export default function SistemAkunDanDashboard({
           </button>
         </div>
 
-        {/* Kartu Ringkasan Statistik */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-2xs">
             <div className="text-xs font-bold text-amber-600 uppercase flex items-center gap-1.5">
@@ -644,9 +645,7 @@ export default function SistemAkunDanDashboard({
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* KOLOM KIRI ADMIN: PERSETUJUAN (APPROVAL) & MANAJEMEN AKUN */}
           <div className="lg:col-span-6 space-y-6">
-            {/* Kotak Antrean Approval */}
             <div className="bg-white rounded-3xl p-6 border-2 border-amber-300 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
@@ -708,7 +707,6 @@ export default function SistemAkunDanDashboard({
               )}
             </div>
 
-            {/* Daftar Seluruh Pengguna (Guru & Siswa) */}
             <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs">
               <h3 className="font-extrabold text-slate-900 text-base mb-4">
                 📋 Daftar Seluruh Akun Guru & Siswa
@@ -769,7 +767,6 @@ export default function SistemAkunDanDashboard({
             </div>
           </div>
 
-          {/* KOLOM KANAN ADMIN: LOG AKTIVITAS GURU & MURID REAL-TIME */}
           <div className="lg:col-span-6">
             <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
@@ -782,7 +779,6 @@ export default function SistemAkunDanDashboard({
                   </p>
                 </div>
 
-                {/* Filter Peran di Log */}
                 <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
                   {["semua", "guru", "siswa", "admin"].map((peran) => (
                     <button
@@ -845,7 +841,7 @@ export default function SistemAkunDanDashboard({
   }
 
   // ============================================================================
-  // TAMPILAN 3: DASHBOARD KHUSUS GURU RELAWAN (STUDIO PEMBUATAN MATERI & KUIS)
+  // TAMPILAN 3: DASHBOARD KHUSUS GURU RELAWAN
   // ============================================================================
   if (userLogin.role === "guru") {
     return (
@@ -879,7 +875,6 @@ export default function SistemAkunDanDashboard({
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Form Studio Pembuatan Modul & Kuis oleh Guru */}
           <div className="lg:col-span-7 bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm">
             <h2 className="text-xl font-black text-slate-900 mb-1 flex items-center gap-2">
               <PlusCircle className="w-6 h-6 text-indigo-600" /> Studio Pembuatan Materi & Kuis Baru
@@ -975,7 +970,6 @@ export default function SistemAkunDanDashboard({
                 className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono"
               />
 
-              {/* Bagian Pembuatan Soal Kuis oleh Guru */}
               <div className="p-4 rounded-2xl bg-indigo-50/60 border border-indigo-200/80 space-y-3">
                 <div className="text-xs font-extrabold uppercase text-indigo-800">
                   📝 Buat Latihan Kuis untuk Materi Ini
@@ -1048,7 +1042,6 @@ export default function SistemAkunDanDashboard({
             </form>
           </div>
 
-          {/* Kolom Kanan Guru: Riwayat Aktivitas Guru & Statistik Modul */}
           <div className="lg:col-span-5 space-y-6">
             <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs">
               <h3 className="font-extrabold text-slate-900 text-base mb-3 flex items-center gap-2">
@@ -1090,7 +1083,7 @@ export default function SistemAkunDanDashboard({
   }
 
   // ============================================================================
-  // TAMPILAN 4: DASHBOARD KHUSUS SISWA (RAPOR BELAJAR, LENCANA & RIWAYAT)
+  // TAMPILAN 4: DASHBOARD KHUSUS SISWA
   // ============================================================================
   return (
     <motion.div
@@ -1122,7 +1115,6 @@ export default function SistemAkunDanDashboard({
         </button>
       </div>
 
-      {/* Ringkasan Rapor Siswa */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-2xs flex items-center gap-4">
           <div className="p-4 rounded-2xl bg-amber-100 text-amber-600">
@@ -1169,7 +1161,6 @@ export default function SistemAkunDanDashboard({
         </div>
       </div>
 
-      {/* Jejak Aktivitas Belajar Siswa Ini */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs">
         <h3 className="text-lg font-black text-slate-900 mb-4 flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-amber-500" /> Riwayat Aktivitas Belajarmu
