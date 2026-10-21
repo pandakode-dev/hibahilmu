@@ -35,7 +35,7 @@ interface KelasItem {
   level: "Pemula" | "Menengah" | "Mahir";
   durasi: string;
   videoUrl: string;
-  rangkuman: string; // Mendukung format HTML (Rich Text)
+  rangkuman: string;
   rumusMatematika?: string;
   contohKode?: string;
   kuis: KuisItem;
@@ -82,7 +82,7 @@ export interface AkunPengguna {
   status: "pending" | "approved" | "rejected";
   infoTambahan: string;
   waktuDaftar: string;
-  aksesMengajar?: string[]; // RBAC Guru
+  aksesMengajar?: string[];
 }
 
 export interface LogAktivitas {
@@ -94,7 +94,6 @@ export interface LogAktivitas {
   kategori: "belajar" | "materi" | "akun" | "komunitas" | "sistem";
 }
 
-// STRUKTUR BARU: KELOMPOK BELAJAR (Rombel mirip Moodle)
 export interface KelompokBelajar {
   id: string;
   namaKelas: string;
@@ -105,39 +104,24 @@ export interface KelompokBelajar {
 // ==========================================
 // 2. DATA AWAL (DUMMY DATA)
 // ==========================================
-const TEMPLATE_JSON_CONTOH = JSON.stringify([
-  { nama: "Dewi Lestari", email: "dewi@hibahilmu.id", password: "123", role: "guru", infoTambahan: "Guru Biologi" },
-  { nama: "Ahmad Fauzi", email: "ahmad@hibahilmu.id", password: "123", role: "siswa", infoTambahan: "Kelas 12 IPA" }
-], null, 2);
+const TEMPLATE_JSON_CONTOH = `[
+  {
+    "nama": "Dewi Lestari",
+    "email": "dewi@hibahilmu.id",
+    "password": "123",
+    "role": "guru",
+    "infoTambahan": "Guru Biologi"
+  },
+  {
+    "nama": "Ahmad Fauzi",
+    "email": "ahmad@hibahilmu.id",
+    "password": "123",
+    "role": "siswa",
+    "infoTambahan": "Kelas 12 IPA"
+  }
+]`;
 
 const STRUKTUR_AWAL: JenjangItem[] = [
-  {
-    id: "tk",
-    nama: "TK & PAUD",
-    tagline: "Dunia Bermain & Imajinasi",
-    deskripsi: "Mengenal huruf, angka, warna, dan budi pekerti lewat animasi ceria.",
-    gradien: "from-pink-500 via-rose-500 to-orange-400",
-    badge: "bg-rose-100 text-rose-700",
-    ikonNama: "sparkles",
-    subJenjang: [
-      { id: "tk-playgroup", nama: "Playgroup" },
-      { id: "tk-a", nama: "TK Kelas A" },
-      { id: "tk-b", nama: "TK Kelas B" },
-    ],
-    kelas: [
-      {
-        id: "materi-tk-1",
-        subJenjangId: "tk-a",
-        judul: "Mengenal Angka & Berhitung Ceria 1-10",
-        level: "Pemula",
-        durasi: "5 Menit",
-        videoUrl: "https://www.youtube.com/embed/DR-cfDsHCGA",
-        rangkuman: "<p>Mari belajar menghitung buah-buahan! Angka 1 seperti tiang listrik, angka 2 seperti bebek berenang.</p>",
-        rumusMatematika: "2 🍎 + 1 🍎 = 3 🍎 (Tiga Apel Segar)",
-        kuis: { tanya: "Jika Budi punya 2 apel merah lalu diberi Ibu 1 apel lagi, berapa jumlah apel Budi sekarang?", opsi: ["2 Apel", "3 Apel", "4 Apel", "5 Apel"], jawabanBenar: 1, pembahasan: "Hebat sekali! 2 + 1 = 3 apel." },
-      },
-    ],
-  },
   {
     id: "sd",
     nama: "SD / MI",
@@ -147,13 +131,12 @@ const STRUKTUR_AWAL: JenjangItem[] = [
     badge: "bg-amber-100 text-amber-800",
     ikonNama: "book",
     subJenjang: [
-      { id: "sd-1", nama: "Kelas 1 SD" }, { id: "sd-2", nama: "Kelas 2 SD" }, { id: "sd-3", nama: "Kelas 3 SD" },
-      { id: "sd-4", nama: "Kelas 4 SD" }, { id: "sd-5", nama: "Kelas 5 SD" }, { id: "sd-6", nama: "Kelas 6 SD" },
+      { id: "sd-1", nama: "Kelas 1 SD" }, { id: "sd-6", nama: "Kelas 6 SD" },
     ],
     kelas: [
       {
         id: "materi-sd-1",
-        subJenjangId: "sd-4",
+        subJenjangId: "sd-6",
         judul: "Rahasia Perkalian Cepat & Luas Bangun Datar",
         level: "Pemula",
         durasi: "10 Menit",
@@ -187,7 +170,6 @@ const AKUN_DEFAULT: AkunPengguna[] = [
   { id: "adm-1", nama: "Admin Panda Kode", email: "admin@hibahilmu.id", password: "123", role: "admin", status: "approved", infoTambahan: "Super Admin", waktuDaftar: "Permanen", aksesMengajar: [] },
   { id: "gru-1", nama: "Budi Santoso, M.Pd", email: "guru@hibahilmu.id", password: "123", role: "guru", status: "approved", infoTambahan: "Guru Fisika SMA", waktuDaftar: "Kemarin", aksesMengajar: ["sma-11-ipa", "sma-12-ipa"] },
   { id: "sis-1", nama: "Aisyah Putri", email: "siswa@hibahilmu.id", password: "123", role: "siswa", status: "approved", infoTambahan: "Siswi SMA Kelas 11", waktuDaftar: "Kemarin", aksesMengajar: [] },
-  { id: "sis-2", nama: "Reza Rahadian", email: "reza@hibahilmu.id", password: "123", role: "siswa", status: "approved", infoTambahan: "Siswa SMA", waktuDaftar: "Hari ini", aksesMengajar: [] },
 ];
 
 // ==========================================
@@ -275,17 +257,18 @@ export default function AplikasiHibahIlmu() {
   const [skorTryout, setSkorTryout] = useState<number>(0);
 
   // State Forum PR
-  const [daftarDiskusi, setDaftarDiskusi] = useState<DiskusiPR[]>([{ id: "pr-1", penanya: "Rizky", jenjang: "SMP", mapel: "Matematika", pertanyaan: "Cara bedain rumus Luas & Keliling?", waktu: "1 jam lalu", jawaban: [] }]);
+  const [daftarDiskusi, setDaftarDiskusi] = useState<DiskusiPR[]>([{ id: "pr-1", penanya: "Rizky (SMP)", jenjang: "SMP", mapel: "Matematika", pertanyaan: "Cara cepat bedain rumus Luas dan Keliling?", waktu: "1 jam lalu", jawaban: [{ penjawab: "Panda Kode", isi: "Luas pakai kuadrat (r²), keliling tidak ada pangkat." }] }]);
   const [tanyaBaru, setTanyaBaru] = useState<string>("");
   const [mapelBaru, setMapelBaru] = useState<string>("Matematika");
   const [balasanInput, setBalasanInput] = useState<{ [key: string]: string }>({});
 
-  // State Auth
+  // State Auth Form
   const [modeAuth, setModeAuth] = useState<"login" | "register">("login");
   const [emailLogin, setEmailLogin] = useState("");
   const [passwordLogin, setPasswordLogin] = useState("");
   const [pesanError, setPesanError] = useState("");
   const [pesanSukses, setPesanSukses] = useState("");
+  
   const [namaReg, setNamaReg] = useState("");
   const [emailReg, setEmailReg] = useState("");
   const [passwordReg, setPasswordReg] = useState("");
@@ -335,6 +318,7 @@ export default function AplikasiHibahIlmu() {
   const [notifGuru, setNotifGuru] = useState(false);
   
   const [namaKelompokBaru, setNamaKelompokBaru] = useState("");
+  const [kelompokAktifGuru, setKelompokAktifGuru] = useState<string | null>(null);
   const [searchSiswaGuru, setSearchSiswaGuru] = useState("");
 
   useEffect(() => {
@@ -395,7 +379,7 @@ export default function AplikasiHibahIlmu() {
       let daftarBaru = sudahAda ? safePrev.filter(id => id !== kelasId) : [...safePrev, kelasId];
       if (!sudahAda) {
         tambahXP(30);
-        catatLog(userLogin?.nama || "Siswa", userLogin?.role || "siswa", `Menyelesaikan materi pelajaran`, "belajar");
+        catatLog(userLogin?.nama || "Siswa", userLogin?.role || "siswa", `Menyelesaikan materi`, "belajar");
       }
       localStorage.setItem("hibah_selesai", JSON.stringify(daftarBaru));
       return daftarBaru;
@@ -404,18 +388,18 @@ export default function AplikasiHibahIlmu() {
 
   const loginCepat = (akun: AkunPengguna) => {
     setPesanError("");
-    if (akun.status === "pending") return setPesanError("Akun kamu masih menunggu persetujuan Admin.");
-    if (akun.status === "rejected") return setPesanError("Akun ini sedang disuspend (dibekukan).");
+    if (akun.status === "pending") return setPesanError("Menunggu persetujuan Admin.");
+    if (akun.status === "rejected") return setPesanError("Akun disuspend.");
     setUserLogin(akun); localStorage.setItem("hibah_user_aktif", JSON.stringify(akun));
-    catatLog(akun.nama, akun.role, `Berhasil masuk ke Dashboard`, "akun");
+    catatLog(akun.nama, akun.role, `Login ke Dashboard`, "akun");
   };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault(); setPesanError("");
     const akunDitemukan = (daftarAkun || []).find(a => a.email.toLowerCase() === emailLogin.toLowerCase() && a.password === passwordLogin);
     if (!akunDitemukan) return setPesanError("Email atau Password salah.");
-    if (akunDitemukan.status === "pending") return setPesanError("⏳ Akun menunggu persetujuan Admin.");
-    if (akunDitemukan.status === "rejected") return setPesanError("❌ Akun ini telah disuspend.");
+    if (akunDitemukan.status === "pending") return setPesanError("⏳ Akun pending.");
+    if (akunDitemukan.status === "rejected") return setPesanError("❌ Akun disuspend.");
     setUserLogin(akunDitemukan); localStorage.setItem("hibah_user_aktif", JSON.stringify(akunDitemukan));
     catatLog(akunDitemukan.nama, akunDitemukan.role, `Melakukan Login`, "akun");
   };
@@ -431,7 +415,6 @@ export default function AplikasiHibahIlmu() {
     setNamaReg(""); setEmailReg(""); setPasswordReg(""); setInfoReg(""); setModeAuth("login");
   };
 
-  // ADMIN FUNCTIONS
   const ubahStatusAkun = (id: string, status: "approved" | "rejected" | "pending") => {
     const update = (daftarAkun || []).map(a => a.id === id ? { ...a, status } : a);
     setDaftarAkun(update); localStorage.setItem("hibah_daftar_akun", JSON.stringify(update));
@@ -441,14 +424,14 @@ export default function AplikasiHibahIlmu() {
   const hapusAkun = (id: string) => {
     const update = (daftarAkun || []).filter(a => a.id !== id);
     setDaftarAkun(update); localStorage.setItem("hibah_daftar_akun", JSON.stringify(update));
-    catatLog(userLogin?.nama || "Admin", "admin", `Menghapus akun permanen`, "akun");
+    catatLog(userLogin?.nama || "Admin", "admin", `Hapus akun`, "akun");
   };
 
   const hapusAkunSekaligus = () => {
     if (!confirm(`Hapus ${selectedAkunIds.length} akun secara permanen?`)) return;
     const update = (daftarAkun || []).filter((a) => !selectedAkunIds.includes(a.id) || a.role === "admin");
     setDaftarAkun(update); localStorage.setItem("hibah_daftar_akun", JSON.stringify(update));
-    catatLog(userLogin?.nama || "Admin", "admin", `Hapus massal ${selectedAkunIds.length} akun`, "akun");
+    catatLog(userLogin?.nama || "Admin", "admin", `Bulk delete akun`, "akun");
     setSelectedAkunIds([]);
   };
 
@@ -501,7 +484,6 @@ export default function AplikasiHibahIlmu() {
     setNamaKelompokAdmin(""); setGuruKelompokAdmin("");
   };
 
-  // FUNGSI GLOBAL ROMBEL & GURU
   const handleTambahSiswaKeKelompok = (kelompokId: string, siswaId: string) => {
     const update = daftarKelompok.map(k => k.id === kelompokId && !k.siswaIds.includes(siswaId) ? { ...k, siswaIds: [...k.siswaIds, siswaId] } : k);
     setDaftarKelompok(update); localStorage.setItem("hibah_kelompok", JSON.stringify(update));
@@ -513,10 +495,9 @@ export default function AplikasiHibahIlmu() {
   };
 
   const handleHapusKelompok = (kelompokId: string) => {
-    if(!confirm("Yakin ingin menghapus ruang kelas ini beserta data siswanya?")) return;
+    if(!confirm("Yakin ingin menghapus ruang kelas ini?")) return;
     const update = daftarKelompok.filter(k => k.id !== kelompokId);
     setDaftarKelompok(update); localStorage.setItem("hibah_kelompok", JSON.stringify(update));
-    catatLog(userLogin?.nama || "Sistem", userLogin?.role || "guru", "Menghapus Ruang Kelas", "sistem");
   };
 
   const opsiKelasGuru = (daftarJenjang || []).flatMap(j => j.subJenjang.filter(sj => userLogin?.aksesMengajar?.includes(sj.id)).map(sj => ({ ...sj, namaInduk: j.nama })));
@@ -551,27 +532,32 @@ export default function AplikasiHibahIlmu() {
   const guruKelompoks = daftarKelompok.filter(k => k.guruId === userLogin?.id);
   const daftarSiswaApproved = safeAkunList.filter(a => a.role === "siswa" && a.status === "approved");
 
-  // --- HTML RENDER ---
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans">
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans relative overflow-x-hidden">
+      <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
+        <div className="absolute -top-40 -left-40 w-[30rem] h-[30rem] bg-purple-300/30 rounded-full blur-3xl" />
+        <div className="absolute top-20 right-0 w-[30rem] h-[30rem] bg-emerald-300/25 rounded-full blur-3xl" />
+      </div>
+
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
           <div onClick={() => { setMenuAktif("beranda"); setJenjangAktif(null); setKelasAktif(null); }} className="flex items-center gap-3 cursor-pointer">
-            <div className="bg-emerald-600 text-white w-10 h-10 rounded-xl flex items-center justify-center text-xl">🐼</div>
+            <div className="bg-emerald-600 text-white w-10 h-10 rounded-xl flex items-center justify-center text-xl shadow-md">🐼</div>
             <div>
-              <div className="font-extrabold text-xl text-emerald-900 leading-none">HibahIlmu</div>
-              <div className="text-[10px] text-emerald-600 font-bold uppercase mt-0.5">LMS Open Source</div>
+              <div className="font-extrabold text-xl text-slate-900 leading-none">HibahIlmu</div>
+              <div className="text-[10px] text-emerald-600 font-bold uppercase mt-1">LMS Open Source</div>
             </div>
           </div>
           <nav className="flex items-center gap-2 overflow-x-auto">
-            <button onClick={() => { setMenuAktif("beranda"); setJenjangAktif(null); setKelasAktif(null); }} className={`px-4 py-2 rounded-xl text-xs font-bold ${menuAktif === "beranda" ? "bg-slate-900 text-white" : "text-slate-600"}`}>Ruang Kelas</button>
-            <button onClick={() => setMenuAktif("tryout")} className={`px-4 py-2 rounded-xl text-xs font-bold ${menuAktif === "tryout" ? "bg-slate-900 text-white" : "text-slate-600"}`}>Tryout</button>
-            <button onClick={() => setMenuAktif("forum")} className={`px-4 py-2 rounded-xl text-xs font-bold ${menuAktif === "forum" ? "bg-slate-900 text-white" : "text-slate-600"}`}>Forum</button>
-            <button onClick={() => setMenuAktif("transparansi")} className={`px-4 py-2 rounded-xl text-xs font-bold ${menuAktif === "transparansi" ? "bg-slate-900 text-white" : "text-slate-600"}`}>Donasi</button>
-            <button onClick={() => setMenuAktif("dashboard")} className={`px-4 py-2 rounded-xl text-xs font-bold ${menuAktif === "dashboard" ? "bg-emerald-600 text-white" : "bg-emerald-100 text-emerald-800"}`}>
-              {userLogin ? `Panel ${userLogin.role}` : "Login"}
-            </button>
+            <button onClick={() => { setMenuAktif("beranda"); setJenjangAktif(null); setKelasAktif(null); }} className={`px-4 py-2 rounded-xl text-xs font-bold ${menuAktif === "beranda" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"}`}>Ruang Kelas</button>
+            <button onClick={() => setMenuAktif("tryout")} className={`px-4 py-2 rounded-xl text-xs font-bold ${menuAktif === "tryout" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"}`}>Tryout</button>
+            <button onClick={() => setMenuAktif("forum")} className={`px-4 py-2 rounded-xl text-xs font-bold ${menuAktif === "forum" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"}`}>Forum PR</button>
+            <button onClick={() => setMenuAktif("transparansi")} className={`px-4 py-2 rounded-xl text-xs font-bold ${menuAktif === "transparansi" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"}`}>Donasi</button>
           </nav>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 text-amber-800 px-3 py-1.5 rounded-full text-xs font-extrabold"><Flame className="w-4 h-4 text-amber-500" /> <span>{poinXP} XP</span></div>
+            <button onClick={() => { setMenuAktif("dashboard"); setJenjangAktif(null); setKelasAktif(null); }} className={`px-5 py-2.5 rounded-full text-xs font-extrabold shadow-sm flex items-center gap-2 ${userLogin ? (userLogin.role === "admin" ? "bg-slate-900 text-amber-300" : userLogin.role === "guru" ? "bg-indigo-600 text-white" : "bg-emerald-600 text-white") : "bg-emerald-600 text-white"}`}><LayoutDashboard className="w-4 h-4" /> <span>{userLogin ? `Panel ${userLogin.role}` : "Daftar / Masuk"}</span></button>
+          </div>
         </div>
       </header>
 
@@ -579,252 +565,193 @@ export default function AplikasiHibahIlmu() {
         
         {/* ==================== 1. DASHBOARD ==================== */}
         {menuAktif === "dashboard" && (
-          <div>
-            {!userLogin ? (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-md mx-auto bg-white p-8 rounded-3xl shadow border">
-                <div className="flex gap-2 mb-6 bg-slate-100 p-1.5 rounded-2xl">
-                  <button onClick={() => setModeAuth("login")} className={`flex-1 py-2 rounded-xl text-xs font-bold ${modeAuth === "login" ? "bg-white shadow" : ""}`}>Masuk</button>
-                  <button onClick={() => setModeAuth("register")} className={`flex-1 py-2 rounded-xl text-xs font-bold ${modeAuth === "register" ? "bg-white shadow" : ""}`}>Daftar</button>
-                </div>
-                {pesanError && <div className="mb-4 p-3 bg-rose-50 text-rose-700 text-xs rounded-xl font-bold">{pesanError}</div>}
-                {pesanSukses && <div className="mb-4 p-3 bg-emerald-50 text-emerald-700 text-xs rounded-xl font-bold">{pesanSukses}</div>}
-                
-                {modeAuth === "login" ? (
-                  <form onSubmit={handleLogin} className="space-y-4">
-                    <input type="email" required value={emailLogin} onChange={e => setEmailLogin(e.target.value)} placeholder="Email..." className="w-full p-3 bg-slate-50 border rounded-xl text-sm" />
-                    <input type="password" required value={passwordLogin} onChange={e => setPasswordLogin(e.target.value)} placeholder="Password..." className="w-full p-3 bg-slate-50 border rounded-xl text-sm" />
-                    <button type="submit" className="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl">Masuk</button>
-                  </form>
-                ) : (
-                  <form onSubmit={handleRegister} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-2">
-                      <button type="button" onClick={() => setRoleReg("siswa")} className={`p-2 border rounded-xl text-xs font-bold ${roleReg === "siswa" ? "bg-emerald-50 border-emerald-500" : ""}`}>Siswa</button>
-                      <button type="button" onClick={() => setRoleReg("guru")} className={`p-2 border rounded-xl text-xs font-bold ${roleReg === "guru" ? "bg-indigo-50 border-indigo-500" : ""}`}>Guru</button>
-                    </div>
-                    <input type="text" required value={namaReg} onChange={e => setNamaReg(e.target.value)} placeholder="Nama Lengkap" className="w-full p-3 bg-slate-50 border rounded-xl text-sm" />
-                    <input type="email" required value={emailReg} onChange={e => setEmailReg(e.target.value)} placeholder="Email" className="w-full p-3 bg-slate-50 border rounded-xl text-sm" />
-                    <input type="password" required value={passwordReg} onChange={e => setPasswordReg(e.target.value)} placeholder="Password" className="w-full p-3 bg-slate-50 border rounded-xl text-sm" />
-                    <button type="submit" className="w-full bg-slate-900 text-white font-bold py-3 rounded-xl">Daftar Akun</button>
-                  </form>
-                )}
-                <div className="mt-8 pt-6 border-t">
-                  <div className="text-[10px] font-bold text-slate-400 mb-2">DEMO LOGIN:</div>
-                  {daftarAkun.filter(a => a.status === "approved").slice(0, 3).map(a => (
-                    <button key={a.id} onClick={() => loginCepat(a)} className="w-full text-left text-xs bg-slate-100 hover:bg-slate-200 py-2 px-3 mb-2 rounded-lg font-bold flex justify-between">
-                      <span>{a.nama}</span> <span className="uppercase text-emerald-600">{a.role}</span>
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            ) : userLogin.role === "admin" ? (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                <div className="bg-slate-900 text-white p-6 rounded-3xl flex justify-between items-center shadow-lg">
-                  <div>
-                    <h1 className="text-2xl font-black">Panel Admin</h1>
-                    <p className="text-slate-400 text-sm">Kelola Akun & Hierarki</p>
+          <div className="dashboard-container">
+            <AnimatePresence mode="wait">
+              {!userLogin ? (
+                <motion.div key="auth" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-md mx-auto bg-white p-8 rounded-3xl shadow border">
+                  <div className="flex gap-2 mb-6 bg-slate-100 p-1.5 rounded-2xl">
+                    <button onClick={() => setModeAuth("login")} className={`flex-1 py-2 rounded-xl text-xs font-bold ${modeAuth === "login" ? "bg-white shadow" : ""}`}>Masuk</button>
+                    <button onClick={() => setModeAuth("register")} className={`flex-1 py-2 rounded-xl text-xs font-bold ${modeAuth === "register" ? "bg-white shadow" : ""}`}>Daftar</button>
                   </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => setModalImportAkun(true)} className="bg-indigo-600 px-4 py-2 rounded-xl text-xs font-bold text-white flex items-center gap-1"><Upload className="w-4 h-4"/> Import</button>
-                    <button onClick={() => { setIdEditAkun(null); setModalAdminAkun(true); }} className="bg-emerald-600 px-4 py-2 rounded-xl text-xs font-bold text-white flex items-center gap-1"><UserPlus className="w-4 h-4"/> Tambah</button>
-                    <button onClick={() => { setUserLogin(null); localStorage.removeItem("hibah_user_aktif"); }} className="bg-rose-600 px-4 py-2 rounded-xl text-xs font-bold">Keluar</button>
-                  </div>
-                </div>
-
-                <div className="flex gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
-                  <button onClick={() => setAdminTabAktif("akun")} className={`px-4 py-2 rounded-t-xl text-xs font-bold transition ${adminTabAktif === "akun" ? "bg-slate-800 text-white" : "bg-white text-slate-600"}`}>Data Pengguna</button>
-                  <button onClick={() => setAdminTabAktif("kategori")} className={`px-4 py-2 rounded-t-xl text-xs font-bold transition ${adminTabAktif === "kategori" ? "bg-slate-800 text-white" : "bg-white text-slate-600"}`}>Struktur Jenjang</button>
-                  <button onClick={() => setAdminTabAktif("rombel")} className={`px-4 py-2 rounded-t-xl text-xs font-bold transition ${adminTabAktif === "rombel" ? "bg-slate-800 text-white" : "bg-white text-slate-600"}`}>Manajemen Rombel</button>
-                  <button onClick={() => setAdminTabAktif("log")} className={`px-4 py-2 rounded-t-xl text-xs font-bold transition ${adminTabAktif === "log" ? "bg-slate-800 text-white" : "bg-white text-slate-600"}`}>Log Aktivitas</button>
-                </div>
-
-                {adminTabAktif === "akun" && (
-                  <div className="bg-white p-6 rounded-3xl border shadow-sm">
-                    <div className="flex justify-between items-center mb-4">
-                      <h2 className="font-black text-lg">Manajemen Akun</h2>
-                      {selectedAkunIds.length > 0 && <button onClick={hapusAkunSekaligus} className="text-xs bg-rose-600 text-white px-3 py-1.5 rounded-lg font-bold flex gap-1"><Trash2 className="w-3.5 h-3.5"/> Hapus Terpilih</button>}
-                    </div>
-                    <div className="space-y-3 max-h-[30rem] overflow-y-auto">
-                      {safeAkunList.map(akun => (
-                        <div key={akun.id} className="p-3 bg-slate-50 border rounded-xl flex justify-between items-center text-xs">
-                          <div className="flex items-center gap-2">
-                            {akun.role !== "admin" && <input type="checkbox" checked={selectedAkunIds.includes(akun.id)} onChange={() => togglePilihAkun(akun.id)} className="w-4 h-4 accent-indigo-600"/>}
-                            <div>
-                              <div className="font-bold text-sm">{akun.nama} <span className="uppercase text-[10px] bg-indigo-100 text-indigo-700 px-2 rounded ml-2">{akun.role}</span><span className="uppercase text-[10px] bg-emerald-100 text-emerald-700 px-2 rounded ml-1">{akun.status}</span></div>
-                              <div className="text-xs text-slate-500 mt-1">{akun.email}</div>
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            {akun.status === "pending" && <button onClick={() => ubahStatusAkun(akun.id, "approved")} className="p-1.5 bg-emerald-100 text-emerald-700 rounded"><UserCheck className="w-4 h-4"/></button>}
-                            <button onClick={() => bukaModalEditAkun(akun)} className="p-1.5 bg-blue-100 text-blue-700 rounded"><Edit3 className="w-4 h-4"/></button>
-                            {akun.role !== "admin" && <button onClick={() => hapusAkun(akun.id)} className="p-1.5 bg-rose-100 text-rose-700 rounded"><Trash2 className="w-4 h-4"/></button>}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {adminTabAktif === "kategori" && (
-                  <div className="bg-white p-6 rounded-3xl border shadow-sm">
-                    <div className="flex justify-between items-center mb-4">
-                      <h2 className="font-black text-lg">Manajemen Tingkat / Jurusan</h2>
-                      <button onClick={() => setModalKategori(true)} className="bg-slate-900 text-white text-xs px-3 py-1.5 rounded-lg font-bold flex gap-1"><PlusCircle className="w-3.5 h-3.5"/> Tambah Tingkat</button>
-                    </div>
-                    <div className="space-y-4 max-h-[30rem] overflow-y-auto pr-2">
-                      {daftarJenjang.map(j => (
-                        <div key={j.id} className="p-4 border rounded-2xl bg-slate-50">
-                          <h3 className="font-bold mb-2 uppercase text-slate-700">{j.nama}</h3>
-                          <div className="flex flex-wrap gap-2">
-                            {j.subJenjang.map(sj => <span key={sj.id} className="bg-white text-xs px-3 py-1.5 rounded-lg border font-semibold">{sj.nama}</span>)}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {adminTabAktif === "rombel" && (
-                  <div className="bg-white p-6 rounded-3xl border shadow-sm space-y-6">
-                    <h2 className="font-black text-lg">Kelola Semua Ruang Kelas (Rombel)</h2>
-                    <form onSubmit={handleAdminBuatKelompok} className="flex gap-2 p-4 bg-slate-50 border rounded-xl">
-                      <input type="text" required value={namaKelompokAdmin} onChange={e=>setNamaKelompokAdmin(e.target.value)} placeholder="Nama Rombel" className="p-2 border rounded-lg text-sm flex-1"/>
-                      <select required value={guruKelompokAdmin} onChange={e=>setGuruKelompokAdmin(e.target.value)} className="p-2 border rounded-lg text-sm flex-1">
-                        <option value="" disabled>Pilih Guru</option>
-                        {safeAkunList.filter(a => a.role === "guru").map(g => <option key={g.id} value={g.id}>{g.nama}</option>)}
-                      </select>
-                      <button type="submit" className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold text-sm">Buat Rombel</button>
+                  {pesanError && <div className="mb-4 p-3 bg-rose-50 text-rose-700 text-xs rounded-xl font-bold">{pesanError}</div>}
+                  {pesanSukses && <div className="mb-4 p-3 bg-emerald-50 text-emerald-700 text-xs rounded-xl font-bold">{pesanSukses}</div>}
+                  
+                  {modeAuth === "login" ? (
+                    <form onSubmit={handleLogin} className="space-y-4">
+                      <input type="email" required value={emailLogin} onChange={e => setEmailLogin(e.target.value)} placeholder="Email..." className="w-full p-3 bg-slate-50 border rounded-xl text-sm" />
+                      <input type="password" required value={passwordLogin} onChange={e => setPasswordLogin(e.target.value)} placeholder="Password..." className="w-full p-3 bg-slate-50 border rounded-xl text-sm" />
+                      <button type="submit" className="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl">Masuk</button>
                     </form>
-                    
-                    <div className="space-y-4 max-h-[30rem] overflow-y-auto pr-2">
-                      {daftarKelompok.length === 0 && <div className="text-center py-6 text-sm text-slate-400 border-2 border-dashed rounded-xl">Belum ada rombel.</div>}
-                      {daftarKelompok.map(kel => (
-                        <div key={kel.id} className="p-4 border rounded-xl bg-white shadow-sm">
-                          <div className="flex justify-between items-center mb-3">
-                            <h3 className="font-bold text-indigo-900">{kel.namaKelas}</h3>
-                            <button onClick={() => handleHapusKelompok(kel.id)} className="text-rose-500 bg-rose-50 px-2 py-1 rounded text-xs font-bold">Hapus Rombel</button>
-                          </div>
-                          <div className="text-xs text-slate-500 mb-3">Guru: <b>{safeAkunList.find(a=>a.id === kel.guruId)?.nama}</b> • Siswa: {kel.siswaIds.length} anak</div>
-                          
-                          <div className="flex gap-2 mb-3">
-                            <div className="relative flex-1">
-                              <Search className="w-3.5 h-3.5 absolute left-2 top-2 text-slate-400" />
-                              <input type="text" value={searchSiswaAdmin} onChange={e=>setSearchSiswaAdmin(e.target.value)} placeholder="Cari Siswa untuk dimasukkan..." className="w-full pl-7 pr-2 py-1.5 text-xs border rounded-lg" />
+                  ) : (
+                    <form onSubmit={handleRegister} className="space-y-4">
+                      <div className="grid grid-cols-2 gap-2">
+                        <button type="button" onClick={() => setRoleReg("siswa")} className={`p-2 border rounded-xl text-xs font-bold ${roleReg === "siswa" ? "bg-emerald-50 border-emerald-500" : ""}`}>Siswa</button>
+                        <button type="button" onClick={() => setRoleReg("guru")} className={`p-2 border rounded-xl text-xs font-bold ${roleReg === "guru" ? "bg-indigo-50 border-indigo-500" : ""}`}>Guru</button>
+                      </div>
+                      <input type="text" required value={namaReg} onChange={e => setNamaReg(e.target.value)} placeholder="Nama Lengkap" className="w-full p-3 bg-slate-50 border rounded-xl text-sm" />
+                      <input type="email" required value={emailReg} onChange={e => setEmailReg(e.target.value)} placeholder="Email" className="w-full p-3 bg-slate-50 border rounded-xl text-sm" />
+                      <input type="password" required value={passwordReg} onChange={e => setPasswordReg(e.target.value)} placeholder="Password" className="w-full p-3 bg-slate-50 border rounded-xl text-sm" />
+                      <button type="submit" className="w-full bg-slate-900 text-white font-bold py-3 rounded-xl">Daftar Akun</button>
+                    </form>
+                  )}
+                  <div className="mt-8 pt-6 border-t">
+                    <div className="text-[10px] font-bold text-slate-400 mb-2">DEMO LOGIN:</div>
+                    {safeAkunList.filter(a => a.status === "approved").slice(0, 3).map(a => (
+                      <button key={a.id} onClick={() => loginCepat(a)} className="w-full text-left text-xs bg-slate-100 hover:bg-slate-200 py-2 px-3 mb-2 rounded-lg font-bold flex justify-between">
+                        <span>{a.nama}</span> <span className="uppercase text-emerald-600">{a.role}</span>
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              ) : userLogin.role === "admin" ? (
+                <motion.div key="admin" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                  <div className="bg-slate-900 text-white p-6 rounded-3xl flex justify-between items-center shadow-lg">
+                    <div><h1 className="text-2xl font-black">Panel Admin</h1><p className="text-slate-400 text-sm">Kelola Akun & Hierarki</p></div>
+                    <div className="flex gap-2">
+                      <button onClick={() => setModalImportAkun(true)} className="bg-indigo-600 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1"><Upload className="w-4 h-4"/> Import</button>
+                      <button onClick={() => { setIdEditAkun(null); setModalAdminAkun(true); }} className="bg-emerald-600 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1"><UserPlus className="w-4 h-4"/> Tambah</button>
+                      <button onClick={() => { setUserLogin(null); localStorage.removeItem("hibah_user_aktif"); }} className="bg-rose-600 px-4 py-2 rounded-xl text-xs font-bold">Keluar</button>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
+                    <button onClick={() => setAdminTabAktif("akun")} className={`px-4 py-2 rounded-t-xl text-xs font-bold transition ${adminTabAktif === "akun" ? "bg-slate-800 text-white" : "bg-white text-slate-600"}`}>Data Pengguna</button>
+                    <button onClick={() => setAdminTabAktif("kategori")} className={`px-4 py-2 rounded-t-xl text-xs font-bold transition ${adminTabAktif === "kategori" ? "bg-slate-800 text-white" : "bg-white text-slate-600"}`}>Struktur Jenjang</button>
+                    <button onClick={() => setAdminTabAktif("rombel")} className={`px-4 py-2 rounded-t-xl text-xs font-bold transition ${adminTabAktif === "rombel" ? "bg-slate-800 text-white" : "bg-white text-slate-600"}`}>Manajemen Rombel</button>
+                    <button onClick={() => setAdminTabAktif("log")} className={`px-4 py-2 rounded-t-xl text-xs font-bold transition ${adminTabAktif === "log" ? "bg-slate-800 text-white" : "bg-white text-slate-600"}`}>Log Aktivitas</button>
+                  </div>
+
+                  {adminTabAktif === "akun" && (
+                    <div className="bg-white p-6 rounded-3xl border shadow-sm">
+                      <div className="flex justify-between items-center mb-4"><h2 className="font-black text-lg">Manajemen Akun</h2>{selectedAkunIds.length > 0 && <button onClick={hapusAkunSekaligus} className="text-xs bg-rose-600 text-white px-3 py-1.5 rounded-lg font-bold flex gap-1"><Trash2 className="w-3.5 h-3.5"/> Hapus Terpilih</button>}</div>
+                      <div className="space-y-3 max-h-[30rem] overflow-y-auto">
+                        {safeAkunList.map(akun => (
+                          <div key={akun.id} className="p-3 bg-slate-50 border rounded-xl flex justify-between items-center text-xs">
+                            <div className="flex items-center gap-2">
+                              {akun.role !== "admin" && <input type="checkbox" checked={selectedAkunIds.includes(akun.id)} onChange={() => togglePilihAkun(akun.id)} className="w-4 h-4 accent-indigo-600"/>}
+                              <div><div className="font-bold text-sm">{akun.nama} <span className="uppercase text-[10px] bg-indigo-100 text-indigo-700 px-2 rounded ml-2">{akun.role}</span><span className="uppercase text-[10px] bg-emerald-100 text-emerald-700 px-2 rounded ml-1">{akun.status}</span></div><div className="text-xs text-slate-500 mt-1">{akun.email}</div></div>
+                            </div>
+                            <div className="flex gap-2">
+                              {akun.status === "pending" && <button onClick={() => ubahStatusAkun(akun.id, "approved")} className="p-1.5 bg-emerald-100 text-emerald-700 rounded"><UserCheck className="w-4 h-4"/></button>}
+                              <button onClick={() => bukaModalEditAkun(akun)} className="p-1.5 bg-blue-100 text-blue-700 rounded"><Edit3 className="w-4 h-4"/></button>
+                              {akun.role !== "admin" && <button onClick={() => hapusAkun(akun.id)} className="p-1.5 bg-rose-100 text-rose-700 rounded"><Trash2 className="w-4 h-4"/></button>}
                             </div>
                           </div>
-                          <div className="max-h-32 overflow-y-auto space-y-1">
-                            {daftarSiswaApproved.filter(s => !kel.siswaIds.includes(s.id) && (s.nama.toLowerCase().includes(searchSiswaAdmin.toLowerCase()) || s.email.toLowerCase().includes(searchSiswaAdmin.toLowerCase()))).slice(0, 10).map(s => (
-                              <div key={s.id} className="flex justify-between items-center bg-slate-50 p-2 rounded text-xs">
-                                <span>{s.nama} ({s.email})</span>
-                                <button onClick={() => handleTambahSiswaKeKelompok(kel.id, s.id)} className="bg-emerald-600 text-white px-2 py-1 rounded">Tambah</button>
-                              </div>
-                            ))}
-                            {kel.siswaIds.map(sId => {
-                              const s = safeAkunList.find(x => x.id === sId);
-                              if(!s) return null;
-                              return (
-                                <div key={sId} className="flex justify-between items-center bg-indigo-50 p-2 rounded text-xs border border-indigo-100">
-                                  <span><CheckCircle2 className="w-3 h-3 inline text-emerald-600 mr-1"/>{s.nama}</span>
-                                  <button onClick={() => handleHapusSiswaDariKelompok(kel.id, s.id)} className="text-rose-500 font-bold hover:underline">Hapus</button>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {adminTabAktif === "log" && (
-                  <div className="bg-white p-6 rounded-3xl border shadow-sm h-full">
-                    <h2 className="text-xl font-black mb-4">Audit Log</h2>
-                    <div className="space-y-3 max-h-[30rem] overflow-y-auto pr-2">
-                      {logAktivitas.map(log => (
-                        <div key={log.id} className="p-3 bg-slate-50 border rounded-xl flex flex-col gap-1">
-                          <div className="flex justify-between items-start">
-                            <span className="text-[9px] font-black uppercase bg-slate-200 px-2 py-0.5 rounded">{log.rolePelaku} - {log.namaPelaku}</span>
-                            <span className="font-mono text-[10px] text-slate-400">{log.waktu}</span>
-                          </div>
-                          <p className="text-xs text-slate-600 font-medium">{log.aksi}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Modal Admin: Tambah/Edit Akun */}
-                {modalAdminAkun && (
-                  <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-[2rem] p-6 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto">
-                      <h3 className="font-black text-xl mb-4">{idEditAkun ? "Edit Akun" : "Tambah Akun"}</h3>
-                      <form onSubmit={simpanAkunAdmin} className="space-y-3 text-sm">
-                        <input type="text" required value={namaFormAdmin} onChange={e=>setNamaFormAdmin(e.target.value)} placeholder="Nama Lengkap" className="w-full p-3 border rounded-xl bg-slate-50" />
-                        <input type="email" required value={emailFormAdmin} onChange={e=>setEmailFormAdmin(e.target.value)} placeholder="Email" className="w-full p-3 border rounded-xl bg-slate-50" />
-                        <input type="password" value={passFormAdmin} onChange={e=>setPassFormAdmin(e.target.value)} placeholder={`Password ${idEditAkun ? '(Kosongkan jika tidak diubah)' : ''}`} className="w-full p-3 border rounded-xl bg-slate-50" />
-                        <div className="flex gap-3">
-                          <select value={roleFormAdmin} onChange={e=>setRoleFormAdmin(e.target.value as any)} className="w-full p-3 border rounded-xl font-bold"><option value="siswa">Siswa</option><option value="guru">Guru Relawan</option><option value="admin">Admin</option></select>
-                          <select value={statusFormAdmin} onChange={e=>setStatusFormAdmin(e.target.value as any)} className="w-full p-3 border rounded-xl font-bold"><option value="approved">Aktif</option><option value="pending">Pending</option><option value="rejected">Suspend</option></select>
-                        </div>
-                        {roleFormAdmin === "guru" && (
-                          <div className="p-4 bg-indigo-50 border rounded-xl">
-                            <label className="font-bold mb-2 block">Hak Mengajar (RBAC):</label>
-                            <div className="max-h-40 overflow-y-auto space-y-2">
-                              {daftarJenjang.map(j => (
-                                <div key={j.id} className="text-xs">
-                                  <div className="font-bold text-slate-500 mb-1">{j.nama}</div>
-                                  <div className="flex flex-wrap gap-2">
-                                    {j.subJenjang.map(sj => (
-                                      <label key={sj.id} className="flex gap-1 items-center bg-white px-2 py-1 rounded border"><input type="checkbox" checked={aksesMengajarForm.includes(sj.id)} onChange={() => setAksesMengajarForm(p => p.includes(sj.id) ? p.filter(x=>x!==sj.id) : [...p, sj.id])}/> {sj.nama}</label>
-                                    ))}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        <div className="flex gap-2 pt-2">
-                          <button type="submit" className="flex-1 bg-emerald-600 text-white font-bold py-3 rounded-xl">Simpan</button>
-                          <button type="button" onClick={()=>setModalAdminAkun(false)} className="px-5 py-3 bg-slate-200 rounded-xl font-bold">Batal</button>
-                        </div>
-                      </form>
-                    </div>
-                  </div>
-                )}
-                
-                {modalImportAkun && (
-                  <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-[2rem] p-6 max-w-lg w-full">
-                      <h3 className="font-black text-xl mb-4">Import Akun (JSON)</h3>
-                      <button type="button" onClick={() => setTeksImportJson(TEMPLATE_JSON_CONTOH)} className="text-xs bg-indigo-50 text-indigo-600 px-3 py-1 rounded-md font-bold mb-2">Lihat Contoh Format</button>
-                      <textarea rows={8} value={teksImportJson} onChange={e=>setTeksImportJson(e.target.value)} placeholder={`[\n  { "nama": "Rina", "email": "rina@sekolah.id" }\n]`} className="w-full p-4 text-xs border rounded-xl font-mono bg-slate-900 text-emerald-300"></textarea>
-                      <div className="flex gap-2 mt-4">
-                        <button onClick={handleImportJson} className="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold">Jalankan Import</button>
-                        <button onClick={()=>setModalImportAkun(false)} className="px-5 py-3 bg-slate-200 rounded-xl font-bold">Batal</button>
+                        ))}
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {modalKategori && (
-                  <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-[2rem] p-6 max-w-sm w-full">
-                      <h3 className="font-black text-xl mb-4">Tambah Kategori Baru</h3>
-                      <form onSubmit={tambahKategoriBaru} className="space-y-4">
-                        <select value={targetJenjangKategori} onChange={e=>setTargetJenjangKategori(e.target.value)} className="w-full p-3 border rounded-xl text-sm font-bold">
-                          {daftarJenjang.map(j => <option key={j.id} value={j.id}>{j.nama}</option>)}
-                        </select>
-                        <input type="text" required value={namaKategoriBaru} onChange={e=>setNamaKategoriBaru(e.target.value)} placeholder="Nama Sub-Kategori..." className="w-full p-3 border rounded-xl text-sm" />
-                        <div className="flex gap-2">
-                          <button type="submit" className="flex-1 bg-slate-900 text-white font-bold py-3 rounded-xl">Simpan</button>
-                          <button type="button" onClick={()=>setModalKategori(false)} className="px-5 py-3 bg-slate-200 font-bold rounded-xl">Batal</button>
-                        </div>
-                      </form>
+                  {adminTabAktif === "kategori" && (
+                    <div className="bg-white p-6 rounded-3xl border shadow-sm">
+                      <div className="flex justify-between items-center mb-4"><h2 className="font-black text-lg">Manajemen Tingkat / Jurusan</h2><button onClick={() => setModalKategori(true)} className="bg-slate-900 text-white text-xs px-3 py-1.5 rounded-lg font-bold flex gap-1"><PlusCircle className="w-3.5 h-3.5"/> Tambah Tingkat</button></div>
+                      <div className="space-y-4 max-h-[30rem] overflow-y-auto pr-2">
+                        {daftarJenjang.map(j => (
+                          <div key={j.id} className="p-4 border rounded-2xl bg-slate-50"><h3 className="font-bold mb-2 uppercase text-slate-700">{j.nama}</h3><div className="flex flex-wrap gap-2">{j.subJenjang.map(sj => <span key={sj.id} className="bg-white text-xs px-3 py-1.5 rounded-lg border font-semibold">{sj.nama}</span>)}</div></div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </motion.div>
+                  )}
+
+                  {adminTabAktif === "rombel" && (
+                    <div className="bg-white p-6 rounded-3xl border shadow-sm space-y-6">
+                      <h2 className="font-black text-lg">Kelola Semua Ruang Kelas (Rombel)</h2>
+                      <form onSubmit={handleAdminBuatKelompok} className="flex gap-2 p-4 bg-slate-50 border rounded-xl">
+                        <input type="text" required value={namaKelompokAdmin} onChange={e=>setNamaKelompokAdmin(e.target.value)} placeholder="Nama Rombel" className="p-2 border rounded-lg text-sm flex-1"/>
+                        <select required value={guruKelompokAdmin} onChange={e=>setGuruKelompokAdmin(e.target.value)} className="p-2 border rounded-lg text-sm flex-1"><option value="" disabled>Pilih Guru</option>{safeAkunList.filter(a => a.role === "guru").map(g => <option key={g.id} value={g.id}>{g.nama}</option>)}</select>
+                        <button type="submit" className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold text-sm">Buat Rombel</button>
+                      </form>
+                      <div className="space-y-4 max-h-[30rem] overflow-y-auto pr-2">
+                        {daftarKelompok.length === 0 && <div className="text-center py-6 text-sm text-slate-400 border-2 border-dashed rounded-xl">Belum ada rombel.</div>}
+                        {daftarKelompok.map(kel => (
+                          <div key={kel.id} className="p-4 border rounded-xl bg-white shadow-sm">
+                            <div className="flex justify-between items-center mb-3"><h3 className="font-bold text-indigo-900">{kel.namaKelas}</h3><button onClick={() => handleHapusKelompok(kel.id)} className="text-rose-500 bg-rose-50 px-2 py-1 rounded text-xs font-bold">Hapus Rombel</button></div>
+                            <div className="text-xs text-slate-500 mb-3">Guru: <b>{safeAkunList.find(a=>a.id === kel.guruId)?.nama}</b> • Siswa: {kel.siswaIds.length} anak</div>
+                            <div className="flex gap-2 mb-3"><div className="relative flex-1"><Search className="w-3.5 h-3.5 absolute left-2 top-2 text-slate-400" /><input type="text" value={searchSiswaAdmin} onChange={e=>setSearchSiswaAdmin(e.target.value)} placeholder="Cari Siswa untuk dimasukkan..." className="w-full pl-7 pr-2 py-1.5 text-xs border rounded-lg" /></div></div>
+                            <div className="max-h-32 overflow-y-auto space-y-1">
+                              {daftarSiswaApproved.filter(s => !kel.siswaIds.includes(s.id) && (s.nama.toLowerCase().includes(searchSiswaAdmin.toLowerCase()) || s.email.toLowerCase().includes(searchSiswaAdmin.toLowerCase()))).slice(0, 10).map(s => (
+                                <div key={s.id} className="flex justify-between items-center bg-slate-50 p-2 rounded text-xs"><span>{s.nama} ({s.email})</span><button onClick={() => handleTambahSiswaKeKelompok(kel.id, s.id)} className="bg-emerald-600 text-white px-2 py-1 rounded">Tambah</button></div>
+                              ))}
+                              {kel.siswaIds.map(sId => {
+                                const s = safeAkunList.find(x => x.id === sId);
+                                if(!s) return null;
+                                return <div key={sId} className="flex justify-between items-center bg-indigo-50 p-2 rounded text-xs border border-indigo-100"><span><CheckCircle2 className="w-3 h-3 inline text-emerald-600 mr-1"/>{s.nama}</span><button onClick={() => handleHapusSiswaDariKelompok(kel.id, s.id)} className="text-rose-500 font-bold hover:underline">Hapus</button></div>
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {adminTabAktif === "log" && (
+                    <div className="bg-white p-6 rounded-3xl border shadow-sm h-full">
+                      <h2 className="text-xl font-black mb-4">Audit Log</h2>
+                      <div className="space-y-3 max-h-[30rem] overflow-y-auto pr-2">
+                        {logAktivitas.map(log => (
+                          <div key={log.id} className="p-3 bg-slate-50 border rounded-xl flex flex-col gap-1">
+                            <div className="flex justify-between items-start"><span className="text-[9px] font-black uppercase bg-slate-200 px-2 py-0.5 rounded">{log.rolePelaku} - {log.namaPelaku}</span><span className="font-mono text-[10px] text-slate-400">{log.waktu}</span></div>
+                            <p className="text-xs text-slate-600 font-medium">{log.aksi}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* MODAL ADMIN */}
+                  {modalAdminAkun && (
+                    <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
+                      <div className="bg-white rounded-[2rem] p-6 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+                        <h3 className="font-black text-xl mb-4">{idEditAkun ? "Edit Akun" : "Tambah Akun"}</h3>
+                        <form onSubmit={simpanAkunAdmin} className="space-y-3 text-sm">
+                          <input type="text" required value={namaFormAdmin} onChange={e=>setNamaFormAdmin(e.target.value)} placeholder="Nama Lengkap" className="w-full p-3 border rounded-xl bg-slate-50" />
+                          <input type="email" required value={emailFormAdmin} onChange={e=>setEmailFormAdmin(e.target.value)} placeholder="Email" className="w-full p-3 border rounded-xl bg-slate-50" />
+                          <input type="password" value={passFormAdmin} onChange={e=>setPassFormAdmin(e.target.value)} placeholder={`Password ${idEditAkun ? '(Kosongkan jika tidak diubah)' : ''}`} className="w-full p-3 border rounded-xl bg-slate-50" />
+                          <div className="flex gap-3">
+                            <select value={roleFormAdmin} onChange={e=>setRoleFormAdmin(e.target.value as any)} className="w-full p-3 border rounded-xl font-bold"><option value="siswa">Siswa</option><option value="guru">Guru Relawan</option><option value="admin">Admin</option></select>
+                            <select value={statusFormAdmin} onChange={e=>setStatusFormAdmin(e.target.value as any)} className="w-full p-3 border rounded-xl font-bold"><option value="approved">Aktif</option><option value="pending">Pending</option><option value="rejected">Suspend</option></select>
+                          </div>
+                          {roleFormAdmin === "guru" && (
+                            <div className="p-4 bg-indigo-50 border rounded-xl">
+                              <label className="font-bold mb-2 block">Hak Mengajar (RBAC):</label>
+                              <div className="max-h-40 overflow-y-auto space-y-2">
+                                {daftarJenjang.map(j => (
+                                  <div key={j.id} className="text-xs"><div className="font-bold text-slate-500 mb-1">{j.nama}</div><div className="flex flex-wrap gap-2">{j.subJenjang.map(sj => <label key={sj.id} className="flex gap-1 items-center bg-white px-2 py-1 rounded border"><input type="checkbox" checked={aksesMengajarForm.includes(sj.id)} onChange={() => setAksesMengajarForm(p => p.includes(sj.id) ? p.filter(x=>x!==sj.id) : [...p, sj.id])}/> {sj.nama}</label>)}</div></div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          <div className="flex gap-2 pt-2"><button type="submit" className="flex-1 bg-emerald-600 text-white font-bold py-3 rounded-xl">Simpan</button><button type="button" onClick={()=>setModalAdminAkun(false)} className="px-5 py-3 bg-slate-200 rounded-xl font-bold">Batal</button></div>
+                        </form>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {modalImportAkun && (
+                    <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
+                      <div className="bg-white rounded-[2rem] p-6 max-w-lg w-full">
+                        <h3 className="font-black text-xl mb-4">Import Akun (JSON)</h3>
+                        <button type="button" onClick={() => setTeksImportJson(TEMPLATE_JSON_CONTOH)} className="text-xs bg-indigo-50 text-indigo-600 px-3 py-1 rounded-md font-bold mb-2">Lihat Contoh Format</button>
+                        <textarea rows={8} value={teksImportJson} onChange={e=>setTeksImportJson(e.target.value)} placeholder={`[\n  { "nama": "Rina", "email": "rina@sekolah.id" }\n]`} className="w-full p-4 text-xs border rounded-xl font-mono bg-slate-900 text-emerald-300"></textarea>
+                        <div className="flex gap-2 mt-4"><button onClick={handleImportJson} className="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold">Jalankan Import</button><button onClick={()=>setModalImportAkun(false)} className="px-5 py-3 bg-slate-200 rounded-xl font-bold">Batal</button></div>
+                      </div>
+                    </div>
+                  )}
+
+                  {modalKategori && (
+                    <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
+                      <div className="bg-white rounded-[2rem] p-6 max-w-sm w-full">
+                        <h3 className="font-black text-xl mb-4">Tambah Kategori Baru</h3>
+                        <form onSubmit={tambahKategoriBaru} className="space-y-4">
+                          <select value={targetJenjangKategori} onChange={e=>setTargetJenjangKategori(e.target.value)} className="w-full p-3 border rounded-xl text-sm font-bold">{daftarJenjang.map(j => <option key={j.id} value={j.id}>{j.nama}</option>)}</select>
+                          <input type="text" required value={namaKategoriBaru} onChange={e=>setNamaKategoriBaru(e.target.value)} placeholder="Nama Sub-Kategori..." className="w-full p-3 border rounded-xl text-sm" />
+                          <div className="flex gap-2"><button type="submit" className="flex-1 bg-slate-900 text-white font-bold py-3 rounded-xl">Simpan</button><button type="button" onClick={()=>setModalKategori(false)} className="px-5 py-3 bg-slate-200 font-bold rounded-xl">Batal</button></div>
+                        </form>
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
             ) : userLogin.role === "guru" ? (
-              /* --- GURU DASHBOARD --- */
               <motion.div key="guru" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
                 <div className="bg-indigo-900 text-white p-8 rounded-3xl flex justify-between items-center shadow-lg">
                   <div><h1 className="text-2xl font-black">Studio Pengajar</h1><p className="text-sm">Akses {opsiKelasGuru.length} kelas.</p></div>
@@ -850,7 +777,6 @@ export default function AplikasiHibahIlmu() {
                       </div>
                       <input type="url" required value={videoMateri} onChange={e=>setVideoMateri(e.target.value)} placeholder="Link YouTube" className="w-full p-4 border rounded-xl text-sm" />
                       
-                      {/* RICH TEXT EDITOR */}
                       <div>
                         <label className="font-bold text-xs text-slate-500 mb-2 block">Rangkuman / Artikel Materi (Format Rich Text)</label>
                         <RichTextEditor value={rangkumanMateri} onChange={setRangkumanMateri} />
@@ -894,7 +820,6 @@ export default function AplikasiHibahIlmu() {
                               <input type="text" value={kelompokAktifGuru === kel.id ? searchSiswaGuru : ""} onChange={e => { setKelompokAktifGuru(kel.id); setSearchSiswaGuru(e.target.value); }} placeholder="Cari by Nama/Email lalu Tambah..." className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-emerald-500" />
                             </div>
                             
-                            {/* SEARCH RESULTS DROPDOWN (ONLY SHOW IF SEARCHING IN THIS GROUP) */}
                             {kelompokAktifGuru === kel.id && searchSiswaGuru.trim() !== "" && (
                               <div className="max-h-32 overflow-y-auto border rounded-lg bg-white shadow-lg absolute z-20 w-[calc(100%-2.5rem)]">
                                 {daftarSiswaApproved.filter(s => !kel.siswaIds.includes(s.id) && (s.nama.toLowerCase().includes(searchSiswaGuru.toLowerCase()) || s.email.toLowerCase().includes(searchSiswaGuru.toLowerCase()))).map(s => (
@@ -903,9 +828,6 @@ export default function AplikasiHibahIlmu() {
                                     <button onClick={() => { handleTambahSiswaKeKelompok(kel.id, s.id); setSearchSiswaGuru(""); }} className="bg-emerald-600 text-white px-2 py-1 rounded font-bold">Tambah</button>
                                   </div>
                                 ))}
-                                {daftarSiswaApproved.filter(s => !kel.siswaIds.includes(s.id) && (s.nama.toLowerCase().includes(searchSiswaGuru.toLowerCase()) || s.email.toLowerCase().includes(searchSiswaGuru.toLowerCase()))).length === 0 && (
-                                  <div className="p-3 text-xs text-slate-400 text-center">Siswa tidak ditemukan atau sudah ada di kelas ini.</div>
-                                )}
                               </div>
                             )}
                           </div>
@@ -916,12 +838,11 @@ export default function AplikasiHibahIlmu() {
                               if(!sw) return null;
                               return (
                                 <div key={sId} className="flex justify-between items-center p-2.5 bg-slate-50 border border-slate-100 rounded-xl text-xs">
-                                  <div className="font-bold">{sw.nama}</div>
+                                  <div className="font-bold flex items-center gap-3"><div className="w-8 h-8 bg-emerald-100 text-emerald-700 rounded-full flex justify-center items-center font-black">{sw.nama.charAt(0)}</div>{sw.nama}</div>
                                   <button onClick={() => handleHapusSiswaDariKelompok(kel.id, sId)} className="p-1.5 bg-rose-100 text-rose-600 rounded-lg hover:bg-rose-200"><UserX className="w-3.5 h-3.5"/></button>
                                 </div>
                               )
                             })}
-                            {kel.siswaIds.length === 0 && <div className="text-xs text-slate-400 italic text-center py-2">Belum ada siswa di kelas ini.</div>}
                           </div>
                         </div>
                       ))}
@@ -930,7 +851,6 @@ export default function AplikasiHibahIlmu() {
                 )}
               </motion.div>
             ) : (
-              /* --- SISWA DASHBOARD --- */
               <motion.div key="siswa" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
                 <div className="bg-emerald-700 text-white p-8 rounded-3xl flex justify-between items-center shadow-lg">
                   <div><h1 className="text-2xl font-black">Halo, {userLogin.nama}!</h1><p className="text-sm">Total XP: {poinXP}</p></div>
@@ -980,7 +900,7 @@ export default function AplikasiHibahIlmu() {
         {/* ==================== 3. FORUM ==================== */}
         {menuAktif === "forum" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-3xl mx-auto space-y-6">
-            <div className="bg-white p-8 border rounded-3xl shadow-sm">
+            <div className="bg-white p-6 border rounded-3xl shadow-sm">
               <h2 className="font-black text-2xl mb-6 flex items-center gap-2"><HelpCircle className="text-emerald-600"/> Tanya PR</h2>
               <form onSubmit={e => { e.preventDefault(); if(tanyaBaru.trim()) { setDaftarDiskusi([{id: "pr-"+Date.now(), penanya: userLogin?.nama || "Siswa", jenjang: "Umum", mapel: mapelBaru, pertanyaan: tanyaBaru, waktu: "Baru saja", jawaban: []}, ...daftarDiskusi]); setTanyaBaru(""); tambahXP(20); } }}>
                 <input type="text" required value={mapelBaru} onChange={e=>setMapelBaru(e.target.value)} placeholder="Mata Pelajaran..." className="w-full p-4 bg-slate-50 border rounded-2xl text-sm mb-3 outline-none focus:border-emerald-500" />
@@ -1019,7 +939,7 @@ export default function AplikasiHibahIlmu() {
 
         {/* ==================== 5. BERANDA KELAS (RUANG BELAJAR) ==================== */}
         {menuAktif === "beranda" && (
-          <React.Fragment>
+          <div key="beranda-container">
             {!jenjangAktif && !kelasAktif && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <div className="text-center mb-16 pt-8">
@@ -1129,7 +1049,7 @@ export default function AplikasiHibahIlmu() {
                 </div>
               </motion.div>
             )}
-          </React.Fragment>
+          </div>
         )}
       </main>
     </div>
