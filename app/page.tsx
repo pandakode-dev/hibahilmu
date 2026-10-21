@@ -41,7 +41,10 @@ import {
   Lock,
   Play,
   BookMarked,
-  FileSpreadsheet
+  FileSpreadsheet,
+  HelpCircle,
+  Send,
+  XCircle
 } from "lucide-react";
 import confetti from "canvas-confetti";
 
@@ -1333,6 +1336,7 @@ export default function AplikasiHibahIlmu() {
                   </div>
                   <div className="w-full h-4 bg-slate-800 rounded-full overflow-hidden mb-6 shadow-inner">
                     <motion.div initial={{ width: 0 }} animate={{ width: "56%" }} transition={{ duration: 1, ease: "easeOut" }} className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full relative">
+                      <div className="absolute top-0 right-0 bottom-0 left-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-30"></div>
                     </motion.div>
                   </div>
                   <button className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-black py-4 rounded-xl shadow-lg transition transform hover:-translate-y-1">💖 Donasi via Saweria / GoPay</button>
@@ -1552,7 +1556,7 @@ export default function AplikasiHibahIlmu() {
                         )}
                         {statusKuis === "salah" && (
                           <motion.div key="salah" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="p-4 bg-rose-50 rounded-2xl text-xs text-rose-900 font-bold border border-rose-200 shadow-inner flex items-center gap-2">
-                            <UserX className="w-5 h-5 text-rose-600"/> Belum tepat, ayo coba pahami lagi!
+                            <XCircle className="w-5 h-5 text-rose-600"/> Belum tepat, ayo coba pahami lagi!
                           </motion.div>
                         )}
                       </AnimatePresence>
