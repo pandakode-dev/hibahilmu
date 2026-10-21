@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   BookOpen,
   GraduationCap,
@@ -21,9 +21,7 @@ import {
   CheckSquare,
   Square,
   FileEdit,
-  Award,
   ShieldAlert,
-  UserCheck,
   UserX,
   Users,
   Activity,
@@ -38,11 +36,9 @@ import {
   Layers,
   Lock,
   Play,
-  BookMarked,
   FileSpreadsheet,
   Send,
   HelpCircle,
-  XCircle,
   Bold,
   Italic,
   Underline,
@@ -51,17 +47,33 @@ import {
   Link as LinkIcon,
   Image as ImageIcon,
   FolderArchive,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Quote,
+  Code,
+  Table,
+  FileText,
+  Megaphone,
+  Check,
+  XCircle,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 
 // ==========================================
 // 1. INTERFACE & STRUKTUR DATA
 // ==========================================
-interface KuisItem {
+export type TipeSoal = "pilihan_ganda" | "benar_salah" | "isian_singkat";
+
+export interface KuisItem {
+  id: string;
+  tipe: TipeSoal;
   tanya: string;
-  opsi: string[];
-  jawabanBenar: number;
+  opsi: string[]; // Untuk pilihan_ganda & benar_salah
+  jawabanBenar: number; // Indeks opsi benar untuk PG & Benar/Salah
+  jawabanTeks?: string; // Kunci jawaban teks untuk isian_singkat
   pembahasan: string;
+  poin: number;
 }
 
 export interface SubJenjang {
@@ -69,20 +81,20 @@ export interface SubJenjang {
   nama: string;
 }
 
-interface KelasItem {
+export interface KelasItem {
   id: string;
   subJenjangId: string;
   judul: string;
   level: "Pemula" | "Menengah" | "Mahir";
   durasi: string;
   videoUrl: string;
+  lampiranUrl?: string;
   rangkuman: string;
   rumusMatematika?: string;
-  contohKode?: string;
-  kuis: KuisItem;
+  daftarKuis: KuisItem[];
 }
 
-interface JenjangItem {
+export interface JenjangItem {
   id: string;
   nama: string;
   tagline: string;
@@ -94,7 +106,7 @@ interface JenjangItem {
   kelas: KelasItem[];
 }
 
-interface SoalTryout {
+export interface SoalTryout {
   id: string;
   jenjang: string;
   pertanyaan: string;
@@ -104,7 +116,7 @@ interface SoalTryout {
   pembahasan: string;
 }
 
-interface DiskusiPR {
+export interface DiskusiPR {
   id: string;
   penanya: string;
   jenjang: string;
@@ -138,20 +150,23 @@ export interface LogAktivitas {
 export interface KelompokBelajar {
   id: string;
   namaKelas: string;
+  pengumuman?: string;
   guruId: string;
   siswaIds: string[];
 }
 
-// Fungsi bantu yang aman tanpa memicu error Regex di dalam JSX
-function stripHtml(html: string): string {
-  if (!html) return "";
-  return html.replace(/<[^>]*>?/gm, " ");
+function bersihkanTagHtml(teksHtml: string): string {
+  if (!teksHtml) return "";
+  return teksHtml
+    .split("<")
+    .map((bagian, idx) => (idx === 0 ? bagian : bagian.substring(bagian.indexOf(">") + 1)))
+    .join(" ");
 }
 
 // ==========================================
-// 2. DATA AWAL LENGKAP
+// 2. DATA AWAL & TEMPLATE IMPORT
 // ==========================================
-const TEMPLATE_JSON_CONTOH = JSON.stringify(
+const TEMPLATE_JSON_AKUN = JSON.stringify(
   [
     {
       nama: "Dewi Lestari, S.Pd",
@@ -166,6 +181,38 @@ const TEMPLATE_JSON_CONTOH = JSON.stringify(
       password: "123",
       role: "siswa",
       infoTambahan: "Kelas 12 MIPA",
+    },
+  ],
+  null,
+  2
+);
+
+const TEMPLATE_JSON_KUIS = JSON.stringify(
+  [
+    {
+      tipe: "pilihan_ganda",
+      tanya: "Satuan Internasional (SI) untuk besaran Gaya adalah...",
+      opsi: ["Joule", "Newton", "Watt", "Pascal"],
+      jawabanBenar: 1,
+      pembahasan: "Gaya diukur dalam satuan Newton (N) atau kg.m/s2.",
+      poin: 50,
+    },
+    {
+      tipe: "benar_salah",
+      tanya: "Hukum I Newton disebut juga sebagai Hukum Kelembaman (Inersia).",
+      opsi: ["Benar", "Salah"],
+      jawabanBenar: 0,
+      pembahasan: "Benar, benda cenderung mempertahankan keadaan diam atau bergerak lurus beraturan.",
+      poin: 30,
+    },
+    {
+      tipe: "isian_singkat",
+      tanya: "Berapakah hasil dari 12 dikali 5?",
+      opsi: [],
+      jawabanBenar: 0,
+      jawabanTeks: "60",
+      pembahasan: "12 x 5 = 60.",
+      poin: 40,
     },
   ],
   null,
@@ -195,14 +242,28 @@ const STRUKTUR_AWAL: JenjangItem[] = [
         durasi: "5 Menit",
         videoUrl: "https://www.youtube.com/embed/DR-cfDsHCGA",
         rangkuman:
-          "<p>Mari belajar menghitung buah-buahan! Angka <b>1</b> seperti tiang listrik, angka <b>2</b> seperti bebek berenang.</p>",
+          "<h2>Belajar Berhitung Buah</h2><p>Mari belajar menghitung buah-buahan! Angka <b>1</b> seperti tiang listrik, angka <b>2</b> seperti bebek berenang.</p>",
         rumusMatematika: "2 Apel + 1 Apel = 3 Apel Segar",
-        kuis: {
-          tanya: "Jika Budi punya 2 apel merah lalu diberi Ibu 1 apel lagi, berapa jumlah apel Budi sekarang?",
-          opsi: ["2 Apel", "3 Apel", "4 Apel", "5 Apel"],
-          jawabanBenar: 1,
-          pembahasan: "Hebat sekali! 2 apel ditambah 1 apel menjadi 3 apel!",
-        },
+        daftarKuis: [
+          {
+            id: "q-tk-1",
+            tipe: "pilihan_ganda",
+            tanya: "Jika Budi punya 2 apel merah lalu diberi Ibu 1 apel lagi, berapa jumlah apel Budi?",
+            opsi: ["2 Apel", "3 Apel", "4 Apel", "5 Apel"],
+            jawabanBenar: 1,
+            pembahasan: "Hebat sekali! 2 apel ditambah 1 apel menjadi 3 apel!",
+            poin: 50,
+          },
+          {
+            id: "q-tk-2",
+            tipe: "benar_salah",
+            tanya: "Angka setelah angka 4 adalah angka 5.",
+            opsi: ["Benar", "Salah"],
+            jawabanBenar: 0,
+            pembahasan: "Tepat! Urutannya adalah 1, 2, 3, 4, 5.",
+            poin: 30,
+          },
+        ],
       },
     ],
   },
@@ -231,14 +292,29 @@ const STRUKTUR_AWAL: JenjangItem[] = [
         durasi: "10 Menit",
         videoUrl: "https://www.youtube.com/embed/mvOkMYCygps",
         rangkuman:
-          "<p><b>Perkalian</b> adalah penjumlahan yang berulang! Digunakan juga untuk menghitung luas persegi panjang dan segitiga.</p><ul><li>Luas Persegi = Sisi x Sisi</li><li>Luas Segitiga = 1/2 x Alas x Tinggi</li></ul>",
+          "<h3>Konsep Dasar Perkalian</h3><p><b>Perkalian</b> adalah penjumlahan yang berulang! Digunakan juga untuk menghitung luas persegi panjang dan segitiga.</p><ul><li>Luas Persegi = Sisi x Sisi</li><li>Luas Segitiga = 1/2 x Alas x Tinggi</li></ul>",
         rumusMatematika: "Luas Segitiga = 1/2 x Alas (a) x Tinggi (t)",
-        kuis: {
-          tanya: "Sebuah segitiga memiliki alas 6 cm dan tinggi 4 cm. Berapakah luasnya?",
-          opsi: ["10 cm2", "12 cm2", "24 cm2", "18 cm2"],
-          jawabanBenar: 1,
-          pembahasan: "Tepat! Luas = 1/2 x 6 x 4 = 12 cm2.",
-        },
+        daftarKuis: [
+          {
+            id: "q-sd-1",
+            tipe: "pilihan_ganda",
+            tanya: "Sebuah segitiga memiliki alas 6 cm dan tinggi 4 cm. Berapakah luasnya?",
+            opsi: ["10 cm2", "12 cm2", "24 cm2", "18 cm2"],
+            jawabanBenar: 1,
+            pembahasan: "Tepat! Luas = 1/2 x 6 x 4 = 12 cm2.",
+            poin: 50,
+          },
+          {
+            id: "q-sd-2",
+            tipe: "isian_singkat",
+            tanya: "Berapakah luas persegi jika panjang sisinya 5 cm? (Ketik angkanya saja)",
+            opsi: [],
+            jawabanBenar: 0,
+            jawabanTeks: "25",
+            pembahasan: "Luas Persegi = 5 x 5 = 25 cm2.",
+            poin: 50,
+          },
+        ],
       },
     ],
   },
@@ -255,25 +331,7 @@ const STRUKTUR_AWAL: JenjangItem[] = [
       { id: "smp-8", nama: "Kelas 8 SMP" },
       { id: "smp-9", nama: "Kelas 9 SMP" },
     ],
-    kelas: [
-      {
-        id: "materi-smp-1",
-        subJenjangId: "smp-8",
-        judul: "Persamaan Aljabar & Teorema Pythagoras",
-        level: "Menengah",
-        durasi: "12 Menit",
-        videoUrl: "https://www.youtube.com/embed/NybHckSEQBI",
-        rangkuman:
-          "<p>Aljabar menggunakan variabel <i>x</i> atau <i>y</i> untuk mencari angka misterius. Pythagoras membantu mencari sisi miring segitiga siku-siku.</p>",
-        rumusMatematika: "Rumus Pythagoras: a^2 + b^2 = c^2",
-        kuis: {
-          tanya: "Jika segitiga siku-siku memiliki alas a = 3 cm dan tinggi b = 4 cm, berapakah sisi miringnya (c)?",
-          opsi: ["c = 5 cm", "c = 6 cm", "c = 7 cm", "c = 25 cm"],
-          jawabanBenar: 0,
-          pembahasan: "Luar biasa! Akar dari (9 + 16) = Akar 25 = 5 cm.",
-        },
-      },
-    ],
+    kelas: [],
   },
   {
     id: "sma",
@@ -299,15 +357,21 @@ const STRUKTUR_AWAL: JenjangItem[] = [
         level: "Mahir",
         durasi: "15 Menit",
         videoUrl: "https://www.youtube.com/embed/aircAruvnKk",
+        lampiranUrl: "https://drive.google.com",
         rangkuman:
-          "<p>Gaya berbanding lurus dengan massa dan percepatan benda. <b>Energi kinetik</b> bergantung pada kuadrat kecepatan benda tersebut.</p>",
+          "<h3>Hukum Gerak Newton</h3><p>Gaya berbanding lurus dengan massa dan percepatan benda. <b>Energi kinetik</b> bergantung pada kuadrat kecepatan benda tersebut.</p>",
         rumusMatematika: "Hukum II Newton: F = m . a\nEnergi Kinetik: Ek = 1/2 . m . v^2",
-        kuis: {
-          tanya: "Sebuah benda bermassa 4 kg bergerak dengan kecepatan 3 m/s. Berapakah Energi Kinetiknya (Ek)?",
-          opsi: ["6 Joule", "12 Joule", "18 Joule", "36 Joule"],
-          jawabanBenar: 2,
-          pembahasan: "Tepat! Ek = 1/2 . 4 . (3^2) = 2 . 9 = 18 Joule.",
-        },
+        daftarKuis: [
+          {
+            id: "q-sma-1",
+            tipe: "pilihan_ganda",
+            tanya: "Sebuah benda bermassa 4 kg bergerak dengan kecepatan 3 m/s. Berapakah Energi Kinetiknya (Ek)?",
+            opsi: ["6 Joule", "12 Joule", "18 Joule", "36 Joule"],
+            jawabanBenar: 2,
+            pembahasan: "Tepat! Ek = 1/2 . 4 . (3^2) = 2 . 9 = 18 Joule.",
+            poin: 50,
+          },
+        ],
       },
     ],
   },
@@ -325,25 +389,7 @@ const STRUKTUR_AWAL: JenjangItem[] = [
       { id: "pt-dkv", nama: "S1 Desain Komunikasi Visual" },
       { id: "pt-manajemen", nama: "S1 Manajemen Bisnis" },
     ],
-    kelas: [
-      {
-        id: "materi-kuliah-1",
-        subJenjangId: "pt-ti",
-        judul: "Fullstack Next.js & React (Panda Kode)",
-        level: "Mahir",
-        durasi: "20 Menit",
-        videoUrl: "https://www.youtube.com/embed/SqcY0GlETPk",
-        rangkuman:
-          "<p>React menggunakan komponen dan Hook seperti <b>useState</b> untuk memperbarui data layar secara instan.</p>",
-        contohKode: "const [xp, setXp] = useState(0);",
-        kuis: {
-          tanya: "Hook apa yang digunakan di React/Next.js untuk menyimpan state lokal?",
-          opsi: ["useRouter()", "useState()", "useDatabase()", "useStyle()"],
-          jawabanBenar: 1,
-          pembahasan: "Mantap! useState() adalah fondasi utama membuat aplikasi interaktif.",
-        },
-      },
-    ],
+    kelas: [],
   },
 ];
 
@@ -365,14 +411,6 @@ const BANK_SOAL_TRYOUT: SoalTryout[] = [
     opsi: ["5", "7", "12", "17"],
     jawabanBenar: 1,
     pembahasan: "f(4) = 3(4) - 5 = 12 - 5 = 7.",
-  },
-  {
-    id: "to-3",
-    jenjang: "Kuliah IT",
-    pertanyaan: "Perintah Git untuk mengirim commit lokal ke repository GitHub adalah...",
-    opsi: ["git pull", "git push", "git init", "git clone"],
-    jawabanBenar: 1,
-    pembahasan: "git push digunakan untuk mengunggah perubahan ke repositori GitHub.",
   },
 ];
 
@@ -397,7 +435,7 @@ const AKUN_DEFAULT: AkunPengguna[] = [
     status: "approved",
     infoTambahan: "Guru Matematika & Fisika SMA",
     waktuDaftar: "Kemarin, 09:00",
-    aksesMengajar: ["sma-10", "sma-11-ipa", "sma-12-ipa"],
+    aksesMengajar: ["sma-10", "sma-11-ipa", "sma-12-ipa", "sd-4"],
   },
   {
     id: "sis-1",
@@ -432,29 +470,22 @@ const LOG_AWAL: LogAktivitas[] = [
     aksi: "Mengunggah modul materi baru pada jenjang SMA",
     kategori: "materi",
   },
-  {
-    id: "log-2",
-    waktu: "Kemarin",
-    namaPelaku: "Aisyah Putri",
-    rolePelaku: "siswa",
-    aksi: "Menyelesaikan modul kuis interaktif (+50 XP)",
-    kategori: "belajar",
-  },
 ];
 
 const KELOMPOK_AWAL: KelompokBelajar[] = [
   {
     id: "rombel-1",
     namaKelas: "Kelas Intensif Fisika 11 MIPA A",
+    pengumuman: "Jangan lupa kerjakan kuis Hukum Newton sebelum hari Jumat ya!",
     guruId: "gru-1",
     siswaIds: ["sis-1"],
   },
 ];
 
 // ==========================================
-// KOMPONEN RICH TEXT EDITOR
+// KOMPONEN RICH TEXT EDITOR PRO (LENGKAP)
 // ==========================================
-const RichTextEditor = ({
+const RichTextEditorPro = ({
   value,
   onChange,
 }: {
@@ -469,7 +500,7 @@ const RichTextEditor = ({
     }
   }, [value]);
 
-  const formatText = (command: string, val: string | undefined = undefined) => {
+  const eksekusiCommand = (command: string, val: string | undefined = undefined) => {
     document.execCommand(command, false, val);
     if (editorRef.current) {
       onChange(editorRef.current.innerHTML);
@@ -477,83 +508,214 @@ const RichTextEditor = ({
     }
   };
 
-  const addLink = () => {
-    const url = prompt("Masukkan URL Link (contoh: https://hibahilmu.id):");
-    if (url) formatText("createLink", url);
+  const sisipkanHtml = (html: string) => {
+    document.execCommand("insertHTML", false, html);
+    if (editorRef.current) {
+      onChange(editorRef.current.innerHTML);
+      editorRef.current.focus();
+    }
   };
 
-  const addImage = () => {
+  const tambahLink = () => {
+    const url = prompt("Masukkan URL Hyperlink (contoh: https://hibahilmu.id):");
+    if (url) eksekusiCommand("createLink", url);
+  };
+
+  const tambahGambar = () => {
     const url = prompt("Masukkan URL Gambar (https://...):");
-    if (url) formatText("insertImage", url);
+    if (url) eksekusiCommand("insertImage", url);
+  };
+
+  const tambahTabel = () => {
+    const tabelHtml = `
+      <table style="width:100%; border-collapse: collapse; margin: 12px 0; border: 1px solid #cbd5e1;">
+        <thead>
+          <tr style="background-color: #f1f5f9;">
+            <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: left;">Kolom 1</th>
+            <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: left;">Kolom 2</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="border: 1px solid #cbd5e1; padding: 8px;">Isi data 1</td>
+            <td style="border: 1px solid #cbd5e1; padding: 8px;">Isi data 2</td>
+          </tr>
+        </tbody>
+      </table><p><br/></p>
+    `;
+    sisipkanHtml(tabelHtml);
+  };
+
+  const tambahKotakInfo = () => {
+    const boxHtml = `
+      <div style="background-color: #eef2ff; border-left: 4px solid #4f46e5; padding: 12px 16px; border-radius: 8px; margin: 12px 0; color: #1e1b4b;">
+        <b>Catatan Penting:</b> Tuliskan poin penting materi di sini...
+      </div><p><br/></p>
+    `;
+    sisipkanHtml(boxHtml);
   };
 
   return (
-    <div className="border border-slate-200 rounded-2xl bg-white overflow-hidden shadow-inner focus-within:ring-2 focus-within:ring-indigo-500 transition">
-      <div className="bg-slate-100 border-b border-slate-200 p-2 flex flex-wrap gap-1">
+    <div className="border border-slate-300 rounded-2xl bg-white overflow-hidden shadow-2xs focus-within:ring-2 focus-within:ring-indigo-500 transition">
+      {/* BARIS TOOLBAR */}
+      <div className="bg-slate-100 border-b border-slate-200 p-2 flex flex-wrap items-center gap-1">
+        {/* Format Heading */}
+        <select
+          onChange={(e) => eksekusiCommand("formatBlock", e.target.value)}
+          defaultValue="P"
+          className="px-2 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-700 mr-1"
+        >
+          <option value="P">Paragraf Normal</option>
+          <option value="H2">Judul Besar (H2)</option>
+          <option value="H3">Sub-Judul (H3)</option>
+          <option value="PRE">Blok Kode</option>
+        </select>
+
+        {/* Gaya Huruf Dasar */}
         <button
           type="button"
-          onClick={() => formatText("bold")}
-          className="p-2 hover:bg-white rounded-lg text-slate-700 transition"
+          onClick={() => eksekusiCommand("bold")}
+          className="p-2 hover:bg-white rounded-lg text-slate-700"
           title="Tebal (Bold)"
         >
-          <Bold size={16} />
+          <Bold size={15} />
         </button>
         <button
           type="button"
-          onClick={() => formatText("italic")}
-          className="p-2 hover:bg-white rounded-lg text-slate-700 transition"
+          onClick={() => eksekusiCommand("italic")}
+          className="p-2 hover:bg-white rounded-lg text-slate-700"
           title="Miring (Italic)"
         >
-          <Italic size={16} />
+          <Italic size={15} />
         </button>
         <button
           type="button"
-          onClick={() => formatText("underline")}
-          className="p-2 hover:bg-white rounded-lg text-slate-700 transition"
-          title="Garis Bawah (Underline)"
+          onClick={() => eksekusiCommand("underline")}
+          className="p-2 hover:bg-white rounded-lg text-slate-700"
+          title="Garis Bawah"
         >
-          <Underline size={16} />
+          <Underline size={15} />
         </button>
-        <div className="w-px h-6 bg-slate-300 mx-1 my-auto" />
+
+        <div className="w-px h-5 bg-slate-300 mx-1" />
+
+        {/* Perataan Teks */}
         <button
           type="button"
-          onClick={() => formatText("insertUnorderedList")}
-          className="p-2 hover:bg-white rounded-lg text-slate-700 transition"
-          title="Bullet List"
+          onClick={() => eksekusiCommand("justifyLeft")}
+          className="p-2 hover:bg-white rounded-lg text-slate-700"
+          title="Rata Kiri"
         >
-          <List size={16} />
-        </button>
-        <button
-          type="button"
-          onClick={() => formatText("insertOrderedList")}
-          className="p-2 hover:bg-white rounded-lg text-slate-700 transition"
-          title="Numbered List"
-        >
-          <ListOrdered size={16} />
-        </button>
-        <div className="w-px h-6 bg-slate-300 mx-1 my-auto" />
-        <button
-          type="button"
-          onClick={addLink}
-          className="p-2 hover:bg-white rounded-lg text-slate-700 transition"
-          title="Sisipkan Hyperlink"
-        >
-          <LinkIcon size={16} />
+          <AlignLeft size={15} />
         </button>
         <button
           type="button"
-          onClick={addImage}
-          className="p-2 hover:bg-white rounded-lg text-slate-700 transition"
-          title="Sisipkan Gambar via URL"
+          onClick={() => eksekusiCommand("justifyCenter")}
+          className="p-2 hover:bg-white rounded-lg text-slate-700"
+          title="Rata Tengah"
         >
-          <ImageIcon size={16} />
+          <AlignCenter size={15} />
+        </button>
+        <button
+          type="button"
+          onClick={() => eksekusiCommand("justifyRight")}
+          className="p-2 hover:bg-white rounded-lg text-slate-700"
+          title="Rata Kanan"
+        >
+          <AlignRight size={15} />
+        </button>
+
+        <div className="w-px h-5 bg-slate-300 mx-1" />
+
+        {/* Bullet & Numbering */}
+        <button
+          type="button"
+          onClick={() => eksekusiCommand("insertUnorderedList")}
+          className="p-2 hover:bg-white rounded-lg text-slate-700"
+          title="Daftar Poin (Bullet)"
+        >
+          <List size={15} />
+        </button>
+        <button
+          type="button"
+          onClick={() => eksekusiCommand("insertOrderedList")}
+          className="p-2 hover:bg-white rounded-lg text-slate-700"
+          title="Daftar Angka (Numbering)"
+        >
+          <ListOrdered size={15} />
+        </button>
+
+        <div className="w-px h-5 bg-slate-300 mx-1" />
+
+        {/* Warna Teks & Highlight */}
+        <button
+          type="button"
+          onClick={() => eksekusiCommand("foreColor", "#059669")}
+          className="px-2 py-1 hover:bg-white rounded-lg text-xs font-black text-emerald-600"
+          title="Teks Hijau"
+        >
+          A
+        </button>
+        <button
+          type="button"
+          onClick={() => eksekusiCommand("foreColor", "#e11d48")}
+          className="px-2 py-1 hover:bg-white rounded-lg text-xs font-black text-rose-600"
+          title="Teks Merah"
+        >
+          A
+        </button>
+        <button
+          type="button"
+          onClick={() => eksekusiCommand("hiliteColor", "#fef08a")}
+          className="px-2 py-1 bg-yellow-200 rounded-lg text-xs font-bold text-slate-800"
+          title="Stabilo Kuning"
+        >
+          Stabilo
+        </button>
+
+        <div className="w-px h-5 bg-slate-300 mx-1" />
+
+        {/* Media & Komponen Ekstra */}
+        <button
+          type="button"
+          onClick={tambahLink}
+          className="p-2 hover:bg-white rounded-lg text-slate-700"
+          title="Sisipkan Link"
+        >
+          <LinkIcon size={15} />
+        </button>
+        <button
+          type="button"
+          onClick={tambahGambar}
+          className="p-2 hover:bg-white rounded-lg text-slate-700"
+          title="Sisipkan Gambar URL"
+        >
+          <ImageIcon size={15} />
+        </button>
+        <button
+          type="button"
+          onClick={tambahTabel}
+          className="p-2 hover:bg-white rounded-lg text-slate-700"
+          title="Sisipkan Tabel"
+        >
+          <Table size={15} />
+        </button>
+        <button
+          type="button"
+          onClick={tambahKotakInfo}
+          className="px-2.5 py-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-800 rounded-lg text-xs font-bold flex items-center gap-1"
+          title="Sisipkan Kotak Catatan Penting"
+        >
+          <Quote size={13} /> Callout Box
         </button>
       </div>
+
+      {/* AREA KETIK EDITOR */}
       <div
         ref={editorRef}
         contentEditable
         suppressContentEditableWarning={true}
-        className="p-4 min-h-[160px] max-h-[320px] overflow-y-auto text-sm outline-none prose prose-sm max-w-none"
+        className="p-4 min-h-[200px] max-h-[380px] overflow-y-auto text-sm outline-none prose prose-slate max-w-none"
         onInput={(e) => onChange(e.currentTarget.innerHTML)}
       />
     </div>
@@ -577,13 +739,17 @@ export default function AplikasiHibahIlmu() {
   const [logAktivitas, setLogAktivitas] = useState<LogAktivitas[]>(LOG_AWAL);
   const [daftarKelompok, setDaftarKelompok] = useState<KelompokBelajar[]>(KELOMPOK_AWAL);
 
-  // State Siswa
+  // State Siswa & Jawaban Multi-Kuis
   const [poinXP, setPoinXP] = useState<number>(150);
   const [materiSelesai, setMateriSelesai] = useState<string[]>([]);
   const [catatanSiswa, setCatatanSiswa] = useState<string>("");
   const [statusSimpanCatatan, setStatusSimpanCatatan] = useState<boolean>(false);
-  const [jawabanKuis, setJawabanKuis] = useState<number | null>(null);
-  const [statusKuis, setStatusKuis] = useState<"benar" | "salah" | null>(null);
+
+  const [jawabanPilihanSiswa, setJawabanPilihanSiswa] = useState<{ [kuisId: string]: number }>({});
+  const [jawabanTeksSiswa, setJawabanTeksSiswa] = useState<{ [kuisId: string]: string }>({});
+  const [statusKuisSiswa, setStatusKuisSiswa] = useState<{
+    [kuisId: string]: "benar" | "salah" | null;
+  }>({});
 
   // State Tryout
   const [sedangUjian, setSedangUjian] = useState<boolean>(false);
@@ -626,14 +792,18 @@ export default function AplikasiHibahIlmu() {
   const [infoReg, setInfoReg] = useState("");
 
   // State Admin
-  const [adminTabAktif, setAdminTabAktif] = useState<"akun" | "kategori" | "rombel" | "log">("akun");
+  const [adminTabAktif, setAdminTabAktif] = useState<"akun" | "kategori" | "rombel" | "log">(
+    "akun"
+  );
   const [modalAdminAkun, setModalAdminAkun] = useState<boolean>(false);
   const [idEditAkun, setIdEditAkun] = useState<string | null>(null);
   const [namaFormAdmin, setNamaFormAdmin] = useState("");
   const [emailFormAdmin, setEmailFormAdmin] = useState("");
   const [passFormAdmin, setPassFormAdmin] = useState("");
   const [roleFormAdmin, setRoleFormAdmin] = useState<"admin" | "guru" | "siswa">("siswa");
-  const [statusFormAdmin, setStatusFormAdmin] = useState<"approved" | "pending" | "rejected">("approved");
+  const [statusFormAdmin, setStatusFormAdmin] = useState<"approved" | "pending" | "rejected">(
+    "approved"
+  );
   const [infoFormAdmin, setInfoFormAdmin] = useState("");
   const [aksesMengajarForm, setAksesMengajarForm] = useState<string[]>([]);
   const [filterLog, setFilterLog] = useState<string>("semua");
@@ -652,23 +822,36 @@ export default function AplikasiHibahIlmu() {
   const [guruKelompokAdmin, setGuruKelompokAdmin] = useState("");
   const [searchSiswaAdmin, setSearchSiswaAdmin] = useState<{ [key: string]: string }>({});
 
-  // State Guru
+  // State Guru Buat Materi & Multi-Soal Kuis
   const [guruTabAktif, setGuruTabAktif] = useState<"materi" | "kelas">("materi");
   const [subJenjangPilih, setSubJenjangPilih] = useState("");
   const [judulMateri, setJudulMateri] = useState("");
   const [levelMateri, setLevelMateri] = useState<"Pemula" | "Menengah" | "Mahir">("Pemula");
   const [videoMateri, setVideoMateri] = useState("");
+  const [lampiranMateri, setLampiranMateri] = useState("");
   const [rangkumanMateri, setRangkumanMateri] = useState("");
   const [rumusMateri, setRumusMateri] = useState("");
-  const [pertanyaanKuis, setPertanyaanKuis] = useState("");
-  const [opsiA, setOpsiA] = useState("");
-  const [opsiB, setOpsiB] = useState("");
-  const [opsiC, setOpsiC] = useState("");
-  const [opsiD, setOpsiD] = useState("");
-  const [kunciKuis, setKunciKuis] = useState<number>(0);
   const [notifGuru, setNotifGuru] = useState(false);
 
+  // State Builder Daftar Kuis di Studio Guru
+  const [daftarKuisDraft, setDaftarKuisDraft] = useState<KuisItem[]>([
+    {
+      id: "draft-1",
+      tipe: "pilihan_ganda",
+      tanya: "",
+      opsi: ["", "", "", ""],
+      jawabanBenar: 0,
+      jawabanTeks: "",
+      pembahasan: "",
+      poin: 50,
+    },
+  ]);
+  const [modalImportKuis, setModalImportKuis] = useState(false);
+  const [teksImportKuisJson, setTeksImportKuisJson] = useState("");
+
+  // State Guru Kelola Kelas & Pengumuman
   const [namaKelompokBaru, setNamaKelompokBaru] = useState("");
+  const [pengumumanBaru, setPengumumanBaru] = useState("");
   const [searchSiswaGuru, setSearchSiswaGuru] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
@@ -702,8 +885,9 @@ export default function AplikasiHibahIlmu() {
   useEffect(() => {
     if (kelasAktif) {
       setCatatanSiswa(localStorage.getItem(`catatan_${kelasAktif.id}`) || "");
-      setJawabanKuis(null);
-      setStatusKuis(null);
+      setJawabanPilihanSiswa({});
+      setJawabanTeksSiswa({});
+      setStatusKuisSiswa({});
     }
   }, [kelasAktif]);
 
@@ -757,6 +941,89 @@ export default function AplikasiHibahIlmu() {
       localStorage.setItem("hibah_selesai", JSON.stringify(daftarBaru));
       return daftarBaru;
     });
+  };
+
+  // --- FUNGSI MULTI-TIPE KUIS UNTUK GURU ---
+  const tambahSoalDraftBaru = (tipePilih: TipeSoal) => {
+    const soalBaru: KuisItem = {
+      id: "draft-" + Date.now() + "-" + Math.random().toString(36).substring(2, 6),
+      tipe: tipePilih,
+      tanya: "",
+      opsi:
+        tipePilih === "pilihan_ganda"
+          ? ["", "", "", ""]
+          : tipePilih === "benar_salah"
+          ? ["Benar", "Salah"]
+          : [],
+      jawabanBenar: 0,
+      jawabanTeks: "",
+      pembahasan: "",
+      poin: 50,
+    };
+    setDaftarKuisDraft((prev) => [...prev, soalBaru]);
+  };
+
+  const hapusSoalDraft = (idDraft: string) => {
+    if (daftarKuisDraft.length <= 1) {
+      alert("Minimal harus ada 1 soal kuis pada materi ini.");
+      return;
+    }
+    setDaftarKuisDraft((prev) => prev.filter((q) => q.id !== idDraft));
+  };
+
+  const ubahFieldSoalDraft = (idDraft: string, field: keyof KuisItem, nilai: unknown) => {
+    setDaftarKuisDraft((prev) =>
+      prev.map((q) => (q.id === idDraft ? { ...q, [field]: nilai } : q))
+    );
+  };
+
+  const ubahOpsiSoalDraft = (idDraft: string, indeksOpsi: number, teksBaru: string) => {
+    setDaftarKuisDraft((prev) =>
+      prev.map((q) => {
+        if (q.id !== idDraft) return q;
+        const opsiBaru = [...q.opsi];
+        opsiBaru[indeksOpsi] = teksBaru;
+        return { ...q, opsi: opsiBaru };
+      })
+    );
+  };
+
+  const handleImportKuisJson = (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const parsed = JSON.parse(teksImportKuisJson);
+      if (!Array.isArray(parsed)) {
+        alert("Format JSON harus berupa Array [...]");
+        return;
+      }
+      const soalTerimpor: KuisItem[] = parsed.map((item: Partial<KuisItem>, idx: number) => {
+        const tipeValid: TipeSoal =
+          item.tipe === "benar_salah" || item.tipe === "isian_singkat"
+            ? item.tipe
+            : "pilihan_ganda";
+        return {
+          id: "imp-q-" + Date.now() + "-" + idx,
+          tipe: tipeValid,
+          tanya: item.tanya || `Pertanyaan #${idx + 1}`,
+          opsi:
+            tipeValid === "benar_salah"
+              ? ["Benar", "Salah"]
+              : Array.isArray(item.opsi) && item.opsi.length > 0
+              ? item.opsi
+              : ["Opsi A", "Opsi B", "Opsi C", "Opsi D"],
+          jawabanBenar: typeof item.jawabanBenar === "number" ? item.jawabanBenar : 0,
+          jawabanTeks: item.jawabanTeks || "",
+          pembahasan: item.pembahasan || "Disusun oleh Guru.",
+          poin: typeof item.poin === "number" ? item.poin : 50,
+        };
+      });
+      setDaftarKuisDraft(soalTerimpor);
+      setModalImportKuis(false);
+      setTeksImportKuisJson("");
+      alert(`Berhasil mengimpor ${soalTerimpor.length} soal ke dalam daftar kuis!`);
+    } catch {
+      alert("Format JSON Kuis tidak valid! Periksa kembali tanda kutip dan kurung.");
+    }
   };
 
   // --- FUNGSI AUTENTIKASI ---
@@ -996,6 +1263,7 @@ export default function AplikasiHibahIlmu() {
     const kelompokBaru: KelompokBelajar = {
       id: "kelompok-" + Date.now(),
       namaKelas: namaKelompokBaru,
+      pengumuman: pengumumanBaru || "Selamat datang di ruang kelas!",
       guruId: userLogin.id,
       siswaIds: [],
     };
@@ -1004,6 +1272,7 @@ export default function AplikasiHibahIlmu() {
     localStorage.setItem("hibah_kelompok", JSON.stringify(update));
     catatLog(userLogin.nama, "guru", `Membuat Ruang Kelas: ${namaKelompokBaru}`, "sistem");
     setNamaKelompokBaru("");
+    setPengumumanBaru("");
   };
 
   const handleTambahSiswaKeKelompok = (kelompokId: string, siswaId: string) => {
@@ -1044,6 +1313,14 @@ export default function AplikasiHibahIlmu() {
     const finalEmbed = videoMateri.includes("watch?v=")
       ? videoMateri.replace("watch?v=", "embed/")
       : videoMateri;
+
+    const kuisBersih: KuisItem[] = daftarKuisDraft.map((q, idx) => ({
+      ...q,
+      id: "kuis-" + Date.now() + "-" + idx,
+      tanya: q.tanya || `Pertanyaan Evaluasi #${idx + 1}`,
+      pembahasan: q.pembahasan || `Disusun oleh ${userLogin.nama}.`,
+    }));
+
     const modulBaru: KelasItem = {
       id: "mdl-" + Date.now(),
       subJenjangId: subJenjangPilih,
@@ -1051,15 +1328,12 @@ export default function AplikasiHibahIlmu() {
       level: levelMateri,
       durasi: "15 Menit",
       videoUrl: finalEmbed,
+      lampiranUrl: lampiranMateri || undefined,
       rangkuman: rangkumanMateri || "<p>Materi pembelajaran.</p>",
       rumusMatematika: rumusMateri || undefined,
-      kuis: {
-        tanya: pertanyaanKuis,
-        opsi: [opsiA, opsiB, opsiC, opsiD],
-        jawabanBenar: kunciKuis,
-        pembahasan: `Disusun oleh Guru ${userLogin.nama}.`,
-      },
+      daftarKuis: kuisBersih,
     };
+
     const update = daftarJenjang.map((j) =>
       j.subJenjang.some((sj) => sj.id === subJenjangPilih)
         ? { ...j, kelas: [modulBaru, ...j.kelas] }
@@ -1067,18 +1341,31 @@ export default function AplikasiHibahIlmu() {
     );
     setDaftarJenjang(update);
     localStorage.setItem("hibah_struktur", JSON.stringify(update));
-    catatLog(userLogin.nama, "guru", `Menerbitkan materi: ${judulMateri}`, "materi");
+    catatLog(
+      userLogin.nama,
+      "guru",
+      `Menerbitkan materi "${judulMateri}" dengan ${kuisBersih.length} soal kuis`,
+      "materi"
+    );
     setNotifGuru(true);
     setJudulMateri("");
     setVideoMateri("");
+    setLampiranMateri("");
     setRangkumanMateri("");
     setRumusMateri("");
-    setPertanyaanKuis("");
-    setOpsiA("");
-    setOpsiB("");
-    setOpsiC("");
-    setOpsiD("");
-    setTimeout(() => setNotifGuru(false), 3000);
+    setDaftarKuisDraft([
+      {
+        id: "draft-reset",
+        tipe: "pilihan_ganda",
+        tanya: "",
+        opsi: ["", "", "", ""],
+        jawabanBenar: 0,
+        jawabanTeks: "",
+        pembahasan: "",
+        poin: 50,
+      },
+    ]);
+    setTimeout(() => setNotifGuru(false), 3500);
   };
 
   const selesaikanTryout = () => {
@@ -1109,7 +1396,7 @@ export default function AplikasiHibahIlmu() {
   );
 
   // ==========================================
-  // SUB-RENDERERS UNTUK MENCEGAH JSX BERSARANG
+  // SUB-RENDERERS UNTUK TIAP ROLE
   // ==========================================
   const renderAuthView = () => (
     <motion.div
@@ -1325,7 +1612,7 @@ export default function AplikasiHibahIlmu() {
             onClick={() => setModalImportAkun(true)}
             className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-5 py-3 rounded-2xl flex items-center gap-2 shadow-lg transition"
           >
-            <Upload className="w-4 h-4" /> Import JSON
+            <Upload className="w-4 h-4" /> Import JSON Akun
           </button>
           <button
             onClick={bukaModalTambahAkun}
@@ -1348,8 +1635,16 @@ export default function AplikasiHibahIlmu() {
       {/* Tab Navigasi Admin */}
       <div className="flex gap-2 border-b border-slate-200 pb-3 overflow-x-auto">
         {[
-          { id: "akun", label: `Data Akun (${safeAkunList.length})`, icon: <Users className="w-4 h-4" /> },
-          { id: "rombel", label: `Kelola Rombel / Kelas (${daftarKelompok.length})`, icon: <FolderArchive className="w-4 h-4" /> },
+          {
+            id: "akun",
+            label: `Data Akun (${safeAkunList.length})`,
+            icon: <Users className="w-4 h-4" />,
+          },
+          {
+            id: "rombel",
+            label: `Kelola Rombel / Kelas (${daftarKelompok.length})`,
+            icon: <FolderArchive className="w-4 h-4" />,
+          },
           { id: "kategori", label: "Kategori & Prodi", icon: <Layers className="w-4 h-4" /> },
           { id: "log", label: "Audit Log Server", icon: <Activity className="w-4 h-4" /> },
         ].map((t) => (
@@ -1538,7 +1833,8 @@ export default function AplikasiHibahIlmu() {
                       </button>
                     </div>
                     <div className="text-xs text-slate-500 mb-4">
-                      Pengajar: <b>{safeAkunList.find((a) => a.id === kel.guruId)?.nama || "Guru"}</b> •{" "}
+                      Pengajar:{" "}
+                      <b>{safeAkunList.find((a) => a.id === kel.guruId)?.nama || "Guru"}</b> •{" "}
                       Terdaftar: <b>{kel.siswaIds.length} Siswa</b>
                     </div>
 
@@ -1557,7 +1853,7 @@ export default function AplikasiHibahIlmu() {
 
                     <div className="max-h-36 overflow-y-auto space-y-1.5 mb-4 border p-2 rounded-xl bg-slate-50">
                       <div className="text-[10px] font-bold text-slate-400 uppercase px-1">
-                        Klik Tambah untuk memasukkan ke kelas:
+                        Klik Masukkan untuk mendaftarkan siswa:
                       </div>
                       {hasilCariSiswa.map((s) => (
                         <div
@@ -1693,11 +1989,12 @@ export default function AplikasiHibahIlmu() {
       <div className="bg-gradient-to-r from-indigo-700 via-purple-700 to-indigo-900 text-white p-8 rounded-[2rem] flex flex-wrap justify-between items-center gap-6 shadow-2xl">
         <div>
           <span className="bg-white/20 text-[10px] font-black px-3 py-1 rounded-full uppercase">
-            Studio Pengajar
+            Studio Pengajar Pro
           </span>
           <h1 className="text-3xl font-black mt-3 mb-1">Selamat Mengajar, {userLogin?.nama}!</h1>
           <p className="text-indigo-200 text-sm">
-            Anda memiliki otorisasi mengajar pada <b>{opsiKelasGuru.length} tingkat kelas/prodi</b>.
+            Otorisasi Kelas: <b>{opsiKelasGuru.length} Tingkat/Prodi</b> • Rich Editor & Multi-Tipe
+            Kuis Aktif.
           </p>
         </div>
         <button
@@ -1720,7 +2017,7 @@ export default function AplikasiHibahIlmu() {
               : "bg-white text-slate-600 border"
           }`}
         >
-          <BookOpen className="w-4 h-4" /> Publikasi Materi (Rich Text)
+          <BookOpen className="w-4 h-4" /> Studio Materi & Bank Kuis
         </button>
         <button
           onClick={() => setGuruTabAktif("kelas")}
@@ -1730,14 +2027,14 @@ export default function AplikasiHibahIlmu() {
               : "bg-white text-slate-600 border"
           }`}
         >
-          <Users className="w-4 h-4" /> Kelola Kelas & Cari Siswa ({guruKelompoks.length})
+          <Users className="w-4 h-4" /> Kelola Rombel & Pengumuman ({guruKelompoks.length})
         </button>
       </div>
 
       {guruTabAktif === "materi" ? (
-        <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm max-w-4xl">
+        <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm max-w-5xl">
           <h2 className="text-2xl font-black mb-6 text-slate-900">
-            Studio Pembuatan Materi Berformat & Kuis
+            Publikasi Materi Rich Text & Multi-Soal Kuis
           </h2>
           {opsiKelasGuru.length === 0 ? (
             <div className="p-8 bg-rose-50 border border-rose-200 rounded-3xl text-center">
@@ -1747,12 +2044,13 @@ export default function AplikasiHibahIlmu() {
               </p>
             </div>
           ) : (
-            <form onSubmit={handleGuruBuatMateri} className="space-y-5">
+            <form onSubmit={handleGuruBuatMateri} className="space-y-6">
               {notifGuru && (
                 <div className="p-4 bg-emerald-50 text-emerald-800 rounded-2xl font-black text-sm text-center border border-emerald-200">
-                  Materi berhasil diterbitkan ke ruang kelas!
+                  Materi beserta daftar soal kuis berhasil diterbitkan ke ruang kelas!
                 </div>
               )}
+
               <div className="p-5 bg-indigo-50 border border-indigo-100 rounded-2xl">
                 <label className="font-black mb-2 block text-indigo-900 text-xs uppercase">
                   Pilih Target Kelas / Prodi Anda:
@@ -1782,7 +2080,7 @@ export default function AplikasiHibahIlmu() {
                     required
                     value={judulMateri}
                     onChange={(e) => setJudulMateri(e.target.value)}
-                    placeholder="Contoh: Hukum Newton..."
+                    placeholder="Contoh: Hukum Newton & Aplikasi..."
                     className="w-full p-3.5 border rounded-xl bg-slate-50 text-sm font-semibold"
                   />
                 </div>
@@ -1799,107 +2097,257 @@ export default function AplikasiHibahIlmu() {
                   >
                     <option value="Pemula">Pemula</option>
                     <option value="Menengah">Menengah</option>
-                    <option value="Mahir">Mahir</option>
+                    <option value="Mahir">Mahir / Olimpiade</option>
                   </select>
                 </div>
               </div>
 
-              <div>
-                <label className="font-bold mb-1 block text-xs text-slate-500">
-                  URL Video YouTube
-                </label>
-                <input
-                  type="url"
-                  required
-                  value={videoMateri}
-                  onChange={(e) => setVideoMateri(e.target.value)}
-                  placeholder="https://www.youtube.com/watch?v=..."
-                  className="w-full p-3.5 border rounded-xl bg-slate-50 text-sm"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="font-bold mb-1 block text-xs text-slate-500">
+                    URL Video YouTube
+                  </label>
+                  <input
+                    type="url"
+                    required
+                    value={videoMateri}
+                    onChange={(e) => setVideoMateri(e.target.value)}
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    className="w-full p-3.5 border rounded-xl bg-slate-50 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold mb-1 block text-xs text-slate-500">
+                    Link Lampiran PDF / PPT / Drive (Opsional)
+                  </label>
+                  <input
+                    type="url"
+                    value={lampiranMateri}
+                    onChange={(e) => setLampiranMateri(e.target.value)}
+                    placeholder="https://drive.google.com/..."
+                    className="w-full p-3.5 border rounded-xl bg-slate-50 text-sm"
+                  />
+                </div>
               </div>
 
+              {/* RICH TEXT EDITOR PRO */}
               <div>
                 <label className="font-bold mb-1.5 flex justify-between text-xs text-slate-500">
-                  <span>Isi / Rangkuman Materi (Format Paragraf, Bullet, Numbering, Link, Image)</span>
-                  <span className="text-indigo-600 font-bold">Rich Text Editor</span>
+                  <span>
+                    Konten Lengkap Materi (Heading, Warna, Stabilo, Tabel, Callout, List, Gambar)
+                  </span>
+                  <span className="text-indigo-600 font-black">Rich Text Editor Pro</span>
                 </label>
-                <RichTextEditor value={rangkumanMateri} onChange={setRangkumanMateri} />
+                <RichTextEditorPro value={rangkumanMateri} onChange={setRangkumanMateri} />
               </div>
 
               <div>
                 <label className="font-bold mb-1 block text-xs text-slate-500">
-                  Rumus Penting (Opsional)
+                  Kotak Rumus Cepat / Kode Program (Opsional)
                 </label>
                 <input
                   type="text"
                   value={rumusMateri}
                   onChange={(e) => setRumusMateri(e.target.value)}
-                  placeholder="Contoh: Ek = 1/2 m v^2"
+                  placeholder="Contoh: Ek = 1/2 . m . v^2"
                   className="w-full p-3.5 border rounded-xl bg-slate-900 text-emerald-300 font-mono text-sm"
                 />
               </div>
 
-              <div className="p-5 border rounded-2xl bg-slate-50 space-y-4">
-                <div className="font-black text-sm">Kuis Evaluasi Siswa</div>
-                <input
-                  type="text"
-                  required
-                  value={pertanyaanKuis}
-                  onChange={(e) => setPertanyaanKuis(e.target.value)}
-                  placeholder="Pertanyaan kuis..."
-                  className="w-full p-3.5 border bg-white rounded-xl text-sm font-semibold"
-                />
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <input
-                    type="text"
-                    required
-                    value={opsiA}
-                    onChange={(e) => setOpsiA(e.target.value)}
-                    placeholder="Opsi A"
-                    className="p-3 border bg-white rounded-xl text-sm"
-                  />
-                  <input
-                    type="text"
-                    required
-                    value={opsiB}
-                    onChange={(e) => setOpsiB(e.target.value)}
-                    placeholder="Opsi B"
-                    className="p-3 border bg-white rounded-xl text-sm"
-                  />
-                  <input
-                    type="text"
-                    required
-                    value={opsiC}
-                    onChange={(e) => setOpsiC(e.target.value)}
-                    placeholder="Opsi C"
-                    className="p-3 border bg-white rounded-xl text-sm"
-                  />
-                  <input
-                    type="text"
-                    required
-                    value={opsiD}
-                    onChange={(e) => setOpsiD(e.target.value)}
-                    placeholder="Opsi D"
-                    className="p-3 border bg-white rounded-xl text-sm"
-                  />
+              {/* BUILDER BANK SOAL MULTI-TIPE & IMPORT */}
+              <div className="p-6 border-2 border-indigo-100 rounded-3xl bg-slate-50 space-y-5">
+                <div className="flex flex-wrap justify-between items-center gap-3 border-b border-slate-200 pb-4">
+                  <div>
+                    <h3 className="font-black text-base text-slate-900">
+                      Pembuat Kuis Multi-Tipe ({daftarKuisDraft.length} Soal)
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Tambahkan soal Pilihan Ganda, Benar/Salah, atau Isian Singkat, atau Import
+                      JSON.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setModalImportKuis(true)}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-xs"
+                  >
+                    <Upload className="w-4 h-4" /> Import Soal (JSON)
+                  </button>
                 </div>
-                <select
-                  value={kunciKuis}
-                  onChange={(e) => setKunciKuis(Number(e.target.value))}
-                  className="w-full p-3.5 border bg-emerald-50 text-emerald-900 rounded-xl font-black text-sm"
-                >
-                  <option value={0}>Kunci Jawaban: Opsi A</option>
-                  <option value={1}>Kunci Jawaban: Opsi B</option>
-                  <option value={2}>Kunci Jawaban: Opsi C</option>
-                  <option value={3}>Kunci Jawaban: Opsi D</option>
-                </select>
+
+                {/* Daftar Soal */}
+                <div className="space-y-4">
+                  {daftarKuisDraft.map((soal, indexSoal) => (
+                    <div
+                      key={soal.id}
+                      className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-4"
+                    >
+                      <div className="flex flex-wrap justify-between items-center gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="bg-slate-900 text-white text-xs font-black px-3 py-1 rounded-lg">
+                            Soal #{indexSoal + 1}
+                          </span>
+                          <select
+                            value={soal.tipe}
+                            onChange={(e) => {
+                              const tipeBaru = e.target.value as TipeSoal;
+                              ubahFieldSoalDraft(soal.id, "tipe", tipeBaru);
+                              if (tipeBaru === "benar_salah") {
+                                ubahFieldSoalDraft(soal.id, "opsi", ["Benar", "Salah"]);
+                                ubahFieldSoalDraft(soal.id, "jawabanBenar", 0);
+                              } else if (tipeBaru === "pilihan_ganda") {
+                                ubahFieldSoalDraft(soal.id, "opsi", ["", "", "", ""]);
+                              }
+                            }}
+                            className="p-2 border rounded-xl text-xs font-extrabold bg-indigo-50 text-indigo-900"
+                          >
+                            <option value="pilihan_ganda">Pilihan Ganda (A/B/C/D)</option>
+                            <option value="benar_salah">Benar / Salah</option>
+                            <option value="isian_singkat">Isian Singkat / Essay Pendek</option>
+                          </select>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-500">Bobot XP:</span>
+                          <input
+                            type="number"
+                            value={soal.poin}
+                            onChange={(e) =>
+                              ubahFieldSoalDraft(soal.id, "poin", Number(e.target.value) || 50)
+                            }
+                            className="w-20 p-1.5 border rounded-lg text-xs font-bold text-center"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => hapusSoalDraft(soal.id)}
+                            className="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100"
+                            title="Hapus Soal Ini"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <input
+                        type="text"
+                        required
+                        value={soal.tanya}
+                        onChange={(e) => ubahFieldSoalDraft(soal.id, "tanya", e.target.value)}
+                        placeholder={`Tuliskan pertanyaan nomor ${indexSoal + 1}...`}
+                        className="w-full p-3.5 border rounded-xl bg-slate-50 text-sm font-semibold"
+                      />
+
+                      {/* Tampilan Input Berdasarkan Tipe Soal */}
+                      {soal.tipe === "pilihan_ganda" && (
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {[0, 1, 2, 3].map((idxOpsi) => (
+                              <input
+                                key={idxOpsi}
+                                type="text"
+                                required
+                                value={soal.opsi[idxOpsi] || ""}
+                                onChange={(e) =>
+                                  ubahOpsiSoalDraft(soal.id, idxOpsi, e.target.value)
+                                }
+                                placeholder={`Pilihan ${String.fromCharCode(65 + idxOpsi)}`}
+                                className="p-3 border rounded-xl text-xs font-semibold"
+                              />
+                            ))}
+                          </div>
+                          <select
+                            value={soal.jawabanBenar}
+                            onChange={(e) =>
+                              ubahFieldSoalDraft(soal.id, "jawabanBenar", Number(e.target.value))
+                            }
+                            className="w-full p-3 border bg-emerald-50 text-emerald-900 rounded-xl font-bold text-xs"
+                          >
+                            <option value={0}>Kunci Jawaban Benar: Opsi A</option>
+                            <option value={1}>Kunci Jawaban Benar: Opsi B</option>
+                            <option value={2}>Kunci Jawaban Benar: Opsi C</option>
+                            <option value={3}>Kunci Jawaban Benar: Opsi D</option>
+                          </select>
+                        </div>
+                      )}
+
+                      {soal.tipe === "benar_salah" && (
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 mb-1.5">
+                            Pilih Kunci Jawaban Pernyataan Di Atas:
+                          </label>
+                          <select
+                            value={soal.jawabanBenar}
+                            onChange={(e) =>
+                              ubahFieldSoalDraft(soal.id, "jawabanBenar", Number(e.target.value))
+                            }
+                            className="w-full p-3 border bg-emerald-50 text-emerald-900 rounded-xl font-bold text-xs"
+                          >
+                            <option value={0}>Kunci Jawaban: BENAR</option>
+                            <option value={1}>Kunci Jawaban: SALAH</option>
+                          </select>
+                        </div>
+                      )}
+
+                      {soal.tipe === "isian_singkat" && (
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 mb-1.5">
+                            Kunci Jawaban Teks (Huruf besar/kecil diabaikan saat siswa menjawab):
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={soal.jawabanTeks || ""}
+                            onChange={(e) =>
+                              ubahFieldSoalDraft(soal.id, "jawabanTeks", e.target.value)
+                            }
+                            placeholder="Contoh: Soekarno / 25 / Fotosintesis"
+                            className="w-full p-3 border border-emerald-300 bg-emerald-50/50 rounded-xl text-xs font-bold"
+                          />
+                        </div>
+                      )}
+
+                      <input
+                        type="text"
+                        value={soal.pembahasan}
+                        onChange={(e) => ubahFieldSoalDraft(soal.id, "pembahasan", e.target.value)}
+                        placeholder="Penjelasan / pembahasan jawaban benar..."
+                        className="w-full p-3 border rounded-xl bg-slate-50 text-xs"
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Tombol Tambah Soal Baru Berdasarkan Jenis */}
+                <div className="flex flex-wrap gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => tambahSoalDraftBaru("pilihan_ganda")}
+                    className="px-4 py-2.5 bg-white border border-slate-300 hover:bg-slate-100 rounded-xl text-xs font-bold flex items-center gap-1.5"
+                  >
+                    <PlusCircle className="w-4 h-4 text-indigo-600" /> + Soal Pilihan Ganda
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => tambahSoalDraftBaru("benar_salah")}
+                    className="px-4 py-2.5 bg-white border border-slate-300 hover:bg-slate-100 rounded-xl text-xs font-bold flex items-center gap-1.5"
+                  >
+                    <PlusCircle className="w-4 h-4 text-emerald-600" /> + Soal Benar / Salah
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => tambahSoalDraftBaru("isian_singkat")}
+                    className="px-4 py-2.5 bg-white border border-slate-300 hover:bg-slate-100 rounded-xl text-xs font-bold flex items-center gap-1.5"
+                  >
+                    <PlusCircle className="w-4 h-4 text-amber-600" /> + Soal Isian Singkat
+                  </button>
+                </div>
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-2xl shadow-lg"
+                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-black py-4 rounded-2xl shadow-lg"
               >
-                Terbitkan Materi Sekarang
+                Terbitkan Materi & Seluruh Kuis Sekarang
               </button>
             </form>
           )}
@@ -1907,11 +2355,11 @@ export default function AplikasiHibahIlmu() {
       ) : (
         <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm space-y-6">
           <h2 className="text-2xl font-black text-slate-900">
-            Kelola Kelas Anda & Cari Siswa (Nama / Email)
+            Kelola Kelas Anda, Pengumuman & Cari Siswa
           </h2>
           <form
             onSubmit={handleGuruBuatKelompok}
-            className="flex flex-wrap sm:flex-nowrap gap-3 p-5 bg-indigo-50 border border-indigo-100 rounded-2xl"
+            className="grid grid-cols-1 md:grid-cols-3 gap-3 p-5 bg-indigo-50 border border-indigo-100 rounded-2xl"
           >
             <input
               type="text"
@@ -1919,13 +2367,20 @@ export default function AplikasiHibahIlmu() {
               value={namaKelompokBaru}
               onChange={(e) => setNamaKelompokBaru(e.target.value)}
               placeholder="Nama Ruang Kelas Baru (Contoh: Fisika 11 MIPA 1)..."
-              className="flex-1 p-3.5 rounded-xl border bg-white text-sm font-semibold"
+              className="p-3.5 rounded-xl border bg-white text-sm font-semibold"
+            />
+            <input
+              type="text"
+              value={pengumumanBaru}
+              onChange={(e) => setPengumumanBaru(e.target.value)}
+              placeholder="Pengumuman Kelas Awal (Opsional)..."
+              className="p-3.5 rounded-xl border bg-white text-sm"
             />
             <button
               type="submit"
               className="bg-indigo-600 text-white px-6 py-3.5 rounded-xl font-black text-sm"
             >
-              + Buat Kelas
+              + Buat Kelas Baru
             </button>
           </form>
 
@@ -1949,6 +2404,12 @@ export default function AplikasiHibahIlmu() {
                       Hapus
                     </button>
                   </div>
+                  {kel.pengumuman && (
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 mb-3 flex items-center gap-2">
+                      <Megaphone className="w-4 h-4 shrink-0 text-amber-600" />
+                      <span>{kel.pengumuman}</span>
+                    </div>
+                  )}
                   <div className="text-xs font-bold text-slate-500 mb-4">
                     Total Anggota: {kel.siswaIds.length} Siswa
                   </div>
@@ -2054,7 +2515,7 @@ export default function AplikasiHibahIlmu() {
         </div>
 
         <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
-          <h2 className="text-xl font-black mb-4">Ruang Kelas (Rombel) Anda</h2>
+          <h2 className="text-xl font-black mb-4">Ruang Kelas (Rombel) & Pengumuman Guru</h2>
           {kelasSaya.length === 0 ? (
             <p className="text-sm text-slate-500">
               Anda belum dimasukkan ke dalam rombel khusus oleh Guru/Admin.
@@ -2062,11 +2523,20 @@ export default function AplikasiHibahIlmu() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {kelasSaya.map((k) => (
-                <div key={k.id} className="p-4 border rounded-2xl bg-emerald-50/50 border-emerald-200">
-                  <div className="font-black text-emerald-950">{k.namaKelas}</div>
-                  <div className="text-xs text-slate-600 mt-1">
-                    Pengajar: {safeAkunList.find((a) => a.id === k.guruId)?.nama || "Guru"}
+                <div
+                  key={k.id}
+                  className="p-5 border rounded-2xl bg-emerald-50/50 border-emerald-200 space-y-2"
+                >
+                  <div className="font-black text-emerald-950 text-base">{k.namaKelas}</div>
+                  <div className="text-xs text-slate-600">
+                    Pengajar: <b>{safeAkunList.find((a) => a.id === k.guruId)?.nama || "Guru"}</b>
                   </div>
+                  {k.pengumuman && (
+                    <div className="p-3 bg-white border border-emerald-200 rounded-xl text-xs text-slate-700 flex items-center gap-2">
+                      <Megaphone className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>{k.pengumuman}</span>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -2489,15 +2959,16 @@ export default function AplikasiHibahIlmu() {
                           </div>
                           <h3 className="text-xl font-bold mb-2">{k.judul}</h3>
                           <p className="text-sm text-slate-500 line-clamp-2 mb-4">
-                            {stripHtml(k.rangkuman)}
+                            {bersihkanTagHtml(k.rangkuman)}
                           </p>
                         </div>
                         <div className="pt-4 border-t flex justify-between items-center text-sm font-bold text-indigo-600">
                           <span className="flex items-center gap-1.5">
-                            <PlayCircle className="w-5 h-5" /> Mulai Belajar
+                            <PlayCircle className="w-5 h-5" /> Mulai Belajar ({k.daftarKuis.length}{" "}
+                            Soal Kuis)
                           </span>
                           <span className="text-xs bg-amber-100 text-amber-800 px-2.5 py-1 rounded-lg">
-                            +50 XP
+                            +XP
                           </span>
                         </div>
                       </div>
@@ -2544,6 +3015,16 @@ export default function AplikasiHibahIlmu() {
                         />
                       </div>
                       <h1 className="text-2xl font-black mb-4">{kelasAktif.judul}</h1>
+                      {kelasAktif.lampiranUrl && (
+                        <a
+                          href={kelasAktif.lampiranUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-2 mb-6 px-4 py-2.5 bg-indigo-50 text-indigo-700 rounded-xl text-xs font-bold border border-indigo-200"
+                        >
+                          <FileText className="w-4 h-4" /> Unduh / Buka Lampiran Modul (PDF/PPT)
+                        </a>
+                      )}
                       <div
                         className="prose prose-slate max-w-none text-sm leading-relaxed mb-6"
                         dangerouslySetInnerHTML={{ __html: kelasAktif.rangkuman }}
@@ -2582,44 +3063,140 @@ export default function AplikasiHibahIlmu() {
                     </div>
                   </div>
 
-                  <div className="lg:col-span-1">
-                    <div className="bg-white p-6 rounded-3xl border-2 border-indigo-100 shadow-md sticky top-24">
-                      <h3 className="font-black text-base mb-4">{kelasAktif.kuis.tanya}</h3>
-                      <div className="space-y-2.5">
-                        {kelasAktif.kuis.opsi.map((opsi, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => {
-                              setJawabanKuis(idx);
-                              if (idx === kelasAktif.kuis.jawabanBenar) {
-                                if (statusKuis !== "benar") tambahXP(50);
-                                setStatusKuis("benar");
-                              } else {
-                                setStatusKuis("salah");
-                              }
-                            }}
-                            className={`w-full text-left p-3.5 rounded-xl border-2 font-semibold text-xs ${
-                              jawabanKuis === idx
-                                ? statusKuis === "benar"
-                                  ? "border-emerald-500 bg-emerald-50 text-emerald-900"
-                                  : "border-rose-500 bg-rose-50 text-rose-900"
-                                : "border-slate-200"
-                            }`}
-                          >
-                            {opsi}
-                          </button>
-                        ))}
+                  {/* PANEL MULTI-SOAL KUIS INTERAKTIF */}
+                  <div className="lg:col-span-1 space-y-4">
+                    <div className="bg-white p-6 rounded-3xl border-2 border-indigo-100 shadow-md">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-black text-base flex items-center gap-2">
+                          <Trophy className="w-5 h-5 text-amber-500" /> Latihan Kuis (
+                          {kelasAktif.daftarKuis.length} Soal)
+                        </h3>
                       </div>
-                      {statusKuis === "benar" && (
-                        <div className="mt-4 p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900 font-bold">
-                          Benar! (+50 XP) — {kelasAktif.kuis.pembahasan}
-                        </div>
-                      )}
-                      {statusKuis === "salah" && (
-                        <div className="mt-4 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-900 font-bold">
-                          Belum tepat, silakan coba lagi!
-                        </div>
-                      )}
+
+                      <div className="space-y-6">
+                        {kelasAktif.daftarKuis.map((kuis, idxKuis) => {
+                          const statusJawab = statusKuisSiswa[kuis.id];
+                          return (
+                            <div
+                              key={kuis.id}
+                              className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3"
+                            >
+                              <div className="flex justify-between items-center">
+                                <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded bg-indigo-100 text-indigo-800">
+                                  Soal #{idxKuis + 1} •{" "}
+                                  {kuis.tipe === "pilihan_ganda"
+                                    ? "Pilihan Ganda"
+                                    : kuis.tipe === "benar_salah"
+                                    ? "Benar / Salah"
+                                    : "Isian Singkat"}
+                                </span>
+                                <span className="text-[11px] font-bold text-amber-700">
+                                  +{kuis.poin} XP
+                                </span>
+                              </div>
+
+                              <p className="font-bold text-sm text-slate-900">{kuis.tanya}</p>
+
+                              {/* Render Opsi Pilihan Ganda atau Benar/Salah */}
+                              {(kuis.tipe === "pilihan_ganda" || kuis.tipe === "benar_salah") && (
+                                <div className="space-y-2">
+                                  {kuis.opsi.map((opsi, idxOpsi) => (
+                                    <button
+                                      key={idxOpsi}
+                                      onClick={() => {
+                                        setJawabanPilihanSiswa({
+                                          ...jawabanPilihanSiswa,
+                                          [kuis.id]: idxOpsi,
+                                        });
+                                        if (idxOpsi === kuis.jawabanBenar) {
+                                          if (statusKuisSiswa[kuis.id] !== "benar") {
+                                            tambahXP(kuis.poin);
+                                          }
+                                          setStatusKuisSiswa({
+                                            ...statusKuisSiswa,
+                                            [kuis.id]: "benar",
+                                          });
+                                        } else {
+                                          setStatusKuisSiswa({
+                                            ...statusKuisSiswa,
+                                            [kuis.id]: "salah",
+                                          });
+                                        }
+                                      }}
+                                      className={`w-full text-left p-3 rounded-xl border-2 font-semibold text-xs transition ${
+                                        jawabanPilihanSiswa[kuis.id] === idxOpsi
+                                          ? statusJawab === "benar"
+                                            ? "border-emerald-500 bg-emerald-50 text-emerald-900"
+                                            : "border-rose-500 bg-rose-50 text-rose-900"
+                                          : "bg-white border-slate-200 hover:bg-slate-100"
+                                      }`}
+                                    >
+                                      {opsi}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Render Input Isian Singkat */}
+                              {kuis.tipe === "isian_singkat" && (
+                                <div className="flex gap-2">
+                                  <input
+                                    type="text"
+                                    value={jawabanTeksSiswa[kuis.id] || ""}
+                                    onChange={(e) =>
+                                      setJawabanTeksSiswa({
+                                        ...jawabanTeksSiswa,
+                                        [kuis.id]: e.target.value,
+                                      })
+                                    }
+                                    placeholder="Ketik jawaban singkat..."
+                                    className="flex-1 p-2.5 bg-white border rounded-xl text-xs font-bold"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const inputUser = (jawabanTeksSiswa[kuis.id] || "")
+                                        .trim()
+                                        .toLowerCase();
+                                      const kunci = (kuis.jawabanTeks || "").trim().toLowerCase();
+                                      if (inputUser && inputUser === kunci) {
+                                        if (statusKuisSiswa[kuis.id] !== "benar") {
+                                          tambahXP(kuis.poin);
+                                        }
+                                        setStatusKuisSiswa({
+                                          ...statusKuisSiswa,
+                                          [kuis.id]: "benar",
+                                        });
+                                      } else {
+                                        setStatusKuisSiswa({
+                                          ...statusKuisSiswa,
+                                          [kuis.id]: "salah",
+                                        });
+                                      }
+                                    }}
+                                    className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold"
+                                  >
+                                    Cek
+                                  </button>
+                                </div>
+                              )}
+
+                              {statusJawab === "benar" && (
+                                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900 font-bold flex items-start gap-1.5">
+                                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                                  <span>Benar! {kuis.pembahasan}</span>
+                                </div>
+                              )}
+                              {statusJawab === "salah" && (
+                                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-900 font-bold flex items-center gap-1.5">
+                                  <XCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                                  <span>Belum tepat, silakan coba lagi!</span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -2749,7 +3326,7 @@ export default function AplikasiHibahIlmu() {
           </div>
         )}
 
-        {/* MODAL IMPORT JSON */}
+        {/* MODAL IMPORT JSON AKUN (ADMIN) */}
         {modalImportAkun && (
           <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl p-8 max-w-xl w-full shadow-2xl space-y-4">
@@ -2763,10 +3340,10 @@ export default function AplikasiHibahIlmu() {
               )}
               <button
                 type="button"
-                onClick={() => setTeksImportJson(TEMPLATE_JSON_CONTOH)}
+                onClick={() => setTeksImportJson(TEMPLATE_JSON_AKUN)}
                 className="text-xs font-bold text-indigo-600 underline"
               >
-                Muat Contoh Template JSON
+                Muat Contoh Template JSON Akun
               </button>
               <form onSubmit={handleImportJson} className="space-y-3">
                 <textarea
@@ -2781,7 +3358,7 @@ export default function AplikasiHibahIlmu() {
                     type="submit"
                     className="flex-1 bg-indigo-600 text-white font-bold py-3 rounded-xl text-xs"
                   >
-                    Proses Import
+                    Proses Import Akun
                   </button>
                   <button
                     type="button"
@@ -2789,6 +3366,53 @@ export default function AplikasiHibahIlmu() {
                     className="px-5 py-3 bg-slate-100 rounded-xl font-bold text-xs"
                   >
                     Tutup
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL IMPORT SOAL KUIS (GURU) */}
+        {modalImportKuis && (
+          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl p-8 max-w-xl w-full shadow-2xl space-y-4">
+              <h3 className="text-xl font-black flex items-center gap-2">
+                <FileSpreadsheet className="w-5 h-5 text-indigo-600" /> Import Bank Soal Kuis (JSON)
+              </h3>
+              <p className="text-xs text-slate-600">
+                Mendukung tipe soal: <b>pilihan_ganda</b>, <b>benar_salah</b>, dan{" "}
+                <b>isian_singkat</b>.
+              </p>
+              <button
+                type="button"
+                onClick={() => setTeksImportKuisJson(TEMPLATE_JSON_KUIS)}
+                className="text-xs font-bold text-indigo-600 underline"
+              >
+                Muat Contoh Template 3 Jenis Soal Kuis
+              </button>
+              <form onSubmit={handleImportKuisJson} className="space-y-3">
+                <textarea
+                  rows={9}
+                  required
+                  value={teksImportKuisJson}
+                  onChange={(e) => setTeksImportKuisJson(e.target.value)}
+                  placeholder="Tempelkan array JSON soal di sini..."
+                  className="w-full p-3 font-mono text-xs bg-slate-900 text-emerald-300 rounded-xl"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    className="flex-1 bg-indigo-600 text-white font-bold py-3 rounded-xl text-xs"
+                  >
+                    Masukkan ke Daftar Kuis Materi
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setModalImportKuis(false)}
+                    className="px-5 py-3 bg-slate-100 rounded-xl font-bold text-xs"
+                  >
+                    Batal
                   </button>
                 </div>
               </form>
