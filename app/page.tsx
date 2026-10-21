@@ -316,7 +316,19 @@ export default function AplikasiHibahIlmu() {
   const [skorTryout, setSkorTryout] = useState<number>(0);
 
   // State Forum PR
-  const [daftarDiskusi, setDaftarDiskusi] = useState<DiskusiPR[]>([{ id: "pr-1", penanya: "Rizky", jenjang: "SMP", mapel: "Matematika", pertanyaan: "Cara bedain luas dan keliling lingkaran?", waktu: "1 jam lalu", jawaban: [{ penjawab: "Panda Kode", isi: "Luas pakai kuadrat (r²), keliling tidak (2r)." }] }]);
+  const [daftarDiskusi, setDaftarDiskusi] = useState<DiskusiPR[]>([
+    {
+      id: "pr-1",
+      penanya: "Rizky (SMP)",
+      jenjang: "SMP",
+      mapel: "Matematika",
+      pertanyaan: "Bagaimana cara cepat membedakan rumus Luas dan Keliling Lingkaran?",
+      waktu: "1 jam lalu",
+      jawaban: [
+        { penjawab: "Panda Kode (Mentor)", isi: "Luas selalu pangkat dua (π × r²), keliling tidak ada pangkat (2 × π × r)." },
+      ],
+    },
+  ]);
   const [tanyaBaru, setTanyaBaru] = useState<string>("");
   const [mapelBaru, setMapelBaru] = useState<string>("Matematika");
   const [balasanInput, setBalasanInput] = useState<{ [key: string]: string }>({});
@@ -333,8 +345,9 @@ export default function AplikasiHibahIlmu() {
   const [passwordReg, setPasswordReg] = useState("");
   const [roleReg, setRoleReg] = useState<"siswa" | "guru" | "admin">("siswa");
   const [infoReg, setInfoReg] = useState("");
+  const [filterLog, setFilterLog] = useState<string>("semua");
 
-  // State Admin (Edit Akun & RBAC)
+  // State Admin Tambah & Edit Akun
   const [modalAdminAkun, setModalAdminAkun] = useState<boolean>(false);
   const [idEditAkun, setIdEditAkun] = useState<string | null>(null);
   const [namaFormAdmin, setNamaFormAdmin] = useState("");
@@ -344,15 +357,14 @@ export default function AplikasiHibahIlmu() {
   const [statusFormAdmin, setStatusFormAdmin] = useState<"approved" | "pending" | "rejected">("approved");
   const [infoFormAdmin, setInfoFormAdmin] = useState("");
   const [aksesMengajarForm, setAksesMengajarForm] = useState<string[]>([]);
-  const [filterLog, setFilterLog] = useState<string>("semua");
 
-  // State Admin (Bulk Delete & Import JSON)
+  // State Admin Bulk Delete & Import JSON/CSV
   const [selectedAkunIds, setSelectedAkunIds] = useState<string[]>([]);
   const [modalImportAkun, setModalImportAkun] = useState<boolean>(false);
   const [teksImportJson, setTeksImportJson] = useState<string>("");
   const [notifImport, setNotifImport] = useState<string>("");
 
-  // State Admin (Tambah Kategori)
+  // State Admin Tambah Kategori
   const [modalKategori, setModalKategori] = useState(false);
   const [targetJenjangKategori, setTargetJenjangKategori] = useState("sma");
   const [namaKategoriBaru, setNamaKategoriBaru] = useState("");
@@ -556,7 +568,7 @@ export default function AplikasiHibahIlmu() {
       setTeksImportJson("");
       setTimeout(() => { setNotifImport(""); setModalImportAkun(false); }, 2500);
     } catch (err) {
-      alert("Format JSON tidak valid!");
+      alert("Format JSON tidak valid! Pastikan memakai tanda kutip ganda dan penutup yang benar.");
     }
   };
 
@@ -576,7 +588,9 @@ export default function AplikasiHibahIlmu() {
         id: "adm-usr-" + Date.now(), nama: namaFormAdmin, email: emailFormAdmin, password: passFormAdmin || "123",
         role: roleFormAdmin, status: statusFormAdmin, infoTambahan: infoFormAdmin || "Dibuat Admin", waktuDaftar: "Oleh Admin", aksesMengajar: aksesMengajarForm
       };
-      setDaftarAkun([akunBaru, ...(daftarAkun || [])]);
+      const daftarTerbaru = [akunBaru, ...(daftarAkun || [])];
+      setDaftarAkun(daftarTerbaru);
+      localStorage.setItem("hibah_daftar_akun", JSON.stringify(daftarTerbaru));
       catatLog(userLogin?.nama || "Admin", "admin", `Membuat akun baru: ${namaFormAdmin}`, "akun");
     }
     setModalAdminAkun(false);
@@ -640,7 +654,7 @@ export default function AplikasiHibahIlmu() {
   const jumlahPending = safeAkunList.filter((a) => a.status === "pending").length;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans relative overflow-x-hidden selection:bg-emerald-500 selection:text-white">
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans relative overflow-x-hidden selection:bg-emerald-500 selection:text-white">
       {/* Background Aurora */}
       <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
         <div className="absolute -top-40 -left-40 w-[30rem] h-[30rem] bg-purple-300/30 rounded-full blur-3xl" />
@@ -954,7 +968,7 @@ export default function AplikasiHibahIlmu() {
                               <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Editor JSON Data</label>
                               <button type="button" onClick={() => setTeksImportJson(TEMPLATE_JSON_CONTOH)} className="text-[11px] bg-indigo-50 text-indigo-600 px-3 py-1 rounded-md font-black hover:bg-indigo-100 transition">Muat Template Contoh</button>
                             </div>
-                            <textarea rows={10} required value={teksImportJson} onChange={e => setTeksImportJson(e.target.value)} placeholder="[\n  {\n    \"nama\": \"Nama Siswa\",\n    \"email\": \"email@sekolah.id\",\n    \"password\": \"123456\",\n    \"role\": \"siswa\"\n  }\n]" className="w-full p-4 font-mono text-sm bg-slate-900 text-emerald-300 rounded-2xl shadow-inner outline-none focus:ring-2 focus:ring-indigo-500" />
+                            <textarea rows={10} required value={teksImportJson} onChange={e => setTeksImportJson(e.target.value)} placeholder={`[\n  {\n    "nama": "Nama Siswa",\n    "email": "email@sekolah.id",\n    "password": "123456",\n    "role": "siswa"\n  }\n]`} className="w-full p-4 font-mono text-sm bg-slate-900 text-emerald-300 rounded-2xl shadow-inner outline-none focus:ring-2 focus:ring-indigo-500" />
                           </div>
                           <div className="flex gap-3 pt-4 border-t border-slate-100">
                             <button type="submit" className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-xl shadow-lg transition text-sm">🚀 Jalankan Import Data Massal</button>
@@ -1166,7 +1180,7 @@ export default function AplikasiHibahIlmu() {
                 </div>
               </motion.div>
             )}
-          </div>
+          </AnimatePresence>
         )}
 
         {/* ==========================================
@@ -1319,7 +1333,6 @@ export default function AplikasiHibahIlmu() {
                   </div>
                   <div className="w-full h-4 bg-slate-800 rounded-full overflow-hidden mb-6 shadow-inner">
                     <motion.div initial={{ width: 0 }} animate={{ width: "56%" }} transition={{ duration: 1, ease: "easeOut" }} className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full relative">
-                      <div className="absolute top-0 right-0 bottom-0 left-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-30"></div>
                     </motion.div>
                   </div>
                   <button className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-black py-4 rounded-xl shadow-lg transition transform hover:-translate-y-1">💖 Donasi via Saweria / GoPay</button>
@@ -1539,7 +1552,7 @@ export default function AplikasiHibahIlmu() {
                         )}
                         {statusKuis === "salah" && (
                           <motion.div key="salah" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="p-4 bg-rose-50 rounded-2xl text-xs text-rose-900 font-bold border border-rose-200 shadow-inner flex items-center gap-2">
-                            <XCircle className="w-5 h-5 text-rose-600"/> Belum tepat, ayo coba pahami lagi!
+                            <UserX className="w-5 h-5 text-rose-600"/> Belum tepat, ayo coba pahami lagi!
                           </motion.div>
                         )}
                       </AnimatePresence>
