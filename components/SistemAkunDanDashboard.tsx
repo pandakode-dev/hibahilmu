@@ -525,8 +525,7 @@ export default function SistemAkunDanDashboard({
             </p>
 
             <div className="space-y-3">
-              {daftarAkun
-                .filter((a) => a.status === "approved")
+              {daftarAkun?.filter((a) => a.status === "approved")
                 .map((akun) => (
                   <button
                     key={akun.id}
