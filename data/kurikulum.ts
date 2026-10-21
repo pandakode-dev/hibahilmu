@@ -54,6 +54,26 @@ export interface DiskusiPR {
   }[];
 }
 
+export interface AkunPengguna {
+  id: string;
+  nama: string;
+  email: string;
+  password: string;
+  role: "admin" | "guru" | "siswa";
+  status: "pending" | "approved" | "rejected";
+  infoTambahan: string;
+  waktuDaftar: string;
+}
+
+export interface LogAktivitas {
+  id: string;
+  waktu: string;
+  namaPelaku: string;
+  rolePelaku: "admin" | "guru" | "siswa";
+  aksi: string;
+  kategori: "belajar" | "materi" | "akun" | "komunitas";
+}
+
 // 1. DATA MATERI PEMBELAJARAN LENGKAP DENGAN LEVEL, RUMUS & KODE
 export const DATA_JENJANG_AWAL: JenjangItem[] = [
   {
