@@ -67,6 +67,16 @@ import {
   Calendar,
   Eye,
   Repeat,
+  Moon,
+  Sun,
+  Award,
+  Video,
+  ClipboardCheck,
+  Printer,
+  Database,
+  BarChart3,
+  Clock,
+  Type,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 
@@ -102,6 +112,14 @@ export interface KuisItem {
 export interface SubJenjang {
   id: string;
   nama: string;
+}
+
+export interface PesanChatMateri {
+  id: string;
+  pengirimNama: string;
+  pengirimRole: string;
+  pesan: string;
+  waktu: string;
 }
 
 export interface KelasItem {
@@ -143,6 +161,7 @@ export interface SoalTryout {
   opsi: string[];
   jawabanBenar: number;
   pembahasan: string;
+  penyumbangNama?: string;
 }
 
 export interface PaketTryout {
@@ -164,12 +183,50 @@ export interface PaketTryout {
 export interface RiwayatPercobaanTryout {
   id: string;
   paketId: string;
+  paketJudul: string;
   userId: string;
   userNama: string;
   skor: number;
   jumlahPelanggaran: number;
   waktuSelesai: string;
   statusAkhir: "Selesai Normal" | "Diskualifikasi (Auto-Submit)";
+}
+
+export interface TugasItem {
+  id: string;
+  subJenjangId: string;
+  judul: string;
+  instruksi: string;
+  deadline: string;
+  pembuatNama: string;
+}
+
+export interface PengumpulanTugas {
+  id: string;
+  tugasId: string;
+  siswaId: string;
+  siswaNama: string;
+  jawabanTeksAtauLink: string;
+  waktuKumpul: string;
+  nilai?: number;
+  feedbackGuru?: string;
+}
+
+export interface PresensiItem {
+  id: string;
+  siswaId: string;
+  siswaNama: string;
+  materiJudul: string;
+  waktuHadir: string;
+}
+
+export interface JadwalLiveItem {
+  id: string;
+  judulSesi: string;
+  pengajarNama: string;
+  tanggalJam: string;
+  meetingUrl: string;
+  targetKelas: string;
 }
 
 export interface JawabanDiskusi {
@@ -217,6 +274,7 @@ export interface AkunPengguna {
   status: "pending" | "approved" | "rejected";
   infoTambahan: string;
   waktuDaftar: string;
+  xp?: number;
   aksesMengajar?: string[];
   minatSubJenjang?: string[];
   cv?: BiodataCV;
@@ -261,27 +319,6 @@ function bersihkanTagHtml(teksHtml: string): string {
 // ==========================================
 // 2. DATA AWAL & CONTOH TEMPLATE CSV / JSON
 // ==========================================
-const TEMPLATE_JSON_AKUN = JSON.stringify(
-  [
-    {
-      nama: "Dewi Lestari, S.Pd",
-      email: "dewi@hibahilmu.id",
-      password: "123",
-      role: "guru",
-      infoTambahan: "Guru Bahasa Inggris & TOEFL",
-    },
-    {
-      nama: "Ahmad Fauzi",
-      email: "ahmad@hibahilmu.id",
-      password: "123",
-      role: "siswa",
-      infoTambahan: "Kelas 12 MIPA",
-    },
-  ],
-  null,
-  2
-);
-
 const TEMPLATE_CSV_AKUN = `nama,email,password,role,infoTambahan
 Dewi Lestari S.Pd,dewi.csv@hibahilmu.id,123,guru,Instruktur TOEFL & TOEP
 Ahmad Fauzi,ahmad.csv@hibahilmu.id,123,siswa,Siswa Kelas 12 MIPA
@@ -542,20 +579,6 @@ const PAKET_TRYOUT_AWAL: PaketTryout[] = [
         jawabanBenar: 2,
         pembahasan: "Setiap suku dikalikan 2. Maka 48 x 2 = 96.",
       },
-      {
-        id: "tpa-3",
-        pertanyaan:
-          "SILOGISME: Semua mahasiswa wajib memiliki kartu perpustakaan. Sebagian mahasiswa menyukai diskusi ilmiah. Kesimpulannya adalah...",
-        opsi: [
-          "Sebagian mahasiswa yang menyukai diskusi ilmiah wajib memiliki kartu perpustakaan.",
-          "Semua yang memiliki kartu perpustakaan menyukai diskusi.",
-          "Mahasiswa yang tidak suka diskusi tidak punya kartu.",
-          "Tidak dapat ditarik kesimpulan.",
-        ],
-        jawabanBenar: 0,
-        pembahasan:
-          "Karena semua mahasiswa wajib punya kartu, maka sebagian mahasiswa yang suka diskusi pasti wajib punya kartu.",
-      },
     ],
   },
   {
@@ -568,7 +591,7 @@ const PAKET_TRYOUT_AWAL: PaketTryout[] = [
     alamatLokasi: "Laboratorium Bahasa Terpadu R.104 / Online Fullscreen",
     jadwalUjian: "2026-10-28 13:30 WIB",
     durasiMenit: 10,
-    batasPercobaan: 1,
+    batasPercobaan: 2,
     batasPelanggaran: 3,
     wajibFullscreen: true,
     daftarSoal: [
@@ -578,44 +601,73 @@ const PAKET_TRYOUT_AWAL: PaketTryout[] = [
         rumus: "Subject-Verb Agreement (Singular Subject)",
         opsi: ["has", "is having", "which is having", "it has"],
         jawabanBenar: 0,
-        pembahasan:
-          "Kalimat membutuhkan kata kerja tunggal (has) untuk subjek tunggal 'The North Pole'.",
-      },
-      {
-        id: "tf-2",
-        pertanyaan:
-          "_____ heated by solar energy have special collectors on the roofs to trap sunlight.",
-        rumus: "Reduced Adjective Clause (Passive)",
-        opsi: ["A home is", "Homes are", "A home", "Homes"],
-        jawabanBenar: 3,
-        pembahasan:
-          "Kata kerja utamanya adalah 'have' (jamak), sehingga butuh subjek jamak 'Homes' diikuti participle 'heated'.",
+        pembahasan: "Subjek tunggal 'The North Pole' menggunakan kata kerja tunggal 'has'.",
       },
     ],
   },
+];
+
+const BANK_SOAL_KOLEKTIF_AWAL: SoalTryout[] = [
   {
-    id: "pkt-utbk-1",
-    judul: "Tryout UTBK SNBT Penalaran Matematika & Fisika",
-    kategoriTes: "UTBK",
-    jenjang: "SMA / SMK",
-    pembuatId: "gru-1",
+    id: "bs-1",
+    pertanyaan: "ANTONIM dari kata 'SPORADIS' adalah...",
+    rumus: "TPA Verbal - Antonim",
+    opsi: ["Jarang", "Kerap / Terus-menerus", "Terpisah", "Lambat"],
+    jawabanBenar: 1,
+    pembahasan: "Sporadis berarti kadang-kadang/jarang, sehingga lawan katanya adalah kerap/terus-menerus.",
+    penyumbangNama: "Bapak Budi Santoso, M.Pd",
+  },
+  {
+    id: "bs-2",
+    pertanyaan: "Dalam Reinforcement Learning, fungsi yang mengevaluasi seberapa baik suatu state-action pair disebut...",
+    rumus: "Artificial Intelligence & Machine Learning",
+    opsi: ["Q-Function (Action-Value)", "Loss Function", "Activation ReLU", "Dropout Layer"],
+    jawabanBenar: 0,
+    pembahasan: "Q-Function menghitung ekspektasi total reward dari suatu state dan action.",
+    penyumbangNama: "Admin Panda Kode",
+  },
+];
+
+const TUGAS_AWAL: TugasItem[] = [
+  {
+    id: "tgs-1",
+    subJenjangId: "sma-11-ipa",
+    judul: "Laporan Praktikum Hukum II Newton",
+    instruksi: "Tuliskan kesimpulan hubungan antara gaya, massa, dan percepatan beserta link dokumen laporanmu.",
+    deadline: "25 Okt 2026, 23:59 WIB",
     pembuatNama: "Bapak Budi Santoso, M.Pd",
-    alamatLokasi: "Aula Utama SMAN 1 / Online CBT",
-    jadwalUjian: "2026-11-02 08:00 WIB",
-    durasiMenit: 15,
-    batasPercobaan: 3,
-    batasPelanggaran: 3,
-    wajibFullscreen: true,
-    daftarSoal: [
-      {
-        id: "ut-1",
-        pertanyaan: "Jika f(x) = 3x - 5, maka berapakah nilai dari f(4)?",
-        rumus: "Substitusikan x = 4 ke dalam fungsi f(x)",
-        opsi: ["5", "7", "12", "17"],
-        jawabanBenar: 1,
-        pembahasan: "f(4) = 3(4) - 5 = 12 - 5 = 7.",
-      },
-    ],
+  },
+  {
+    id: "tgs-2",
+    subJenjangId: "pt-ti",
+    judul: "Analisis Use Case Apache Kafka & Sqoop di Telekomunikasi",
+    instruksi: "Kumpulkan ringkasan arsitektur pipeline Big Data beserta referensi IEEE.",
+    deadline: "28 Okt 2026, 23:59 WIB",
+    pembuatNama: "Admin Panda Kode",
+  },
+];
+
+const PENGUMPULAN_AWAL: PengumpulanTugas[] = [
+  {
+    id: "sub-1",
+    tugasId: "tgs-1",
+    siswaId: "sis-1",
+    siswaNama: "Aisyah Putri",
+    jawabanTeksAtauLink: "Percepatan berbanding lurus dengan gaya resultan. Link PDF: https://drive.google.com/laporan-aisyah",
+    waktuKumpul: "Kemarin, 19:30 WIB",
+    nilai: 95,
+    feedbackGuru: "Analisis sangat rapi dan tepat!",
+  },
+];
+
+const JADWAL_LIVE_AWAL: JadwalLiveItem[] = [
+  {
+    id: "live-1",
+    judulSesi: "Klinik Bedah Soal TPA Bappenas & TOEFL Structure",
+    pengajarNama: "Bapak Budi Santoso, M.Pd",
+    tanggalJam: "Sabtu, 24 Okt 2026 • 19:30 WIB",
+    meetingUrl: "https://meet.google.com",
+    targetKelas: "SMA & Kuliah",
   },
 ];
 
@@ -629,14 +681,14 @@ const AKUN_DEFAULT: AkunPengguna[] = [
     status: "approved",
     infoTambahan: "Founder & Super Admin HibahIlmu",
     waktuDaftar: "Permanen",
+    xp: 950,
     aksesMengajar: ["sma-11-ipa", "pt-ti", "pt-tpa", "pt-toefl"],
     minatSubJenjang: ["pt-ti", "pt-tpa"],
     cv: {
       fotoUrl:
         "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80",
       headline: "System Architect & EdTech Founder",
-      bioSingkat:
-        "Mengembangkan ekosistem pendidikan terbuka gratis yang terverifikasi dan akuntabel.",
+      bioSingkat: "Mengembangkan ekosistem pendidikan terbuka gratis yang terverifikasi.",
       asalSekolahKampus: "Program Pascasarjana MTTK",
       pendidikanTerakhir: "Magister Teknik",
       skills: ["Next.js", "TypeScript", "Big Data", "Reinforcement Learning"],
@@ -654,6 +706,7 @@ const AKUN_DEFAULT: AkunPengguna[] = [
     status: "approved",
     infoTambahan: "Guru Matematika, Fisika & Instruktur TPA",
     waktuDaftar: "Kemarin, 09:00",
+    xp: 620,
     aksesMengajar: ["sma-10", "sma-11-ipa", "sma-12-ipa", "sd-4", "pt-tpa", "pt-toefl"],
     minatSubJenjang: ["sma-11-ipa"],
     cv: {
@@ -678,6 +731,7 @@ const AKUN_DEFAULT: AkunPengguna[] = [
     status: "approved",
     infoTambahan: "Siswi Kelas 11 MIPA",
     waktuDaftar: "Kemarin, 14:20",
+    xp: 480,
     aksesMengajar: [],
     minatSubJenjang: ["sma-11-ipa", "pt-toefl"],
     cv: {
@@ -692,6 +746,19 @@ const AKUN_DEFAULT: AkunPengguna[] = [
       prestasi: ["Juara 1 Kuis Sains Kabupaten 2025"],
       portfolioUrl: "https://github.com",
     },
+  },
+  {
+    id: "sis-2",
+    nama: "Reza Pratama",
+    email: "reza@hibahilmu.id",
+    password: "123",
+    role: "siswa",
+    status: "approved",
+    infoTambahan: "Mahasiswa S1 Teknik Informatika",
+    waktuDaftar: "Hari ini, 08:00",
+    xp: 390,
+    aksesMengajar: [],
+    minatSubJenjang: ["pt-ti", "pt-tpa"],
   },
 ];
 
@@ -808,7 +875,7 @@ const RichTextEditorPro = ({
   };
 
   return (
-    <div className="border border-slate-300 rounded-2xl bg-white overflow-hidden shadow-2xs focus-within:ring-2 focus-within:ring-indigo-500 transition">
+    <div className="border border-slate-300 rounded-2xl bg-white text-slate-800 overflow-hidden shadow-2xs focus-within:ring-2 focus-within:ring-indigo-500 transition">
       <div className="bg-slate-100 border-b border-slate-200 p-2 flex flex-wrap items-center gap-1">
         <select
           onChange={(e) => eksekusiCommand("formatBlock", e.target.value)}
@@ -852,7 +919,6 @@ const RichTextEditorPro = ({
           type="button"
           onClick={() => eksekusiCommand("justifyLeft")}
           className="p-2 hover:bg-white rounded-lg text-slate-700"
-          title="Rata Kiri"
         >
           <AlignLeft size={15} />
         </button>
@@ -860,7 +926,6 @@ const RichTextEditorPro = ({
           type="button"
           onClick={() => eksekusiCommand("justifyCenter")}
           className="p-2 hover:bg-white rounded-lg text-slate-700"
-          title="Rata Tengah"
         >
           <AlignCenter size={15} />
         </button>
@@ -868,7 +933,6 @@ const RichTextEditorPro = ({
           type="button"
           onClick={() => eksekusiCommand("justifyRight")}
           className="p-2 hover:bg-white rounded-lg text-slate-700"
-          title="Rata Kanan"
         >
           <AlignRight size={15} />
         </button>
@@ -879,7 +943,6 @@ const RichTextEditorPro = ({
           type="button"
           onClick={() => eksekusiCommand("insertUnorderedList")}
           className="p-2 hover:bg-white rounded-lg text-slate-700"
-          title="Bullet List"
         >
           <List size={15} />
         </button>
@@ -887,7 +950,6 @@ const RichTextEditorPro = ({
           type="button"
           onClick={() => eksekusiCommand("insertOrderedList")}
           className="p-2 hover:bg-white rounded-lg text-slate-700"
-          title="Numbering List"
         >
           <ListOrdered size={15} />
         </button>
@@ -905,7 +967,6 @@ const RichTextEditorPro = ({
           type="button"
           onClick={tambahLink}
           className="p-2 hover:bg-white rounded-lg text-slate-700"
-          title="Sisipkan Link"
         >
           <LinkIcon size={15} />
         </button>
@@ -913,7 +974,6 @@ const RichTextEditorPro = ({
           type="button"
           onClick={tambahGambar}
           className="p-2 hover:bg-white rounded-lg text-slate-700"
-          title="Sisipkan Gambar via Link"
         >
           <ImageIcon size={15} />
         </button>
@@ -921,7 +981,6 @@ const RichTextEditorPro = ({
           type="button"
           onClick={tambahTabel}
           className="p-2 hover:bg-white rounded-lg text-slate-700"
-          title="Sisipkan Tabel"
         >
           <Table size={15} />
         </button>
@@ -949,6 +1008,10 @@ const RichTextEditorPro = ({
 // 3. KOMPONEN UTAMA APLIKASI
 // ==========================================
 export default function AplikasiHibahIlmu() {
+  // FITUR 10: DARK MODE & AKSESIBILITAS UKURAN TEKS
+  const [darkMode, setDarkMode] = useState<boolean>(false);
+  const [ukuranTeksBesar, setUkuranTeksBesar] = useState<boolean>(false);
+
   const [menuAktif, setMenuAktif] = useState<string>("beranda");
   const [daftarJenjang, setDaftarJenjang] = useState<JenjangItem[]>(STRUKTUR_AWAL);
 
@@ -967,15 +1030,69 @@ export default function AplikasiHibahIlmu() {
   const [daftarNotifikasi, setDaftarNotifikasi] = useState<NotifikasiItem[]>(NOTIF_AWAL);
   const [bukaMenuNotif, setBukaMenuNotif] = useState<boolean>(false);
 
+  // FITUR 1, 2, 3, 7, 9: TUGAS, PRESENSI, CHAT MATERI, BANK SOAL KOLEKTIF, JADWAL LIVE
+  const [daftarTugas, setDaftarTugas] = useState<TugasItem[]>(TUGAS_AWAL);
+  const [daftarPengumpulan, setDaftarPengumpulan] =
+    useState<PengumpulanTugas[]>(PENGUMPULAN_AWAL);
+  const [daftarPresensi, setDaftarPresensi] = useState<PresensiItem[]>([]);
+  const [chatPerMateri, setChatPerMateri] = useState<{
+    [materiId: string]: PesanChatMateri[];
+  }>({
+    "materi-sma-1": [
+      {
+        id: "ch-1",
+        pengirimNama: "Aisyah Putri",
+        pengirimRole: "siswa",
+        pesan: "Pak Budi, apakah rumus Energi Kinetik selalu menggunakan satuan kecepatan m/s?",
+        waktu: "10:15 WIB",
+      },
+      {
+        id: "ch-2",
+        pengirimNama: "Bapak Budi Santoso, M.Pd",
+        pengirimRole: "guru",
+        pesan: "Betul Aisyah! Jika masih km/jam wajib dikonversi ke m/s terlebih dahulu ya.",
+        waktu: "10:18 WIB",
+      },
+    ],
+  });
+  const [inputChatMateri, setInputChatMateri] = useState<string>("");
+  const [bankSoalKolektif, setBankSoalKolektif] =
+    useState<SoalTryout[]>(BANK_SOAL_KOLEKTIF_AWAL);
+  const [jadwalLive, setJadwalLive] = useState<JadwalLiveItem[]>(JADWAL_LIVE_AWAL);
+
+  // State Form Tugas & Live Session (Guru)
+  const [judulTugasBaru, setJudulTugasBaru] = useState("");
+  const [instruksiTugasBaru, setInstruksiTugasBaru] = useState("");
+  const [deadlineTugasBaru, setDeadlineTugasBaru] = useState("30 Okt 2026, 23:59 WIB");
+  const [targetSubTugasBaru, setTargetSubTugasBaru] = useState("sma-11-ipa");
+  const [jawabanTugasSiswaInput, setJawabanTugasSiswaInput] = useState<{
+    [tugasId: string]: string;
+  }>({});
+  const [inputNilaiGuru, setInputNilaiGuru] = useState<{ [subId: string]: number }>({});
+  const [inputFeedbackGuru, setInputFeedbackGuru] = useState<{ [subId: string]: string }>({});
+
+  const [judulLiveBaru, setJudulLiveBaru] = useState("");
+  const [tanggalLiveBaru, setTanggalLiveBaru] = useState("Minggu, 25 Okt 2026 • 19:00 WIB");
+  const [urlLiveBaru, setUrlLiveBaru] = useState("https://meet.google.com");
+  const [targetLiveBaru, setTargetLiveBaru] = useState("SMA & Kuliah");
+
+  // State Form Sumbang Bank Soal Kolektif
+  const [tanyaKolektifBaru, setTanyaKolektifBaru] = useState("");
+  const [rumusKolektifBaru, setRumusKolektifBaru] = useState("");
+  const [opsiKolektifA, setOpsiKolektifA] = useState("");
+  const [opsiKolektifB, setOpsiKolektifB] = useState("");
+  const [opsiKolektifC, setOpsiKolektifC] = useState("");
+  const [opsiKolektifD, setOpsiKolektifD] = useState("");
+  const [kunciKolektifBaru, setKunciKolektifBaru] = useState<number>(0);
+  const [bahasKolektifBaru, setBahasKolektifBaru] = useState("");
+
   // State Siswa & Jawaban 5 Tipe Kuis
-  const [poinXP, setPoinXP] = useState<number>(150);
-  const [materiSelesai, setMateriSelesai] = useState<string[]>([]);
+  const [poinXP, setPoinXP] = useState<number>(480);
+  const [materiSelesai, setMateriSelesai] = useState<string[]>(["materi-sma-1"]);
   const [catatanSiswa, setCatatanSiswa] = useState<string>("");
   const [statusSimpanCatatan, setStatusSimpanCatatan] = useState<boolean>(false);
 
   const [jawabanPilihanSiswa, setJawabanPilihanSiswa] = useState<{ [kuisId: string]: number }>({});
-  const [jawabanJamakSiswa, setJawabanJamakSiswa] = useState<{ [kuisId: string]: number[] }>({});
-  const [jawabanTeksSiswa, setJawabanTeksSiswa] = useState<{ [kuisId: string]: string }>({});
   const [jawabanCocokSiswa, setJawabanCocokSiswa] = useState<{
     [kuisId: string]: { [idxKiri: number]: string };
   }>({});
@@ -985,7 +1102,19 @@ export default function AplikasiHibahIlmu() {
 
   // State Tryout Pro (CBT, Anti-Cheat Fullscreen & Alt-Tab Detector)
   const [daftarPaketTryout, setDaftarPaketTryout] = useState<PaketTryout[]>(PAKET_TRYOUT_AWAL);
-  const [riwayatTryout, setRiwayatTryout] = useState<RiwayatPercobaanTryout[]>([]);
+  const [riwayatTryout, setRiwayatTryout] = useState<RiwayatPercobaanTryout[]>([
+    {
+      id: "rw-awal-1",
+      paketId: "pkt-tpa-1",
+      paketJudul: "Simulasi Akbar TPA (Tes Potensi Akademik) Nasional",
+      userId: "sis-1",
+      userNama: "Aisyah Putri",
+      skor: 90,
+      jumlahPelanggaran: 0,
+      waktuSelesai: "Kemarin",
+      statusAkhir: "Selesai Normal",
+    },
+  ]);
   const [filterKategoriTryout, setFilterKategoriTryout] = useState<string>("Semua");
   const [paketTryoutAktif, setPaketTryoutAktif] = useState<PaketTryout | null>(null);
 
@@ -999,7 +1128,7 @@ export default function AplikasiHibahIlmu() {
   const [jumlahPelanggaranUjian, setJumlahPelanggaranUjian] = useState<number>(0);
   const [pesanPeringatanCheat, setPesanPeringatanCheat] = useState<string>("");
 
-  // State Guru Merancang Paket Tryout Baru (TPA, TOEP, TOEFL, UTBK)
+  // State Guru Merancang Paket Tryout Baru
   const [judulTryoutBaru, setJudulTryoutBaru] = useState("");
   const [kategoriTesBaru, setKategoriTesBaru] = useState<KategoriTes>("TPA");
   const [jenjangTryoutBaru, setJenjangTryoutBaru] = useState("Kuliah & Umum");
@@ -1051,7 +1180,6 @@ export default function AplikasiHibahIlmu() {
   const [jenjangTanyaBaru, setJenjangTanyaBaru] = useState<string>("SMA / SMK");
   const [mapelBaru, setMapelBaru] = useState<string>("Matematika");
   const [tanyaBaru, setTanyaBaru] = useState<string>("");
-  const [gambarTanyaBaru, setGambarTanyaBaru] = useState<string>("");
 
   // State Auth Form
   const [modeAuth, setModeAuth] = useState<"login" | "register">("login");
@@ -1084,23 +1212,22 @@ export default function AplikasiHibahIlmu() {
 
   const [selectedAkunIds, setSelectedAkunIds] = useState<string[]>([]);
   const [modalImportAkun, setModalImportAkun] = useState<boolean>(false);
-  const [modeImportAkunFormat, setModeImportAkunFormat] = useState<"csv" | "json">("csv");
   const [teksImportAkun, setTeksImportAkun] = useState<string>("");
   const [notifImport, setNotifImport] = useState<string>("");
 
   const [modalKategori, setModalKategori] = useState(false);
   const [targetJenjangKategori, setTargetJenjangKategori] = useState("sma");
   const [namaKategoriBaru, setNamaKategoriBaru] = useState("");
-
-  // State Admin Rombel
   const [namaKelompokAdmin, setNamaKelompokAdmin] = useState("");
   const [guruKelompokAdmin, setGuruKelompokAdmin] = useState("");
 
-  // State Guru Buat Materi, Tryout & Multi-Soal Kuis
-  const [guruTabAktif, setGuruTabAktif] = useState<"materi" | "tryout_builder" | "kelas" | "cv">(
-    "materi"
-  );
-  const [siswaTabAktif, setSiswaTabAktif] = useState<"kelas" | "minat" | "cv">("kelas");
+  // State Navigasi Tab Guru & Siswa
+  const [guruTabAktif, setGuruTabAktif] = useState<
+    "materi" | "tryout_builder" | "tugas_absensi" | "bank_soal" | "kelas" | "cv"
+  >("materi");
+  const [siswaTabAktif, setSiswaTabAktif] = useState<
+    "kelas" | "tugas" | "rapor_sertifikat" | "minat" | "cv"
+  >("kelas");
 
   const [subJenjangPilih, setSubJenjangPilih] = useState("");
   const [judulMateri, setJudulMateri] = useState("");
@@ -1111,7 +1238,6 @@ export default function AplikasiHibahIlmu() {
   const [rumusMateri, setRumusMateri] = useState("");
   const [notifGuru, setNotifGuru] = useState(false);
 
-  // State Builder Daftar Kuis di Studio Guru
   const [daftarKuisDraft, setDaftarKuisDraft] = useState<KuisItem[]>([
     {
       id: "draft-1",
@@ -1133,7 +1259,6 @@ export default function AplikasiHibahIlmu() {
   const [modalImportKuis, setModalImportKuis] = useState(false);
   const [teksImportKuis, setTeksImportKuis] = useState("");
 
-  // State Guru Kelola Kelas & Kirim Pengumuman ke Murid
   const [namaKelompokBaru, setNamaKelompokBaru] = useState("");
   const [pengumumanBaru, setPengumumanBaru] = useState("");
   const [inputPengumumanKelas, setInputPengumumanKelas] = useState<{ [kelId: string]: string }>({});
@@ -1200,9 +1325,7 @@ export default function AplikasiHibahIlmu() {
     }
   }, [userLogin]);
 
-  // ==========================================
   // SENSOR ANTI-CHEAT UJIAN (DETEKSI ALT+TAB / BLUR / EXIT FULLSCREEN)
-  // ==========================================
   useEffect(() => {
     if (!sedangUjian || !paketTryoutAktif) return;
 
@@ -1221,15 +1344,11 @@ export default function AplikasiHibahIlmu() {
     };
 
     const handleVisibilityChange = () => {
-      if (document.hidden) {
-        catatPelanggaran("pindah tab browser / minimize jendela");
-      }
+      if (document.hidden) catatPelanggaran("pindah tab browser / minimize jendela");
     };
-
     const handleWindowBlur = () => {
       catatPelanggaran("menekan Alt+Tab / berpindah aplikasi");
     };
-
     const handleFullscreenChange = () => {
       if (paketTryoutAktif.wajibFullscreen && !document.fullscreenElement) {
         catatPelanggaran("keluar dari mode layar penuh (Fullscreen)");
@@ -1257,14 +1376,26 @@ export default function AplikasiHibahIlmu() {
     return () => clearInterval(interval);
   }, [sedangUjian, ujianSelesai, sisaWaktu]);
 
+  // FITUR 2: PRESENSI OTOMATIS SAAT SISWA MEMBUKA MATERI
   useEffect(() => {
-    if (kelasAktif) {
+    if (kelasAktif && userLogin) {
       setCatatanSiswa(localStorage.getItem(`catatan_${kelasAktif.id}`) || "");
       setJawabanPilihanSiswa({});
-      setJawabanJamakSiswa({});
-      setJawabanTeksSiswa({});
       setJawabanCocokSiswa({});
       setStatusKuisSiswa({});
+
+      const jamHadir = new Date().toLocaleTimeString("id-ID", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      const presensiBaru: PresensiItem = {
+        id: "pres-" + Date.now(),
+        siswaId: userLogin.id,
+        siswaNama: userLogin.nama,
+        materiJudul: kelasAktif.judul,
+        waktuHadir: `Hari ini, ${jamHadir} WIB`,
+      };
+      setDaftarPresensi((prev) => [presensiBaru, ...prev.slice(0, 49)]);
     }
   }, [kelasAktif]);
 
@@ -1328,6 +1459,13 @@ export default function AplikasiHibahIlmu() {
     setPoinXP((prev) => {
       const totalBaru = (prev || 0) + tambahan;
       localStorage.setItem("hibah_xp", totalBaru.toString());
+      if (userLogin) {
+        const updateAkun = daftarAkun.map((a) =>
+          a.id === userLogin.id ? { ...a, xp: totalBaru } : a
+        );
+        setDaftarAkun(updateAkun);
+        localStorage.setItem("hibah_daftar_akun", JSON.stringify(updateAkun));
+      }
       return totalBaru;
     });
     confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
@@ -1352,6 +1490,119 @@ export default function AplikasiHibahIlmu() {
       localStorage.setItem("hibah_selesai", JSON.stringify(daftarBaru));
       return daftarBaru;
     });
+  };
+
+  // --- FITUR 1: FUNGSI TUGAS & PENILAIAN (ASSIGNMENTS) ---
+  const handleGuruBuatTugas = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userLogin || !judulTugasBaru.trim()) return;
+    const tugasBaru: TugasItem = {
+      id: "tgs-" + Date.now(),
+      subJenjangId: targetSubTugasBaru,
+      judul: judulTugasBaru,
+      instruksi: instruksiTugasBaru,
+      deadline: deadlineTugasBaru,
+      pembuatNama: userLogin.nama,
+    };
+    setDaftarTugas([tugasBaru, ...daftarTugas]);
+    setJudulTugasBaru("");
+    setInstruksiTugasBaru("");
+    alert("Tugas baru berhasil diterbitkan untuk siswa!");
+  };
+
+  const handleSiswaKumpulTugas = (tugasId: string) => {
+    if (!userLogin) return;
+    const isi = (jawabanTugasSiswaInput[tugasId] || "").trim();
+    if (!isi) return alert("Masukkan jawaban atau link tugas terlebih dahulu.");
+    const kumpulBaru: PengumpulanTugas = {
+      id: "sub-" + Date.now(),
+      tugasId,
+      siswaId: userLogin.id,
+      siswaNama: userLogin.nama,
+      jawabanTeksAtauLink: isi,
+      waktuKumpul: "Baru saja",
+    };
+    setDaftarPengumpulan([kumpulBaru, ...daftarPengumpulan]);
+    setJawabanTugasSiswaInput({ ...jawabanTugasSiswaInput, [tugasId]: "" });
+    tambahXP(40);
+    alert("Tugas berhasil dikumpulkan! (+40 XP)");
+  };
+
+  const handleGuruBeriNilaiTugas = (subId: string, siswaId: string) => {
+    const nilaiAngka = inputNilaiGuru[subId] ?? 90;
+    const feedback = inputFeedbackGuru[subId] || "Kerja bagus, pertahankan!";
+    setDaftarPengumpulan((prev) =>
+      prev.map((s) =>
+        s.id === subId ? { ...s, nilai: nilaiAngka, feedbackGuru: feedback } : s
+      )
+    );
+    kirimNotifikasiKeUser(
+      [siswaId],
+      "Tugas Anda Telah Dinilai!",
+      `Guru memberikan nilai ${nilaiAngka}/100. Catatan: "${feedback}"`,
+      userLogin?.nama || "Guru"
+    );
+    alert("Nilai dan ulasan berhasil disimpan serta dikirim ke notifikasi siswa!");
+  };
+
+  // --- FITUR 3: LIVE CHAT PER MATERI ---
+  const handleKirimChatMateri = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!kelasAktif || !userLogin || !inputChatMateri.trim()) return;
+    const jam = new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+    const pesanBaru: PesanChatMateri = {
+      id: "chat-" + Date.now(),
+      pengirimNama: userLogin.nama,
+      pengirimRole: userLogin.role,
+      pesan: inputChatMateri,
+      waktu: `${jam} WIB`,
+    };
+    const listLama = chatPerMateri[kelasAktif.id] || [];
+    setChatPerMateri({
+      ...chatPerMateri,
+      [kelasAktif.id]: [...listLama, pesanBaru],
+    });
+    setInputChatMateri("");
+  };
+
+  // --- FITUR 7: BANK SOAL KOLEKTIF ---
+  const handleSumbangBankSoal = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userLogin || !tanyaKolektifBaru.trim()) return;
+    const soalBaru: SoalTryout = {
+      id: "bs-" + Date.now(),
+      pertanyaan: tanyaKolektifBaru,
+      rumus: rumusKolektifBaru || "Umum",
+      opsi: [opsiKolektifA, opsiKolektifB, opsiKolektifC, opsiKolektifD],
+      jawabanBenar: kunciKolektifBaru,
+      pembahasan: bahasKolektifBaru || "Disusun oleh kontributor HibahIlmu.",
+      penyumbangNama: userLogin.nama,
+    };
+    setBankSoalKolektif([soalBaru, ...bankSoalKolektif]);
+    setTanyaKolektifBaru("");
+    setOpsiKolektifA("");
+    setOpsiKolektifB("");
+    setOpsiKolektifC("");
+    setOpsiKolektifD("");
+    setBahasKolektifBaru("");
+    alert("Soal berhasil ditambahkan ke Bank Soal Kolektif Bersama!");
+  };
+
+  // --- FITUR 9: JADWAL LIVE SESSION ---
+  const handleTambahJadwalLive = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userLogin || !judulLiveBaru.trim()) return;
+    const itemBaru: JadwalLiveItem = {
+      id: "live-" + Date.now(),
+      judulSesi: judulLiveBaru,
+      pengajarNama: userLogin.nama,
+      tanggalJam: tanggalLiveBaru,
+      meetingUrl: urlLiveBaru,
+      targetKelas: targetLiveBaru,
+    };
+    setJadwalLive([itemBaru, ...jadwalLive]);
+    setJudulLiveBaru("");
+    alert("Jadwal Kelas Live berhasil diterbitkan!");
   };
 
   const toggleMinatSubJenjangSiswa = (subId: string) => {
@@ -1405,7 +1656,6 @@ export default function AplikasiHibahIlmu() {
     setUserLogin(userUpdate);
     localStorage.setItem("hibah_daftar_akun", JSON.stringify(daftarUpdate));
     localStorage.setItem("hibah_user_aktif", JSON.stringify(userUpdate));
-    catatLog(userLogin.nama, userLogin.role, "Memperbarui Profil & CV Portofolio", "akun");
     setNotifSimpanCV(true);
     setTimeout(() => setNotifSimpanCV(false), 3000);
   };
@@ -1428,7 +1678,6 @@ export default function AplikasiHibahIlmu() {
       pasangan: [
         { kiri: "", kanan: "" },
         { kiri: "", kanan: "" },
-        { kiri: "", kanan: "" },
       ],
       pembahasan: "",
       poin: 50,
@@ -1437,10 +1686,7 @@ export default function AplikasiHibahIlmu() {
   };
 
   const hapusSoalDraft = (idDraft: string) => {
-    if (daftarKuisDraft.length <= 1) {
-      alert("Minimal harus ada 1 soal kuis pada materi ini.");
-      return;
-    }
+    if (daftarKuisDraft.length <= 1) return;
     setDaftarKuisDraft((prev) => prev.filter((q) => q.id !== idDraft));
   };
 
@@ -1458,48 +1704,6 @@ export default function AplikasiHibahIlmu() {
         opsiBaru[indeksOpsi] = teksBaru;
         return { ...q, opsi: opsiBaru };
       })
-    );
-  };
-
-  const toggleKunciJamakDraft = (idDraft: string, indeksOpsi: number) => {
-    setDaftarKuisDraft((prev) =>
-      prev.map((q) => {
-        if (q.id !== idDraft) return q;
-        const saatIni = q.jawabanJamak || [];
-        const baru = saatIni.includes(indeksOpsi)
-          ? saatIni.filter((i) => i !== indeksOpsi)
-          : [...saatIni, indeksOpsi];
-        return { ...q, jawabanJamak: baru };
-      })
-    );
-  };
-
-  const ubahPasanganCocokDraft = (
-    idDraft: string,
-    indeksPasangan: number,
-    sisi: "kiri" | "kanan",
-    nilai: string
-  ) => {
-    setDaftarKuisDraft((prev) =>
-      prev.map((q) => {
-        if (q.id !== idDraft) return q;
-        const listPasangan = [...(q.pasangan || [])];
-        listPasangan[indeksPasangan] = {
-          ...listPasangan[indeksPasangan],
-          [sisi]: nilai,
-        };
-        return { ...q, pasangan: listPasangan };
-      })
-    );
-  };
-
-  const tambahBarisPasanganDraft = (idDraft: string) => {
-    setDaftarKuisDraft((prev) =>
-      prev.map((q) =>
-        q.id === idDraft
-          ? { ...q, pasangan: [...(q.pasangan || []), { kiri: "", kanan: "" }] }
-          : q
-      )
     );
   };
 
@@ -1521,7 +1725,6 @@ export default function AplikasiHibahIlmu() {
         const kunciRaw = kol[3] || "0";
         const pembahasan = kol[4] || "Pembahasan soal.";
         const poin = parseInt(kol[5] || "50", 10) || 50;
-        const gambarSoalUrl = kol[6] || "";
 
         const pasangan: PasanganCocok[] =
           tipeRaw === "mencocokkan"
@@ -1538,19 +1741,12 @@ export default function AplikasiHibahIlmu() {
             ? []
             : opsiRaw.split("|");
 
-        const jawabanJamak =
-          tipeRaw === "pilihan_jamak"
-            ? kunciRaw.split("|").map((n) => parseInt(n, 10) || 0)
-            : [0];
-
         return {
           id: "csv-q-" + Date.now() + "-" + idx,
           tipe: tipeRaw,
           tanya,
-          gambarSoalUrl,
           opsi,
           jawabanBenar: parseInt(kunciRaw, 10) || 0,
-          jawabanJamak,
           jawabanTeks: tipeRaw === "isian_singkat" ? kunciRaw : "",
           pasangan,
           pembahasan,
@@ -1562,22 +1758,8 @@ export default function AplikasiHibahIlmu() {
       setModalImportKuis(false);
       setTeksImportKuis("");
     } catch {
-      alert("Gagal memproses CSV! Pastikan format sesuai contoh.");
+      alert("Gagal memproses CSV!");
     }
-  };
-
-  const tambahSoalTryoutDraft = () => {
-    setSoalTryoutDraft((prev) => [
-      ...prev,
-      {
-        id: "td-" + Date.now() + "-" + prev.length,
-        pertanyaan: "",
-        rumus: "",
-        opsi: ["", "", "", ""],
-        jawabanBenar: 0,
-        pembahasan: "",
-      },
-    ]);
   };
 
   const muatCsvKeSoalTryoutDraft = () => {
@@ -1632,14 +1814,7 @@ export default function AplikasiHibahIlmu() {
     const gabungan = [paketBaru, ...daftarPaketTryout];
     setDaftarPaketTryout(gabungan);
     localStorage.setItem("hibah_paket_tryout", JSON.stringify(gabungan));
-
-    catatLog(
-      userLogin.nama,
-      userLogin.role,
-      `Merancang Paket Ujian ${kategoriTesBaru}: "${judulTryoutBaru}" (Lokasi: ${alamatTryoutBaru})`,
-      "materi"
-    );
-    alert(`Paket Tryout "${judulTryoutBaru}" berhasil diterbitkan dengan proteksi Fullscreen!`);
+    alert(`Paket Tryout "${judulTryoutBaru}" berhasil diterbitkan!`);
     setJudulTryoutBaru("");
   };
 
@@ -1654,7 +1829,7 @@ export default function AplikasiHibahIlmu() {
 
     if (jumlahCobaUser >= paket.batasPercobaan) {
       alert(
-        `Batas percobaan habis! Anda sudah mengikuti ujian ini sebanyak ${jumlahCobaUser} kali (Maksimal: ${paket.batasPercobaan}x).`
+        `Batas percobaan habis! Anda sudah mengikuti ujian ini sebanyak ${jumlahCobaUser} kali.`
       );
       return;
     }
@@ -1672,13 +1847,6 @@ export default function AplikasiHibahIlmu() {
     setSisaWaktu(paket.durasiMenit * 60);
     setUjianSelesai(false);
     setSedangUjian(true);
-
-    catatLog(
-      userLogin.nama,
-      userLogin.role,
-      `Memulai Ujian CBT [${paket.kategoriTes}]: ${paket.judul}`,
-      "belajar"
-    );
   };
 
   const selesaikanTryoutOtomatis = (
@@ -1705,6 +1873,7 @@ export default function AplikasiHibahIlmu() {
     const riwayatBaru: RiwayatPercobaanTryout = {
       id: "rw-" + Date.now(),
       paketId: paketTryoutAktif.id,
+      paketJudul: paketTryoutAktif.judul,
       userId: userLogin.id,
       userNama: userLogin.nama,
       skor: nilaiAkhir,
@@ -1719,14 +1888,6 @@ export default function AplikasiHibahIlmu() {
     const updateRiwayat = [riwayatBaru, ...riwayatTryout];
     setRiwayatTryout(updateRiwayat);
     localStorage.setItem("hibah_riwayat_tryout", JSON.stringify(updateRiwayat));
-
-    catatLog(
-      userLogin.nama,
-      userLogin.role,
-      `Menyelesaikan Ujian ${paketTryoutAktif.judul} — Skor: ${nilaiAkhir} (${statusAkhir}, Pelanggaran: ${pelanggaranAkhir}x)`,
-      "belajar"
-    );
-
     if (benar > 0) tambahXP(benar * 40);
   };
 
@@ -1737,7 +1898,6 @@ export default function AplikasiHibahIlmu() {
     setUserLogin(akun);
     setAdminModeGuru(false);
     localStorage.setItem("hibah_user_aktif", JSON.stringify(akun));
-    catatLog(akun.nama, akun.role, "Berhasil masuk ke sistem (Terverifikasi)", "akun");
   };
 
   const handleLogin = (e: React.FormEvent) => {
@@ -1754,7 +1914,6 @@ export default function AplikasiHibahIlmu() {
     setUserLogin(akunDitemukan);
     setAdminModeGuru(false);
     localStorage.setItem("hibah_user_aktif", JSON.stringify(akunDitemukan));
-    catatLog(akunDitemukan.nama, akunDitemukan.role, "Melakukan Login", "akun");
   };
 
   const handleRegister = (e: React.FormEvent) => {
@@ -1772,14 +1931,14 @@ export default function AplikasiHibahIlmu() {
       status: "pending",
       infoTambahan: infoReg || "Pengguna Terdaftar",
       waktuDaftar: "Baru saja",
+      xp: 100,
       aksesMengajar: [],
       minatSubJenjang: minatReg,
     };
     const daftarTerbaru = [akunBaru, ...(daftarAkun || [])];
     setDaftarAkun(daftarTerbaru);
     localStorage.setItem("hibah_daftar_akun", JSON.stringify(daftarTerbaru));
-    catatLog(namaReg, roleReg === "admin" ? "admin" : roleReg, "Mendaftar akun (Pending)", "akun");
-    setPesanSukses("Pendaftaran terkirim! Menunggu verifikasi Admin demi akuntabilitas.");
+    setPesanSukses("Pendaftaran terkirim! Menunggu verifikasi Admin.");
     setNamaReg("");
     setEmailReg("");
     setPasswordReg("");
@@ -1791,31 +1950,12 @@ export default function AplikasiHibahIlmu() {
     const update = (daftarAkun || []).map((a) => (a.id === id ? { ...a, status } : a));
     setDaftarAkun(update);
     localStorage.setItem("hibah_daftar_akun", JSON.stringify(update));
-    catatLog(userLogin?.nama || "Admin", "admin", `Mengubah status akun menjadi ${status}`, "akun");
   };
 
   const hapusAkun = (id: string) => {
     const update = (daftarAkun || []).filter((a) => a.id !== id);
     setDaftarAkun(update);
     localStorage.setItem("hibah_daftar_akun", JSON.stringify(update));
-    catatLog(userLogin?.nama || "Admin", "admin", "Menghapus akun permanen", "akun");
-  };
-
-  const hapusAkunSekaligus = () => {
-    if (selectedAkunIds.length === 0) return;
-    if (!confirm(`Hapus ${selectedAkunIds.length} akun terpilih secara permanen?`)) return;
-    const update = (daftarAkun || []).filter(
-      (a) => !selectedAkunIds.includes(a.id) || a.role === "admin"
-    );
-    setDaftarAkun(update);
-    localStorage.setItem("hibah_daftar_akun", JSON.stringify(update));
-    setSelectedAkunIds([]);
-  };
-
-  const togglePilihAkun = (id: string) => {
-    setSelectedAkunIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
   };
 
   const bukaModalTambahAkun = () => {
@@ -1871,6 +2011,7 @@ export default function AplikasiHibahIlmu() {
         status: statusFormAdmin,
         infoTambahan: infoFormAdmin || "Dibuat Admin",
         waktuDaftar: "Oleh Admin",
+        xp: 150,
         aksesMengajar: roleFormAdmin === "guru" ? aksesMengajarForm : [],
         minatSubJenjang: ["sma-11-ipa"],
       };
@@ -1884,46 +2025,29 @@ export default function AplikasiHibahIlmu() {
   const handleProsesImportAkun = (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      let akunBaruMasuk: AkunPengguna[] = [];
-      if (modeImportAkunFormat === "json") {
-        const parsedData = JSON.parse(teksImportAkun);
-        if (!Array.isArray(parsedData)) return alert("Format JSON harus berupa Array [...]");
-        akunBaruMasuk = parsedData.map((item: Partial<AkunPengguna>, idx: number) => ({
-          id: "import-" + Date.now() + "-" + idx,
-          nama: item.nama || "Tanpa Nama",
-          email: item.email || `user${idx}@hibahilmu.id`,
-          password: item.password || "123",
-          role: item.role === "guru" || item.role === "admin" ? item.role : "siswa",
+      const baris = teksImportAkun
+        .split("\n")
+        .map((b) => b.trim())
+        .filter(Boolean);
+      const dataBaris =
+        baris[0]?.toLowerCase().startsWith("nama,") ? baris.slice(1) : baris;
+      const akunBaruMasuk: AkunPengguna[] = dataBaris.map((line, idx) => {
+        const kol = line.split(",").map((s) => s.trim());
+        const roleRaw = kol[3]?.toLowerCase();
+        return {
+          id: "csv-usr-" + Date.now() + "-" + idx,
+          nama: kol[0] || "Pengguna CSV",
+          email: kol[1] || `csv${idx}@hibahilmu.id`,
+          password: kol[2] || "123",
+          role: roleRaw === "guru" || roleRaw === "admin" ? roleRaw : "siswa",
           status: "approved",
-          infoTambahan: item.infoTambahan || "Diimpor massal",
-          waktuDaftar: "Import JSON",
+          infoTambahan: kol[4] || "Import CSV/Excel",
+          waktuDaftar: "Import CSV",
+          xp: 120,
           aksesMengajar: [],
           minatSubJenjang: ["sma-11-ipa"],
-        }));
-      } else {
-        const baris = teksImportAkun
-          .split("\n")
-          .map((b) => b.trim())
-          .filter(Boolean);
-        const dataBaris =
-          baris[0]?.toLowerCase().startsWith("nama,") ? baris.slice(1) : baris;
-        akunBaruMasuk = dataBaris.map((line, idx) => {
-          const kol = line.split(",").map((s) => s.trim());
-          const roleRaw = kol[3]?.toLowerCase();
-          return {
-            id: "csv-usr-" + Date.now() + "-" + idx,
-            nama: kol[0] || "Pengguna CSV",
-            email: kol[1] || `csv${idx}@hibahilmu.id`,
-            password: kol[2] || "123",
-            role: roleRaw === "guru" || roleRaw === "admin" ? roleRaw : "siswa",
-            status: "approved",
-            infoTambahan: kol[4] || "Import CSV/Excel",
-            waktuDaftar: "Import CSV",
-            aksesMengajar: [],
-            minatSubJenjang: ["sma-11-ipa"],
-          };
-        });
-      }
+        };
+      });
 
       const gabungan = [...akunBaruMasuk, ...(daftarAkun || [])];
       setDaftarAkun(gabungan);
@@ -1953,22 +2077,6 @@ export default function AplikasiHibahIlmu() {
     setNamaKategoriBaru("");
   };
 
-  const handleAdminBuatKelompok = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!namaKelompokAdmin.trim() || !guruKelompokAdmin) return;
-    const kelompokBaru: KelompokBelajar = {
-      id: "kelompok-" + Date.now(),
-      namaKelas: namaKelompokAdmin,
-      guruId: guruKelompokAdmin,
-      siswaIds: [],
-    };
-    const update = [...daftarKelompok, kelompokBaru];
-    setDaftarKelompok(update);
-    localStorage.setItem("hibah_kelompok", JSON.stringify(update));
-    setNamaKelompokAdmin("");
-    setGuruKelompokAdmin("");
-  };
-
   const handleGuruBuatKelompok = (e: React.FormEvent) => {
     e.preventDefault();
     if (!userLogin || !namaKelompokBaru.trim()) return;
@@ -1988,7 +2096,7 @@ export default function AplikasiHibahIlmu() {
 
   const handleKirimPengumumanKelas = (kel: KelompokBelajar) => {
     const isiPesan = (inputPengumumanKelas[kel.id] || "").trim();
-    if (!isiPesan) return alert("Ketik isi pengumuman terlebih dahulu.");
+    if (!isiPesan) return;
 
     const update = daftarKelompok.map((k) =>
       k.id === kel.id ? { ...k, pengumuman: isiPesan } : k
@@ -2010,29 +2118,11 @@ export default function AplikasiHibahIlmu() {
   };
 
   const handleTambahSiswaKeKelompok = (kelompokId: string, siswaId: string) => {
-    const targetKel = daftarKelompok.find((k) => k.id === kelompokId);
     const update = daftarKelompok.map((k) =>
       k.id === kelompokId && !k.siswaIds.includes(siswaId)
         ? { ...k, siswaIds: [...k.siswaIds, siswaId] }
         : k
     );
-    setDaftarKelompok(update);
-    localStorage.setItem("hibah_kelompok", JSON.stringify(update));
-
-    if (targetKel) {
-      kirimNotifikasiKeUser(
-        [siswaId],
-        `Undangan Kelas: ${targetKel.namaKelas}`,
-        `Kamu telah dimasukkan ke dalam ruang kelas "${targetKel.namaKelas}".`,
-        userLogin?.nama || "Pengajar",
-        targetKel.namaKelas
-      );
-    }
-  };
-
-  const handleHapusKelompok = (kelompokId: string) => {
-    if (!confirm("Yakin ingin menghapus ruang kelas ini?")) return;
-    const update = daftarKelompok.filter((k) => k.id !== kelompokId);
     setDaftarKelompok(update);
     localStorage.setItem("hibah_kelompok", JSON.stringify(update));
   };
@@ -2087,13 +2177,6 @@ export default function AplikasiHibahIlmu() {
     );
     setDaftarJenjang(update);
     localStorage.setItem("hibah_struktur", JSON.stringify(update));
-
-    catatLog(
-      userLogin.nama,
-      userLogin.role,
-      `Mengunggah materi terverifikasi "${judulMateri}" (${userLogin.email})`,
-      "materi"
-    );
     setNotifGuru(true);
     setJudulMateri("");
     setVideoMateri("");
@@ -2120,7 +2203,6 @@ export default function AplikasiHibahIlmu() {
   const daftarSiswaApproved = safeAkunList.filter(
     (a) => a.role === "siswa" && a.status === "approved"
   );
-
   const semuaSubJenjangFlat = daftarJenjang.flatMap((j) =>
     j.subJenjang.map((sj) => ({ ...sj, namaInduk: j.nama }))
   );
@@ -2130,12 +2212,39 @@ export default function AplikasiHibahIlmu() {
   );
   const jumlahNotifBelumDibaca = notifikasiUserAktif.filter((n) => !n.dibaca).length;
 
+  // FITUR 4: DAFTAR BADGES PELAJAR BERDASARKAN AKTIVITAS
+  const daftarBadgesSiswa = [
+    {
+      nama: "Pelajar Terverifikasi",
+      ket: "Telah mendaftar resmi di HibahIlmu",
+      aktif: true,
+    },
+    {
+      nama: "Penjelajah Modul",
+      ket: "Menyelesaikan minimal 1 materi pelajaran",
+      aktif: materiSelesai.length >= 1,
+    },
+    {
+      nama: "Ksatria CBT",
+      ket: "Menyelesaikan ujian Tryout tanpa diskualifikasi",
+      aktif: riwayatTryout.some((r) => r.userId === userLogin?.id),
+    },
+    {
+      nama: "Cendekiawan Muda",
+      ket: "Mencapai total 500 XP atau lebih",
+      aktif: poinXP >= 500,
+    },
+  ];
+
+  // ==========================================
+  // SUB-RENDERER: PROFIL & CV BUILDER
+  // ==========================================
   const renderProfilDanCV = () => {
     if (!userLogin) return null;
     const cvData = userLogin.cv;
     return (
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-5 bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="lg:col-span-5 bg-white text-slate-800 rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="h-28 bg-gradient-to-r from-indigo-600 via-emerald-600 to-teal-600" />
           <div className="px-6 pb-6 -mt-12">
             <div className="w-24 h-24 rounded-2xl border-4 border-white shadow-md bg-slate-200 overflow-hidden flex items-center justify-center text-3xl font-black text-slate-600">
@@ -2146,12 +2255,7 @@ export default function AplikasiHibahIlmu() {
               )}
             </div>
             <div className="mt-3">
-              <div className="flex items-center gap-2">
-                <h3 className="text-xl font-black text-slate-900">{userLogin.nama}</h3>
-                <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                  {userLogin.role}
-                </span>
-              </div>
+              <h3 className="text-xl font-black text-slate-900">{userLogin.nama}</h3>
               <p className="text-xs font-bold text-indigo-600 mt-0.5">
                 {cvHeadline || userLogin.infoTambahan}
               </p>
@@ -2159,7 +2263,6 @@ export default function AplikasiHibahIlmu() {
                 {cvBio || "Belum ada deskripsi biodata singkat."}
               </p>
             </div>
-
             <div className="mt-5 pt-4 border-t space-y-3 text-xs">
               <div>
                 <span className="font-bold text-slate-400 uppercase text-[10px] block">
@@ -2169,200 +2272,84 @@ export default function AplikasiHibahIlmu() {
                   {cvSekolah || "-"} ({cvPendidikan || "-"})
                 </span>
               </div>
-
               <div>
                 <span className="font-bold text-slate-400 uppercase text-[10px] block mb-1.5">
                   Skills & Kemampuan
                 </span>
                 <div className="flex flex-wrap gap-1.5">
-                  {(cvData?.skills || []).length > 0 ? (
-                    cvData?.skills.map((sk, i) => (
-                      <span
-                        key={i}
-                        className="px-2.5 py-1 bg-slate-100 text-slate-800 rounded-lg font-bold text-[11px]"
-                      >
-                        {sk}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-slate-400 italic">Belum ditambahkan</span>
-                  )}
+                  {(cvData?.skills || []).map((sk, i) => (
+                    <span
+                      key={i}
+                      className="px-2.5 py-1 bg-slate-100 text-slate-800 rounded-lg font-bold text-[11px]"
+                    >
+                      {sk}
+                    </span>
+                  ))}
                 </div>
               </div>
-
-              <div>
-                <span className="font-bold text-slate-400 uppercase text-[10px] block mb-1">
-                  Pengalaman & Organisasi
-                </span>
-                <ul className="list-disc list-inside space-y-1 text-slate-700">
-                  {(cvData?.pengalaman || []).map((exp, i) => (
-                    <li key={i}>{exp}</li>
-                  ))}
-                </ul>
-              </div>
-
-              <div>
-                <span className="font-bold text-slate-400 uppercase text-[10px] block mb-1">
-                  Prestasi & Sertifikasi
-                </span>
-                <ul className="list-disc list-inside space-y-1 text-slate-700">
-                  {(cvData?.prestasi || []).map((pr, i) => (
-                    <li key={i}>{pr}</li>
-                  ))}
-                </ul>
-              </div>
-
-              {cvPortfolio && (
-                <div className="pt-2">
-                  <a
-                    href={cvPortfolio}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 text-indigo-600 font-bold hover:underline"
-                  >
-                    <Globe className="w-3.5 h-3.5" /> Buka Tautan Portofolio
-                  </a>
-                </div>
-              )}
             </div>
           </div>
         </div>
 
-        <div className="lg:col-span-7 bg-white rounded-3xl p-8 border border-slate-200 shadow-sm">
-          <h3 className="text-xl font-black text-slate-900 mb-1 flex items-center gap-2">
+        <div className="lg:col-span-7 bg-white text-slate-800 rounded-3xl p-8 border border-slate-200 shadow-sm">
+          <h3 className="text-xl font-black text-slate-900 mb-4 flex items-center gap-2">
             <Briefcase className="w-5 h-5 text-indigo-600" /> Edit Foto Profil, Biodata & CV
           </h3>
-          <p className="text-xs text-slate-500 mb-6">
-            Identitas yang lengkap memastikan seluruh kontribusi materi dan ujian dapat
-            dipertanggungjawabkan.
-          </p>
-
           {notifSimpanCV && (
             <div className="mb-4 p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-2xl text-xs font-bold">
               Profil dan CV berhasil diperbarui!
             </div>
           )}
-
           <form onSubmit={handleSimpanBiodataCV} className="space-y-4 text-xs">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="font-bold text-slate-600 block mb-1">
-                  URL Foto Profil (Link Gambar)
-                </label>
-                <input
-                  type="url"
-                  value={cvFoto}
-                  onChange={(e) => setCvFoto(e.target.value)}
-                  placeholder="https://images.unsplash.com/..."
-                  className="w-full p-3 border rounded-xl bg-slate-50"
-                />
-              </div>
-              <div>
-                <label className="font-bold text-slate-600 block mb-1">
-                  Headline / Spesialisasi
-                </label>
-                <input
-                  type="text"
-                  value={cvHeadline}
-                  onChange={(e) => setCvHeadline(e.target.value)}
-                  placeholder="Contoh: Mahasiswa S1 Informatika / Guru Fisika"
-                  className="w-full p-3 border rounded-xl bg-slate-50 font-semibold"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="font-bold text-slate-600 block mb-1">
-                  Asal Sekolah / Universitas
-                </label>
-                <input
-                  type="text"
-                  value={cvSekolah}
-                  onChange={(e) => setCvSekolah(e.target.value)}
-                  placeholder="Contoh: SMAN 1 Pekanbaru / Universitas..."
-                  className="w-full p-3 border rounded-xl bg-slate-50"
-                />
-              </div>
-              <div>
-                <label className="font-bold text-slate-600 block mb-1">
-                  Tingkat / Pendidikan Terakhir
-                </label>
-                <input
-                  type="text"
-                  value={cvPendidikan}
-                  onChange={(e) => setCvPendidikan(e.target.value)}
-                  placeholder="Contoh: Kelas 12 MIPA / S1 Teknik Informatika"
-                  className="w-full p-3 border rounded-xl bg-slate-50"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="font-bold text-slate-600 block mb-1">Biodata Singkat</label>
-              <textarea
-                rows={2}
-                value={cvBio}
-                onChange={(e) => setCvBio(e.target.value)}
-                placeholder="Ceritakan minat, tujuan belajar, atau pengalaman mengajar Anda..."
+              <input
+                type="url"
+                value={cvFoto}
+                onChange={(e) => setCvFoto(e.target.value)}
+                placeholder="URL Foto Profil (https://...)"
                 className="w-full p-3 border rounded-xl bg-slate-50"
               />
-            </div>
-
-            <div>
-              <label className="font-bold text-slate-600 block mb-1">
-                Keahlian / Skills (Pisahkan dengan koma)
-              </label>
               <input
                 type="text"
-                value={cvSkillsTeks}
-                onChange={(e) => setCvSkillsTeks(e.target.value)}
-                placeholder="Matematika, Fisika, React, Next.js, TOEFL"
+                value={cvHeadline}
+                onChange={(e) => setCvHeadline(e.target.value)}
+                placeholder="Headline / Spesialisasi"
                 className="w-full p-3 border rounded-xl bg-slate-50 font-semibold"
               />
             </div>
-
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="font-bold text-slate-600 block mb-1">
-                  Pengalaman / Organisasi (1 baris = 1 poin)
-                </label>
-                <textarea
-                  rows={3}
-                  value={cvPengalamanTeks}
-                  onChange={(e) => setCvPengalamanTeks(e.target.value)}
-                  className="w-full p-3 border rounded-xl bg-slate-50"
-                />
-              </div>
-              <div>
-                <label className="font-bold text-slate-600 block mb-1">
-                  Prestasi / Sertifikasi (1 baris = 1 poin)
-                </label>
-                <textarea
-                  rows={3}
-                  value={cvPrestasiTeks}
-                  onChange={(e) => setCvPrestasiTeks(e.target.value)}
-                  className="w-full p-3 border rounded-xl bg-slate-50"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="font-bold text-slate-600 block mb-1">
-                Link Portofolio / GitHub / LinkedIn
-              </label>
               <input
-                type="url"
-                value={cvPortfolio}
-                onChange={(e) => setCvPortfolio(e.target.value)}
-                placeholder="https://github.com/..."
+                type="text"
+                value={cvSekolah}
+                onChange={(e) => setCvSekolah(e.target.value)}
+                placeholder="Asal Sekolah / Universitas"
+                className="w-full p-3 border rounded-xl bg-slate-50"
+              />
+              <input
+                type="text"
+                value={cvPendidikan}
+                onChange={(e) => setCvPendidikan(e.target.value)}
+                placeholder="Tingkat / Pendidikan Terakhir"
                 className="w-full p-3 border rounded-xl bg-slate-50"
               />
             </div>
-
+            <textarea
+              rows={2}
+              value={cvBio}
+              onChange={(e) => setCvBio(e.target.value)}
+              placeholder="Biodata singkat..."
+              className="w-full p-3 border rounded-xl bg-slate-50"
+            />
+            <input
+              type="text"
+              value={cvSkillsTeks}
+              onChange={(e) => setCvSkillsTeks(e.target.value)}
+              placeholder="Keahlian / Skills (Pisahkan dengan koma)"
+              className="w-full p-3 border rounded-xl bg-slate-50 font-semibold"
+            />
             <button
               type="submit"
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3.5 rounded-xl shadow-md"
+              className="w-full bg-indigo-600 text-white font-black py-3.5 rounded-xl shadow-md"
             >
               Simpan Perubahan Biodata & CV
             </button>
@@ -2372,18 +2359,21 @@ export default function AplikasiHibahIlmu() {
     );
   };
 
+  // ==========================================
+  // SUB-RENDERER: GERBANG REGISTRASI & LOGIN
+  // ==========================================
   const renderAuthView = () => (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8"
     >
-      <div className="lg:col-span-7 bg-white rounded-3xl p-8 shadow-xl border border-slate-100">
+      <div className="lg:col-span-7 bg-white text-slate-800 rounded-3xl p-8 shadow-xl border border-slate-100">
         <div className="p-3.5 mb-6 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs text-emerald-900 font-semibold flex items-center gap-2.5">
           <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
           <span>
-            <b>100% Gratis & Terverifikasi:</b> Seluruh pengguna wajib registrasi dan masuk agar
-            setiap materi, diskusi, dan hasil ujian dapat dipertanggungjawabkan.
+            <b>100% Gratis & Terverifikasi:</b> Wajib registrasi dan masuk agar setiap materi,
+            pengumpulan tugas, dan sertifikat dapat dipertanggungjawabkan.
           </span>
         </div>
 
@@ -2425,32 +2415,22 @@ export default function AplikasiHibahIlmu() {
 
         {modeAuth === "login" ? (
           <form onSubmit={handleLogin} className="space-y-5">
-            <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-1.5">
-                Email Terdaftar
-              </label>
-              <input
-                type="email"
-                required
-                value={emailLogin}
-                onChange={(e) => setEmailLogin(e.target.value)}
-                placeholder="Contoh: admin@hibahilmu.id"
-                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-1.5">
-                Password
-              </label>
-              <input
-                type="password"
-                required
-                value={passwordLogin}
-                onChange={(e) => setPasswordLogin(e.target.value)}
-                placeholder="••••••"
-                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold"
-              />
-            </div>
+            <input
+              type="email"
+              required
+              value={emailLogin}
+              onChange={(e) => setEmailLogin(e.target.value)}
+              placeholder="Email Terdaftar..."
+              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold"
+            />
+            <input
+              type="password"
+              required
+              value={passwordLogin}
+              onChange={(e) => setPasswordLogin(e.target.value)}
+              placeholder="Password..."
+              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold"
+            />
             <button
               type="submit"
               className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-black py-4 rounded-2xl shadow-lg"
@@ -2464,26 +2444,20 @@ export default function AplikasiHibahIlmu() {
               <button
                 type="button"
                 onClick={() => setRoleReg("siswa")}
-                className={`p-3.5 border-2 rounded-2xl text-left transition ${
-                  roleReg === "siswa"
-                    ? "bg-emerald-50 border-emerald-500 text-emerald-900"
-                    : "border-slate-200"
+                className={`p-3.5 border-2 rounded-2xl text-left ${
+                  roleReg === "siswa" ? "bg-emerald-50 border-emerald-500" : "border-slate-200"
                 }`}
               >
                 <div className="font-extrabold text-sm">Siswa / Mahasiswa</div>
-                <div className="text-[10px] text-slate-500">Pilih kelas yang ingin diikuti</div>
               </button>
               <button
                 type="button"
                 onClick={() => setRoleReg("guru")}
-                className={`p-3.5 border-2 rounded-2xl text-left transition ${
-                  roleReg === "guru"
-                    ? "bg-indigo-50 border-indigo-500 text-indigo-900"
-                    : "border-slate-200"
+                className={`p-3.5 border-2 rounded-2xl text-left ${
+                  roleReg === "guru" ? "bg-indigo-50 border-indigo-500" : "border-slate-200"
                 }`}
               >
                 <div className="font-extrabold text-sm">Guru / Instruktur</div>
-                <div className="text-[10px] text-slate-500">Upload materi & buat Tryout</div>
               </button>
             </div>
             <input
@@ -2492,7 +2466,7 @@ export default function AplikasiHibahIlmu() {
               value={namaReg}
               onChange={(e) => setNamaReg(e.target.value)}
               placeholder="Nama Lengkap Sesuai Identitas..."
-              className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold"
+              className="w-full p-3.5 bg-slate-50 border rounded-2xl text-sm font-semibold"
             />
             <input
               type="email"
@@ -2500,7 +2474,7 @@ export default function AplikasiHibahIlmu() {
               value={emailReg}
               onChange={(e) => setEmailReg(e.target.value)}
               placeholder="Email Aktif..."
-              className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold"
+              className="w-full p-3.5 bg-slate-50 border rounded-2xl text-sm font-semibold"
             />
             <input
               type="password"
@@ -2508,50 +2482,8 @@ export default function AplikasiHibahIlmu() {
               value={passwordReg}
               onChange={(e) => setPasswordReg(e.target.value)}
               placeholder="Buat Password..."
-              className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold"
+              className="w-full p-3.5 bg-slate-50 border rounded-2xl text-sm font-semibold"
             />
-            <input
-              type="text"
-              required
-              value={infoReg}
-              onChange={(e) => setInfoReg(e.target.value)}
-              placeholder={
-                roleReg === "guru"
-                  ? "Bidang Keahlian & Asal Instansi..."
-                  : "Asal Sekolah / Kampus..."
-              }
-              className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold"
-            />
-
-            {roleReg === "siswa" && (
-              <div className="p-4 bg-slate-50 border rounded-2xl">
-                <label className="block text-xs font-black text-slate-700 mb-2">
-                  Pilih Kelas / Materi yang Ingin Kamu Ikuti:
-                </label>
-                <div className="grid grid-cols-2 gap-1.5 max-h-36 overflow-y-auto">
-                  {semuaSubJenjangFlat.map((sj) => (
-                    <label
-                      key={sj.id}
-                      className="flex items-center gap-2 text-xs font-semibold cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={minatReg.includes(sj.id)}
-                        onChange={() =>
-                          setMinatReg((prev) =>
-                            prev.includes(sj.id)
-                              ? prev.filter((x) => x !== sj.id)
-                              : [...prev, sj.id]
-                          )
-                        }
-                      />
-                      <span>{sj.nama}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
-
             <button
               type="submit"
               className="w-full bg-slate-900 text-white font-black py-4 rounded-2xl shadow-lg"
@@ -2563,40 +2495,27 @@ export default function AplikasiHibahIlmu() {
       </div>
 
       <div className="lg:col-span-5 bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 text-white rounded-3xl p-8 shadow-2xl flex flex-col justify-center">
-        <span className="bg-amber-400/20 text-amber-300 border border-amber-400/30 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest w-max">
+        <span className="bg-amber-400/20 text-amber-300 border border-amber-400/30 text-[10px] font-black px-3 py-1 rounded-full uppercase w-max">
           Simulasi Akses Cepat
         </span>
         <h3 className="text-2xl font-black mt-4 mb-2">Akun Terverifikasi (1-Klik)</h3>
-        <p className="text-xs text-slate-300 leading-relaxed mb-6">
-          Pilih salah satu akun terverifikasi di bawah ini untuk langsung menguji fitur Admin (Mode
-          Guru), Guru (Pembuat Tryout TPA/TOEFL), atau Siswa.
-        </p>
-        <div className="space-y-3">
+        <div className="space-y-3 mt-4">
           {safeAkunList
             .filter((a) => a.status === "approved")
             .map((a) => (
               <button
                 key={a.id}
                 onClick={() => loginCepat(a)}
-                className="w-full text-left p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/10 transition flex items-center justify-between group"
+                className="w-full text-left p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/10 transition flex items-center justify-between"
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white/20 overflow-hidden flex items-center justify-center font-black">
-                    {a.cv?.fotoUrl ? (
-                      <img src={a.cv.fotoUrl} alt={a.nama} className="w-full h-full object-cover" />
-                    ) : (
-                      a.nama.charAt(0)
-                    )}
+                <div>
+                  <div className="font-bold text-sm text-white flex items-center gap-2">
+                    {a.nama}
+                    <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-md bg-emerald-500 text-slate-900">
+                      {a.role}
+                    </span>
                   </div>
-                  <div>
-                    <div className="font-bold text-sm text-white flex items-center gap-2">
-                      {a.nama}
-                      <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-md bg-emerald-500 text-slate-900">
-                        {a.role}
-                      </span>
-                    </div>
-                    <div className="text-[11px] text-slate-400 mt-0.5">{a.email}</div>
-                  </div>
+                  <div className="text-[11px] text-slate-400">{a.email}</div>
                 </div>
                 <span className="text-xs font-bold text-amber-300">Masuk →</span>
               </button>
@@ -2606,32 +2525,20 @@ export default function AplikasiHibahIlmu() {
     </motion.div>
   );
 
+  // ==========================================
+  // SUB-RENDERER: STUDIO GURU (TERMASUK TUGAS, ABSENSI, BANK SOAL, ANALISIS)
+  // ==========================================
   const renderGuruView = () => (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
       <div className="bg-gradient-to-r from-indigo-700 via-purple-700 to-indigo-900 text-white p-8 rounded-[2rem] flex flex-wrap justify-between items-center gap-6 shadow-2xl">
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl border-2 border-white/50 overflow-hidden bg-indigo-800 flex items-center justify-center text-2xl font-black">
-            {userLogin?.cv?.fotoUrl ? (
-              <img
-                src={userLogin.cv.fotoUrl}
-                alt={userLogin.nama}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              userLogin?.nama.charAt(0)
-            )}
-          </div>
-          <div>
-            <span className="bg-white/20 text-[10px] font-black px-3 py-0.5 rounded-full uppercase">
-              {userLogin?.role === "admin"
-                ? "Mode Guru (Diakses oleh Super Admin)"
-                : "Studio Pengajar Terverifikasi"}
-            </span>
-            <h1 className="text-2xl sm:text-3xl font-black mt-1">{userLogin?.nama}</h1>
-            <p className="text-indigo-200 text-xs">
-              Email Penanggung Jawab: <b>{userLogin?.email}</b>
-            </p>
-          </div>
+        <div>
+          <span className="bg-white/20 text-[10px] font-black px-3 py-0.5 rounded-full uppercase">
+            {userLogin?.role === "admin"
+              ? "Mode Guru (Diakses oleh Super Admin)"
+              : "Studio Pengajar Terverifikasi"}
+          </span>
+          <h1 className="text-2xl sm:text-3xl font-black mt-1">{userLogin?.nama}</h1>
+          <p className="text-indigo-200 text-xs">Penanggung Jawab: {userLogin?.email}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {userLogin?.role === "admin" && (
@@ -2654,86 +2561,382 @@ export default function AplikasiHibahIlmu() {
         </div>
       </div>
 
-      <div className="flex gap-3 border-b border-slate-200 pb-3 overflow-x-auto">
-        <button
-          onClick={() => setGuruTabAktif("materi")}
-          className={`px-5 py-3 rounded-2xl font-black text-xs flex items-center gap-2 transition whitespace-nowrap ${
-            guruTabAktif === "materi"
-              ? "bg-indigo-600 text-white shadow-md"
-              : "bg-white text-slate-600 border"
-          }`}
-        >
-          <BookOpen className="w-4 h-4" /> 1. Upload Materi & Kuis
-        </button>
-        <button
-          onClick={() => setGuruTabAktif("tryout_builder")}
-          className={`px-5 py-3 rounded-2xl font-black text-xs flex items-center gap-2 transition whitespace-nowrap ${
-            guruTabAktif === "tryout_builder"
-              ? "bg-indigo-600 text-white shadow-md"
-              : "bg-white text-slate-600 border"
-          }`}
-        >
-          <Timer className="w-4 h-4" /> 2. Rancang Tryout / TPA / TOEP / TOEFL
-        </button>
-        <button
-          onClick={() => setGuruTabAktif("kelas")}
-          className={`px-5 py-3 rounded-2xl font-black text-xs flex items-center gap-2 transition whitespace-nowrap ${
-            guruTabAktif === "kelas"
-              ? "bg-indigo-600 text-white shadow-md"
-              : "bg-white text-slate-600 border"
-          }`}
-        >
-          <Users className="w-4 h-4" /> 3. Kelola Rombel & Pengumuman ({guruKelompoks.length})
-        </button>
-        <button
-          onClick={() => setGuruTabAktif("cv")}
-          className={`px-5 py-3 rounded-2xl font-black text-xs flex items-center gap-2 transition whitespace-nowrap ${
-            guruTabAktif === "cv"
-              ? "bg-indigo-600 text-white shadow-md"
-              : "bg-white text-slate-600 border"
-          }`}
-        >
-          <Briefcase className="w-4 h-4" /> 4. Profil & CV Saya
-        </button>
+      <div className="flex gap-2.5 border-b border-slate-200 pb-3 overflow-x-auto">
+        {[
+          { id: "materi", label: "1. Upload Materi & Kuis", icon: <BookOpen className="w-4 h-4" /> },
+          { id: "tryout_builder", label: "2. Buat Tryout & Analisis", icon: <Timer className="w-4 h-4" /> },
+          {
+            id: "tugas_absensi",
+            label: "3. Tugas, Nilai & Absensi",
+            icon: <ClipboardCheck className="w-4 h-4" />,
+          },
+          {
+            id: "bank_soal",
+            label: `4. Bank Soal Kolektif (${bankSoalKolektif.length})`,
+            icon: <Database className="w-4 h-4" />,
+          },
+          {
+            id: "kelas",
+            label: `5. Rombel & Jadwal Live (${guruKelompoks.length})`,
+            icon: <Users className="w-4 h-4" />,
+          },
+          { id: "cv", label: "6. Profil & CV", icon: <Briefcase className="w-4 h-4" /> },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() =>
+              setGuruTabAktif(
+                tab.id as
+                  | "materi"
+                  | "tryout_builder"
+                  | "tugas_absensi"
+                  | "bank_soal"
+                  | "kelas"
+                  | "cv"
+              )
+            }
+            className={`px-4 py-3 rounded-2xl font-black text-xs flex items-center gap-2 transition whitespace-nowrap ${
+              guruTabAktif === tab.id
+                ? "bg-indigo-600 text-white shadow-md"
+                : "bg-white text-slate-600 border"
+            }`}
+          >
+            {tab.icon} {tab.label}
+          </button>
+        ))}
       </div>
 
       {guruTabAktif === "cv" && renderProfilDanCV()}
 
-      {guruTabAktif === "tryout_builder" && (
-        <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm space-y-8">
+      {/* TAB 3 GURU: MODUL TUGAS, PENILAIAN & REKAP PRESENSI OTOMATIS */}
+      {guruTabAktif === "tugas_absensi" && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-7 bg-white text-slate-800 p-8 rounded-3xl border space-y-6">
+            <h3 className="text-xl font-black flex items-center gap-2">
+              <ClipboardCheck className="w-5 h-5 text-indigo-600" /> Buat Tugas & Beri Nilai Siswa
+            </h3>
+            <form
+              onSubmit={handleGuruBuatTugas}
+              className="p-5 bg-slate-50 border rounded-2xl space-y-3 text-xs"
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  required
+                  value={judulTugasBaru}
+                  onChange={(e) => setJudulTugasBaru(e.target.value)}
+                  placeholder="Judul Tugas / Proyek..."
+                  className="p-3 border rounded-xl bg-white font-bold"
+                />
+                <select
+                  value={targetSubTugasBaru}
+                  onChange={(e) => setTargetSubTugasBaru(e.target.value)}
+                  className="p-3 border rounded-xl bg-white font-bold"
+                >
+                  {semuaSubJenjangFlat.map((sj) => (
+                    <option key={sj.id} value={sj.id}>
+                      {sj.namaInduk} - {sj.nama}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <textarea
+                rows={2}
+                required
+                value={instruksiTugasBaru}
+                onChange={(e) => setInstruksiTugasBaru(e.target.value)}
+                placeholder="Instruksi pengerjaan tugas..."
+                className="w-full p-3 border rounded-xl bg-white"
+              />
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  value={deadlineTugasBaru}
+                  onChange={(e) => setDeadlineTugasBaru(e.target.value)}
+                  placeholder="Batas Waktu (Deadline)..."
+                  className="flex-1 p-3 border rounded-xl bg-white"
+                />
+                <button
+                  type="submit"
+                  className="bg-indigo-600 text-white px-5 py-3 rounded-xl font-black"
+                >
+                  + Terbitkan Tugas
+                </button>
+              </div>
+            </form>
+
+            <div className="space-y-3">
+              <h4 className="font-black text-sm">
+                Kiriman Jawaban Tugas Siswa ({daftarPengumpulan.length})
+              </h4>
+              {daftarPengumpulan.map((sub) => {
+                const tugasInfo = daftarTugas.find((t) => t.id === sub.tugasId);
+                return (
+                  <div key={sub.id} className="p-4 border rounded-2xl bg-slate-50 space-y-2 text-xs">
+                    <div className="flex justify-between font-bold">
+                      <span>
+                        {sub.siswaNama} —{" "}
+                        <span className="text-indigo-600">{tugasInfo?.judul || "Tugas"}</span>
+                      </span>
+                      <span className="text-slate-400">{sub.waktuKumpul}</span>
+                    </div>
+                    <p className="p-2.5 bg-white border rounded-xl text-slate-700">
+                      {sub.jawabanTeksAtauLink}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                      <input
+                        type="number"
+                        placeholder="Nilai (0-100)"
+                        defaultValue={sub.nilai ?? 90}
+                        onChange={(e) =>
+                          setInputNilaiGuru({
+                            ...inputNilaiGuru,
+                            [sub.id]: Number(e.target.value),
+                          })
+                        }
+                        className="w-24 p-2 border rounded-xl bg-white font-black text-center"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Catatan Feedback Guru..."
+                        defaultValue={sub.feedbackGuru || ""}
+                        onChange={(e) =>
+                          setInputFeedbackGuru({
+                            ...inputFeedbackGuru,
+                            [sub.id]: e.target.value,
+                          })
+                        }
+                        className="flex-1 p-2 border rounded-xl bg-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleGuruBeriNilaiTugas(sub.id, sub.siswaId)}
+                        className="bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold"
+                      >
+                        Simpan Nilai
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="lg:col-span-5 bg-white text-slate-800 p-8 rounded-3xl border space-y-4">
+            <h3 className="text-xl font-black flex items-center gap-2">
+              <Clock className="w-5 h-5 text-emerald-600" /> Rekap Presensi Otomatis Siswa
+            </h3>
+            <p className="text-xs text-slate-500">
+              Kehadiran tercatat otomatis saat siswa membuka modul materi pelajaran.
+            </p>
+            <div className="space-y-2.5 max-h-96 overflow-y-auto">
+              {daftarPresensi.length === 0 ? (
+                <div className="p-6 text-center text-xs text-slate-400 border border-dashed rounded-2xl">
+                  Belum ada siswa yang membuka modul pada sesi ini.
+                </div>
+              ) : (
+                daftarPresensi.map((pr) => (
+                  <div
+                    key={pr.id}
+                    className="p-3.5 border rounded-2xl bg-emerald-50/50 flex justify-between items-center text-xs"
+                  >
+                    <div>
+                      <div className="font-black text-slate-900">{pr.siswaNama}</div>
+                      <div className="text-slate-600">Membuka: {pr.materiJudul}</div>
+                    </div>
+                    <span className="font-mono text-[10px] bg-white px-2.5 py-1 rounded-lg border font-bold text-emerald-700">
+                      {pr.waktuHadir}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4 GURU: BANK SOAL KOLEKTIF BERSAMA */}
+      {guruTabAktif === "bank_soal" && (
+        <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-6">
           <div>
-            <h2 className="text-2xl font-black text-slate-900">
-              Perancang Tryout CBT & Tes Standar (TPA / TOEP / TOEFL / UTBK)
-            </h2>
+            <h3 className="text-xl font-black flex items-center gap-2">
+              <Database className="w-5 h-5 text-indigo-600" /> Bank Soal Kolektif (Community Question
+              Bank)
+            </h3>
             <p className="text-xs text-slate-500 mt-1">
-              Atur nama ujian, alamat/lokasi pelaksanaan, jadwal jam ujian, batas percobaan, dan
-              proteksi layar penuh (Anti-Cheat Alt+Tab).
+              Sumbangkan soal terbaik Anda atau kutip soal dari pengajar lain ke dalam rancangan
+              Tryout CBT Anda dengan 1 klik.
             </p>
           </div>
 
-          <form onSubmit={handleSimpanPaketTryoutBaru} className="space-y-5">
+          <form
+            onSubmit={handleSumbangBankSoal}
+            className="p-5 bg-slate-50 border rounded-2xl space-y-3 text-xs"
+          >
+            <div className="font-black text-sm">Sumbang Soal Baru ke Bank Kolektif</div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <input
+                type="text"
+                required
+                value={tanyaKolektifBaru}
+                onChange={(e) => setTanyaKolektifBaru(e.target.value)}
+                placeholder="Pertanyaan soal..."
+                className="sm:col-span-2 p-3 border rounded-xl bg-white font-semibold"
+              />
+              <input
+                type="text"
+                value={rumusKolektifBaru}
+                onChange={(e) => setRumusKolektifBaru(e.target.value)}
+                placeholder="Topik / Subtes (Misal: TPA Verbal)"
+                className="p-3 border rounded-xl bg-white"
+              />
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <input
+                type="text"
+                required
+                value={opsiKolektifA}
+                onChange={(e) => setOpsiKolektifA(e.target.value)}
+                placeholder="Opsi A"
+                className="p-2.5 border rounded-xl bg-white"
+              />
+              <input
+                type="text"
+                required
+                value={opsiKolektifB}
+                onChange={(e) => setOpsiKolektifB(e.target.value)}
+                placeholder="Opsi B"
+                className="p-2.5 border rounded-xl bg-white"
+              />
+              <input
+                type="text"
+                required
+                value={opsiKolektifC}
+                onChange={(e) => setOpsiKolektifC(e.target.value)}
+                placeholder="Opsi C"
+                className="p-2.5 border rounded-xl bg-white"
+              />
+              <input
+                type="text"
+                required
+                value={opsiKolektifD}
+                onChange={(e) => setOpsiKolektifD(e.target.value)}
+                placeholder="Opsi D"
+                className="p-2.5 border rounded-xl bg-white"
+              />
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <select
+                value={kunciKolektifBaru}
+                onChange={(e) => setKunciKolektifBaru(Number(e.target.value))}
+                className="p-2.5 border rounded-xl bg-emerald-50 font-bold"
+              >
+                <option value={0}>Kunci: Opsi A</option>
+                <option value={1}>Kunci: Opsi B</option>
+                <option value={2}>Kunci: Opsi C</option>
+                <option value={3}>Kunci: Opsi D</option>
+              </select>
+              <input
+                type="text"
+                value={bahasKolektifBaru}
+                onChange={(e) => setBahasKolektifBaru(e.target.value)}
+                placeholder="Pembahasan singkat..."
+                className="flex-1 p-2.5 border rounded-xl bg-white"
+              />
+              <button
+                type="submit"
+                className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-black"
+              >
+                + Sumbangkan Soal
+              </button>
+            </div>
+          </form>
+
+          <div className="space-y-3">
+            {bankSoalKolektif.map((bs) => (
+              <div
+                key={bs.id}
+                className="p-4 border rounded-2xl bg-white flex flex-wrap justify-between items-center gap-4 text-xs"
+              >
+                <div className="space-y-1 max-w-2xl">
+                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-indigo-50 text-indigo-700">
+                    {bs.rumus} • Kontributor: {bs.penyumbangNama}
+                  </span>
+                  <p className="font-bold text-sm text-slate-900">{bs.pertanyaan}</p>
+                  <div className="text-slate-500">
+                    Opsi: {bs.opsi.join(" | ")} (Kunci: {bs.opsi[bs.jawabanBenar]})
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSoalTryoutDraft([...soalTryoutDraft, { ...bs, id: "kutip-" + Date.now() }]);
+                    alert("Soal berhasil dimasukkan ke draf Perancang Tryout Anda!");
+                  }}
+                  className="bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-bold shrink-0"
+                >
+                  + Kutip ke Tryout Saya
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 2 GURU: PERANCANG TRYOUT & ANALISIS BUTIR SOAL */}
+      {guruTabAktif === "tryout_builder" && (
+        <div className="space-y-8">
+          {/* FITUR 5: ANALISIS STATISTIK PAKET TRYOUT */}
+          <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-4">
+            <h3 className="text-xl font-black flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-emerald-600" /> Statistik & Analisis Hasil Tryout
+              Peserta
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1">
-                  Nama Paket Ujian / Tryout
-                </label>
+              {daftarPaketTryout.map((pkt) => {
+                const listHasil = riwayatTryout.filter((r) => r.paketId === pkt.id);
+                const rataRata =
+                  listHasil.length > 0
+                    ? Math.round(
+                        listHasil.reduce((acc, cur) => acc + cur.skor, 0) / listHasil.length
+                      )
+                    : 0;
+                return (
+                  <div key={pkt.id} className="p-4 border rounded-2xl bg-slate-50 space-y-1.5 text-xs">
+                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-indigo-100 text-indigo-900">
+                      {pkt.kategoriTes}
+                    </span>
+                    <div className="font-black text-sm text-slate-900">{pkt.judul}</div>
+                    <div className="text-slate-600">
+                      Total Peserta Ujian: <b>{listHasil.length} Orang</b>
+                    </div>
+                    <div className="text-emerald-700 font-bold">
+                      Rata-Rata Skor: {rataRata} / 100
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="bg-white text-slate-800 p-8 rounded-[2rem] border border-slate-200 shadow-sm space-y-6">
+            <h2 className="text-2xl font-black text-slate-900">
+              Perancang Tryout CBT (TPA / TOEP / TOEFL / UTBK)
+            </h2>
+            <form onSubmit={handleSimpanPaketTryoutBaru} className="space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <input
                   type="text"
                   required
                   value={judulTryoutBaru}
                   onChange={(e) => setJudulTryoutBaru(e.target.value)}
-                  placeholder="Contoh: Simulasi TOEFL ITP Batch 3..."
-                  className="w-full p-3.5 border rounded-xl bg-slate-50 text-xs font-bold"
+                  placeholder="Nama Paket Ujian / Tryout..."
+                  className="p-3.5 border rounded-xl bg-slate-50 text-xs font-bold"
                 />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1">
-                  Kategori Tes (TPA / TOEP / TOEFL / UTBK)
-                </label>
                 <select
                   value={kategoriTesBaru}
                   onChange={(e) => setKategoriTesBaru(e.target.value as KategoriTes)}
-                  className="w-full p-3.5 border rounded-xl bg-indigo-50 text-indigo-950 text-xs font-black"
+                  className="p-3.5 border rounded-xl bg-indigo-50 text-indigo-950 text-xs font-black"
                 >
                   <option value="TPA">TPA (Tes Potensi Akademik)</option>
                   <option value="TOEP">TOEP (Test of English Proficiency)</option>
@@ -2741,637 +2944,301 @@ export default function AplikasiHibahIlmu() {
                   <option value="UTBK">UTBK - SNBT Nasional</option>
                   <option value="Akademik">Ujian Sekolah / Akademik</option>
                 </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1">
-                  Sasaran Jenjang Peserta
-                </label>
                 <input
                   type="text"
                   required
                   value={jenjangTryoutBaru}
                   onChange={(e) => setJenjangTryoutBaru(e.target.value)}
-                  placeholder="SMA / Kuliah / Umum"
-                  className="w-full p-3.5 border rounded-xl bg-slate-50 text-xs font-semibold"
+                  placeholder="Sasaran Peserta (SMA / Kuliah)"
+                  className="p-3.5 border rounded-xl bg-slate-50 text-xs font-semibold"
                 />
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="md:col-span-2">
-                <label className="block text-xs font-bold text-slate-600 mb-1">
-                  Alamat / Lokasi Ruangan Ujian
-                </label>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <input
                   type="text"
                   required
                   value={alamatTryoutBaru}
                   onChange={(e) => setAlamatTryoutBaru(e.target.value)}
-                  placeholder="Contoh: Lab Komputer Lt.3 Pekanbaru / Online"
-                  className="w-full p-3.5 border rounded-xl bg-slate-50 text-xs font-semibold"
+                  placeholder="Alamat / Lokasi Ruangan Ujian..."
+                  className="md:col-span-2 p-3.5 border rounded-xl bg-slate-50 text-xs font-semibold"
                 />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1">
-                  Jadwal Tanggal & Jam Ujian
-                </label>
                 <input
                   type="text"
                   required
                   value={jadwalTryoutBaru}
                   onChange={(e) => setJadwalTryoutBaru(e.target.value)}
-                  placeholder="2026-11-15 08:00 WIB"
-                  className="w-full p-3.5 border rounded-xl bg-slate-50 text-xs font-semibold"
+                  placeholder="Jadwal Jam Ujian..."
+                  className="p-3.5 border rounded-xl bg-slate-50 text-xs font-semibold"
                 />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1">
-                    Durasi (Menit)
-                  </label>
+                <div className="grid grid-cols-2 gap-2">
                   <input
                     type="number"
                     required
                     value={durasiTryoutBaru}
                     onChange={(e) => setDurasiTryoutBaru(Number(e.target.value))}
-                    className="w-full p-3.5 border rounded-xl bg-slate-50 text-xs font-black text-center"
+                    title="Durasi Menit"
+                    className="p-3.5 border rounded-xl bg-slate-50 text-xs font-black text-center"
                   />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1">
-                    Maks. Coba
-                  </label>
                   <input
                     type="number"
                     required
                     value={batasCobaTryoutBaru}
                     onChange={(e) => setBatasCobaTryoutBaru(Number(e.target.value))}
-                    className="w-full p-3.5 border rounded-xl bg-slate-50 text-xs font-black text-center"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="p-5 bg-slate-50 border rounded-2xl space-y-3">
-              <div className="flex flex-wrap justify-between items-center gap-2">
-                <span className="text-xs font-black text-slate-800">
-                  Import Cepat Soal Tryout via CSV / Excel (Opsional)
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setTeksCsvTryout(TEMPLATE_CSV_TRYOUT)}
-                  className="text-xs font-bold text-indigo-600 underline"
-                >
-                  Muat Contoh CSV TPA & TOEFL
-                </button>
-              </div>
-              <div className="flex gap-2">
-                <textarea
-                  rows={3}
-                  value={teksCsvTryout}
-                  onChange={(e) => setTeksCsvTryout(e.target.value)}
-                  placeholder="pertanyaan,opsiA|opsiB|opsiC|opsiD,indeks_kunci,pembahasan,subtes"
-                  className="flex-1 p-3 font-mono text-xs bg-slate-900 text-emerald-300 rounded-xl"
-                />
-                <button
-                  type="button"
-                  onClick={muatCsvKeSoalTryoutDraft}
-                  className="bg-indigo-600 text-white px-4 rounded-xl text-xs font-bold"
-                >
-                  Terapkan CSV
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="font-black text-sm">
-                Butir Soal Ujian ({soalTryoutDraft.length} Soal)
-              </div>
-              {soalTryoutDraft.map((st, idx) => (
-                <div key={st.id} className="p-4 border rounded-2xl bg-slate-50/70 space-y-3 text-xs">
-                  <div className="flex justify-between items-center">
-                    <span className="font-black bg-slate-900 text-white px-3 py-1 rounded-lg">
-                      Nomor #{idx + 1}
-                    </span>
-                    {soalTryoutDraft.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSoalTryoutDraft(soalTryoutDraft.filter((x) => x.id !== st.id))
-                        }
-                        className="text-rose-600 font-bold"
-                      >
-                        Hapus Soal
-                      </button>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <input
-                      type="text"
-                      required
-                      value={st.pertanyaan}
-                      onChange={(e) =>
-                        setSoalTryoutDraft(
-                          soalTryoutDraft.map((x) =>
-                            x.id === st.id ? { ...x, pertanyaan: e.target.value } : x
-                          )
-                        )
-                      }
-                      placeholder="Ketik pertanyaan ujian..."
-                      className="sm:col-span-2 p-3 border rounded-xl bg-white font-semibold"
-                    />
-                    <input
-                      type="text"
-                      value={st.rumus || ""}
-                      onChange={(e) =>
-                        setSoalTryoutDraft(
-                          soalTryoutDraft.map((x) =>
-                            x.id === st.id ? { ...x, rumus: e.target.value } : x
-                          )
-                        )
-                      }
-                      placeholder="Subtes / Petunjuk (Misal: TOEFL Structure)"
-                      className="p-3 border rounded-xl bg-white"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {[0, 1, 2, 3].map((iOpsi) => (
-                      <input
-                        key={iOpsi}
-                        type="text"
-                        required
-                        value={st.opsi[iOpsi] || ""}
-                        onChange={(e) => {
-                          const opsiBaru = [...st.opsi];
-                          opsiBaru[iOpsi] = e.target.value;
-                          setSoalTryoutDraft(
-                            soalTryoutDraft.map((x) =>
-                              x.id === st.id ? { ...x, opsi: opsiBaru } : x
-                            )
-                          );
-                        }}
-                        placeholder={`Opsi ${String.fromCharCode(65 + iOpsi)}`}
-                        className="p-2.5 border rounded-xl bg-white"
-                      />
-                    ))}
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <select
-                      value={st.jawabanBenar}
-                      onChange={(e) =>
-                        setSoalTryoutDraft(
-                          soalTryoutDraft.map((x) =>
-                            x.id === st.id ? { ...x, jawabanBenar: Number(e.target.value) } : x
-                          )
-                        )
-                      }
-                      className="p-2.5 border rounded-xl bg-emerald-50 font-bold text-emerald-900"
-                    >
-                      <option value={0}>Kunci Jawaban: Opsi A</option>
-                      <option value={1}>Kunci Jawaban: Opsi B</option>
-                      <option value={2}>Kunci Jawaban: Opsi C</option>
-                      <option value={3}>Kunci Jawaban: Opsi D</option>
-                    </select>
-                    <input
-                      type="text"
-                      value={st.pembahasan}
-                      onChange={(e) =>
-                        setSoalTryoutDraft(
-                          soalTryoutDraft.map((x) =>
-                            x.id === st.id ? { ...x, pembahasan: e.target.value } : x
-                          )
-                        )
-                      }
-                      placeholder="Pembahasan jawaban..."
-                      className="p-2.5 border rounded-xl bg-white"
-                    />
-                  </div>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={tambahSoalTryoutDraft}
-                className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-bold"
-              >
-                + Tambah Nomor Soal Baru
-              </button>
-            </div>
-
-            <button
-              type="submit"
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-2xl shadow-lg text-sm"
-            >
-              Terbitkan Paket Ujian CBT (Dilengkapi Proteksi Anti-Cheat Fullscreen)
-            </button>
-          </form>
-        </div>
-      )}
-
-      {guruTabAktif === "materi" && (
-        <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm max-w-5xl">
-          <h2 className="text-2xl font-black mb-6 text-slate-900">
-            Publikasi Materi Rich Text & Bank Kuis Multi-Tipe
-          </h2>
-          {opsiKelasGuru.length === 0 ? (
-            <div className="p-8 bg-rose-50 border border-rose-200 rounded-3xl text-center">
-              <ShieldAlert className="w-12 h-12 mx-auto mb-3 text-rose-400" />
-              <p className="text-rose-800 font-bold">
-                Admin belum menugaskan kelas/tingkat untuk akun Anda.
-              </p>
-            </div>
-          ) : (
-            <form onSubmit={handleGuruBuatMateri} className="space-y-6">
-              {notifGuru && (
-                <div className="p-4 bg-emerald-50 text-emerald-800 rounded-2xl font-black text-sm text-center border border-emerald-200">
-                  Materi & Kuis berhasil diterbitkan dengan identitas terverifikasi Anda!
-                </div>
-              )}
-
-              <div className="p-5 bg-indigo-50 border border-indigo-100 rounded-2xl">
-                <label className="font-black mb-2 block text-indigo-900 text-xs uppercase">
-                  Pilih Target Kelas / Prodi Anda:
-                </label>
-                <select
-                  required
-                  value={subJenjangPilih}
-                  onChange={(e) => setSubJenjangPilih(e.target.value)}
-                  className="w-full p-3.5 bg-white border border-indigo-200 rounded-xl font-extrabold text-indigo-900 text-sm"
-                >
-                  <option value="" disabled>
-                    -- Pilih Tingkat Kelas --
-                  </option>
-                  {opsiKelasGuru.map((sj) => (
-                    <option key={sj.id} value={sj.id}>
-                      {sj.namaInduk} - {sj.nama}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="font-bold mb-1 block text-xs text-slate-500">Judul Materi</label>
-                  <input
-                    type="text"
-                    required
-                    value={judulMateri}
-                    onChange={(e) => setJudulMateri(e.target.value)}
-                    placeholder="Contoh: Hukum Newton & Aplikasi..."
-                    className="w-full p-3.5 border rounded-xl bg-slate-50 text-sm font-semibold"
-                  />
-                </div>
-                <div>
-                  <label className="font-bold mb-1 block text-xs text-slate-500">
-                    Tingkat Kesulitan
-                  </label>
-                  <select
-                    value={levelMateri}
-                    onChange={(e) =>
-                      setLevelMateri(e.target.value as "Pemula" | "Menengah" | "Mahir")
-                    }
-                    className="w-full p-3.5 border rounded-xl bg-slate-50 font-bold text-sm"
-                  >
-                    <option value="Pemula">Pemula</option>
-                    <option value="Menengah">Menengah</option>
-                    <option value="Mahir">Mahir / Olimpiade</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="font-bold mb-1 block text-xs text-slate-500">
-                    URL Video YouTube
-                  </label>
-                  <input
-                    type="url"
-                    required
-                    value={videoMateri}
-                    onChange={(e) => setVideoMateri(e.target.value)}
-                    placeholder="https://www.youtube.com/watch?v=..."
-                    className="w-full p-3.5 border rounded-xl bg-slate-50 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="font-bold mb-1 block text-xs text-slate-500">
-                    Link Lampiran Modul PDF/PPT (Opsional)
-                  </label>
-                  <input
-                    type="url"
-                    value={lampiranMateri}
-                    onChange={(e) => setLampiranMateri(e.target.value)}
-                    placeholder="https://drive.google.com/..."
-                    className="w-full p-3.5 border rounded-xl bg-slate-50 text-sm"
+                    title="Batas Percobaan"
+                    className="p-3.5 border rounded-xl bg-slate-50 text-xs font-black text-center"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="font-bold mb-1.5 flex justify-between text-xs text-slate-500">
-                  <span>Artikel / Rangkuman Materi (Format Lengkap & Gambar Link)</span>
-                  <span className="text-indigo-600 font-black">Rich Text Editor Pro</span>
-                </label>
-                <RichTextEditorPro value={rangkumanMateri} onChange={setRangkumanMateri} />
-              </div>
-
-              <div className="p-6 border-2 border-indigo-100 rounded-3xl bg-slate-50 space-y-5">
-                <div className="flex flex-wrap justify-between items-center gap-3 border-b border-slate-200 pb-4">
-                  <div>
-                    <h3 className="font-black text-base text-slate-900">
-                      Bank Kuis Multi-Tipe ({daftarKuisDraft.length} Soal)
-                    </h3>
-                  </div>
+              <div className="p-5 bg-slate-50 border rounded-2xl space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-black">Import Cepat Soal Tryout via CSV</span>
                   <button
                     type="button"
-                    onClick={() => setModalImportKuis(true)}
-                    className="bg-indigo-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5"
+                    onClick={() => setTeksCsvTryout(TEMPLATE_CSV_TRYOUT)}
+                    className="text-xs font-bold text-indigo-600 underline"
                   >
-                    <Upload className="w-4 h-4" /> Import Soal via CSV / Excel
+                    Muat Contoh CSV TPA & TOEFL
                   </button>
                 </div>
-
-                <div className="space-y-4">
-                  {daftarKuisDraft.map((soal, indexSoal) => (
-                    <div
-                      key={soal.id}
-                      className="p-5 bg-white rounded-2xl border border-slate-200 space-y-4"
-                    >
-                      <div className="flex flex-wrap justify-between items-center gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className="bg-slate-900 text-white text-xs font-black px-3 py-1 rounded-lg">
-                            Soal #{indexSoal + 1}
-                          </span>
-                          <select
-                            value={soal.tipe}
-                            onChange={(e) => {
-                              const tipeBaru = e.target.value as TipeSoal;
-                              ubahFieldSoalDraft(soal.id, "tipe", tipeBaru);
-                            }}
-                            className="p-2 border rounded-xl text-xs font-extrabold bg-indigo-50 text-indigo-900"
-                          >
-                            <option value="pilihan_ganda">1. Pilihan Ganda (1 Benar)</option>
-                            <option value="pilihan_jamak">
-                              2. Pilihan Kompleks (Benar Lebih dari 1)
-                            </option>
-                            <option value="mencocokkan">3. Mencocokkan Pasangan</option>
-                            <option value="benar_salah">4. Benar / Salah</option>
-                            <option value="isian_singkat">5. Isian Singkat</option>
-                          </select>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => hapusSoalDraft(soal.id)}
-                          className="p-2 bg-rose-50 text-rose-600 rounded-lg"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <input
-                          type="text"
-                          required
-                          value={soal.tanya}
-                          onChange={(e) => ubahFieldSoalDraft(soal.id, "tanya", e.target.value)}
-                          placeholder={`Ketik pertanyaan nomor ${indexSoal + 1}...`}
-                          className="sm:col-span-2 p-3.5 border rounded-xl bg-slate-50 text-sm font-semibold"
-                        />
-                        <input
-                          type="url"
-                          value={soal.gambarSoalUrl || ""}
-                          onChange={(e) =>
-                            ubahFieldSoalDraft(soal.id, "gambarSoalUrl", e.target.value)
-                          }
-                          placeholder="URL Gambar Soal (Opsional)..."
-                          className="p-3.5 border rounded-xl bg-slate-50 text-xs"
-                        />
-                      </div>
-
-                      {soal.tipe === "pilihan_ganda" && (
-                        <div className="space-y-3">
-                          <div className="grid grid-cols-2 gap-3">
-                            {[0, 1, 2, 3].map((idxOpsi) => (
-                              <input
-                                key={idxOpsi}
-                                type="text"
-                                required
-                                value={soal.opsi[idxOpsi] || ""}
-                                onChange={(e) =>
-                                  ubahOpsiSoalDraft(soal.id, idxOpsi, e.target.value)
-                                }
-                                placeholder={`Opsi ${String.fromCharCode(65 + idxOpsi)}`}
-                                className="p-3 border rounded-xl text-xs font-semibold"
-                              />
-                            ))}
-                          </div>
-                          <select
-                            value={soal.jawabanBenar}
-                            onChange={(e) =>
-                              ubahFieldSoalDraft(soal.id, "jawabanBenar", Number(e.target.value))
-                            }
-                            className="w-full p-3 border bg-emerald-50 text-emerald-900 rounded-xl font-bold text-xs"
-                          >
-                            <option value={0}>Kunci Jawaban: Opsi A</option>
-                            <option value={1}>Kunci Jawaban: Opsi B</option>
-                            <option value={2}>Kunci Jawaban: Opsi C</option>
-                            <option value={3}>Kunci Jawaban: Opsi D</option>
-                          </select>
-                        </div>
-                      )}
-
-                      {soal.tipe === "pilihan_jamak" && (
-                        <div className="grid grid-cols-2 gap-3">
-                          {[0, 1, 2, 3].map((idxOpsi) => {
-                            const terpilih = (soal.jawabanJamak || []).includes(idxOpsi);
-                            return (
-                              <div
-                                key={idxOpsi}
-                                className="flex items-center gap-2 p-2.5 border rounded-xl"
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={terpilih}
-                                  onChange={() => toggleKunciJamakDraft(soal.id, idxOpsi)}
-                                />
-                                <input
-                                  type="text"
-                                  required
-                                  value={soal.opsi[idxOpsi] || ""}
-                                  onChange={(e) =>
-                                    ubahOpsiSoalDraft(soal.id, idxOpsi, e.target.value)
-                                  }
-                                  placeholder={`Opsi ${String.fromCharCode(65 + idxOpsi)}`}
-                                  className="flex-1 text-xs font-semibold outline-none"
-                                />
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                      {soal.tipe === "mencocokkan" && (
-                        <div className="space-y-2">
-                          {(soal.pasangan || []).map((pas, idxP) => (
-                            <div key={idxP} className="grid grid-cols-2 gap-3">
-                              <input
-                                type="text"
-                                required
-                                value={pas.kiri}
-                                onChange={(e) =>
-                                  ubahPasanganCocokDraft(soal.id, idxP, "kiri", e.target.value)
-                                }
-                                placeholder={`Pernyataan Kiri #${idxP + 1}`}
-                                className="p-2.5 bg-white border rounded-xl text-xs"
-                              />
-                              <input
-                                type="text"
-                                required
-                                value={pas.kanan}
-                                onChange={(e) =>
-                                  ubahPasanganCocokDraft(soal.id, idxP, "kanan", e.target.value)
-                                }
-                                placeholder={`Pasangan Benar #${idxP + 1}`}
-                                className="p-2.5 bg-emerald-50 border rounded-xl text-xs font-bold"
-                              />
-                            </div>
-                          ))}
-                          <button
-                            type="button"
-                            onClick={() => tambahBarisPasanganDraft(soal.id)}
-                            className="text-xs font-bold text-indigo-600"
-                          >
-                            + Tambah Baris Pasangan
-                          </button>
-                        </div>
-                      )}
-
-                      {soal.tipe === "benar_salah" && (
-                        <select
-                          value={soal.jawabanBenar}
-                          onChange={(e) =>
-                            ubahFieldSoalDraft(soal.id, "jawabanBenar", Number(e.target.value))
-                          }
-                          className="w-full p-3 border bg-emerald-50 rounded-xl font-bold text-xs"
-                        >
-                          <option value={0}>Kunci: BENAR</option>
-                          <option value={1}>Kunci: SALAH</option>
-                        </select>
-                      )}
-
-                      {soal.tipe === "isian_singkat" && (
-                        <input
-                          type="text"
-                          required
-                          value={soal.jawabanTeks || ""}
-                          onChange={(e) =>
-                            ubahFieldSoalDraft(soal.id, "jawabanTeks", e.target.value)
-                          }
-                          placeholder="Kunci Jawaban Singkat..."
-                          className="w-full p-3 border bg-emerald-50 rounded-xl text-xs font-bold"
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                <div className="flex flex-wrap gap-2">
+                <div className="flex gap-2">
+                  <textarea
+                    rows={2}
+                    value={teksCsvTryout}
+                    onChange={(e) => setTeksCsvTryout(e.target.value)}
+                    className="flex-1 p-3 font-mono text-xs bg-slate-900 text-emerald-300 rounded-xl"
+                  />
                   <button
                     type="button"
-                    onClick={() => tambahSoalDraftBaru("pilihan_ganda")}
-                    className="px-3.5 py-2 bg-white border rounded-xl text-xs font-bold"
+                    onClick={muatCsvKeSoalTryoutDraft}
+                    className="bg-indigo-600 text-white px-4 rounded-xl text-xs font-bold"
                   >
-                    + Pilihan Ganda
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => tambahSoalDraftBaru("pilihan_jamak")}
-                    className="px-3.5 py-2 bg-white border rounded-xl text-xs font-bold text-indigo-700"
-                  >
-                    + Pilihan Jamak (&gt;1 Benar)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => tambahSoalDraftBaru("mencocokkan")}
-                    className="px-3.5 py-2 bg-white border rounded-xl text-xs font-bold text-emerald-700"
-                  >
-                    + Soal Mencocokkan
+                    Terapkan CSV
                   </button>
                 </div>
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-black py-4 rounded-2xl shadow-lg"
+                className="w-full bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-lg text-sm"
               >
-                Terbitkan Materi Terverifikasi Sekarang
+                Terbitkan Paket Ujian CBT ({soalTryoutDraft.length} Soal)
               </button>
             </form>
-          )}
+          </div>
         </div>
       )}
 
-      {guruTabAktif === "kelas" && (
-        <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm space-y-6">
-          <h2 className="text-2xl font-black text-slate-900">
-            Kelola Kelas & Broadcast Pengumuman ke Murid
+      {guruTabAktif === "materi" && (
+        <div className="bg-white text-slate-800 p-8 rounded-[2rem] border border-slate-200 shadow-sm max-w-5xl">
+          <h2 className="text-2xl font-black mb-6 text-slate-900">
+            Publikasi Materi Rich Text & Bank Kuis Multi-Tipe
           </h2>
-          <form
-            onSubmit={handleGuruBuatKelompok}
-            className="grid grid-cols-1 md:grid-cols-3 gap-3 p-5 bg-indigo-50 border border-indigo-100 rounded-2xl"
-          >
-            <input
-              type="text"
-              required
-              value={namaKelompokBaru}
-              onChange={(e) => setNamaKelompokBaru(e.target.value)}
-              placeholder="Nama Ruang Kelas Baru..."
-              className="p-3.5 rounded-xl border bg-white text-sm font-semibold"
-            />
-            <input
-              type="text"
-              value={pengumumanBaru}
-              onChange={(e) => setPengumumanBaru(e.target.value)}
-              placeholder="Pengumuman Awal Kelas..."
-              className="p-3.5 rounded-xl border bg-white text-sm"
-            />
-            <button
-              type="submit"
-              className="bg-indigo-600 text-white px-6 py-3.5 rounded-xl font-black text-sm"
-            >
-              + Buat Kelas Baru
-            </button>
-          </form>
+          <form onSubmit={handleGuruBuatMateri} className="space-y-6">
+            {notifGuru && (
+              <div className="p-4 bg-emerald-50 text-emerald-800 rounded-2xl font-black text-sm text-center border border-emerald-200">
+                Materi & Kuis berhasil diterbitkan!
+              </div>
+            )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {guruKelompoks.map((kel) => {
-              const kataCari = searchSiswaGuru[kel.id] || "";
-              const hasilCari = daftarSiswaApproved.filter(
-                (s) =>
-                  !kel.siswaIds.includes(s.id) &&
-                  (s.nama.toLowerCase().includes(kataCari.toLowerCase()) ||
-                    s.email.toLowerCase().includes(kataCari.toLowerCase()))
-              );
-              return (
-                <div key={kel.id} className="p-6 border rounded-3xl bg-white shadow-2xs space-y-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-black text-lg text-indigo-950">{kel.namaKelas}</h3>
-                      <span className="text-xs font-bold text-slate-500">
-                        {kel.siswaIds.length} Murid Terdaftar
-                      </span>
-                    </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <select
+                required
+                value={subJenjangPilih}
+                onChange={(e) => setSubJenjangPilih(e.target.value)}
+                className="p-3.5 bg-indigo-50 border border-indigo-200 rounded-xl font-extrabold text-indigo-900 text-sm"
+              >
+                <option value="" disabled>
+                  -- Pilih Tingkat Kelas Tujuan --
+                </option>
+                {opsiKelasGuru.map((sj) => (
+                  <option key={sj.id} value={sj.id}>
+                    {sj.namaInduk} - {sj.nama}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="text"
+                required
+                value={judulMateri}
+                onChange={(e) => setJudulMateri(e.target.value)}
+                placeholder="Judul Materi..."
+                className="p-3.5 border rounded-xl bg-slate-50 text-sm font-semibold"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <input
+                type="url"
+                required
+                value={videoMateri}
+                onChange={(e) => setVideoMateri(e.target.value)}
+                placeholder="URL Video YouTube (https://...)"
+                className="p-3.5 border rounded-xl bg-slate-50 text-sm"
+              />
+              <input
+                type="url"
+                value={lampiranMateri}
+                onChange={(e) => setLampiranMateri(e.target.value)}
+                placeholder="Link Lampiran Modul PDF/PPT (Opsional)"
+                className="p-3.5 border rounded-xl bg-slate-50 text-sm"
+              />
+            </div>
+
+            <RichTextEditorPro value={rangkumanMateri} onChange={setRangkumanMateri} />
+
+            <div className="p-5 border rounded-2xl bg-slate-50 space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="font-black text-sm">
+                  Daftar Kuis Materi ({daftarKuisDraft.length} Soal)
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setModalImportKuis(true)}
+                  className="bg-indigo-600 text-white text-xs font-bold px-4 py-2 rounded-xl"
+                >
+                  Import CSV Soal
+                </button>
+              </div>
+              {daftarKuisDraft.map((soal, indexSoal) => (
+                <div key={soal.id} className="p-4 bg-white rounded-xl border space-y-3 text-xs">
+                  <div className="flex justify-between">
+                    <span className="font-black">Soal #{indexSoal + 1}</span>
                     <button
-                      onClick={() => handleHapusKelompok(kel.id)}
-                      className="text-xs text-rose-600 font-bold"
+                      type="button"
+                      onClick={() => hapusSoalDraft(soal.id)}
+                      className="text-rose-600 font-bold"
                     >
-                      Hapus Kelas
+                      Hapus
                     </button>
                   </div>
+                  <input
+                    type="text"
+                    required
+                    value={soal.tanya}
+                    onChange={(e) => ubahFieldSoalDraft(soal.id, "tanya", e.target.value)}
+                    placeholder="Ketik pertanyaan..."
+                    className="w-full p-2.5 border rounded-lg"
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    {[0, 1, 2, 3].map((idxOpsi) => (
+                      <input
+                        key={idxOpsi}
+                        type="text"
+                        value={soal.opsi[idxOpsi] || ""}
+                        onChange={(e) => ubahOpsiSoalDraft(soal.id, idxOpsi, e.target.value)}
+                        placeholder={`Opsi ${String.fromCharCode(65 + idxOpsi)}`}
+                        className="p-2 border rounded-lg"
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => tambahSoalDraftBaru("pilihan_ganda")}
+                className="px-3 py-2 bg-white border rounded-xl text-xs font-bold"
+              >
+                + Tambah Soal Baru
+              </button>
+            </div>
 
-                  <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl space-y-2">
-                    <div className="text-[11px] font-black text-amber-900">
-                      Pengumuman: <span className="font-normal">{kel.pengumuman || "-"}</span>
-                    </div>
+            <button
+              type="submit"
+              className="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg"
+            >
+              Terbitkan Materi Terverifikasi Sekarang
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* TAB 5 GURU: ROMBEL & JADWAL KELAS LIVE (GOOGLE MEET / ZOOM) */}
+      {guruTabAktif === "kelas" && (
+        <div className="space-y-8">
+          <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-4">
+            <h3 className="text-xl font-black flex items-center gap-2">
+              <Video className="w-5 h-5 text-rose-600" /> Buat Jadwal Kelas Live (Google Meet / Zoom)
+            </h3>
+            <form
+              onSubmit={handleTambahJadwalLive}
+              className="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs"
+            >
+              <input
+                type="text"
+                required
+                value={judulLiveBaru}
+                onChange={(e) => setJudulLiveBaru(e.target.value)}
+                placeholder="Topik Sesi Live..."
+                className="p-3 border rounded-xl bg-slate-50 font-bold"
+              />
+              <input
+                type="text"
+                required
+                value={tanggalLiveBaru}
+                onChange={(e) => setTanggalLiveBaru(e.target.value)}
+                placeholder="Hari, Tanggal & Jam..."
+                className="p-3 border rounded-xl bg-slate-50"
+              />
+              <input
+                type="url"
+                required
+                value={urlLiveBaru}
+                onChange={(e) => setUrlLiveBaru(e.target.value)}
+                placeholder="Link Meet / Zoom..."
+                className="p-3 border rounded-xl bg-slate-50"
+              />
+              <button
+                type="submit"
+                className="bg-rose-600 text-white font-black rounded-xl py-3 px-4"
+              >
+                + Jadwalkan Live
+              </button>
+            </form>
+          </div>
+
+          <div className="bg-white text-slate-800 p-8 rounded-[2rem] border space-y-6">
+            <h2 className="text-xl font-black">Kelola Rombel & Pengumuman Kelas</h2>
+            <form
+              onSubmit={handleGuruBuatKelompok}
+              className="grid grid-cols-1 md:grid-cols-3 gap-3 p-4 bg-indigo-50 rounded-2xl"
+            >
+              <input
+                type="text"
+                required
+                value={namaKelompokBaru}
+                onChange={(e) => setNamaKelompokBaru(e.target.value)}
+                placeholder="Nama Ruang Kelas Baru..."
+                className="p-3 rounded-xl border bg-white text-xs font-bold"
+              />
+              <input
+                type="text"
+                value={pengumumanBaru}
+                onChange={(e) => setPengumumanBaru(e.target.value)}
+                placeholder="Pengumuman Awal..."
+                className="p-3 rounded-xl border bg-white text-xs"
+              />
+              <button
+                type="submit"
+                className="bg-indigo-600 text-white px-5 py-3 rounded-xl font-black text-xs"
+              >
+                + Buat Kelas
+              </button>
+            </form>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {guruKelompoks.map((kel) => {
+                const kataCari = searchSiswaGuru[kel.id] || "";
+                const hasilCari = daftarSiswaApproved.filter(
+                  (s) =>
+                    !kel.siswaIds.includes(s.id) &&
+                    (s.nama.toLowerCase().includes(kataCari.toLowerCase()) ||
+                      s.email.toLowerCase().includes(kataCari.toLowerCase()))
+                );
+                return (
+                  <div key={kel.id} className="p-5 border rounded-3xl space-y-3 text-xs">
+                    <div className="font-black text-base text-indigo-950">{kel.namaKelas}</div>
                     <div className="flex gap-2">
                       <input
                         type="text"
@@ -3382,84 +3249,62 @@ export default function AplikasiHibahIlmu() {
                             [kel.id]: e.target.value,
                           })
                         }
-                        placeholder="Ketik pengumuman ke murid..."
-                        className="flex-1 p-2 bg-white border rounded-xl text-xs"
+                        placeholder="Broadcast pengumuman ke notifikasi murid..."
+                        className="flex-1 p-2 border rounded-xl"
                       />
                       <button
                         type="button"
                         onClick={() => handleKirimPengumumanKelas(kel)}
-                        className="bg-amber-600 text-white px-3 py-2 rounded-xl text-xs font-bold"
+                        className="bg-amber-500 text-slate-950 px-3 py-2 rounded-xl font-bold"
                       >
                         Kirim
                       </button>
                     </div>
+                    <input
+                      type="text"
+                      value={kataCari}
+                      onChange={(e) =>
+                        setSearchSiswaGuru({ ...searchSiswaGuru, [kel.id]: e.target.value })
+                      }
+                      placeholder="Cari nama/email siswa..."
+                      className="w-full p-2 bg-slate-50 border rounded-xl"
+                    />
+                    <div className="max-h-24 overflow-y-auto space-y-1">
+                      {hasilCari.map((s) => (
+                        <div key={s.id} className="flex justify-between p-1.5 bg-slate-50 rounded">
+                          <span>{s.nama}</span>
+                          <button
+                            onClick={() => handleTambahSiswaKeKelompok(kel.id, s.id)}
+                            className="bg-emerald-600 text-white px-2 py-0.5 rounded font-bold"
+                          >
+                            + Tambah
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-
-                  <input
-                    type="text"
-                    value={kataCari}
-                    onChange={(e) =>
-                      setSearchSiswaGuru({ ...searchSiswaGuru, [kel.id]: e.target.value })
-                    }
-                    placeholder="Cari nama/email siswa untuk ditambahkan..."
-                    className="w-full p-2.5 bg-slate-50 border rounded-xl text-xs font-semibold"
-                  />
-
-                  <div className="max-h-28 overflow-y-auto space-y-1 p-2 bg-slate-50 rounded-xl border">
-                    {hasilCari.map((s) => (
-                      <div
-                        key={s.id}
-                        className="flex justify-between items-center p-2 bg-white rounded-lg border text-xs"
-                      >
-                        <span>
-                          <b>{s.nama}</b> ({s.email})
-                        </span>
-                        <button
-                          onClick={() => handleTambahSiswaKeKelompok(kel.id, s.id)}
-                          className="bg-emerald-600 text-white px-3 py-1 rounded-lg font-bold text-[11px]"
-                        >
-                          + Tambah
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
     </motion.div>
   );
 
+  // ==========================================
+  // SUB-RENDERER: ADMIN VIEW
+  // ==========================================
   const renderAdminView = () => {
-    if (adminModeGuru) {
-      return renderGuruView();
-    }
+    if (adminModeGuru) return renderGuruView();
     return (
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
         <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-8 rounded-[2rem] flex flex-wrap justify-between items-center gap-6 shadow-2xl">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl border-2 border-amber-400 overflow-hidden bg-slate-800 flex items-center justify-center text-2xl font-black">
-              {userLogin?.cv?.fotoUrl ? (
-                <img
-                  src={userLogin.cv.fotoUrl}
-                  alt={userLogin.nama}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                userLogin?.nama.charAt(0)
-              )}
-            </div>
-            <div>
-              <span className="bg-amber-400 text-slate-950 text-[10px] font-black px-3 py-0.5 rounded-full uppercase">
-                Super Admin
-              </span>
-              <h1 className="text-2xl sm:text-3xl font-black mt-1">{userLogin?.nama}</h1>
-              <p className="text-slate-300 text-xs">
-                Otoritas Penuh & Pengawasan Konten Terverifikasi
-              </p>
-            </div>
+          <div>
+            <span className="bg-amber-400 text-slate-950 text-[10px] font-black px-3 py-0.5 rounded-full uppercase">
+              Super Admin
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-black mt-1">{userLogin?.nama}</h1>
           </div>
           <div className="flex flex-wrap gap-2.5">
             <button
@@ -3470,13 +3315,13 @@ export default function AplikasiHibahIlmu() {
             </button>
             <button
               onClick={() => setModalImportAkun(true)}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-3 rounded-2xl flex items-center gap-2"
+              className="bg-indigo-600 text-white text-xs font-bold px-4 py-3 rounded-2xl flex items-center gap-2"
             >
-              <Upload className="w-4 h-4" /> Import CSV / JSON
+              <Upload className="w-4 h-4" /> Import CSV Akun
             </button>
             <button
               onClick={bukaModalTambahAkun}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-3 rounded-2xl flex items-center gap-2"
+              className="bg-emerald-600 text-white text-xs font-bold px-4 py-3 rounded-2xl flex items-center gap-2"
             >
               <UserPlus className="w-4 h-4" /> Tambah Akun
             </button>
@@ -3494,32 +3339,23 @@ export default function AplikasiHibahIlmu() {
 
         <div className="flex gap-2 border-b border-slate-200 pb-3 overflow-x-auto">
           {[
-            {
-              id: "akun",
-              label: `Data Akun (${safeAkunList.length})`,
-              icon: <Users className="w-4 h-4" />,
-            },
-            {
-              id: "rombel",
-              label: `Kelola Rombel (${daftarKelompok.length})`,
-              icon: <FolderArchive className="w-4 h-4" />,
-            },
-            { id: "kategori", label: "Kategori & Prodi", icon: <Layers className="w-4 h-4" /> },
-            { id: "cv", label: "Profil & CV Saya", icon: <Briefcase className="w-4 h-4" /> },
-            { id: "log", label: "Audit Pertanggungjawaban", icon: <Activity className="w-4 h-4" /> },
+            { id: "akun", label: `Data Akun (${safeAkunList.length})` },
+            { id: "kategori", label: "Kategori & Prodi" },
+            { id: "cv", label: "Profil & CV Saya" },
+            { id: "log", label: "Log Audit" },
           ].map((t) => (
             <button
               key={t.id}
               onClick={() =>
                 setAdminTabAktif(t.id as "akun" | "kategori" | "rombel" | "log" | "cv")
               }
-              className={`px-5 py-3 rounded-2xl text-xs font-black flex items-center gap-2 transition whitespace-nowrap ${
+              className={`px-5 py-3 rounded-2xl text-xs font-black ${
                 adminTabAktif === t.id
-                  ? "bg-slate-900 text-white shadow-md"
+                  ? "bg-slate-900 text-white"
                   : "bg-white text-slate-600 border"
               }`}
             >
-              {t.icon} {t.label}
+              {t.label}
             </button>
           ))}
         </div>
@@ -3527,132 +3363,56 @@ export default function AplikasiHibahIlmu() {
         {adminTabAktif === "cv" && renderProfilDanCV()}
 
         {adminTabAktif === "akun" && (
-          <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-black">Manajemen Akun Terdaftar</h2>
-              {selectedAkunIds.length > 0 && (
-                <button
-                  onClick={hapusAkunSekaligus}
-                  className="bg-rose-600 text-white text-xs font-bold px-4 py-2 rounded-xl"
-                >
-                  Hapus {selectedAkunIds.length} Terpilih
-                </button>
-              )}
-            </div>
-            <div className="space-y-3 max-h-[36rem] overflow-y-auto">
-              {safeAkunList.map((akun) => (
-                <div
-                  key={akun.id}
-                  className="p-4 rounded-2xl border bg-slate-50 flex flex-wrap justify-between items-center gap-4"
-                >
-                  <div className="flex items-start gap-3">
-                    {akun.role !== "admin" && (
-                      <input
-                        type="checkbox"
-                        checked={selectedAkunIds.includes(akun.id)}
-                        onChange={() => togglePilihAkun(akun.id)}
-                        className="mt-1 w-4 h-4"
-                      />
-                    )}
-                    <div>
-                      <div className="font-extrabold text-sm flex items-center gap-2">
-                        {akun.nama}
-                        <span className="text-[10px] uppercase px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 font-black">
-                          {akun.role}
-                        </span>
-                        <span className="text-[10px] uppercase px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 font-black">
-                          {akun.status}
-                        </span>
-                      </div>
-                      <div className="text-xs text-slate-500 mt-0.5">
-                        {akun.email} • {akun.infoTambahan}
-                      </div>
-                    </div>
+          <div className="bg-white text-slate-800 p-8 rounded-[2rem] border border-slate-200 shadow-sm space-y-3">
+            {safeAkunList.map((akun) => (
+              <div
+                key={akun.id}
+                className="p-4 rounded-2xl border bg-slate-50 flex flex-wrap justify-between items-center gap-4"
+              >
+                <div>
+                  <div className="font-extrabold text-sm flex items-center gap-2">
+                    {akun.nama}
+                    <span className="text-[10px] uppercase px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 font-black">
+                      {akun.role}
+                    </span>
+                    <span className="text-[10px] uppercase px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 font-black">
+                      {akun.status}
+                    </span>
                   </div>
-                  <div className="flex gap-2">
-                    {akun.status !== "approved" ? (
-                      <button
-                        onClick={() => ubahStatusAkun(akun.id, "approved")}
-                        className="p-2 bg-emerald-100 text-emerald-700 rounded-xl"
-                      >
-                        <UserCheck2 className="w-4 h-4" />
-                      </button>
-                    ) : (
-                      akun.role !== "admin" && (
-                        <button
-                          onClick={() => ubahStatusAkun(akun.id, "rejected")}
-                          className="p-2 bg-amber-100 text-amber-700 rounded-xl"
-                        >
-                          <UserX2 className="w-4 h-4" />
-                        </button>
-                      )
-                    )}
-                    <button
-                      onClick={() => bukaModalEditAkun(akun)}
-                      className="p-2 bg-blue-100 text-blue-700 rounded-xl"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                    </button>
-                    {akun.role !== "admin" && (
-                      <button
-                        onClick={() => hapusAkun(akun.id)}
-                        className="p-2 bg-rose-100 text-rose-700 rounded-xl"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
+                  <div className="text-xs text-slate-500">{akun.email}</div>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {adminTabAktif === "rombel" && (
-          <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm space-y-6">
-            <h2 className="text-xl font-black">Manajemen Rombel & Penempatan Mahasiswa/Siswa</h2>
-            <form
-              onSubmit={handleAdminBuatKelompok}
-              className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-5 bg-slate-50 border rounded-2xl"
-            >
-              <input
-                type="text"
-                required
-                value={namaKelompokAdmin}
-                onChange={(e) => setNamaKelompokAdmin(e.target.value)}
-                placeholder="Nama Rombel Baru..."
-                className="p-3 border rounded-xl text-xs font-bold bg-white"
-              />
-              <select
-                required
-                value={guruKelompokAdmin}
-                onChange={(e) => setGuruKelompokAdmin(e.target.value)}
-                className="p-3 border rounded-xl text-xs font-bold bg-white"
-              >
-                <option value="" disabled>
-                  -- Pilih Pengajar --
-                </option>
-                {safeAkunList
-                  .filter((a) => a.role === "guru")
-                  .map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.nama}
-                    </option>
-                  ))}
-              </select>
-              <button
-                type="submit"
-                className="bg-indigo-600 text-white font-black py-3 rounded-xl text-xs"
-              >
-                + Buat Rombel
-              </button>
-            </form>
+                <div className="flex gap-2">
+                  {akun.status !== "approved" && (
+                    <button
+                      onClick={() => ubahStatusAkun(akun.id, "approved")}
+                      className="p-2 bg-emerald-100 text-emerald-700 rounded-xl"
+                    >
+                      <UserCheck2 className="w-4 h-4" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => bukaModalEditAkun(akun)}
+                    className="p-2 bg-blue-100 text-blue-700 rounded-xl"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                  </button>
+                  {akun.role !== "admin" && (
+                    <button
+                      onClick={() => hapusAkun(akun.id)}
+                      className="p-2 bg-rose-100 text-rose-700 rounded-xl"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
         {adminTabAktif === "kategori" && (
-          <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
-            <div className="flex justify-between items-center mb-6">
+          <div className="bg-white text-slate-800 p-8 rounded-[2rem] border space-y-4">
+            <div className="flex justify-between items-center">
               <h2 className="text-xl font-black">Hierarki Jenjang & Prodi</h2>
               <button
                 onClick={() => setModalKategori(true)}
@@ -3661,82 +3421,65 @@ export default function AplikasiHibahIlmu() {
                 + Tambah Kelas / Prodi
               </button>
             </div>
-            <div className="space-y-4">
-              {daftarJenjang.map((j) => (
-                <div key={j.id} className="p-4 border rounded-2xl bg-slate-50">
-                  <h3 className="font-black text-xs mb-2 uppercase">{j.nama}</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {j.subJenjang.map((sj) => (
-                      <span
-                        key={sj.id}
-                        className="bg-white text-xs px-3 py-1 rounded-lg border font-bold"
-                      >
-                        {sj.nama}
-                      </span>
-                    ))}
-                  </div>
+            {daftarJenjang.map((j) => (
+              <div key={j.id} className="p-4 border rounded-2xl bg-slate-50">
+                <h3 className="font-black text-xs mb-2 uppercase">{j.nama}</h3>
+                <div className="flex flex-wrap gap-2">
+                  {j.subJenjang.map((sj) => (
+                    <span
+                      key={sj.id}
+                      className="bg-white text-xs px-3 py-1 rounded-lg border font-bold"
+                    >
+                      {sj.nama}
+                    </span>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         )}
 
         {adminTabAktif === "log" && (
-          <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
-            <h2 className="text-xl font-black mb-4">
-              Log Audit Pertanggungjawaban Pengguna & Materi
-            </h2>
-            <div className="space-y-2.5 max-h-96 overflow-y-auto">
-              {safeLogList.map((log) => (
-                <div
-                  key={log.id}
-                  className="p-3.5 rounded-xl bg-slate-50 border flex justify-between text-xs"
-                >
-                  <span>
-                    <b>
-                      [{log.rolePelaku.toUpperCase()}] {log.namaPelaku}:
-                    </b>{" "}
-                    {log.aksi}
-                  </span>
-                  <span className="font-mono text-slate-400">{log.waktu}</span>
-                </div>
-              ))}
-            </div>
+          <div className="bg-white text-slate-800 p-8 rounded-[2rem] border space-y-2.5">
+            {safeLogList.map((log) => (
+              <div
+                key={log.id}
+                className="p-3.5 rounded-xl bg-slate-50 border flex justify-between text-xs"
+              >
+                <span>
+                  <b>[{log.rolePelaku.toUpperCase()}] {log.namaPelaku}:</b> {log.aksi}
+                </span>
+                <span className="font-mono text-slate-400">{log.waktu}</span>
+              </div>
+            ))}
           </div>
         )}
       </motion.div>
     );
   };
 
+  // ==========================================
+  // SUB-RENDERER: SISWA VIEW (DENGAN TUGAS, RAPOR DIGITAL & SERTIFIKAT PDF)
+  // ==========================================
   const renderSiswaView = () => {
     const kelasSaya = daftarKelompok.filter((k) =>
       userLogin ? k.siswaIds.includes(userLogin.id) : false
     );
     const minatSaya = userLogin?.minatSubJenjang || [];
+    const kirimanSaya = daftarPengumpulan.filter((s) => s.siswaId === userLogin?.id);
+    const tryoutSaya = riwayatTryout.filter((r) => r.userId === userLogin?.id);
+
     return (
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
         <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-700 text-white p-8 rounded-[2rem] flex flex-wrap justify-between items-center gap-6 shadow-2xl">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl border-2 border-white/50 overflow-hidden bg-emerald-800 flex items-center justify-center text-2xl font-black">
-              {userLogin?.cv?.fotoUrl ? (
-                <img
-                  src={userLogin.cv.fotoUrl}
-                  alt={userLogin.nama}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                userLogin?.nama.charAt(0)
-              )}
-            </div>
-            <div>
-              <span className="bg-white/20 text-[10px] font-black px-3 py-0.5 rounded-full uppercase">
-                Akun Pelajar Terverifikasi
-              </span>
-              <h1 className="text-2xl sm:text-3xl font-black mt-1">Halo, {userLogin?.nama}!</h1>
-              <p className="text-emerald-100 text-xs">
-                Mengikuti <b>{minatSaya.length} Tingkat Kelas</b> • Total XP: <b>{poinXP} XP</b>
-              </p>
-            </div>
+          <div>
+            <span className="bg-white/20 text-[10px] font-black px-3 py-0.5 rounded-full uppercase">
+              Portal Akademik Pelajar
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-black mt-1">Halo, {userLogin?.nama}!</h1>
+            <p className="text-emerald-100 text-xs">
+              Total XP: <b>{poinXP} XP</b> • Selesai: <b>{materiSelesai.length} Modul</b>
+            </p>
           </div>
           <button
             onClick={() => {
@@ -3749,57 +3492,198 @@ export default function AplikasiHibahIlmu() {
           </button>
         </div>
 
-        <div className="flex gap-3 border-b border-slate-200 pb-3 overflow-x-auto">
-          <button
-            onClick={() => setSiswaTabAktif("kelas")}
-            className={`px-5 py-3 rounded-2xl font-black text-xs flex items-center gap-2 ${
-              siswaTabAktif === "kelas"
-                ? "bg-emerald-600 text-white shadow-md"
-                : "bg-white text-slate-600 border"
-            }`}
-          >
-            <School className="w-4 h-4" /> Rombel & Pengumuman ({kelasSaya.length})
-          </button>
-          <button
-            onClick={() => setSiswaTabAktif("minat")}
-            className={`px-5 py-3 rounded-2xl font-black text-xs flex items-center gap-2 ${
-              siswaTabAktif === "minat"
-                ? "bg-emerald-600 text-white shadow-md"
-                : "bg-white text-slate-600 border"
-            }`}
-          >
-            <CheckSquare className="w-4 h-4" /> Pilih Kelas/Materi yang Diikuti ({minatSaya.length})
-          </button>
-          <button
-            onClick={() => setSiswaTabAktif("cv")}
-            className={`px-5 py-3 rounded-2xl font-black text-xs flex items-center gap-2 ${
-              siswaTabAktif === "cv"
-                ? "bg-emerald-600 text-white shadow-md"
-                : "bg-white text-slate-600 border"
-            }`}
-          >
-            <Briefcase className="w-4 h-4" /> Profil & CV Saya
-          </button>
+        <div className="flex gap-2.5 border-b border-slate-200 pb-3 overflow-x-auto">
+          {[
+            { id: "kelas", label: "1. Rombel & Jadwal Live", icon: <School className="w-4 h-4" /> },
+            { id: "tugas", label: "2. Tugas & Nilai Guru", icon: <ClipboardCheck className="w-4 h-4" /> },
+            {
+              id: "rapor_sertifikat",
+              label: "3. Rapor Digital & Sertifikat PDF",
+              icon: <Award className="w-4 h-4" />,
+            },
+            {
+              id: "minat",
+              label: `4. Pilih Kelas Diikuti (${minatSaya.length})`,
+              icon: <CheckSquare className="w-4 h-4" />,
+            },
+            { id: "cv", label: "5. Profil & CV Saya", icon: <Briefcase className="w-4 h-4" /> },
+          ].map((t) => (
+            <button
+              key={t.id}
+              onClick={() =>
+                setSiswaTabAktif(
+                  t.id as "kelas" | "tugas" | "rapor_sertifikat" | "minat" | "cv"
+                )
+              }
+              className={`px-4 py-3 rounded-2xl font-black text-xs flex items-center gap-2 whitespace-nowrap ${
+                siswaTabAktif === t.id
+                  ? "bg-emerald-600 text-white shadow-md"
+                  : "bg-white text-slate-600 border"
+              }`}
+            >
+              {t.icon} {t.label}
+            </button>
+          ))}
         </div>
 
         {siswaTabAktif === "cv" && renderProfilDanCV()}
 
+        {/* TAB 2 SISWA: PENGUMPULAN TUGAS & FEEDBACK NILAI GURU */}
+        {siswaTabAktif === "tugas" && (
+          <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-6">
+            <h2 className="text-xl font-black">Daftar Tugas Kelas & Penilaian Guru</h2>
+            <div className="space-y-4">
+              {daftarTugas.map((tgs) => {
+                const sudahKumpul = kirimanSaya.find((k) => k.tugasId === tgs.id);
+                return (
+                  <div key={tgs.id} className="p-5 border rounded-2xl bg-slate-50 space-y-3 text-xs">
+                    <div className="flex justify-between items-center">
+                      <span className="font-black text-sm text-slate-900">{tgs.judul}</span>
+                      <span className="text-rose-600 font-bold">Deadline: {tgs.deadline}</span>
+                    </div>
+                    <p className="text-slate-600">{tgs.instruksi}</p>
+                    {sudahKumpul ? (
+                      <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl space-y-1">
+                        <div className="font-bold text-emerald-900">
+                          Status: Sudah Dikumpulkan ({sudahKumpul.waktuKumpul})
+                        </div>
+                        <div>Jawabanmu: {sudahKumpul.jawabanTeksAtauLink}</div>
+                        {sudahKumpul.nilai !== undefined ? (
+                          <div className="pt-2 font-black text-indigo-700 text-sm">
+                            Nilai dari Guru: {sudahKumpul.nilai} / 100 — Feedback: &quot;
+                            {sudahKumpul.feedbackGuru}&quot;
+                          </div>
+                        ) : (
+                          <div className="text-amber-700 font-bold">Menunggu penilaian Guru</div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={jawabanTugasSiswaInput[tgs.id] || ""}
+                          onChange={(e) =>
+                            setJawabanTugasSiswaInput({
+                              ...jawabanTugasSiswaInput,
+                              [tgs.id]: e.target.value,
+                            })
+                          }
+                          placeholder="Ketik ringkasan jawaban atau link Google Drive PDF tugasmu..."
+                          className="flex-1 p-3 bg-white border rounded-xl"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleSiswaKumpulTugas(tgs.id)}
+                          className="bg-emerald-600 text-white px-5 py-3 rounded-xl font-black"
+                        >
+                          Kirim Tugas (+40 XP)
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3 SISWA: RAPOR DIGITAL, BADGES & GENERATOR SERTIFIKAT PDF */}
+        {siswaTabAktif === "rapor_sertifikat" && (
+          <div className="space-y-8">
+            {/* Koleksi Lencana (Badges) */}
+            <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-4">
+              <h3 className="text-xl font-black flex items-center gap-2">
+                <Award className="w-5 h-5 text-amber-500" /> Koleksi Lencana Penghargaan (Badges)
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                {daftarBadgesSiswa.map((b, i) => (
+                  <div
+                    key={i}
+                    className={`p-4 rounded-2xl border-2 text-xs ${
+                      b.aktif
+                        ? "border-amber-400 bg-amber-50/60 text-slate-900"
+                        : "border-slate-200 bg-slate-100 opacity-50"
+                    }`}
+                  >
+                    <div className="font-black text-sm mb-1">
+                      {b.aktif ? "🏅 " : "🔒 "} {b.nama}
+                    </div>
+                    <p className="text-slate-600">{b.ket}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Transkrip Rapor Digital */}
+            <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-4">
+              <h3 className="text-xl font-black">Transkrip Rapor Akademik Digital</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+                <div className="p-4 border rounded-2xl bg-slate-50 space-y-2">
+                  <div className="font-black text-sm">Riwayat Nilai Tugas</div>
+                  {kirimanSaya.map((k) => (
+                    <div key={k.id} className="flex justify-between p-2 bg-white rounded-lg border">
+                      <span>{daftarTugas.find((t) => t.id === k.tugasId)?.judul}</span>
+                      <b className="text-emerald-700">
+                        {k.nilai !== undefined ? `${k.nilai}/100` : "Pending"}
+                      </b>
+                    </div>
+                  ))}
+                </div>
+                <div className="p-4 border rounded-2xl bg-slate-50 space-y-2">
+                  <div className="font-black text-sm">Riwayat Skor Tryout CBT</div>
+                  {tryoutSaya.map((r) => (
+                    <div key={r.id} className="flex justify-between p-2 bg-white rounded-lg border">
+                      <span>{r.paketJudul}</span>
+                      <b className="text-indigo-700">{r.skor} / 100</b>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* FITUR 6: SERTIFIKAT KELULUSAN OTOMATIS SIAP CETAK PDF */}
+            <div className="bg-gradient-to-br from-amber-50 via-white to-emerald-50 text-slate-900 p-10 rounded-[2.5rem] border-4 border-double border-amber-400 shadow-xl text-center space-y-4">
+              <div className="text-xs font-black uppercase tracking-widest text-emerald-700">
+                Sertifikat Kompetensi Digital Terverifikasi • HibahIlmu.id
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-black text-slate-900">
+                SERTIFIKAT PENGHARGAAN BELAJAR
+              </h2>
+              <p className="text-xs text-slate-600">Diberikan secara resmi kepada:</p>
+              <div className="text-2xl sm:text-3xl font-black text-indigo-950 underline decoration-amber-400">
+                {userLogin?.nama}
+              </div>
+              <p className="text-xs text-slate-600 max-w-xl mx-auto leading-relaxed">
+                Telah menyelesaikan <b>{materiSelesai.length} Modul Pembelajaran</b> dan meraih
+                total keaktifan <b>{poinXP} XP</b> pada platform pendidikan terbuka HibahIlmu.id
+                dengan status akuntabilitas terverifikasi.
+              </p>
+              <div className="text-[11px] font-mono text-slate-500">
+                No. Seri Verifikasi: HIBAH-2026-{userLogin?.id.toUpperCase()}
+              </div>
+              <div className="pt-3">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="bg-slate-900 hover:bg-slate-800 text-white font-black px-6 py-3 rounded-2xl text-xs inline-flex items-center gap-2 shadow-md"
+                >
+                  <Printer className="w-4 h-4" /> Cetak / Simpan Sertifikat (PDF)
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {siswaTabAktif === "minat" && (
-          <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm space-y-4">
-            <h2 className="text-xl font-black text-slate-900">
-              Sesuaikan Kelas & Materi yang Ingin Kamu Ikuti
-            </h2>
-            <p className="text-xs text-slate-500">
-              Centang tingkat kelas atau persiapan tes (seperti TPA / TOEFL) di bawah ini agar
-              beranda Ruang Kelas hanya menampilkan materi yang relevan untukmu.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-2">
+          <div className="bg-white text-slate-800 p-8 rounded-[2rem] border space-y-4">
+            <h2 className="text-xl font-black">Pilih Kelas & Materi yang Ingin Kamu Ikuti</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               {semuaSubJenjangFlat.map((sj) => {
                 const aktif = minatSaya.includes(sj.id);
                 return (
                   <label
                     key={sj.id}
-                    className={`p-4 rounded-2xl border-2 cursor-pointer flex items-center gap-3 transition ${
+                    className={`p-4 rounded-2xl border-2 cursor-pointer flex items-center gap-3 ${
                       aktif ? "border-emerald-500 bg-emerald-50/60" : "border-slate-200 bg-slate-50"
                     }`}
                   >
@@ -3813,7 +3697,7 @@ export default function AplikasiHibahIlmu() {
                       <div className="text-[10px] font-black uppercase text-slate-400">
                         {sj.namaInduk}
                       </div>
-                      <div className="text-xs font-extrabold text-slate-900">{sj.nama}</div>
+                      <div className="text-xs font-extrabold">{sj.nama}</div>
                     </div>
                   </label>
                 );
@@ -3823,13 +3707,42 @@ export default function AplikasiHibahIlmu() {
         )}
 
         {siswaTabAktif === "kelas" && (
-          <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
-            <h2 className="text-xl font-black mb-4">Ruang Kelas (Rombel) & Pengumuman Guru</h2>
-            {kelasSaya.length === 0 ? (
-              <p className="text-sm text-slate-500">
-                Anda belum dimasukkan ke dalam rombel khusus oleh Guru/Admin.
-              </p>
-            ) : (
+          <div className="space-y-6">
+            {/* Jadwal Live Kelas Tatap Maya */}
+            <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-4">
+              <h3 className="text-xl font-black flex items-center gap-2">
+                <Video className="w-5 h-5 text-rose-600" /> Jadwal Kelas Live Tatap Maya (Meet / Zoom)
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {jadwalLive.map((jl) => (
+                  <div
+                    key={jl.id}
+                    className="p-4 border rounded-2xl bg-rose-50/40 border-rose-200 flex justify-between items-center gap-4 text-xs"
+                  >
+                    <div>
+                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-rose-100 text-rose-800">
+                        {jl.targetKelas}
+                      </span>
+                      <div className="font-black text-sm text-slate-900 mt-1">{jl.judulSesi}</div>
+                      <div className="text-slate-600">
+                        Bersama: {jl.pengajarNama} • {jl.tanggalJam}
+                      </div>
+                    </div>
+                    <a
+                      href={jl.meetingUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="bg-rose-600 text-white px-4 py-2.5 rounded-xl font-black shrink-0"
+                    >
+                      Gabung Live
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-4">
+              <h2 className="text-xl font-black">Ruang Kelas (Rombel) & Pengumuman Guru</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {kelasSaya.map((k) => (
                   <div
@@ -3837,37 +3750,36 @@ export default function AplikasiHibahIlmu() {
                     className="p-5 border rounded-2xl bg-emerald-50/50 border-emerald-200 space-y-2"
                   >
                     <div className="font-black text-emerald-950 text-base">{k.namaKelas}</div>
-                    <div className="text-xs text-slate-600">
-                      Pengajar:{" "}
-                      <b>{safeAkunList.find((a) => a.id === k.guruId)?.nama || "Guru"}</b>
-                    </div>
                     {k.pengumuman && (
-                      <div className="p-3 bg-white border border-emerald-200 rounded-xl text-xs text-slate-700 flex items-center gap-2">
-                        <Megaphone className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span>
-                          <b>Pengumuman:</b> {k.pengumuman}
-                        </span>
+                      <div className="p-3 bg-white border border-emerald-200 rounded-xl text-xs text-slate-700">
+                        <b>Pengumuman:</b> {k.pengumuman}
                       </div>
                     )}
                   </div>
                 ))}
               </div>
-            )}
+            </div>
           </div>
         )}
       </motion.div>
     );
   };
 
+  // ==========================================
+  // RENDER UTAMA DENGAN TEMA DARK MODE & AKSESIBILITAS
+  // ==========================================
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans relative overflow-x-hidden">
-      <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
-        <div className="absolute -top-40 -left-40 w-[30rem] h-[30rem] bg-purple-300/30 rounded-full blur-3xl" />
-        <div className="absolute top-20 right-0 w-[30rem] h-[30rem] bg-emerald-300/25 rounded-full blur-3xl" />
-      </div>
-
+    <div
+      className={`min-h-screen font-sans relative overflow-x-hidden transition-colors duration-200 ${
+        darkMode ? "bg-slate-950 text-slate-100" : "bg-[#F8FAFC] text-slate-800"
+      } ${ukuranTeksBesar ? "text-lg" : "text-base"}`}
+    >
       {/* HEADER */}
-      <header className="sticky top-0 z-50 bg-white/85 backdrop-blur-xl border-b border-slate-200/80 shadow-2xs">
+      <header
+        className={`sticky top-0 z-50 backdrop-blur-xl border-b shadow-2xs ${
+          darkMode ? "bg-slate-900/90 border-slate-800" : "bg-white/85 border-slate-200/80"
+        }`}
+      >
         <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
           <div
             onClick={() => {
@@ -3881,18 +3793,19 @@ export default function AplikasiHibahIlmu() {
               🐼
             </div>
             <div>
-              <div className="font-extrabold text-xl text-slate-900 leading-none">HibahIlmu</div>
-              <div className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider mt-1">
-                Gratis & Terverifikasi
+              <div className="font-extrabold text-xl leading-none">HibahIlmu</div>
+              <div className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider mt-1">
+                LMS Lengkap 100% Gratis
               </div>
             </div>
           </div>
 
-          <nav className="flex items-center gap-2 overflow-x-auto">
+          <nav className="flex items-center gap-1.5 overflow-x-auto">
             {[
               { id: "beranda", label: "Ruang Kelas" },
-              { id: "tryout", label: "Tryout CBT (TPA / TOEFL)" },
-              { id: "forum", label: "Forum Tanya PR" },
+              { id: "tryout", label: "Tryout CBT" },
+              { id: "leaderboard", label: "Leaderboard XP" },
+              { id: "forum", label: "Forum PR" },
               { id: "transparansi", label: "Donasi" },
             ].map((tab) => (
               <button
@@ -3902,9 +3815,11 @@ export default function AplikasiHibahIlmu() {
                   setJenjangAktif(null);
                   setKelasAktif(null);
                 }}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${
                   menuAktif === tab.id
-                    ? "bg-slate-900 text-white"
+                    ? "bg-emerald-600 text-white"
+                    : darkMode
+                    ? "text-slate-300 hover:bg-slate-800"
                     : "text-slate-600 hover:bg-slate-100"
                 }`}
               >
@@ -3913,8 +3828,28 @@ export default function AplikasiHibahIlmu() {
             ))}
           </nav>
 
-          <div className="flex items-center gap-2.5 relative">
-            <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2 rounded-full text-xs font-extrabold">
+          <div className="flex items-center gap-2 relative">
+            {/* Tombol Aksesibilitas Ukuran Teks & Dark Mode */}
+            <button
+              onClick={() => setUkuranTeksBesar(!ukuranTeksBesar)}
+              className="p-2 rounded-full border text-xs font-black"
+              title="Ubah Ukuran Teks (Aksesibilitas)"
+            >
+              <Type className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setDarkMode(!darkMode)}
+              className="p-2 rounded-full border"
+              title="Mode Gelap / Terang"
+            >
+              {darkMode ? (
+                <Sun className="w-4 h-4 text-amber-400" />
+              ) : (
+                <Moon className="w-4 h-4 text-slate-700" />
+              )}
+            </button>
+
+            <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-900 px-3 py-1.5 rounded-full text-xs font-extrabold">
               <Flame className="w-4 h-4 fill-amber-500 text-amber-500" />
               <span>{poinXP} XP</span>
             </div>
@@ -3923,7 +3858,7 @@ export default function AplikasiHibahIlmu() {
               <div className="relative">
                 <button
                   onClick={() => setBukaMenuNotif(!bukaMenuNotif)}
-                  className="p-2.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 relative transition"
+                  className="p-2 rounded-full bg-slate-100 text-slate-700 relative"
                 >
                   <Bell className="w-4 h-4" />
                   {jumlahNotifBelumDibaca > 0 && (
@@ -3934,32 +3869,21 @@ export default function AplikasiHibahIlmu() {
                 </button>
 
                 {bukaMenuNotif && (
-                  <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-3xl shadow-2xl border border-slate-200 p-4 z-50">
-                    <div className="flex justify-between items-center border-b pb-2.5 mb-3">
-                      <span className="font-black text-sm">Kotak Masuk Notifikasi</span>
+                  <div className="absolute right-0 mt-2 w-80 bg-white text-slate-800 rounded-3xl shadow-2xl border p-4 z-50">
+                    <div className="flex justify-between items-center border-b pb-2 mb-2">
+                      <span className="font-black text-xs">Kotak Masuk Notifikasi</span>
                       <button
                         onClick={tandaiSemuaNotifDibaca}
-                        className="text-[11px] font-bold text-indigo-600 hover:underline"
+                        className="text-[10px] font-bold text-indigo-600 underline"
                       >
                         Tandai Dibaca
                       </button>
                     </div>
-                    <div className="space-y-2.5 max-h-72 overflow-y-auto">
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
                       {notifikasiUserAktif.map((n) => (
-                        <div
-                          key={n.id}
-                          className={`p-3 rounded-2xl border text-xs ${
-                            n.dibaca ? "bg-slate-50" : "bg-indigo-50/70 border-indigo-200"
-                          }`}
-                        >
-                          <div className="flex justify-between font-black">
-                            <span>{n.judul}</span>
-                            <span className="text-[10px] text-slate-400">{n.waktu}</span>
-                          </div>
-                          <p className="text-slate-700 my-1">{n.pesan}</p>
-                          <div className="text-[10px] font-bold text-indigo-600">
-                            Dari: {n.pengirim}
-                          </div>
+                        <div key={n.id} className="p-2.5 rounded-xl border text-xs bg-slate-50">
+                          <div className="font-black">{n.judul}</div>
+                          <p className="text-slate-600 my-0.5">{n.pesan}</p>
                         </div>
                       ))}
                     </div>
@@ -3974,10 +3898,10 @@ export default function AplikasiHibahIlmu() {
                 setJenjangAktif(null);
                 setKelasAktif(null);
               }}
-              className="relative px-4 py-2 rounded-full text-xs font-extrabold shadow-sm bg-emerald-600 text-white flex items-center gap-2"
+              className="px-4 py-2 rounded-full text-xs font-extrabold bg-emerald-600 text-white flex items-center gap-1.5"
             >
-              <LayoutDashboard className="w-4 h-4" />
-              <span>{userLogin ? `Panel ${userLogin.role}` : "Wajib Masuk / Daftar"}</span>
+              <LayoutDashboard className="w-3.5 h-3.5" />
+              <span>{userLogin ? `Panel ${userLogin.role}` : "Masuk"}</span>
               {jumlahPending > 0 && (
                 <span className="bg-rose-500 text-white text-[10px] px-1.5 rounded-full">
                   {jumlahPending}
@@ -4002,6 +3926,47 @@ export default function AplikasiHibahIlmu() {
               </div>
             )}
 
+            {/* FITUR 4: MENU LEADERBOARD GLOBAL & GAMIFIKASI */}
+            {menuAktif === "leaderboard" && (
+              <div className="max-w-3xl mx-auto bg-white text-slate-800 rounded-3xl p-8 border shadow-sm space-y-6">
+                <div className="text-center space-y-2">
+                  <Trophy className="w-12 h-12 text-amber-500 mx-auto" />
+                  <h2 className="text-2xl font-black">Papan Peringkat Pelajar (Global Leaderboard)</h2>
+                  <p className="text-xs text-slate-500">
+                    Kumpulkan XP dari menyelesaikan materi, mengerjakan tugas, dan simulasi Tryout!
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  {[...safeAkunList]
+                    .sort((a, b) => (b.xp || 0) - (a.xp || 0))
+                    .map((akun, index) => (
+                      <div
+                        key={akun.id}
+                        className={`p-4 rounded-2xl border flex justify-between items-center ${
+                          index === 0
+                            ? "bg-amber-50 border-amber-300"
+                            : "bg-slate-50 border-slate-200"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="w-8 h-8 rounded-xl bg-slate-900 text-white font-black text-xs flex items-center justify-center">
+                            #{index + 1}
+                          </span>
+                          <div>
+                            <div className="font-black text-sm">{akun.nama}</div>
+                            <div className="text-xs text-slate-500">{akun.infoTambahan}</div>
+                          </div>
+                        </div>
+                        <span className="font-black text-sm text-amber-700 bg-amber-100 px-3 py-1 rounded-full">
+                          {akun.id === userLogin.id ? poinXP : akun.xp || 150} XP
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* MENU TRYOUT CBT PRO */}
             {menuAktif === "tryout" && (
               <div className="max-w-5xl mx-auto">
                 {!sedangUjian && !ujianSelesai && (
@@ -4015,23 +3980,9 @@ export default function AplikasiHibahIlmu() {
                           Pusat Ujian Tryout, TPA, TOEP & TOEFL
                         </h1>
                         <p className="text-xs text-indigo-200 max-w-xl">
-                          Dilengkapi proteksi <b>Layar Penuh (Fullscreen)</b> otomatis dan sensor
-                          anti-curang (mendeteksi <b>Alt+Tab</b> atau pindah jendela). Maksimal 3x
-                          pelanggaran sebelum diskualifikasi otomatis.
+                          Dilengkapi proteksi Fullscreen otomatis dan sensor anti-curang Alt+Tab.
                         </p>
                       </div>
-                      {(userLogin.role === "guru" || userLogin.role === "admin") && (
-                        <button
-                          onClick={() => {
-                            if (userLogin.role === "admin") setAdminModeGuru(true);
-                            setGuruTabAktif("tryout_builder");
-                            setMenuAktif("dashboard");
-                          }}
-                          className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-5 py-3.5 rounded-2xl text-xs shadow-lg"
-                        >
-                          + Rancang Paket Tes Baru (Guru)
-                        </button>
-                      )}
                     </div>
 
                     <div className="flex flex-wrap gap-2">
@@ -4039,13 +3990,13 @@ export default function AplikasiHibahIlmu() {
                         <button
                           key={kat}
                           onClick={() => setFilterKategoriTryout(kat)}
-                          className={`px-4 py-2.5 rounded-xl text-xs font-black border transition ${
+                          className={`px-4 py-2.5 rounded-xl text-xs font-black border ${
                             filterKategoriTryout === kat
-                              ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+                              ? "bg-indigo-600 text-white"
                               : "bg-white text-slate-700"
                           }`}
                         >
-                          {kat === "Semua" ? "Semua Kategori Tes" : `Tes ${kat}`}
+                          {kat === "Semua" ? "Semua Kategori" : `Tes ${kat}`}
                         </button>
                       ))}
                     </div>
@@ -4064,47 +4015,27 @@ export default function AplikasiHibahIlmu() {
                           return (
                             <div
                               key={pkt.id}
-                              className="bg-white rounded-3xl p-6 border-2 border-slate-200 shadow-2xs flex flex-col justify-between space-y-5"
+                              className="bg-white text-slate-800 rounded-3xl p-6 border-2 border-slate-200 shadow-2xs flex flex-col justify-between space-y-5"
                             >
                               <div className="space-y-3">
                                 <div className="flex justify-between items-center">
                                   <span className="text-[10px] font-black uppercase px-3 py-1 rounded-lg bg-indigo-100 text-indigo-900">
-                                    Kategori: {pkt.kategoriTes} • {pkt.jenjang}
+                                    {pkt.kategoriTes} • {pkt.jenjang}
                                   </span>
                                   <span className="text-xs font-bold text-slate-500">
-                                    {pkt.daftarSoal.length} Butir Soal
+                                    {pkt.daftarSoal.length} Soal
                                   </span>
                                 </div>
                                 <h3 className="text-xl font-black text-slate-900">{pkt.judul}</h3>
-
-                                <div className="space-y-1.5 text-xs text-slate-600 bg-slate-50 p-4 rounded-2xl border">
-                                  <div className="flex items-center gap-2">
-                                    <Users className="w-4 h-4 text-indigo-600 shrink-0" />
-                                    <span>
-                                      Penguji: <b>{pkt.pembuatNama}</b>
-                                    </span>
+                                <div className="space-y-1 text-xs text-slate-600 bg-slate-50 p-3.5 rounded-2xl border">
+                                  <div>
+                                    Lokasi: <b>{pkt.alamatLokasi}</b>
                                   </div>
-                                  <div className="flex items-center gap-2">
-                                    <MapPin className="w-4 h-4 text-rose-600 shrink-0" />
-                                    <span>
-                                      Lokasi/Alamat: <b>{pkt.alamatLokasi}</b>
-                                    </span>
+                                  <div>
+                                    Jadwal: <b>{pkt.jadwalUjian}</b> ({pkt.durasiMenit} Menit)
                                   </div>
-                                  <div className="flex items-center gap-2">
-                                    <Calendar className="w-4 h-4 text-emerald-600 shrink-0" />
-                                    <span>
-                                      Jadwal Ujian: <b>{pkt.jadwalUjian}</b>
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <Repeat className="w-4 h-4 text-amber-600 shrink-0" />
-                                    <span>
-                                      Batas Percobaan:{" "}
-                                      <b>
-                                        {percobaanUser} / {pkt.batasPercobaan} kali
-                                      </b>{" "}
-                                      • Durasi: <b>{pkt.durasiMenit} Menit</b>
-                                    </span>
+                                  <div>
+                                    Percobaan: <b>{percobaanUser} / {pkt.batasPercobaan}x</b>
                                   </div>
                                 </div>
                               </div>
@@ -4112,16 +4043,16 @@ export default function AplikasiHibahIlmu() {
                               <button
                                 onClick={() => mulaiUjianTryout(pkt)}
                                 disabled={percobaanUser >= pkt.batasPercobaan}
-                                className={`w-full py-3.5 rounded-2xl font-black text-xs flex items-center justify-center gap-2 shadow-md transition ${
+                                className={`w-full py-3.5 rounded-2xl font-black text-xs flex items-center justify-center gap-2 ${
                                   percobaanUser >= pkt.batasPercobaan
-                                    ? "bg-slate-200 text-slate-500 cursor-not-allowed"
-                                    : "bg-indigo-600 hover:bg-indigo-700 text-white"
+                                    ? "bg-slate-200 text-slate-500"
+                                    : "bg-indigo-600 text-white"
                                 }`}
                               >
                                 <Maximize2 className="w-4 h-4" />
                                 {percobaanUser >= pkt.batasPercobaan
                                   ? "Batas Percobaan Habis"
-                                  : "Mulai Ujian (Mode Fullscreen Anti-Cheat)"}
+                                  : "Mulai Ujian (Fullscreen Anti-Cheat)"}
                               </button>
                             </div>
                           );
@@ -4132,26 +4063,14 @@ export default function AplikasiHibahIlmu() {
 
                 {sedangUjian && paketTryoutAktif && (
                   <div className="space-y-4">
-                    <div className="p-4 rounded-2xl bg-slate-900 text-white flex flex-wrap justify-between items-center gap-4">
-                      <div className="flex items-center gap-2.5 text-xs">
-                        <Eye className="w-5 h-5 text-emerald-400" />
-                        <span>
-                          <b>Proctoring Aktif:</b> {paketTryoutAktif.judul} (
-                          {paketTryoutAktif.alamatLokasi})
-                        </span>
-                      </div>
+                    <div className="p-4 rounded-2xl bg-slate-900 text-white flex justify-between items-center">
+                      <span className="text-xs font-bold">{paketTryoutAktif.judul}</span>
                       <div className="flex items-center gap-3">
-                        <span
-                          className={`px-3 py-1 rounded-lg text-xs font-black ${
-                            jumlahPelanggaranUjian > 0
-                              ? "bg-rose-600 text-white"
-                              : "bg-emerald-500/20 text-emerald-300"
-                          }`}
-                        >
+                        <span className="px-3 py-1 rounded-lg text-xs font-black bg-rose-600">
                           Pelanggaran Alt+Tab: {jumlahPelanggaranUjian} /{" "}
                           {paketTryoutAktif.batasPelanggaran}
                         </span>
-                        <span className="font-mono text-lg font-black bg-white/10 px-3 py-1 rounded-lg text-amber-300">
+                        <span className="font-mono text-lg font-black text-amber-300">
                           {Math.floor(sisaWaktu / 60)}:
                           {(sisaWaktu % 60).toString().padStart(2, "0")}
                         </span>
@@ -4159,197 +4078,81 @@ export default function AplikasiHibahIlmu() {
                     </div>
 
                     {pesanPeringatanCheat && (
-                      <div className="p-4 bg-rose-600 text-white rounded-2xl text-xs font-black flex items-center gap-2 shadow-lg">
-                        <AlertTriangle className="w-5 h-5 shrink-0" />
+                      <div className="p-4 bg-rose-600 text-white rounded-2xl text-xs font-black flex items-center gap-2">
+                        <AlertTriangle className="w-5 h-5" />
                         <span>{pesanPeringatanCheat}</span>
                       </div>
                     )}
 
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                      <div className="lg:col-span-8 bg-white p-8 rounded-3xl border shadow-sm space-y-6">
-                        <div className="flex justify-between items-center border-b pb-3">
-                          <span className="text-xs font-black uppercase px-3 py-1 rounded-lg bg-indigo-100 text-indigo-900">
-                            Soal #{indeksSoalTryoutAktif + 1} dari{" "}
-                            {paketTryoutAktif.daftarSoal.length}
-                          </span>
-                          <span className="text-xs font-bold text-slate-400">
-                            Kategori: {paketTryoutAktif.kategoriTes}
-                          </span>
-                        </div>
-
-                        <h3 className="font-extrabold text-lg text-slate-900">
-                          {paketTryoutAktif.daftarSoal[indeksSoalTryoutAktif].pertanyaan}
-                        </h3>
-
-                        {paketTryoutAktif.daftarSoal[indeksSoalTryoutAktif].rumus && (
-                          <div className="p-3 bg-slate-900 text-amber-300 font-mono text-xs rounded-xl">
-                            Subtes / Petunjuk:{" "}
-                            {paketTryoutAktif.daftarSoal[indeksSoalTryoutAktif].rumus}
-                          </div>
-                        )}
-
-                        <div className="grid grid-cols-1 gap-3">
-                          {paketTryoutAktif.daftarSoal[indeksSoalTryoutAktif].opsi.map(
-                            (ops, idx) => (
-                              <button
-                                key={idx}
-                                onClick={() =>
-                                  setJawabanUserTryout((p) => ({
-                                    ...p,
-                                    [indeksSoalTryoutAktif]: idx,
-                                  }))
-                                }
-                                className={`p-4 rounded-2xl border-2 text-sm font-bold text-left transition ${
-                                  jawabanUserTryout[indeksSoalTryoutAktif] === idx
-                                    ? "bg-indigo-50 border-indigo-600 text-indigo-900"
-                                    : "border-slate-200 hover:bg-slate-50"
-                                }`}
-                              >
-                                {String.fromCharCode(65 + idx)}. {ops}
-                              </button>
-                            )
-                          )}
-                        </div>
-
-                        <div className="flex flex-wrap justify-between items-center gap-3 pt-4 border-t">
+                    <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-6">
+                      <h3 className="font-extrabold text-lg">
+                        #{indeksSoalTryoutAktif + 1}.{" "}
+                        {paketTryoutAktif.daftarSoal[indeksSoalTryoutAktif].pertanyaan}
+                      </h3>
+                      <div className="grid grid-cols-1 gap-3">
+                        {paketTryoutAktif.daftarSoal[indeksSoalTryoutAktif].opsi.map((ops, idx) => (
                           <button
-                            disabled={indeksSoalTryoutAktif === 0}
-                            onClick={() => setIndeksSoalTryoutAktif((i) => Math.max(0, i - 1))}
-                            className="px-5 py-2.5 rounded-xl border font-bold text-xs disabled:opacity-40"
-                          >
-                            ← Sebelumnya
-                          </button>
-
-                          <button
+                            key={idx}
                             onClick={() =>
-                              setRaguRaguTryout((prev) =>
-                                prev.includes(indeksSoalTryoutAktif)
-                                  ? prev.filter((x) => x !== indeksSoalTryoutAktif)
-                                  : [...prev, indeksSoalTryoutAktif]
-                              )
+                              setJawabanUserTryout((p) => ({
+                                ...p,
+                                [indeksSoalTryoutAktif]: idx,
+                              }))
                             }
-                            className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-1.5 ${
-                              raguRaguTryout.includes(indeksSoalTryoutAktif)
-                                ? "bg-amber-400 text-slate-950"
-                                : "bg-amber-50 text-amber-800 border"
+                            className={`p-4 rounded-2xl border-2 text-sm font-bold text-left ${
+                              jawabanUserTryout[indeksSoalTryoutAktif] === idx
+                                ? "bg-indigo-50 border-indigo-600 text-indigo-900"
+                                : "border-slate-200"
                             }`}
                           >
-                            <Flag className="w-4 h-4" /> Ragu-Ragu
+                            {String.fromCharCode(65 + idx)}. {ops}
                           </button>
-
-                          {indeksSoalTryoutAktif < paketTryoutAktif.daftarSoal.length - 1 ? (
-                            <button
-                              onClick={() =>
-                                setIndeksSoalTryoutAktif((i) =>
-                                  Math.min(paketTryoutAktif.daftarSoal.length - 1, i + 1)
-                                )
-                              }
-                              className="px-5 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs"
-                            >
-                              Selanjutnya →
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() =>
-                                selesaikanTryoutOtomatis(jumlahPelanggaranUjian, "Selesai Normal")
-                              }
-                              className="px-6 py-2.5 rounded-xl bg-emerald-600 text-white font-black text-xs"
-                            >
-                              Kumpulkan Ujian
-                            </button>
-                          )}
-                        </div>
+                        ))}
                       </div>
-
-                      <div className="lg:col-span-4 bg-white p-6 rounded-3xl border shadow-sm h-max space-y-4">
-                        <h4 className="font-black text-sm">Navigasi Nomor Soal</h4>
-                        <div className="grid grid-cols-5 gap-2">
-                          {paketTryoutAktif.daftarSoal.map((s, idx) => {
-                            const sudahDijawab = jawabanUserTryout[idx] !== undefined;
-                            const isRagu = raguRaguTryout.includes(idx);
-                            return (
-                              <button
-                                key={s.id}
-                                onClick={() => setIndeksSoalTryoutAktif(idx)}
-                                className={`p-3 rounded-xl font-black text-xs border-2 ${
-                                  indeksSoalTryoutAktif === idx
-                                    ? "border-slate-900"
-                                    : "border-transparent"
-                                } ${
-                                  isRagu
-                                    ? "bg-amber-400 text-slate-950"
-                                    : sudahDijawab
-                                    ? "bg-emerald-600 text-white"
-                                    : "bg-slate-100 text-slate-700"
-                                }`}
-                              >
-                                {idx + 1}
-                              </button>
-                            );
-                          })}
-                        </div>
+                      <div className="flex justify-between pt-4 border-t">
                         <button
-                          onClick={() =>
-                            selesaikanTryoutOtomatis(jumlahPelanggaranUjian, "Selesai Normal")
-                          }
-                          className="w-full bg-emerald-600 text-white font-black py-3.5 rounded-2xl text-xs shadow-md"
+                          disabled={indeksSoalTryoutAktif === 0}
+                          onClick={() => setIndeksSoalTryoutAktif((i) => Math.max(0, i - 1))}
+                          className="px-5 py-2.5 rounded-xl border font-bold text-xs"
                         >
-                          Selesai & Kumpulkan
+                          ← Sebelumnya
                         </button>
+                        {indeksSoalTryoutAktif < paketTryoutAktif.daftarSoal.length - 1 ? (
+                          <button
+                            onClick={() => setIndeksSoalTryoutAktif((i) => i + 1)}
+                            className="px-5 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs"
+                          >
+                            Selanjutnya →
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() =>
+                              selesaikanTryoutOtomatis(jumlahPelanggaranUjian, "Selesai Normal")
+                            }
+                            className="px-6 py-2.5 rounded-xl bg-emerald-600 text-white font-black text-xs"
+                          >
+                            Kumpulkan Ujian
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
                 )}
 
                 {ujianSelesai && paketTryoutAktif && (
-                  <div className="space-y-6">
-                    <div className="bg-white p-10 rounded-3xl border text-center shadow-lg space-y-3">
-                      <Trophy className="w-16 h-16 text-amber-500 mx-auto" />
-                      <h2 className="text-4xl font-black">Skor Akhir: {skorTryout} / 100</h2>
-                      <p className="text-xs font-bold text-slate-500">
-                        Total Pelanggaran Terdeteksi: {jumlahPelanggaranUjian} kali
-                      </p>
-                      <button
-                        onClick={() => {
-                          setUjianSelesai(false);
-                          setSedangUjian(false);
-                          setPaketTryoutAktif(null);
-                        }}
-                        className="bg-slate-900 text-white px-8 py-3.5 rounded-xl font-bold text-xs"
-                      >
-                        Kembali ke Daftar Paket Tryout
-                      </button>
-                    </div>
-
-                    <div className="space-y-4">
-                      {paketTryoutAktif.daftarSoal.map((soal, idx) => {
-                        const jwbUser = jawabanUserTryout[idx];
-                        const isBenar = jwbUser === soal.jawabanBenar;
-                        return (
-                          <div key={soal.id} className="bg-white p-6 rounded-3xl border space-y-2">
-                            <div className="flex justify-between items-center">
-                              <span className="text-xs font-black">Soal #{idx + 1}</span>
-                              <span
-                                className={`text-xs font-black px-3 py-1 rounded-full ${
-                                  isBenar
-                                    ? "bg-emerald-100 text-emerald-800"
-                                    : "bg-rose-100 text-rose-800"
-                                }`}
-                              >
-                                {isBenar ? "Benar" : "Salah"}
-                              </span>
-                            </div>
-                            <p className="font-bold text-sm">{soal.pertanyaan}</p>
-                            <div className="text-xs text-slate-600">
-                              Kunci Jawaban: <b>{soal.opsi[soal.jawabanBenar]}</b>
-                            </div>
-                            <div className="p-3 bg-slate-50 rounded-xl text-xs text-slate-700 border">
-                              <b>Pembahasan:</b> {soal.pembahasan}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                  <div className="bg-white text-slate-800 p-10 rounded-3xl border text-center space-y-4">
+                    <Trophy className="w-16 h-16 text-amber-500 mx-auto" />
+                    <h2 className="text-4xl font-black">Skor Akhir: {skorTryout} / 100</h2>
+                    <button
+                      onClick={() => {
+                        setUjianSelesai(false);
+                        setSedangUjian(false);
+                        setPaketTryoutAktif(null);
+                      }}
+                      className="bg-slate-900 text-white px-8 py-3.5 rounded-xl font-bold text-xs"
+                    >
+                      Kembali ke Daftar Paket Tryout
+                    </button>
                   </div>
                 )}
               </div>
@@ -4357,7 +4160,7 @@ export default function AplikasiHibahIlmu() {
 
             {menuAktif === "forum" && (
               <div className="max-w-4xl mx-auto space-y-6">
-                <div className="bg-white p-8 border rounded-3xl shadow-sm">
+                <div className="bg-white text-slate-800 p-8 border rounded-3xl shadow-sm">
                   <h2 className="font-black text-2xl mb-4 flex items-center gap-2">
                     <HelpCircle className="text-emerald-600" /> Forum Diskusi Terverifikasi
                   </h2>
@@ -4373,7 +4176,6 @@ export default function AplikasiHibahIlmu() {
                           mapel: mapelBaru,
                           judul: judulTanyaBaru || "Pertanyaan Diskusi",
                           pertanyaan: tanyaBaru,
-                          gambarUrl: gambarTanyaBaru || undefined,
                           waktu: "Baru saja",
                           likes: 0,
                           solved: false,
@@ -4383,39 +4185,18 @@ export default function AplikasiHibahIlmu() {
                       ]);
                       setJudulTanyaBaru("");
                       setTanyaBaru("");
-                      setGambarTanyaBaru("");
                       tambahXP(20);
                     }}
                     className="space-y-3"
                   >
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <input
-                        type="text"
-                        required
-                        value={judulTanyaBaru}
-                        onChange={(e) => setJudulTanyaBaru(e.target.value)}
-                        placeholder="Judul Topik / Soal..."
-                        className="p-3.5 bg-slate-50 border rounded-xl text-xs font-bold"
-                      />
-                      <select
-                        value={jenjangTanyaBaru}
-                        onChange={(e) => setJenjangTanyaBaru(e.target.value)}
-                        className="p-3.5 bg-slate-50 border rounded-xl text-xs font-bold"
-                      >
-                        <option value="SD / MI">SD / MI</option>
-                        <option value="SMP / MTs">SMP / MTs</option>
-                        <option value="SMA / SMK">SMA / SMK</option>
-                        <option value="Kuliah & TPA/TOEFL">Kuliah & TPA/TOEFL</option>
-                      </select>
-                      <input
-                        type="text"
-                        required
-                        value={mapelBaru}
-                        onChange={(e) => setMapelBaru(e.target.value)}
-                        placeholder="Mata Pelajaran..."
-                        className="p-3.5 bg-slate-50 border rounded-xl text-xs font-bold"
-                      />
-                    </div>
+                    <input
+                      type="text"
+                      required
+                      value={judulTanyaBaru}
+                      onChange={(e) => setJudulTanyaBaru(e.target.value)}
+                      placeholder="Judul Topik / Soal..."
+                      className="w-full p-3.5 bg-slate-50 border rounded-xl text-xs font-bold"
+                    />
                     <textarea
                       rows={3}
                       required
@@ -4426,46 +4207,20 @@ export default function AplikasiHibahIlmu() {
                     />
                     <button
                       type="submit"
-                      className="bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold text-xs flex items-center gap-2"
+                      className="bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold text-xs"
                     >
-                      <Send className="w-4 h-4" /> Kirim Pertanyaan (+20 XP)
+                      Kirim Pertanyaan (+20 XP)
                     </button>
                   </form>
                 </div>
 
                 {daftarDiskusi.map((d) => (
-                  <div key={d.id} className="bg-white p-6 border rounded-3xl shadow-sm space-y-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded bg-indigo-100 text-indigo-900">
-                          {d.jenjang} • {d.mapel}
-                        </span>
-                        <h3 className="font-black text-lg mt-1">{d.judul}</h3>
-                        <div className="text-xs text-slate-400">
-                          Oleh: <b>{d.penanya}</b> • {d.waktu}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() =>
-                          setDaftarDiskusi(
-                            daftarDiskusi.map((x) =>
-                              x.id === d.id ? { ...x, likes: x.likes + 1 } : x
-                            )
-                          )
-                        }
-                        className="px-3 py-1.5 rounded-xl bg-slate-100 text-xs font-bold flex items-center gap-1.5"
-                      >
-                        <ThumbsUp className="w-3.5 h-3.5" /> {d.likes}
-                      </button>
-                    </div>
+                  <div
+                    key={d.id}
+                    className="bg-white text-slate-800 p-6 border rounded-3xl space-y-3"
+                  >
+                    <h3 className="font-black text-lg">{d.judul}</h3>
                     <p className="text-sm text-slate-700">{d.pertanyaan}</p>
-                    <div className="space-y-2 pl-4 border-l-2 border-emerald-300">
-                      {d.jawaban.map((j) => (
-                        <div key={j.id} className="p-3 rounded-2xl text-xs bg-slate-50 border">
-                          <b>{j.penjawab}:</b> {j.isi}
-                        </div>
-                      ))}
-                    </div>
                   </div>
                 ))}
               </div>
@@ -4475,59 +4230,40 @@ export default function AplikasiHibahIlmu() {
               <div className="max-w-3xl mx-auto bg-slate-900 text-white p-12 rounded-[2.5rem] text-center shadow-2xl">
                 <ShieldCheck className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
                 <h2 className="text-3xl font-black mb-3">Transparansi Dana Umat</h2>
-                <p className="text-slate-300 text-sm mb-8 max-w-lg mx-auto">
-                  Seluruh akses belajar dan ujian 100% gratis. Donasi sukarela digunakan murni untuk
-                  perpanjangan server & domain hibahilmu.id.
+                <p className="text-slate-300 text-sm">
+                  Seluruh akses belajar dan ujian 100% gratis selamanya.
                 </p>
               </div>
             )}
 
+            {/* BERANDA RUANG KELAS (DENGAN LIVE CHAT MATERI & PRESENSI OTOMATIS) */}
             {menuAktif === "beranda" && (
               <div>
                 {!jenjangAktif && !kelasAktif && (
                   <div className="space-y-10">
                     <div className="text-center max-w-4xl mx-auto pt-2">
-                      <h1 className="text-4xl sm:text-6xl font-black text-slate-900 mb-4 leading-tight">
+                      <h1 className="text-4xl sm:text-6xl font-black mb-4 leading-tight">
                         Satu Platform Sejuta Ilmu, <br />
-                        <span className="text-emerald-600">
-                          Gratis & Dipertanggungjawabkan.
-                        </span>
+                        <span className="text-emerald-500">Gratis & Terverifikasi.</span>
                       </h1>
-                      <p className="text-xs sm:text-sm text-slate-500 mb-6">
-                        Login sebagai: <b>{userLogin.nama}</b> ({userLogin.role.toUpperCase()})
-                      </p>
 
                       {userLogin.role === "siswa" && (
-                        <div className="inline-flex flex-wrap items-center justify-center gap-2 bg-white p-2 rounded-2xl border shadow-2xs mb-6">
+                        <div className="inline-flex flex-wrap items-center justify-center gap-2 bg-white text-slate-800 p-2 rounded-2xl border shadow-2xs mb-4">
                           <button
                             onClick={() => setHanyaMateriDiikuti(true)}
-                            className={`px-4 py-2 rounded-xl text-xs font-black transition ${
-                              hanyaMateriDiikuti
-                                ? "bg-emerald-600 text-white"
-                                : "text-slate-600 hover:bg-slate-100"
+                            className={`px-4 py-2 rounded-xl text-xs font-black ${
+                              hanyaMateriDiikuti ? "bg-emerald-600 text-white" : "text-slate-600"
                             }`}
                           >
-                            Hanya Materi Kelas yang Saya Ikuti (
-                            {(userLogin.minatSubJenjang || []).length})
+                            Materi Kelas Saya ({(userLogin.minatSubJenjang || []).length})
                           </button>
                           <button
                             onClick={() => setHanyaMateriDiikuti(false)}
-                            className={`px-4 py-2 rounded-xl text-xs font-black transition ${
-                              !hanyaMateriDiikuti
-                                ? "bg-slate-900 text-white"
-                                : "text-slate-600 hover:bg-slate-100"
+                            className={`px-4 py-2 rounded-xl text-xs font-black ${
+                              !hanyaMateriDiikuti ? "bg-slate-900 text-white" : "text-slate-600"
                             }`}
                           >
-                            Tampilkan Semua Katalog Jenjang
-                          </button>
-                          <button
-                            onClick={() => {
-                              setSiswaTabAktif("minat");
-                              setMenuAktif("dashboard");
-                            }}
-                            className="px-3 py-2 text-xs font-bold text-indigo-600 underline"
-                          >
-                            + Ubah Pilihan Kelas
+                            Semua Katalog Jenjang
                           </button>
                         </div>
                       )}
@@ -4549,7 +4285,7 @@ export default function AplikasiHibahIlmu() {
                               setJenjangAktif(jenjang);
                               setSubJenjangAktif("semua");
                             }}
-                            className="cursor-pointer bg-white rounded-3xl p-8 border shadow-2xs hover:shadow-xl transition flex flex-col justify-between relative overflow-hidden"
+                            className="cursor-pointer bg-white text-slate-800 rounded-3xl p-8 border shadow-2xs hover:shadow-xl transition flex flex-col justify-between relative overflow-hidden"
                           >
                             <div
                               className={`h-2 w-full bg-gradient-to-r ${jenjang.gradien} absolute top-0 left-0`}
@@ -4584,96 +4320,33 @@ export default function AplikasiHibahIlmu() {
                   <div>
                     <button
                       onClick={() => setJenjangAktif(null)}
-                      className="mb-6 bg-white px-5 py-2.5 border rounded-xl text-sm font-bold flex items-center gap-2"
+                      className="mb-6 bg-white text-slate-800 px-5 py-2.5 border rounded-xl text-sm font-bold flex items-center gap-2"
                     >
                       <ArrowLeft className="w-4 h-4" /> Kembali ke Jenjang
                     </button>
-                    <div
-                      className={`rounded-3xl p-10 text-white bg-gradient-to-r ${jenjangAktif.gradien} shadow-xl mb-8`}
-                    >
-                      <h1 className="text-3xl sm:text-4xl font-black mb-2">{jenjangAktif.nama}</h1>
-                      <p className="text-white/90 text-sm">{jenjangAktif.deskripsi}</p>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2 mb-8">
-                      <button
-                        onClick={() => setSubJenjangAktif("semua")}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold border ${
-                          subJenjangAktif === "semua" ? "bg-slate-900 text-white" : "bg-white"
-                        }`}
-                      >
-                        Semua Tingkat yang Sesuai
-                      </button>
-                      {jenjangAktif.subJenjang
-                        .filter((sj) => {
-                          if (userLogin.role === "siswa" && hanyaMateriDiikuti) {
-                            return (userLogin.minatSubJenjang || []).includes(sj.id);
-                          }
-                          return true;
-                        })
-                        .map((sj) => (
-                          <button
-                            key={sj.id}
-                            onClick={() => setSubJenjangAktif(sj.id)}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold border ${
-                              subJenjangAktif === sj.id ? "bg-slate-900 text-white" : "bg-white"
-                            }`}
-                          >
-                            {sj.nama}
-                          </button>
-                        ))}
-                    </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {jenjangAktif.kelas
-                        .filter((k) => {
-                          const cocokSub =
-                            subJenjangAktif === "semua" || k.subJenjangId === subJenjangAktif;
-                          if (userLogin.role === "siswa" && hanyaMateriDiikuti) {
-                            return (
-                              cocokSub &&
-                              (userLogin.minatSubJenjang || []).includes(k.subJenjangId)
-                            );
-                          }
-                          return cocokSub;
-                        })
-                        .map((k) => (
-                          <div
-                            key={k.id}
-                            onClick={() => setKelasAktif(k)}
-                            className="bg-white p-6 border-2 rounded-3xl cursor-pointer hover:shadow-lg transition flex flex-col justify-between space-y-4"
-                          >
-                            <div>
-                              <div className="flex justify-between items-center mb-3">
-                                <span className="text-xs font-bold bg-slate-100 px-3 py-1 rounded-lg">
-                                  {jenjangAktif.subJenjang.find((s) => s.id === k.subJenjangId)
-                                    ?.nama || "Umum"}
-                                </span>
-                                {materiSelesai.includes(k.id) && (
-                                  <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
-                                    Selesai
-                                  </span>
-                                )}
-                              </div>
-                              <h3 className="text-xl font-bold mb-2">{k.judul}</h3>
-                              <p className="text-sm text-slate-500 line-clamp-2 mb-3">
-                                {bersihkanTagHtml(k.rangkuman)}
-                              </p>
-                              <div className="p-2.5 bg-slate-50 border rounded-xl text-[11px] text-slate-600">
-                                Diunggah oleh: <b>{k.pembuatNama}</b> ({k.pembuatEmail}) •{" "}
-                                {k.tanggalUpload}
-                              </div>
-                            </div>
-                            <div className="pt-3 border-t flex justify-between items-center text-sm font-bold text-indigo-600">
-                              <span className="flex items-center gap-1.5">
-                                <PlayCircle className="w-5 h-5" /> Buka Materi & Kuis
-                              </span>
-                              <span className="text-xs bg-amber-100 text-amber-800 px-2.5 py-1 rounded-lg">
-                                +XP
-                              </span>
+                      {jenjangAktif.kelas.map((k) => (
+                        <div
+                          key={k.id}
+                          onClick={() => setKelasAktif(k)}
+                          className="bg-white text-slate-800 p-6 border-2 rounded-3xl cursor-pointer hover:shadow-lg transition flex flex-col justify-between space-y-4"
+                        >
+                          <div>
+                            <h3 className="text-xl font-bold mb-2">{k.judul}</h3>
+                            <p className="text-sm text-slate-500 line-clamp-2 mb-3">
+                              {bersihkanTagHtml(k.rangkuman)}
+                            </p>
+                            <div className="p-2.5 bg-slate-50 border rounded-xl text-[11px] text-slate-600">
+                              Penanggung Jawab: <b>{k.pembuatNama}</b> ({k.pembuatEmail})
                             </div>
                           </div>
-                        ))}
+                          <div className="pt-3 border-t flex justify-between items-center text-sm font-bold text-indigo-600">
+                            <span>Buka Materi, Live Chat & Kuis</span>
+                            <span>→</span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
@@ -4683,23 +4356,14 @@ export default function AplikasiHibahIlmu() {
                     <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
                       <button
                         onClick={() => setKelasAktif(null)}
-                        className="bg-white px-5 py-2.5 border rounded-xl text-sm font-bold flex items-center gap-2"
+                        className="bg-white text-slate-800 px-5 py-2.5 border rounded-xl text-sm font-bold flex items-center gap-2"
                       >
-                        <ArrowLeft className="w-4 h-4" /> Kembali ke Daftar Materi
+                        <ArrowLeft className="w-4 h-4" /> Kembali
                       </button>
                       <button
                         onClick={() => toggleSelesaiMateri(kelasAktif.id)}
-                        className={`px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 ${
-                          materiSelesai.includes(kelasAktif.id)
-                            ? "bg-emerald-600 text-white"
-                            : "bg-white border"
-                        }`}
+                        className="px-5 py-2.5 rounded-xl text-sm font-bold bg-emerald-600 text-white"
                       >
-                        {materiSelesai.includes(kelasAktif.id) ? (
-                          <CheckSquare className="w-4 h-4" />
-                        ) : (
-                          <Square className="w-4 h-4" />
-                        )}
                         {materiSelesai.includes(kelasAktif.id)
                           ? "Selesai (+30 XP)"
                           : "Tandai Selesai"}
@@ -4708,7 +4372,7 @@ export default function AplikasiHibahIlmu() {
 
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                       <div className="lg:col-span-7 space-y-6">
-                        <div className="bg-white p-8 rounded-3xl border shadow-2xs">
+                        <div className="bg-white text-slate-800 p-8 rounded-3xl border shadow-2xs">
                           <div className="aspect-video bg-slate-900 rounded-2xl mb-6 overflow-hidden">
                             <iframe
                               src={kelasAktif.videoUrl}
@@ -4718,30 +4382,65 @@ export default function AplikasiHibahIlmu() {
                             />
                           </div>
                           <h1 className="text-2xl font-black mb-2">{kelasAktif.judul}</h1>
-                          <div className="mb-5 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900">
-                            <b>Penanggung Jawab Materi:</b> {kelasAktif.pembuatNama} (
-                            {kelasAktif.pembuatEmail}) • Diunggah: {kelasAktif.tanggalUpload}
+                          <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900">
+                            <b>Kehadiran Anda Tercatat Otomatis!</b> • Pengampu:{" "}
+                            {kelasAktif.pembuatNama}
                           </div>
-
                           <div
                             className="prose prose-slate max-w-none text-sm leading-relaxed mb-6"
                             dangerouslySetInnerHTML={{ __html: kelasAktif.rangkuman }}
                           />
-                          {kelasAktif.rumusMatematika && (
-                            <div className="p-5 bg-slate-900 text-amber-300 font-mono text-sm rounded-2xl whitespace-pre-wrap">
-                              {kelasAktif.rumusMatematika}
-                            </div>
-                          )}
+                        </div>
+
+                        {/* FITUR 3: LIVE CHAT DISKUSI SPESIFIK PER MATERI */}
+                        <div className="bg-white text-slate-800 p-6 rounded-3xl border space-y-4">
+                          <h3 className="font-black text-base flex items-center gap-2">
+                            <MessageSquare className="w-5 h-5 text-indigo-600" /> Live Chat Diskusi
+                            Materi Ini
+                          </h3>
+                          <div className="space-y-2.5 max-h-60 overflow-y-auto p-3 bg-slate-50 rounded-2xl border">
+                            {(chatPerMateri[kelasAktif.id] || []).map((ch) => (
+                              <div
+                                key={ch.id}
+                                className="p-3 bg-white rounded-xl border text-xs space-y-1"
+                              >
+                                <div className="flex justify-between font-bold">
+                                  <span>
+                                    {ch.pengirimNama}{" "}
+                                    <span className="text-[10px] uppercase px-2 py-0.5 rounded bg-indigo-50 text-indigo-700">
+                                      {ch.pengirimRole}
+                                    </span>
+                                  </span>
+                                  <span className="text-slate-400">{ch.waktu}</span>
+                                </div>
+                                <p className="text-slate-700">{ch.pesan}</p>
+                              </div>
+                            ))}
+                          </div>
+                          <form onSubmit={handleKirimChatMateri} className="flex gap-2">
+                            <input
+                              type="text"
+                              value={inputChatMateri}
+                              onChange={(e) => setInputChatMateri(e.target.value)}
+                              placeholder="Tanyakan sesuatu tentang bab ini ke guru/teman sekelas..."
+                              className="flex-1 p-3 bg-slate-50 border rounded-xl text-xs"
+                            />
+                            <button
+                              type="submit"
+                              className="bg-indigo-600 text-white px-5 py-3 rounded-xl text-xs font-bold"
+                            >
+                              Kirim
+                            </button>
+                          </form>
                         </div>
                       </div>
 
                       <div className="lg:col-span-5 space-y-4">
-                        <div className="bg-white p-6 rounded-3xl border-2 border-indigo-100 shadow-md">
+                        <div className="bg-white text-slate-800 p-6 rounded-3xl border-2 border-indigo-100 shadow-md">
                           <h3 className="font-black text-base flex items-center gap-2 mb-4">
                             <Trophy className="w-5 h-5 text-amber-500" /> Evaluasi Kuis (
                             {kelasAktif.daftarKuis.length} Soal)
                           </h3>
-
                           <div className="space-y-6">
                             {kelasAktif.daftarKuis.map((kuis, idxKuis) => {
                               const statusJawab = statusKuisSiswa[kuis.id];
@@ -4750,17 +4449,10 @@ export default function AplikasiHibahIlmu() {
                                   key={kuis.id}
                                   className="p-4 rounded-2xl bg-slate-50 border space-y-3"
                                 >
-                                  <div className="flex justify-between items-center">
-                                    <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded bg-indigo-100 text-indigo-800">
-                                      Soal #{idxKuis + 1} • {kuis.tipe.replace("_", " ")}
-                                    </span>
-                                    <span className="text-[11px] font-bold text-amber-700">
-                                      +{kuis.poin} XP
-                                    </span>
+                                  <div className="text-[10px] font-black uppercase text-indigo-800">
+                                    Soal #{idxKuis + 1} (+{kuis.poin} XP)
                                   </div>
-
                                   <p className="font-bold text-sm text-slate-900">{kuis.tanya}</p>
-
                                   {(kuis.tipe === "pilihan_ganda" ||
                                     kuis.tipe === "benar_salah") && (
                                     <div className="space-y-2">
@@ -4800,77 +4492,9 @@ export default function AplikasiHibahIlmu() {
                                       ))}
                                     </div>
                                   )}
-
-                                  {kuis.tipe === "mencocokkan" && (
-                                    <div className="space-y-2">
-                                      {(kuis.pasangan || []).map((pas, idxP) => {
-                                        const mapPilihan = jawabanCocokSiswa[kuis.id] || {};
-                                        return (
-                                          <div
-                                            key={idxP}
-                                            className="grid grid-cols-2 gap-2 items-center bg-white p-2 rounded-xl border"
-                                          >
-                                            <span className="text-xs font-bold">{pas.kiri}</span>
-                                            <select
-                                              value={mapPilihan[idxP] || ""}
-                                              onChange={(e) =>
-                                                setJawabanCocokSiswa({
-                                                  ...jawabanCocokSiswa,
-                                                  [kuis.id]: {
-                                                    ...mapPilihan,
-                                                    [idxP]: e.target.value,
-                                                  },
-                                                })
-                                              }
-                                              className="p-2 border rounded-lg text-xs font-bold bg-slate-50"
-                                            >
-                                              <option value="">-- Pilih --</option>
-                                              {(kuis.pasangan || []).map((pOpsi, iOpsi) => (
-                                                <option key={iOpsi} value={pOpsi.kanan}>
-                                                  {pOpsi.kanan}
-                                                </option>
-                                              ))}
-                                            </select>
-                                          </div>
-                                        );
-                                      })}
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          const mapPilihan = jawabanCocokSiswa[kuis.id] || {};
-                                          const semuaBenar = (kuis.pasangan || []).every(
-                                            (pas, idxP) => mapPilihan[idxP] === pas.kanan
-                                          );
-                                          if (semuaBenar) {
-                                            if (statusKuisSiswa[kuis.id] !== "benar") {
-                                              tambahXP(kuis.poin);
-                                            }
-                                            setStatusKuisSiswa({
-                                              ...statusKuisSiswa,
-                                              [kuis.id]: "benar",
-                                            });
-                                          } else {
-                                            setStatusKuisSiswa({
-                                              ...statusKuisSiswa,
-                                              [kuis.id]: "salah",
-                                            });
-                                          }
-                                        }}
-                                        className="w-full bg-indigo-600 text-white py-2 rounded-xl text-xs font-bold"
-                                      >
-                                        Periksa Pasangan
-                                      </button>
-                                    </div>
-                                  )}
-
                                   {statusJawab === "benar" && (
                                     <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900 font-bold">
                                       Benar! {kuis.pembahasan}
-                                    </div>
-                                  )}
-                                  {statusJawab === "salah" && (
-                                    <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-900 font-bold">
-                                      Belum tepat, coba lagi!
                                     </div>
                                   )}
                                 </div>
@@ -4887,79 +4511,11 @@ export default function AplikasiHibahIlmu() {
           </>
         )}
 
-        {/* MODAL ADMIN: TAMBAH / EDIT AKUN */}
-        {modalAdminAkun && (
-          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl p-8 max-w-xl w-full shadow-2xl max-h-[90vh] overflow-y-auto">
-              <h3 className="text-xl font-black mb-4">
-                {idEditAkun ? "Edit Akun & Hak Akses" : "Buat Akun Baru"}
-              </h3>
-              <form onSubmit={simpanAkunAdmin} className="space-y-4 text-xs">
-                <input
-                  type="text"
-                  required
-                  value={namaFormAdmin}
-                  onChange={(e) => setNamaFormAdmin(e.target.value)}
-                  placeholder="Nama Lengkap"
-                  className="w-full p-3 border rounded-xl"
-                />
-                <input
-                  type="email"
-                  required
-                  value={emailFormAdmin}
-                  onChange={(e) => setEmailFormAdmin(e.target.value)}
-                  placeholder="Email"
-                  className="w-full p-3 border rounded-xl"
-                />
-                <div className="grid grid-cols-2 gap-3">
-                  <select
-                    value={roleFormAdmin}
-                    onChange={(e) =>
-                      setRoleFormAdmin(e.target.value as "admin" | "guru" | "siswa")
-                    }
-                    className="p-3 border rounded-xl font-bold"
-                  >
-                    <option value="siswa">Siswa / Mahasiswa</option>
-                    <option value="guru">Guru / Instruktur</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                  <select
-                    value={statusFormAdmin}
-                    onChange={(e) =>
-                      setStatusFormAdmin(e.target.value as "approved" | "pending" | "rejected")
-                    }
-                    className="p-3 border rounded-xl font-bold"
-                  >
-                    <option value="approved">Approved (Aktif)</option>
-                    <option value="pending">Pending</option>
-                    <option value="rejected">Suspended</option>
-                  </select>
-                </div>
-                <div className="flex gap-2 pt-3">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-emerald-600 text-white font-bold py-3 rounded-xl"
-                  >
-                    Simpan
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setModalAdminAkun(false)}
-                    className="px-5 py-3 bg-slate-100 rounded-xl font-bold"
-                  >
-                    Batal
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
         {/* MODAL IMPORT AKUN */}
         {modalImportAkun && (
           <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl p-8 max-w-xl w-full shadow-2xl space-y-4">
-              <h3 className="text-xl font-black">Import Akun Massal (CSV / JSON)</h3>
+            <div className="bg-white text-slate-800 rounded-3xl p-8 max-w-xl w-full shadow-2xl space-y-4">
+              <h3 className="text-xl font-black">Import Akun Massal (CSV)</h3>
               <button
                 type="button"
                 onClick={() => setTeksImportAkun(TEMPLATE_CSV_AKUN)}
@@ -4969,7 +4525,7 @@ export default function AplikasiHibahIlmu() {
               </button>
               <form onSubmit={handleProsesImportAkun} className="space-y-3">
                 <textarea
-                  rows={6}
+                  rows={5}
                   required
                   value={teksImportAkun}
                   onChange={(e) => setTeksImportAkun(e.target.value)}
@@ -4998,7 +4554,7 @@ export default function AplikasiHibahIlmu() {
         {/* MODAL IMPORT KUIS */}
         {modalImportKuis && (
           <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl p-8 max-w-xl w-full shadow-2xl space-y-4">
+            <div className="bg-white text-slate-800 rounded-3xl p-8 max-w-xl w-full shadow-2xl space-y-4">
               <h3 className="text-xl font-black">Import Soal Kuis (CSV Excel)</h3>
               <button
                 type="button"
@@ -5009,7 +4565,7 @@ export default function AplikasiHibahIlmu() {
               </button>
               <form onSubmit={handleProsesImportKuis} className="space-y-3">
                 <textarea
-                  rows={6}
+                  rows={5}
                   required
                   value={teksImportKuis}
                   onChange={(e) => setTeksImportKuis(e.target.value)}
@@ -5038,7 +4594,7 @@ export default function AplikasiHibahIlmu() {
         {/* MODAL TAMBAH KATEGORI */}
         {modalKategori && (
           <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl">
+            <div className="bg-white text-slate-800 rounded-3xl p-8 max-w-sm w-full shadow-2xl">
               <h3 className="text-lg font-black mb-4">Tambah Tingkat Kelas / Prodi</h3>
               <form onSubmit={tambahKategoriBaru} className="space-y-4 text-xs">
                 <select
@@ -5081,7 +4637,7 @@ export default function AplikasiHibahIlmu() {
         )}
       </main>
 
-      <footer className="border-t bg-white py-8 text-center text-xs text-slate-500 mt-16">
+      <footer className="border-t py-8 text-center text-xs text-slate-500 mt-16">
         Dibangun dengan dedikasi oleh <strong>Panda Kode</strong> • HibahIlmu.id (100% Gratis &
         Terverifikasi)
       </footer>
