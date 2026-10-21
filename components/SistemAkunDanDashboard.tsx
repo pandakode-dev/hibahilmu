@@ -1,758 +1,444 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
-  ShieldAlert,
-  UserCheck,
-  UserX,
-  Users,
-  Activity,
-  GraduationCap,
   BookOpen,
-  PlusCircle,
-  Clock,
-  LogOut,
-  KeyRound,
-  UserPlus,
-  Award,
-  Flame,
+  GraduationCap,
   Sparkles,
-  Trash2,
+  School,
+  Compass,
+  PlayCircle,
+  ArrowLeft,
+  Trophy,
+  Search,
+  Flame,
+  CheckCircle2,
+  Timer,
+  MessageSquare,
+  ShieldCheck,
+  LayoutDashboard,
 } from "lucide-react";
-import { JenjangItem, KelasItem } from "@/data/kurikulum";
+import confetti from "canvas-confetti";
 
-export interface AkunPengguna {
-  id: string;
-  nama: string;
-  email: string;
-  password: string;
-  role: "admin" | "guru" | "siswa";
-  status: "pending" | "approved" | "rejected";
-  infoTambahan: string;
-  waktuDaftar: string;
-}
+import {
+  DATA_JENJANG_AWAL,
+  JenjangItem,
+  KelasItem,
+} from "@/data/kurikulum";
+import RuangKelas from "@/components/RuangKelas";
+import FiturTryout from "@/components/FiturTryout";
+import KomunitasDanDonasi from "@/components/KomunitasDanDonasi";
+import SistemAkunDanDashboard, {
+  AkunPengguna,
+  LogAktivitas,
+} from "@/components/SistemAkunDanDashboard";
 
-export interface LogAktivitas {
-  id: string;
-  waktu: string;
-  namaPelaku: string;
-  rolePelaku: "admin" | "guru" | "siswa";
-  aksi: string;
-  kategori: "belajar" | "materi" | "akun" | "komunitas";
-}
+const AKUN_DEFAULT: AkunPengguna[] = [
+  {
+    id: "adm-1",
+    nama: "Admin Panda Kode",
+    email: "admin@hibahilmu.id",
+    password: "123",
+    role: "admin",
+    status: "approved",
+    infoTambahan: "Founder & Super Admin HibahIlmu",
+    waktuDaftar: "Permanen",
+  },
+  {
+    id: "gru-1",
+    nama: "Bapak Budi Santoso, M.Pd",
+    email: "guru@hibahilmu.id",
+    password: "123",
+    role: "guru",
+    status: "approved",
+    infoTambahan: "Guru Matematika & Fisika SMA",
+    waktuDaftar: "Kemarin, 09:00",
+  },
+  {
+    id: "sis-1",
+    nama: "Aisyah Putri",
+    email: "siswa@hibahilmu.id",
+    password: "123",
+    role: "siswa",
+    status: "approved",
+    infoTambahan: "Siswi Kelas 11 SMA",
+    waktuDaftar: "Kemarin, 14:20",
+  },
+];
 
-interface SistemDashboardProps {
-  userLogin: AkunPengguna | null;
-  setUserLogin: (user: AkunPengguna | null) => void;
-  daftarAkun: AkunPengguna[];
-  setDaftarAkun: React.Dispatch<React.SetStateAction<AkunPengguna[]>>;
-  logAktivitas: LogAktivitas[];
-  catatLog: (
-    nama: string,
-    role: "admin" | "guru" | "siswa",
+const LOG_AWAL: LogAktivitas[] = [
+  {
+    id: "log-1",
+    waktu: "06:30 WIB",
+    namaPelaku: "Bapak Budi Santoso, M.Pd",
+    rolePelaku: "guru",
+    aksi: "Mengunggah modul materi baru pada jenjang SMA",
+    kategori: "materi",
+  },
+  {
+    id: "log-2",
+    waktu: "Kemarin",
+    namaPelaku: "Aisyah Putri",
+    rolePelaku: "siswa",
+    aksi: "Menyelesaikan modul kuis interaktif (+50 XP)",
+    kategori: "belajar",
+  },
+];
+
+export default function AplikasiHibahIlmu() {
+  const [menuAktif, setMenuAktif] = useState<string>("beranda");
+  const [daftarJenjang, setDaftarJenjang] = useState<JenjangItem[]>(DATA_JENJANG_AWAL);
+  const [jenjangAktif, setJenjangAktif] = useState<JenjangItem | null>(null);
+  const [kelasAktif, setKelasAktif] = useState<KelasItem | null>(null);
+  const [kataKunci, setKataKunci] = useState<string>("");
+  const [filterLevel, setFilterLevel] = useState<string>("Semua");
+
+  const [daftarAkun, setDaftarAkun] = useState<AkunPengguna[]>(AKUN_DEFAULT);
+  const [userLogin, setUserLogin] = useState<AkunPengguna | null>(null);
+  const [logAktivitas, setLogAktivitas] = useState<LogAktivitas[]>(LOG_AWAL);
+
+  const [poinXP, setPoinXP] = useState<number>(150);
+  const [materiSelesai, setMateriSelesai] = useState<string[]>([]);
+
+  useEffect(() => {
+    const savedXP = localStorage.getItem("hibah_xp");
+    const savedSelesai = localStorage.getItem("hibah_selesai");
+    const savedAkunList = localStorage.getItem("hibah_daftar_akun");
+    const savedUserAktif = localStorage.getItem("hibah_user_aktif");
+    const savedLogs = localStorage.getItem("hibah_log_aktivitas");
+
+    if (savedXP) setPoinXP(parseInt(savedXP, 10));
+    if (savedSelesai) setMateriSelesai(JSON.parse(savedSelesai));
+    if (savedAkunList) setDaftarAkun(JSON.parse(savedAkunList));
+    if (savedUserAktif) setUserLogin(JSON.parse(savedUserAktif));
+    if (savedLogs) setLogAktivitas(JSON.parse(savedLogs));
+  }, []);
+
+  const catatLog = (
+    namaPelaku: string,
+    rolePelaku: "admin" | "guru" | "siswa",
     aksi: string,
     kategori: "belajar" | "materi" | "akun" | "komunitas"
-  ) => void;
-  daftarJenjang: JenjangItem[];
-  tambahMateriDariGuru: (
-    jenjangId: string,
-    modulBaru: KelasItem,
-    namaGuru: string
-  ) => void;
-  poinXP: number;
-  materiSelesai: string[];
-}
-
-export default function SistemAkunDanDashboard({
-  userLogin,
-  setUserLogin,
-  daftarAkun = [],
-  setDaftarAkun,
-  logAktivitas = [],
-  catatLog,
-  daftarJenjang = [],
-  tambahMateriDariGuru,
-  poinXP = 0,
-  materiSelesai = [],
-}: SistemDashboardProps) {
-  const [modeAuth, setModeAuth] = useState<"login" | "register">("login");
-
-  // State Form Login
-  const [emailLogin, setEmailLogin] = useState("");
-  const [passwordLogin, setPasswordLogin] = useState("");
-  const [pesanError, setPesanError] = useState("");
-  const [pesanSukses, setPesanSukses] = useState("");
-
-  // State Form Register (Pendaftaran Siswa & Guru)
-  const [namaReg, setNamaReg] = useState("");
-  const [emailReg, setEmailReg] = useState("");
-  const [passwordReg, setPasswordReg] = useState("");
-  const [roleReg, setRoleReg] = useState<"siswa" | "guru">("siswa");
-  const [infoReg, setInfoReg] = useState("");
-
-  // State Filter di Dashboard Admin
-  const [filterLog, setFilterLog] = useState<string>("semua");
-
-  // State Form Tambah Materi Khusus di Dashboard Guru
-  const [jenjangPilih, setJenjangPilih] = useState("sd");
-  const [judulMateri, setJudulMateri] = useState("");
-  const [mapelMateri, setMapelMateri] = useState("");
-  const [levelMateri, setLevelMateri] = useState<"Pemula" | "Menengah" | "Mahir">("Pemula");
-  const [videoMateri, setVideoMateri] = useState("");
-  const [rangkumanMateri, setRangkumanMateri] = useState("");
-  const [rumusMateri, setRumusMateri] = useState("");
-  const [pertanyaanKuis, setPertanyaanKuis] = useState("");
-  const [opsiA, setOpsiA] = useState("");
-  const [opsiB, setOpsiB] = useState("");
-  const [opsiC, setOpsiC] = useState("");
-  const [opsiD, setOpsiD] = useState("");
-  const [kunciKuis, setKunciKuis] = useState<number>(0);
-  const [notifGuru, setNotifGuru] = useState(false);
-
-  // FUNGSI LOGIN CEPAT
-  const loginCepat = (akun: AkunPengguna) => {
-    setPesanError("");
-    if (akun.status === "pending") {
-      setPesanError("Akun kamu masih menunggu persetujuan (Approval) dari Admin.");
-      return;
-    }
-    if (akun.status === "rejected") {
-      setPesanError("Maaf, pendaftaran akun ini ditolak oleh Admin.");
-      return;
-    }
-    setUserLogin(akun);
-    localStorage.setItem("hibah_user_aktif", JSON.stringify(akun));
-    catatLog(
-      akun.nama,
-      akun.role,
-      `Berhasil masuk ke Dashboard ${akun.role.toUpperCase()}`,
-      "akun"
-    );
-  };
-
-  // FUNGSI LOGIN MANUAL
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPesanError("");
-    setPesanSukses("");
-
-    const safeAkunList = daftarAkun || [];
-    const akunDitemukan = safeAkunList.find(
-      (a) =>
-        a.email.toLowerCase() === emailLogin.toLowerCase() &&
-        a.password === passwordLogin
-    );
-
-    if (!akunDitemukan) {
-      setPesanError("Email atau Password tidak ditemukan.");
-      return;
-    }
-
-    if (akunDitemukan.status === "pending") {
-      setPesanError("⏳ Akun kamu sedang menunggu persetujuan Admin.");
-      return;
-    }
-
-    if (akunDitemukan.status === "rejected") {
-      setPesanError("❌ Maaf, pengajuan akun kamu ditolak.");
-      return;
-    }
-
-    setUserLogin(akunDitemukan);
-    localStorage.setItem("hibah_user_aktif", JSON.stringify(akunDitemukan));
-    catatLog(
-      akunDitemukan.nama,
-      akunDitemukan.role,
-      `Login ke sistem sebagai ${akunDitemukan.role.toUpperCase()}`,
-      "akun"
-    );
-  };
-
-  // FUNGSI PENDAFTARAN SISWA / GURU BARU
-  const handleRegister = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPesanError("");
-    setPesanSukses("");
-
-    const safeAkunList = daftarAkun || [];
-    const sudahAda = safeAkunList.some(
-      (a) => a.email.toLowerCase() === emailReg.toLowerCase()
-    );
-    if (sudahAda) {
-      setPesanError("Email ini sudah terdaftar.");
-      return;
-    }
-
-    const waktuSekarang = new Date().toLocaleTimeString("id-ID", {
+  ) => {
+    const jam = new Date().toLocaleTimeString("id-ID", {
       hour: "2-digit",
       minute: "2-digit",
     });
-
-    const akunBaru: AkunPengguna = {
-      id: "usr-" + Date.now(),
-      nama: namaReg,
-      email: emailReg,
-      password: passwordReg,
-      role: roleReg,
-      status: "pending",
-      infoTambahan:
-        infoReg || (roleReg === "guru" ? "Relawan Pengajar" : "Siswa"),
-      waktuDaftar: `Hari ini, ${waktuSekarang}`,
+    const logBaru: LogAktivitas = {
+      id: "log-" + Date.now(),
+      waktu: `${jam} WIB`,
+      namaPelaku,
+      rolePelaku,
+      aksi,
+      kategori,
     };
-
-    const daftarTerbaru = [akunBaru, ...safeAkunList];
-    setDaftarAkun(daftarTerbaru);
-    localStorage.setItem("hibah_daftar_akun", JSON.stringify(daftarTerbaru));
-
-    catatLog(
-      namaReg,
-      roleReg,
-      `Mendaftar akun baru sebagai ${roleReg.toUpperCase()} (Menunggu Approval)`,
-      "akun"
-    );
-
-    setPesanSukses(
-      "✅ Pendaftaran berhasil dikirim! Menunggu persetujuan Admin."
-    );
-    setNamaReg("");
-    setEmailReg("");
-    setPasswordReg("");
-    setInfoReg("");
-    setModeAuth("login");
+    setLogAktivitas((prev) => {
+      const safePrev = prev || [];
+      const terbaru = [logBaru, ...safePrev];
+      localStorage.setItem("hibah_log_aktivitas", JSON.stringify(terbaru));
+      return terbaru;
+    });
   };
 
-  // FUNGSI ADMIN: APPROVAL / REJECT
-  const ubahStatusAkun = (idTarget: string, statusBaru: "approved" | "rejected") => {
-    const safeAkunList = daftarAkun || [];
-    const target = safeAkunList.find((a) => a.id === idTarget);
-    if (!target) return;
-
-    const daftarTerbaru = safeAkunList.map((akun) =>
-      akun.id === idTarget ? { ...akun, status: statusBaru } : akun
-    );
-    setDaftarAkun(daftarTerbaru);
-    localStorage.setItem("hibah_daftar_akun", JSON.stringify(daftarTerbaru));
-
-    catatLog(
-      userLogin?.nama || "Admin",
-      "admin",
-      `${statusBaru === "approved" ? "Menyetujui" : "Menolak"} pendaftaran ${target.role.toUpperCase()} atas nama ${target.nama}`,
-      "akun"
-    );
+  const lemparkanKonfeti = () => {
+    confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
   };
 
-  // FUNGSI ADMIN: HAPUS AKUN
-  const hapusAkun = (idTarget: string) => {
-    const safeAkunList = daftarAkun || [];
-    const target = safeAkunList.find((a) => a.id === idTarget);
-    if (!target || target.role === "admin") return;
-
-    const daftarTerbaru = safeAkunList.filter((a) => a.id !== idTarget);
-    setDaftarAkun(daftarTerbaru);
-    localStorage.setItem("hibah_daftar_akun", JSON.stringify(daftarTerbaru));
-
-    catatLog(
-      userLogin?.nama || "Admin",
-      "admin",
-      `Menghapus akun ${target.nama} (${target.role})`,
-      "akun"
-    );
+  const tambahXP = (tambahan: number) => {
+    setPoinXP((prev) => {
+      const totalBaru = (prev || 0) + tambahan;
+      localStorage.setItem("hibah_xp", totalBaru.toString());
+      return totalBaru;
+    });
+    lemparkanKonfeti();
   };
 
-  // FUNGSI GURU: TAMBAH MATERI
-  const handleGuruBuatMateri = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!userLogin) return;
+  const toggleSelesaiMateri = (kelasId: string) => {
+    setMateriSelesai((prev) => {
+      const safePrev = prev || [];
+      const sudahAda = safePrev.includes(kelasId);
+      let daftarBaru: string[];
+      if (sudahAda) {
+        daftarBaru = safePrev.filter((id) => id !== kelasId);
+      } else {
+        daftarBaru = [...safePrev, kelasId];
+        tambahXP(30);
+      }
+      localStorage.setItem("hibah_selesai", JSON.stringify(daftarBaru));
+      return daftarBaru;
+    });
+  };
 
-    let finalEmbed = videoMateri;
-    if (videoMateri.includes("watch?v=")) {
-      finalEmbed = videoMateri.replace("watch?v=", "embed/");
-    } else if (videoMateri.includes("youtu.be/")) {
-      finalEmbed = videoMateri.replace("youtu.be/", "www.youtube.com/embed/");
+  const tambahMateriDariGuru = (
+    jenjangId: string,
+    modulBaru: KelasItem,
+    namaGuru: string
+  ) => {
+    setDaftarJenjang((prev) =>
+      (prev || []).map((j) =>
+        j.id === jenjangId ? { ...j, kelas: [modulBaru, ...j.kelas] } : j
+      )
+    );
+    catatLog(
+      namaGuru,
+      "guru",
+      `Menerbitkan modul materi baru: "${modulBaru.judul}"`,
+      "materi"
+    );
+    lemparkanKonfeti();
+  };
+
+  const renderIkonJenjang = (nama: string) => {
+    switch (nama) {
+      case "sparkles":
+        return <Sparkles className="w-7 h-7 text-white" />;
+      case "book":
+        return <BookOpen className="w-7 h-7 text-white" />;
+      case "compass":
+        return <Compass className="w-7 h-7 text-white" />;
+      case "school":
+        return <School className="w-7 h-7 text-white" />;
+      default:
+        return <GraduationCap className="w-7 h-7 text-white" />;
     }
-
-    const modulBaru: KelasItem = {
-      id: "mdl-" + Date.now(),
-      judul: `${judulMateri} (Oleh: ${userLogin.nama})`,
-      kategori: mapelMateri || userLogin.infoTambahan,
-      level: levelMateri,
-      durasi: "12 Menit",
-      videoUrl: finalEmbed,
-      rangkuman: rangkumanMateri,
-      rumusMatematika: rumusMateri || undefined,
-      kuis: {
-        tanya: pertanyaanKuis || `Kesimpulan materi ${judulMateri}?`,
-        opsi: [opsiA || "Paham", opsiB || "Kurang", opsiC || "Lanjut", opsiD || "Review"],
-        jawabanBenar: kunciKuis,
-        pembahasan: `Disusun oleh Guru ${userLogin.nama}.`,
-      },
-    };
-
-    tambahMateriDariGuru(jenjangPilih, modulBaru, userLogin.nama);
-    setNotifGuru(true);
-    setJudulMateri("");
-    setMapelMateri("");
-    setVideoMateri("");
-    setRangkumanMateri("");
-    setRumusMateri("");
-    setPertanyaanKuis("");
-    setOpsiA("");
-    setOpsiB("");
-    setOpsiC("");
-    setOpsiD("");
-    setTimeout(() => setNotifGuru(false), 3000);
   };
 
-  // ============================================================================
-  // TAMPILAN 1: BELUM LOGIN
-  // ============================================================================
-  if (!userLogin) {
-    const safeApprovedList = (daftarAkun || []).filter((a) => a.status === "approved");
-
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8"
-      >
-        <div className="lg:col-span-7 bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-lg">
-          <div className="flex gap-2 p-1.5 bg-slate-100 rounded-2xl mb-6">
-            <button
-              onClick={() => {
-                setModeAuth("login");
-                setPesanError("");
-              }}
-              className={`flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-2 ${
-                modeAuth === "login" ? "bg-white text-slate-900 shadow-xs" : "text-slate-500"
-              }`}
-            >
-              <KeyRound className="w-4 h-4" /> Masuk
-            </button>
-            <button
-              onClick={() => {
-                setModeAuth("register");
-                setPesanError("");
-                setPesanSukses("");
-              }}
-              className={`flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-2 ${
-                modeAuth === "register" ? "bg-white text-slate-900 shadow-xs" : "text-slate-500"
-              }`}
-            >
-              <UserPlus className="w-4 h-4" /> Daftar Baru
-            </button>
-          </div>
-
-          {pesanError && (
-            <div className="mb-5 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm font-semibold">
-              {pesanError}
-            </div>
-          )}
-
-          {pesanSukses && (
-            <div className="mb-5 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs sm:text-sm font-semibold">
-              {pesanSukses}
-            </div>
-          )}
-
-          {modeAuth === "login" ? (
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <h2 className="text-2xl font-black text-slate-900">Masuk ke Portal</h2>
-                <p className="text-xs sm:text-sm text-slate-500 mt-1">Masukkan email dan sandi akunmu.</p>
-              </div>
-              <div>
-                <label className="block text-xs font-bold uppercase text-slate-600 mb-1.5">Email</label>
-                <input
-                  type="email"
-                  required
-                  value={emailLogin}
-                  onChange={(e) => setEmailLogin(e.target.value)}
-                  placeholder="admin@hibahilmu.id"
-                  className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold uppercase text-slate-600 mb-1.5">Password</label>
-                <input
-                  type="password"
-                  required
-                  value={passwordLogin}
-                  onChange={(e) => setPasswordLogin(e.target.value)}
-                  placeholder="••••••"
-                  className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold"
-                />
-              </div>
-              <button
-                type="submit"
-                className="w-full bg-emerald-600 text-white font-extrabold py-3.5 rounded-xl shadow-md text-sm"
-              >
-                🔐 Masuk Sekarang
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={handleRegister} className="space-y-4">
-              <div>
-                <h2 className="text-2xl font-black text-slate-900">Pendaftaran Akun</h2>
-                <p className="text-xs sm:text-sm text-slate-500 mt-1">Akun memerlukan persetujuan Admin.</p>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setRoleReg("siswa")}
-                  className={`p-3.5 rounded-2xl border-2 text-left transition ${
-                    roleReg === "siswa" ? "border-emerald-600 bg-emerald-50/70" : "border-slate-200"
-                  }`}
-                >
-                  <div className="font-extrabold text-sm text-slate-900">🎓 Siswa</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRoleReg("guru")}
-                  className={`p-3.5 rounded-2xl border-2 text-left transition ${
-                    roleReg === "guru" ? "border-indigo-600 bg-indigo-50/70" : "border-slate-200"
-                  }`}
-                >
-                  <div className="font-extrabold text-sm text-slate-900">👨‍🏫 Guru</div>
-                </button>
-              </div>
-              <input
-                type="text"
-                required
-                value={namaReg}
-                onChange={(e) => setNamaReg(e.target.value)}
-                placeholder="Nama Lengkap..."
-                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold"
-              />
-              <input
-                type="email"
-                required
-                value={emailReg}
-                onChange={(e) => setEmailReg(e.target.value)}
-                placeholder="Email Aktif..."
-                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold"
-              />
-              <input
-                type="password"
-                required
-                value={passwordReg}
-                onChange={(e) => setPasswordReg(e.target.value)}
-                placeholder="Password..."
-                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold"
-              />
-              <input
-                type="text"
-                required
-                value={infoReg}
-                onChange={(e) => setInfoReg(e.target.value)}
-                placeholder={roleReg === "guru" ? "Mata Pelajaran..." : "Asal Sekolah..."}
-                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold"
-              />
-              <button
-                type="submit"
-                className="w-full bg-slate-900 text-white font-extrabold py-3.5 rounded-xl shadow-md text-sm"
-              >
-                📨 Ajukan Pendaftaran
-              </button>
-            </form>
-          )}
-        </div>
-
-        {/* Kolom Kanan: Demo Login 1-Klik */}
-        <div className="lg:col-span-5 bg-gradient-to-br from-slate-900 to-emerald-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col justify-between">
-          <div>
-            <span className="bg-amber-400/20 text-amber-300 border border-amber-400/30 text-xs font-extrabold px-3 py-1 rounded-full uppercase">
-              ⚡ Mode Demo 1-Klik
-            </span>
-            <h3 className="text-xl font-black mt-3 mb-2">Coba Masuk Cepat</h3>
-            <p className="text-xs text-slate-300 leading-relaxed mb-6">
-              Klik salah satu akun di bawah untuk langsung mencoba dashboard Admin, Guru, atau Siswa:
-            </p>
-
-            <div className="space-y-3">
-              {safeApprovedList.map((akun) => (
-                <button
-                  key={akun.id}
-                  onClick={() => loginCepat(akun)}
-                  className="w-full text-left p-3.5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/15 transition flex items-center justify-between"
-                >
-                  <div>
-                    <div className="font-bold text-sm text-white flex items-center gap-2">
-                      <span>{akun.nama}</span>
-                      <span className="text-[10px] uppercase bg-emerald-500 text-slate-950 font-black px-2 py-0.5 rounded-md">
-                        {akun.role}
-                      </span>
-                    </div>
-                    <div className="text-xs text-slate-300 mt-0.5">{akun.email}</div>
-                  </div>
-                  <span className="text-xs font-bold text-amber-300">Masuk →</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </motion.div>
-    );
-  }
-
-  // ============================================================================
-  // TAMPILAN 2: DASHBOARD ADMIN
-  // ============================================================================
-  if (userLogin.role === "admin") {
-    const safeAkunList = daftarAkun || [];
-    const safeLogList = logAktivitas || [];
-    const antreanPending = safeAkunList.filter((a) => a.status === "pending");
-    const totalGuru = safeAkunList.filter((a) => a.role === "guru" && a.status === "approved").length;
-    const totalSiswa = safeAkunList.filter((a) => a.role === "siswa" && a.status === "approved").length;
-
-    return (
-      <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
-        <div className="bg-gradient-to-r from-slate-900 to-indigo-950 rounded-3xl p-6 sm:p-8 text-white shadow-xl flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <span className="bg-amber-400 text-slate-950 text-xs font-black px-3 py-1 rounded-full uppercase">
-              👑 Panel Super Admin
-            </span>
-            <h1 className="text-2xl sm:text-4xl font-black mt-3 mb-1">Pusat Kendali HibahIlmu</h1>
-            <p className="text-slate-300 text-xs sm:text-sm">Persetujuan akun & pemantauan log aktivitas rekam jejak.</p>
-          </div>
-          <button
-            onClick={() => {
-              setUserLogin(null);
-              localStorage.removeItem("hibah_user_aktif");
-            }}
-            className="bg-rose-600 text-white font-bold px-5 py-3 rounded-2xl text-xs flex items-center gap-2"
-          >
-            <LogOut className="w-4 h-4" /> Keluar
-          </button>
-        </div>
-
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white p-5 rounded-3xl border shadow-2xs">
-            <div className="text-xs font-bold text-amber-600 uppercase">Menunggu Approval</div>
-            <div className="text-3xl font-black text-slate-900 mt-2">{antreanPending.length} Akun</div>
-          </div>
-          <div className="bg-white p-5 rounded-3xl border shadow-2xs">
-            <div className="text-xs font-bold text-indigo-600 uppercase">Guru Aktif</div>
-            <div className="text-3xl font-black text-slate-900 mt-2">{totalGuru} Guru</div>
-          </div>
-          <div className="bg-white p-5 rounded-3xl border shadow-2xs">
-            <div className="text-xs font-bold text-emerald-600 uppercase">Siswa Terdaftar</div>
-            <div className="text-3xl font-black text-slate-900 mt-2">{totalSiswa} Siswa</div>
-          </div>
-          <div className="bg-white p-5 rounded-3xl border shadow-2xs">
-            <div className="text-xs font-bold text-rose-600 uppercase">Total Log</div>
-            <div className="text-3xl font-black text-slate-900 mt-2">{safeLogList.length} Log</div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-6 space-y-6">
-            <div className="bg-white rounded-3xl p-6 border-2 border-amber-300 shadow-sm">
-              <h2 className="text-lg font-black text-slate-900 mb-4 flex items-center gap-2">
-                <ShieldAlert className="w-5 h-5 text-amber-500" /> Antrean Approval ({antreanPending.length})
-              </h2>
-              {antreanPending.length === 0 ? (
-                <div className="p-6 text-center bg-slate-50 rounded-2xl text-xs text-slate-500">
-                  🎉 Tidak ada antrean pending.
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {antreanPending.map((calon) => (
-                    <div key={calon.id} className="p-4 rounded-2xl bg-amber-50 border border-amber-200 flex justify-between items-center gap-2">
-                      <div>
-                        <div className="font-extrabold text-sm">{calon.nama} ({calon.role})</div>
-                        <div className="text-xs text-slate-600">{calon.email} • {calon.infoTambahan}</div>
-                      </div>
-                      <div className="flex gap-1.5 shrink-0">
-                        <button onClick={() => ubahStatusAkun(calon.id, "approved")} className="bg-emerald-600 text-white text-xs font-bold px-3 py-2 rounded-xl">
-                          <UserCheck className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => ubahStatusAkun(calon.id, "rejected")} className="bg-rose-100 text-rose-700 text-xs font-bold px-3 py-2 rounded-xl">
-                          <UserX className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="bg-white rounded-3xl p-6 border shadow-2xs">
-              <h3 className="font-extrabold text-slate-900 text-base mb-4">📋 Daftar Seluruh Akun</h3>
-              <div className="space-y-2.5 max-h-80 overflow-y-auto">
-                {safeAkunList.map((item) => (
-                  <div key={item.id} className="p-3 rounded-2xl bg-slate-50 border flex justify-between items-center text-xs">
-                    <div>
-                      <span className="font-bold">{item.nama}</span> ({item.role}) - <span className="uppercase text-emerald-700 font-bold">{item.status}</span>
-                    </div>
-                    {item.role !== "admin" && (
-                      <button onClick={() => hapusAkun(item.id)} className="text-slate-400 hover:text-rose-600">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="lg:col-span-6">
-            <div className="bg-white rounded-3xl p-6 border shadow-sm">
-              <h2 className="text-lg font-black text-slate-900 mb-4 flex items-center gap-2">
-                <Activity className="w-5 h-5 text-emerald-600" /> Log Aktivitas Real-Time
-              </h2>
-              <div className="space-y-3 max-h-[30rem] overflow-y-auto pr-1">
-                {safeLogList
-                  .filter((l) => filterLog === "semua" || l.rolePelaku === filterLog)
-                  .map((log) => (
-                    <div key={log.id} className="p-3.5 rounded-2xl bg-slate-50 border flex justify-between items-start gap-2 text-xs">
-                      <div>
-                        <span className="font-bold uppercase text-indigo-700">[{log.rolePelaku}]</span> <span className="font-bold">{log.namaPelaku}:</span> {log.aksi}
-                      </div>
-                      <span className="font-mono text-slate-400 shrink-0">{log.waktu}</span>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-    );
-  }
-
-  // ============================================================================
-  // TAMPILAN 3: DASHBOARD GURU
-  // ============================================================================
-  if (userLogin.role === "guru") {
-    const safeLogList = logAktivitas || [];
-    const safeJenjangList = daftarJenjang || [];
-
-    return (
-      <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
-        <div className="bg-gradient-to-r from-indigo-700 to-purple-800 rounded-3xl p-6 sm:p-8 text-white shadow-xl flex justify-between items-center">
-          <div>
-            <span className="bg-white/20 text-xs font-bold px-3 py-1 rounded-full uppercase">👨‍🏫 Dashboard Guru</span>
-            <h1 className="text-2xl sm:text-4xl font-black mt-3 mb-1">Selamat Mengajar, {userLogin.nama}!</h1>
-            <p className="text-indigo-100 text-xs sm:text-sm">Terbitkan modul dan kuis untuk para siswa.</p>
-          </div>
-          <button onClick={() => { setUserLogin(null); localStorage.removeItem("hibah_user_aktif"); }} className="bg-white/15 text-white font-bold px-5 py-3 rounded-2xl text-xs flex items-center gap-2">
-            <LogOut className="w-4 h-4" /> Keluar
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-7 bg-white rounded-3xl p-6 border shadow-sm">
-            <h2 className="text-xl font-black text-slate-900 mb-4 flex items-center gap-2">
-              <PlusCircle className="w-6 h-6 text-indigo-600" /> Studio Buat Materi & Kuis
-            </h2>
-            {notifGuru && (
-              <div className="mb-4 p-3 bg-emerald-50 text-emerald-900 rounded-xl font-bold text-xs">
-                🎉 Materi berhasil diterbitkan!
-              </div>
-            )}
-            <form onSubmit={handleGuruBuatMateri} className="space-y-3">
-              <select value={jenjangPilih} onChange={(e) => setJenjangPilih(e.target.value)} className="w-full p-3 bg-slate-50 border rounded-xl text-sm font-semibold">
-                {safeJenjangList.map((j) => (
-                  <option key={j.id} value={j.id}>{j.nama}</option>
-                ))}
-              </select>
-              <input type="text" required value={judulMateri} onChange={(e) => setJudulMateri(e.target.value)} placeholder="Judul Materi..." className="w-full p-3 bg-slate-50 border rounded-xl text-sm font-semibold" />
-              <input type="text" required value={mapelMateri} onChange={(e) => setMapelMateri(e.target.value)} placeholder="Mata Pelajaran..." className="w-full p-3 bg-slate-50 border rounded-xl text-sm font-semibold" />
-              <input type="text" required value={videoMateri} onChange={(e) => setVideoMateri(e.target.value)} placeholder="Link Video YouTube..." className="w-full p-3 bg-slate-50 border rounded-xl text-sm font-semibold" />
-              <textarea rows={2} required value={rangkumanMateri} onChange={(e) => setRangkumanMateri(e.target.value)} placeholder="Rangkuman..." className="w-full p-3 bg-slate-50 border rounded-xl text-sm font-semibold" />
-              
-              <div className="p-3 bg-indigo-50/50 border rounded-xl space-y-2">
-                <div className="text-xs font-bold text-indigo-900">📝 Soal Kuis Singkat</div>
-                <input type="text" required value={pertanyaanKuis} onChange={(e) => setPertanyaanKuis(e.target.value)} placeholder="Pertanyaan kuis..." className="w-full p-2.5 bg-white border rounded-xl text-xs font-semibold" />
-                <div className="grid grid-cols-2 gap-2">
-                  <input type="text" required value={opsiA} onChange={(e) => setOpsiA(e.target.value)} placeholder="Opsi A" className="p-2 bg-white border rounded-lg text-xs" />
-                  <input type="text" required value={opsiB} onChange={(e) => setOpsiB(e.target.value)} placeholder="Opsi B" className="p-2 bg-white border rounded-lg text-xs" />
-                  <input type="text" required value={opsiC} onChange={(e) => setOpsiC(e.target.value)} placeholder="Opsi C" className="p-2 bg-white border rounded-lg text-xs" />
-                  <input type="text" required value={opsiD} onChange={(e) => setOpsiD(e.target.value)} placeholder="Opsi D" className="p-2 bg-white border rounded-lg text-xs" />
-                </div>
-              </div>
-
-              <button type="submit" className="w-full bg-indigo-600 text-white font-extrabold py-3.5 rounded-xl shadow-md text-sm">
-                🚀 Terbitkan Materi
-              </button>
-            </form>
-          </div>
-
-          <div className="lg:col-span-5 space-y-6">
-            <div className="bg-white rounded-3xl p-6 border shadow-2xs">
-              <h3 className="font-extrabold text-base mb-3">🕒 Log Aktivitas</h3>
-              <div className="space-y-2 max-h-72 overflow-y-auto">
-                {safeLogList.slice(0, 6).map((l) => (
-                  <div key={l.id} className="p-2.5 rounded-xl bg-slate-50 border text-xs">
-                    <span className="font-bold text-indigo-700">{l.namaPelaku}:</span> {l.aksi}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-    );
-  }
-
-  // ============================================================================
-  // TAMPILAN 4: DASHBOARD SISWA
-  // ============================================================================
-  const safeLogList = logAktivitas || [];
+  const safeAkunList = daftarAkun || [];
+  const jumlahPending = safeAkunList.filter((a) => a.status === "pending").length;
 
   return (
-    <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
-      <div className="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-3xl p-6 sm:p-8 text-white shadow-xl flex justify-between items-center">
-        <div>
-          <span className="bg-white/20 text-xs font-bold px-3 py-1 rounded-full uppercase">🎓 Dashboard Siswa</span>
-          <h1 className="text-2xl sm:text-4xl font-black mt-3 mb-1">Semangat Belajar, {userLogin.nama}!</h1>
-          <p className="text-emerald-50 text-xs sm:text-sm">Pantau pencapaian XP dan modul selesai di sini.</p>
-        </div>
-        <button onClick={() => { setUserLogin(null); localStorage.removeItem("hibah_user_aktif"); }} className="bg-white/15 text-white font-bold px-5 py-3 rounded-2xl text-xs flex items-center gap-2">
-          <LogOut className="w-4 h-4" /> Keluar
-        </button>
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-800 relative overflow-x-hidden selection:bg-emerald-500 selection:text-white">
+      <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
+        <div className="absolute -top-40 -left-40 w-96 h-96 bg-purple-300/30 rounded-full blur-3xl" />
+        <div className="absolute top-20 right-0 w-[28rem] h-[28rem] bg-emerald-300/25 rounded-full blur-3xl" />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-3xl border shadow-2xs flex items-center gap-4">
-          <div className="p-4 rounded-2xl bg-amber-100 text-amber-600"><Flame className="w-8 h-8 fill-amber-500" /></div>
-          <div>
-            <div className="text-xs font-bold uppercase text-slate-400">Total XP</div>
-            <div className="text-3xl font-black text-slate-900">{poinXP} XP</div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-3xl border shadow-2xs flex items-center gap-4">
-          <div className="p-4 rounded-2xl bg-emerald-100 text-emerald-600"><Award className="w-8 h-8" /></div>
-          <div>
-            <div className="text-xs font-bold uppercase text-slate-400">Modul Selesai</div>
-            <div className="text-3xl font-black text-slate-900">{materiSelesai.length} Materi</div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-3xl border shadow-2xs flex items-center gap-4">
-          <div className="p-4 rounded-2xl bg-purple-100 text-purple-600"><Sparkles className="w-8 h-8" /></div>
-          <div>
-            <div className="text-xs font-bold uppercase text-slate-400">Pangkat</div>
-            <div className="text-lg font-black text-purple-700">
-              {poinXP >= 300 ? "🌟 Cendekiawan" : "🌱 Pembelajar"}
+      <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/85 border-b border-slate-200/80 shadow-2xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap justify-between items-center gap-3">
+          <div
+            onClick={() => {
+              setMenuAktif("beranda");
+              setJenjangAktif(null);
+              setKelasAktif(null);
+            }}
+            className="flex items-center gap-3 cursor-pointer group"
+          >
+            <div className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white w-10 h-10 rounded-2xl flex items-center justify-center text-xl shadow-md group-hover:scale-105 transition">
+              🐼
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold text-xl tracking-tight text-emerald-800">
+                  HibahIlmu
+                </span>
+                <span className="text-[10px] uppercase bg-emerald-600 text-white px-2 py-0.5 rounded-full font-bold">
+                  Gratis
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 hidden sm:block">Pengabdian Masyarakat</p>
             </div>
           </div>
-        </div>
-      </div>
 
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border shadow-xs">
-        <h3 className="text-lg font-black text-slate-900 mb-4"> Riwayat Aktivitasmu</h3>
-        <div className="space-y-3">
-          {safeLogList
-            .filter((l) => l.namaPelaku === userLogin.nama || l.rolePelaku === "siswa")
-            .slice(0, 8)
-            .map((log) => (
-              <div key={log.id} className="p-3.5 rounded-2xl bg-slate-50 border flex justify-between items-center text-xs">
-                <span className="font-semibold text-slate-800">✅ {log.aksi}</span>
-                <span className="font-mono text-slate-400">{log.waktu}</span>
-              </div>
+          <nav className="flex items-center gap-1 sm:gap-2 overflow-x-auto py-1">
+            {[
+              { id: "beranda", label: "Ruang Kelas", ikon: <BookOpen className="w-4 h-4" /> },
+              { id: "tryout", label: "Tryout Ujian", ikon: <Timer className="w-4 h-4" /> },
+              { id: "forum", label: "Tanya PR", ikon: <MessageSquare className="w-4 h-4" /> },
+              { id: "transparansi", label: "Donasi Umat", ikon: <ShieldCheck className="w-4 h-4" /> },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setMenuAktif(tab.id);
+                  setJenjangAktif(null);
+                  setKelasAktif(null);
+                }}
+                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition shrink-0 ${
+                  menuAktif === tab.id ? "bg-slate-900 text-white shadow-xs" : "text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                {tab.ikon}
+                <span>{tab.label}</span>
+              </button>
             ))}
+          </nav>
+
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-800 px-3 py-1.5 rounded-full text-xs font-extrabold">
+              <Flame className="w-4 h-4 text-orange-500 fill-orange-500" />
+              <span>{poinXP} XP</span>
+            </div>
+
+            <button
+              onClick={() => {
+                setMenuAktif("dashboard");
+                setJenjangAktif(null);
+                setKelasAktif(null);
+              }}
+              className={`relative flex items-center gap-1.5 text-xs font-extrabold px-4 py-2 rounded-full shadow-sm transition ${
+                userLogin
+                  ? userLogin.role === "admin"
+                    ? "bg-slate-900 text-amber-300"
+                    : userLogin.role === "guru"
+                    ? "bg-indigo-600 text-white"
+                    : "bg-emerald-600 text-white"
+                  : "bg-emerald-600 text-white"
+              }`}
+            >
+              <LayoutDashboard className="w-3.5 h-3.5" />
+              <span>{userLogin ? `Dashboard ${userLogin.role.toUpperCase()}` : "Daftar / Masuk"}</span>
+              {jumlahPending > 0 && (
+                <span className="ml-1 bg-rose-500 text-white text-[10px] px-1.5 py-0.2 rounded-full">
+                  {jumlahPending}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
-      </div>
-    </motion.div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
+        {menuAktif === "dashboard" && (
+          <SistemAkunDanDashboard
+            userLogin={userLogin}
+            setUserLogin={setUserLogin}
+            daftarAkun={safeAkunList}
+            setDaftarAkun={setDaftarAkun}
+            logAktivitas={logAktivitas}
+            catatLog={catatLog}
+            daftarJenjang={daftarJenjang}
+            tambahMateriDariGuru={tambahMateriDariGuru}
+            poinXP={poinXP}
+            materiSelesai={materiSelesai}
+          />
+        )}
+
+        {menuAktif === "tryout" && <FiturTryout tambahXP={tambahXP} />}
+
+        {(menuAktif === "forum" || menuAktif === "transparansi") && (
+          <KomunitasDanDonasi
+            modeTampilan={menuAktif as "forum" | "transparansi"}
+            namaUser={userLogin?.nama || "Pelajar Pengunjung"}
+            poinUser={poinXP}
+            tambahXP={tambahXP}
+          />
+        )}
+
+        {menuAktif === "beranda" && (
+          <>
+            {!jenjangAktif && !kelasAktif && (
+              <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}>
+                <div className="text-center max-w-4xl mx-auto mb-12 pt-2">
+                  <h1 className="text-4xl sm:text-6xl font-black text-slate-900 mb-5 leading-tight">
+                    Satu Platform Sejuta Ilmu, <br />
+                    <span className="text-emerald-600">100% Gratis Selamanya.</span>
+                  </h1>
+                  <p className="text-slate-600 mb-8">Pilih jenjang pendidikanmu dan mulai belajar interaktif sekarang!</p>
+                  <div className="max-w-xl mx-auto relative">
+                    <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={kataKunci}
+                      onChange={(e) => setKataKunci(e.target.value)}
+                      placeholder="Cari pelajaran..."
+                      className="w-full pl-12 pr-4 py-4 bg-white border rounded-2xl shadow-md text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {daftarJenjang
+                    .filter((j) => j.nama.toLowerCase().includes(kataKunci.toLowerCase()))
+                    .map((jenjang, idx) => (
+                      <motion.div
+                        key={jenjang.id}
+                        whileHover={{ y: -6 }}
+                        onClick={() => setJenjangAktif(jenjang)}
+                        className="cursor-pointer bg-white rounded-3xl p-6 border shadow-xs hover:shadow-xl transition flex flex-col justify-between relative overflow-hidden"
+                      >
+                        <div className={`h-2 w-full bg-gradient-to-r ${jenjang.gradien} absolute top-0 left-0`} />
+                        <div>
+                          <div className="flex justify-between mb-5 mt-2">
+                            <div className={`p-3.5 rounded-2xl bg-gradient-to-br ${jenjang.gradien} shadow-md`}>
+                              {renderIkonJenjang(jenjang.ikonNama)}
+                            </div>
+                            <span className={`text-xs font-bold px-3 py-1 rounded-full ${jenjang.badge}`}>
+                              {jenjang.kelas.length} Modul
+                            </span>
+                          </div>
+                          <h3 className="text-2xl font-extrabold mb-2">{jenjang.nama}</h3>
+                          <p className="text-slate-600 text-sm">{jenjang.deskripsi}</p>
+                        </div>
+                        <div className="pt-4 border-t mt-4 flex justify-between items-center text-sm font-bold text-emerald-600">
+                          <span>Buka Kelas</span>
+                          <span>→</span>
+                        </div>
+                      </motion.div>
+                    ))}
+                </div>
+              </motion.div>
+            )}
+
+            {jenjangAktif && !kelasAktif && (
+              <motion.div initial={{ opacity: 0, x: 25 }} animate={{ opacity: 1, x: 0 }}>
+                <button
+                  onClick={() => setJenjangAktif(null)}
+                  className="inline-flex items-center gap-2 text-sm font-bold text-slate-600 bg-white px-4 py-2 rounded-xl border mb-6 shadow-2xs"
+                >
+                  <ArrowLeft className="w-4 h-4" /> Kembali ke Semua Jenjang
+                </button>
+                <div className={`rounded-3xl p-8 text-white bg-gradient-to-r ${jenjangAktif.gradien} shadow-xl mb-8`}>
+                  <h1 className="text-3xl font-black mb-2">{jenjangAktif.nama}</h1>
+                  <p className="text-white/90 text-sm">{jenjangAktif.deskripsi}</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {jenjangAktif.kelas.map((item) => {
+                    const selesai = materiSelesai.includes(item.id);
+                    return (
+                      <div
+                        key={item.id}
+                        onClick={() => setKelasAktif(item)}
+                        className={`bg-white rounded-3xl p-6 border-2 shadow-xs hover:shadow-lg cursor-pointer transition flex flex-col justify-between ${
+                          selesai ? "border-emerald-400" : "border-slate-200"
+                        }`}
+                      >
+                        <div>
+                          <div className="flex justify-between items-center mb-3">
+                            <span className="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-700">⚡ {item.level}</span>
+                            {selesai && <span className="text-xs font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">✔ Selesai</span>}
+                          </div>
+                          <h3 className="text-xl font-bold mb-2">{item.judul}</h3>
+                          <p className="text-sm text-slate-600 line-clamp-2">{item.rangkuman}</p>
+                        </div>
+                        <div className="pt-4 border-t mt-4 flex justify-between items-center text-sm font-bold text-emerald-600">
+                          <span className="flex items-center gap-1.5"><PlayCircle className="w-5 h-5" /> Mulai Belajar</span>
+                          <span className="text-xs bg-amber-50 text-amber-700 px-2 py-1 rounded-lg">+50 XP</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+
+            {kelasAktif && jenjangAktif && (
+              <RuangKelas
+                jenjang={jenjangAktif}
+                kelas={kelasAktif}
+                kembaliKeDaftar={() => setKelasAktif(null)}
+                sudahSelesai={materiSelesai.includes(kelasAktif.id)}
+                toggleSelesaiMateri={toggleSelesaiMateri}
+                tambahXP={tambahXP}
+              />
+            )}
+          </>
+        )}
+      </main>
+
+      <footer className="border-t bg-white/70 py-6 text-center text-xs text-slate-500 mt-16">
+        Dibangun dengan cinta oleh 🐼 <strong>Panda Kode</strong> • HibahIlmu.id
+      </footer>
+    </div>
   );
 }
