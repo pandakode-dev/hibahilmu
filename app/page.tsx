@@ -9,7 +9,7 @@ import {
   UserCheck, UserX, Users, Activity, PlusCircle, Clock, LogOut, KeyRound,
   UserPlus, Trash2, Edit3, UserX2, UserCheck2, Upload, Layers, Lock, Play,
   BookMarked, FileSpreadsheet, Send, HelpCircle, XCircle, Bold, Italic, 
-  Underline, List, ListOrdered, Link as LinkIcon, Image as ImageIcon, Check
+  Underline, List, ListOrdered, Link as LinkIcon, Image as ImageIcon
 } from "lucide-react";
 import confetti from "canvas-confetti";
 
@@ -35,7 +35,7 @@ interface KelasItem {
   level: "Pemula" | "Menengah" | "Mahir";
   durasi: string;
   videoUrl: string;
-  rangkuman: string; // Mendukung format HTML (Rich Text)
+  rangkuman: string; 
   rumusMatematika?: string;
   contohKode?: string;
   kuis: KuisItem;
@@ -82,7 +82,7 @@ export interface AkunPengguna {
   status: "pending" | "approved" | "rejected";
   infoTambahan: string;
   waktuDaftar: string;
-  aksesMengajar?: string[]; // RBAC Guru
+  aksesMengajar?: string[];
 }
 
 export interface LogAktivitas {
@@ -104,6 +104,11 @@ export interface KelompokBelajar {
 // ==========================================
 // 2. DATA AWAL (DUMMY DATA)
 // ==========================================
+const TEMPLATE_JSON_CONTOH = JSON.stringify([
+  { nama: "Dewi Lestari", email: "dewi@hibahilmu.id", password: "123", role: "guru", infoTambahan: "Guru Biologi" },
+  { nama: "Ahmad Fauzi", email: "ahmad@hibahilmu.id", password: "123", role: "siswa", infoTambahan: "Kelas 12 IPA" }
+], null, 2);
+
 const STRUKTUR_AWAL: JenjangItem[] = [
   {
     id: "tk",
@@ -218,9 +223,9 @@ const BANK_SOAL_TRYOUT: SoalTryout[] = [
 ];
 
 const AKUN_DEFAULT: AkunPengguna[] = [
-  { id: "adm-1", nama: "Admin Panda Kode", email: "admin@hibahilmu.id", password: "123", role: "admin", status: "approved", infoTambahan: "Super Admin HibahIlmu", waktuDaftar: "Permanen", aksesMengajar: [] },
-  { id: "gru-1", nama: "Budi Santoso, M.Pd", email: "guru@hibahilmu.id", password: "123", role: "guru", status: "approved", infoTambahan: "Guru Fisika SMA", waktuDaftar: "Kemarin", aksesMengajar: ["sma-11-ipa", "sma-12-ipa"] },
-  { id: "sis-1", nama: "Aisyah Putri", email: "siswa@hibahilmu.id", password: "123", role: "siswa", status: "approved", infoTambahan: "Siswi SMA Kelas 11", waktuDaftar: "Kemarin", aksesMengajar: [] },
+  { id: "adm-1", nama: "Admin Panda Kode", email: "admin@hibahilmu.id", password: "123", role: "admin", status: "approved", infoTambahan: "Super Admin", waktuDaftar: "Permanen", aksesMengajar: [] },
+  { id: "gru-1", nama: "Budi Santoso, M.Pd", email: "guru@hibahilmu.id", password: "123", role: "guru", status: "approved", infoTambahan: "Guru Fisika SMA", waktuDaftar: "Kemarin", aksesMengajar: ["sma-11-ipa"] },
+  { id: "sis-1", nama: "Aisyah Putri", email: "siswa@hibahilmu.id", password: "123", role: "siswa", status: "approved", infoTambahan: "Siswi SMA", waktuDaftar: "Kemarin", aksesMengajar: [] },
   { id: "sis-2", nama: "Reza Rahadian", email: "reza@hibahilmu.id", password: "123", role: "siswa", status: "approved", infoTambahan: "Siswa SMA", waktuDaftar: "Hari ini", aksesMengajar: [] },
 ];
 
@@ -229,6 +234,13 @@ const AKUN_DEFAULT: AkunPengguna[] = [
 // ==========================================
 const RichTextEditor = ({ value, onChange }: { value: string, onChange: (val: string) => void }) => {
   const editorRef = useRef<HTMLDivElement>(null);
+
+  // Sync state if cleared externally
+  useEffect(() => {
+    if (editorRef.current && value === "") {
+      editorRef.current.innerHTML = "";
+    }
+  }, [value]);
 
   const formatText = (command: string, val: string | undefined = undefined) => {
     document.execCommand(command, false, val);
@@ -261,11 +273,11 @@ const RichTextEditor = ({ value, onChange }: { value: string, onChange: (val: st
       <div
         ref={editorRef}
         contentEditable
+        suppressContentEditableWarning={true}
         className="p-4 min-h-[150px] max-h-[300px] overflow-y-auto text-sm outline-none prose prose-sm max-w-none"
         onInput={(e) => onChange(e.currentTarget.innerHTML)}
-        dangerouslySetInnerHTML={{ __html: value === "" ? "" : undefined }}
+        dangerouslySetInnerHTML={{ __html: value }}
       />
-      {value === "" && <div className="hidden">{() => {if(editorRef.current) editorRef.current.innerHTML = ""}}</div>}
     </div>
   );
 };
@@ -339,7 +351,7 @@ export default function AplikasiHibahIlmu() {
   const [targetJenjangKategori, setTargetJenjangKategori] = useState("sma");
   const [namaKategoriBaru, setNamaKategoriBaru] = useState("");
 
-  // State Guru
+  // State Guru Menu & Materi
   const [guruTabAktif, setGuruTabAktif] = useState<"materi" | "kelas">("materi");
   const [subJenjangPilih, setSubJenjangPilih] = useState("");
   const [judulMateri, setJudulMateri] = useState("");
@@ -354,11 +366,12 @@ export default function AplikasiHibahIlmu() {
   const [opsiD, setOpsiD] = useState("");
   const [kunciKuis, setKunciKuis] = useState<number>(0);
   const [notifGuru, setNotifGuru] = useState(false);
+
+  // State Guru Kelola Kelas
   const [namaKelompokBaru, setNamaKelompokBaru] = useState("");
-  const [kelompokAktifGuru, setKelompokAktifGuru] = useState<string | null>(null);
+  const [kelompokAktifGuru, setKelompokAktifGuru] = useState<string | null>(null); 
   const [pilihSiswaMasuk, setPilihSiswaMasuk] = useState("");
 
-  // Load Data Lokal
   useEffect(() => {
     const savedXP = localStorage.getItem("hibah_xp");
     const savedSelesai = localStorage.getItem("hibah_selesai");
@@ -465,7 +478,7 @@ export default function AplikasiHibahIlmu() {
   const hapusAkun = (id: string) => {
     const update = (daftarAkun || []).filter(a => a.id !== id);
     setDaftarAkun(update); localStorage.setItem("hibah_daftar_akun", JSON.stringify(update));
-    catatLog(userLogin?.nama || "Admin", "admin", `Menghapus akun`, "akun");
+    catatLog(userLogin?.nama || "Admin", "admin", `Hapus akun`, "akun");
   };
 
   const hapusAkunSekaligus = () => {
@@ -503,8 +516,8 @@ export default function AplikasiHibahIlmu() {
       const akunBaruMasuk: AkunPengguna[] = parsedData.map((item: any, idx: number) => ({ id: "import-" + Date.now() + "-" + idx, nama: item.nama || "User", email: item.email || `u${idx}@h.id`, password: item.password || "123", role: item.role === "guru" || item.role === "admin" ? item.role : "siswa", status: "approved", infoTambahan: item.infoTambahan || "Diimpor massal", waktuDaftar: "Import", aksesMengajar: [] }));
       const gabungan = [...akunBaruMasuk, ...(daftarAkun || [])];
       setDaftarAkun(gabungan); localStorage.setItem("hibah_daftar_akun", JSON.stringify(gabungan));
-      setNotifImport(`✅ Sukses mengimpor ${akunBaruMasuk.length} akun baru!`);
-      setTimeout(() => { setNotifImport(""); setModalImportAkun(false); }, 2000);
+      setNotifImport(`✅ Sukses import ${akunBaruMasuk.length} akun`);
+      setTimeout(() => setModalImportAkun(false), 2000);
     } catch { alert("Format JSON tidak valid!"); }
   };
 
@@ -556,11 +569,11 @@ export default function AplikasiHibahIlmu() {
   };
 
   const renderIkon = (nama: string) => {
-    if (nama === "sparkles") return <Sparkles className="w-7 h-7 text-white" />;
-    if (nama === "book") return <BookOpen className="w-7 h-7 text-white" />;
-    if (nama === "compass") return <Compass className="w-7 h-7 text-white" />;
-    if (nama === "school") return <School className="w-7 h-7 text-white" />;
-    return <GraduationCap className="w-7 h-7 text-white" />;
+    if (nama === "sparkles") return <Sparkles className="w-6 h-6 text-white" />;
+    if (nama === "book") return <BookOpen className="w-6 h-6 text-white" />;
+    if (nama === "compass") return <Compass className="w-6 h-6 text-white" />;
+    if (nama === "school") return <School className="w-6 h-6 text-white" />;
+    return <GraduationCap className="w-6 h-6 text-white" />;
   };
 
   const safeAkunList = daftarAkun || [];
@@ -570,6 +583,7 @@ export default function AplikasiHibahIlmu() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans relative overflow-x-hidden">
+      {/* Background Aurora */}
       <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
         <div className="absolute -top-40 -left-40 w-[30rem] h-[30rem] bg-purple-300/30 rounded-full blur-3xl" />
         <div className="absolute top-20 right-0 w-[30rem] h-[30rem] bg-emerald-300/25 rounded-full blur-3xl" />
@@ -584,61 +598,72 @@ export default function AplikasiHibahIlmu() {
               <div className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider mt-1">LMS Open Source</div>
             </div>
           </div>
-          <nav className="flex items-center gap-2 overflow-x-auto">
+          <nav className="flex items-center gap-2">
             <button onClick={() => { setMenuAktif("beranda"); setJenjangAktif(null); setKelasAktif(null); }} className={`px-4 py-2.5 rounded-xl text-xs font-bold transition ${menuAktif === "beranda" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"}`}>Ruang Kelas</button>
-            <button onClick={() => setMenuAktif("tryout")} className={`px-4 py-2.5 rounded-xl text-xs font-bold transition ${menuAktif === "tryout" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"}`}>Tryout</button>
-            <button onClick={() => setMenuAktif("forum")} className={`px-4 py-2.5 rounded-xl text-xs font-bold transition ${menuAktif === "forum" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"}`}>Forum PR</button>
-            <button onClick={() => setMenuAktif("transparansi")} className={`px-4 py-2.5 rounded-xl text-xs font-bold transition ${menuAktif === "transparansi" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"}`}>Donasi</button>
           </nav>
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 text-amber-800 px-3.5 py-2 rounded-full text-xs font-extrabold"><Flame className="w-4 h-4 fill-amber-500 text-amber-500" /> <span>{poinXP} XP</span></div>
-            <button onClick={() => { setMenuAktif("dashboard"); setJenjangAktif(null); setKelasAktif(null); }} className={`px-5 py-2.5 rounded-full text-xs font-extrabold shadow-sm flex items-center gap-2 ${userLogin ? (userLogin.role === "admin" ? "bg-slate-900 text-amber-300" : userLogin.role === "guru" ? "bg-indigo-600 text-white" : "bg-emerald-600 text-white") : "bg-emerald-600 text-white"}`}><LayoutDashboard className="w-4 h-4" /> <span>{userLogin ? `Panel ${userLogin.role}` : "Daftar / Masuk"}</span></button>
+            <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 text-amber-800 px-3.5 py-2 rounded-full text-xs font-extrabold">
+              <Flame className="w-4 h-4 fill-amber-500 text-amber-500" /> <span>{poinXP} XP</span>
+            </div>
+            <button onClick={() => { setMenuAktif("dashboard"); setJenjangAktif(null); setKelasAktif(null); }} className={`relative px-5 py-2.5 rounded-full text-xs font-extrabold shadow-sm transition flex items-center gap-2 ${userLogin ? (userLogin.role === "admin" ? "bg-slate-900 text-amber-300" : userLogin.role === "guru" ? "bg-indigo-600 text-white" : "bg-emerald-600 text-white") : "bg-emerald-600 text-white"}`}>
+              <LayoutDashboard className="w-4 h-4" /> <span>{userLogin ? `Panel ${userLogin.role}` : "Daftar / Masuk"}</span>
+            </button>
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-10">
         
-        {/* ==================== 1. DASHBOARD ==================== */}
+        {/* ==========================================
+            1. PORTAL DASHBOARD (MULTI-ROLE)
+        ========================================== */}
         {menuAktif === "dashboard" && (
           <AnimatePresence mode="wait">
             {!userLogin ? (
               <motion.div key="auth" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
                 <div className="lg:col-span-7 bg-white/80 backdrop-blur-md rounded-3xl p-8 shadow-xl border border-white">
                   <div className="flex gap-2 mb-8 bg-slate-100/80 p-1.5 rounded-2xl">
-                    <button onClick={() => { setModeAuth("login"); setPesanError(""); }} className={`flex-1 py-3 rounded-xl text-xs font-extrabold transition ${modeAuth === "login" ? "bg-white shadow-sm text-slate-900" : "text-slate-500"}`}>Masuk Akun</button>
-                    <button onClick={() => { setModeAuth("register"); setPesanError(""); }} className={`flex-1 py-3 rounded-xl text-xs font-extrabold transition ${modeAuth === "register" ? "bg-white shadow-sm text-slate-900" : "text-slate-500"}`}>Daftar Baru</button>
+                    <button onClick={() => { setModeAuth("login"); setPesanError(""); }} className={`flex-1 py-3 rounded-xl text-xs font-extrabold transition ${modeAuth === "login" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-800"}`}>Masuk Akun</button>
+                    <button onClick={() => { setModeAuth("register"); setPesanError(""); }} className={`flex-1 py-3 rounded-xl text-xs font-extrabold transition ${modeAuth === "register" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-800"}`}>Daftar Baru</button>
                   </div>
-                  {pesanError && <div className="mb-6 p-4 bg-rose-50 text-rose-800 border rounded-2xl text-xs font-bold">{pesanError}</div>}
-                  {pesanSukses && <div className="mb-6 p-4 bg-emerald-50 text-emerald-900 border rounded-2xl text-xs font-bold">{pesanSukses}</div>}
-                  
+                  {pesanError && <div className="mb-6 p-4 bg-rose-50 text-rose-800 border border-rose-200 rounded-2xl text-xs font-bold">{pesanError}</div>}
+                  {pesanSukses && <div className="mb-6 p-4 bg-emerald-50 text-emerald-900 border border-emerald-200 rounded-2xl text-xs font-bold">{pesanSukses}</div>}
                   {modeAuth === "login" ? (
                     <form onSubmit={handleLogin} className="space-y-5">
                       <div><h2 className="text-3xl font-black text-slate-900">Selamat Datang!</h2></div>
-                      <input type="email" required value={emailLogin} onChange={e => setEmailLogin(e.target.value)} placeholder="Email..." className="w-full p-4 bg-slate-50 border rounded-2xl text-sm" />
-                      <input type="password" required value={passwordLogin} onChange={e => setPasswordLogin(e.target.value)} placeholder="Password..." className="w-full p-4 bg-slate-50 border rounded-2xl text-sm" />
-                      <button type="submit" className="w-full bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-lg">Masuk Sekarang</button>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-600 uppercase mb-1.5">Email</label>
+                        <input type="email" required value={emailLogin} onChange={e => setEmailLogin(e.target.value)} placeholder="Contoh: admin@hibahilmu.id" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold outline-none focus:ring-2 focus:ring-emerald-500" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-600 uppercase mb-1.5">Password</label>
+                        <input type="password" required value={passwordLogin} onChange={e => setPasswordLogin(e.target.value)} placeholder="••••••" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold outline-none focus:ring-2 focus:ring-emerald-500" />
+                      </div>
+                      <button type="submit" className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-black py-4 rounded-2xl shadow-lg transition">Masuk Sekarang</button>
                     </form>
                   ) : (
                     <form onSubmit={handleRegister} className="space-y-5">
                       <div><h2 className="text-3xl font-black text-slate-900">Pendaftaran Akun</h2></div>
                       <div className="grid grid-cols-2 gap-3">
-                        <button type="button" onClick={() => setRoleReg("siswa")} className={`p-4 border-2 rounded-2xl text-left font-extrabold text-sm ${roleReg === "siswa" ? "bg-emerald-50 border-emerald-500 text-emerald-900" : ""}`}>🎓 Siswa</button>
-                        <button type="button" onClick={() => setRoleReg("guru")} className={`p-4 border-2 rounded-2xl text-left font-extrabold text-sm ${roleReg === "guru" ? "bg-indigo-50 border-indigo-500 text-indigo-900" : ""}`}>👨‍🏫 Guru Relawan</button>
+                        <button type="button" onClick={() => setRoleReg("siswa")} className={`p-4 border-2 rounded-2xl text-left transition ${roleReg === "siswa" ? "bg-emerald-50 border-emerald-500 text-emerald-900" : "border-slate-200"}`}><div className="font-extrabold text-sm">🎓 Siswa</div></button>
+                        <button type="button" onClick={() => setRoleReg("guru")} className={`p-4 border-2 rounded-2xl text-left transition ${roleReg === "guru" ? "bg-indigo-50 border-indigo-500 text-indigo-900" : "border-slate-200"}`}><div className="font-extrabold text-sm">👨‍🏫 Guru Relawan</div></button>
                       </div>
-                      <input type="text" required value={namaReg} onChange={e => setNamaReg(e.target.value)} placeholder="Nama Lengkap..." className="w-full p-4 bg-slate-50 border rounded-2xl text-sm" />
-                      <input type="email" required value={emailReg} onChange={e => setEmailReg(e.target.value)} placeholder="Email Aktif..." className="w-full p-4 bg-slate-50 border rounded-2xl text-sm" />
-                      <input type="password" required value={passwordReg} onChange={e => setPasswordReg(e.target.value)} placeholder="Buat Password..." className="w-full p-4 bg-slate-50 border rounded-2xl text-sm" />
-                      <button type="submit" className="w-full bg-slate-900 text-white font-black py-4 rounded-2xl shadow-lg">Daftar & Ajukan Akses</button>
+                      <input type="text" required value={namaReg} onChange={e => setNamaReg(e.target.value)} placeholder="Nama Lengkap..." className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold" />
+                      <input type="email" required value={emailReg} onChange={e => setEmailReg(e.target.value)} placeholder="Email Aktif..." className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold" />
+                      <input type="password" required value={passwordReg} onChange={e => setPasswordReg(e.target.value)} placeholder="Buat Password..." className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold" />
+                      <button type="submit" className="w-full bg-slate-900 text-white font-black py-4 rounded-2xl shadow-lg transition">Daftar & Ajukan Akses</button>
                     </form>
                   )}
                 </div>
                 <div className="lg:col-span-5 bg-slate-900 text-white rounded-3xl p-8 shadow-2xl flex flex-col justify-center">
-                  <span className="bg-amber-400/20 text-amber-300 border text-[10px] font-black px-3 py-1 rounded-full w-max mb-4">⚡ Demo 1-Klik</span>
+                  <span className="bg-amber-400/20 text-amber-300 border border-amber-400/30 text-[10px] font-black px-3 py-1 rounded-full uppercase w-max mb-4">⚡ Demo 1-Klik</span>
                   <div className="space-y-3">
                     {safeAkunList.filter(a => a.status === "approved").slice(0, 4).map(a => (
-                      <button key={a.id} onClick={() => loginCepat(a)} className="w-full text-left p-4 rounded-2xl bg-white/10 hover:bg-white/20 transition flex justify-between items-center group">
-                        <div><div className="font-bold text-sm text-white">{a.nama} <span className="bg-indigo-500 text-[9px] px-2 py-0.5 rounded ml-2 uppercase">{a.role}</span></div><div className="text-[11px] text-slate-400 mt-1">{a.email}</div></div>
+                      <button key={a.id} onClick={() => loginCepat(a)} className="w-full text-left p-4 rounded-2xl bg-white/10 hover:bg-white/20 transition flex items-center justify-between group border border-white/10">
+                        <div>
+                          <div className="font-bold text-sm text-white flex items-center gap-2">{a.nama} <span className="text-[9px] uppercase bg-indigo-500 px-2 py-0.5 rounded ml-2">{a.role}</span></div>
+                          <div className="text-[11px] text-slate-400 mt-1">{a.email}</div>
+                        </div>
                         <span className="text-xs font-bold text-amber-300 group-hover:translate-x-1 transition">Masuk →</span>
                       </button>
                     ))}
@@ -646,242 +671,149 @@ export default function AplikasiHibahIlmu() {
                 </div>
               </motion.div>
             ) : userLogin.role === "admin" ? (
-              <motion.div key="admin" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
-                <div className="bg-slate-900 text-white p-8 rounded-[2rem] flex flex-wrap justify-between items-center gap-6 shadow-xl">
-                  <div>
-                    <span className="bg-amber-400 text-slate-950 text-xs font-black px-3 py-1 rounded-full uppercase">👑 Super Admin</span>
-                    <h1 className="text-3xl font-black mt-4 mb-2">Pusat Kendali HibahIlmu</h1>
-                  </div>
-                  <div className="flex gap-3">
-                    <button onClick={() => setModalImportAkun(true)} className="bg-indigo-600 px-5 py-3 rounded-2xl text-xs font-bold flex items-center gap-2"><Upload className="w-4 h-4"/> Import JSON</button>
-                    <button onClick={() => { setIdEditAkun(null); setModalAdminAkun(true); }} className="bg-emerald-600 px-5 py-3 rounded-2xl text-xs font-bold flex items-center gap-2"><UserPlus className="w-4 h-4"/> Tambah Akun</button>
-                    <button onClick={() => { setUserLogin(null); localStorage.removeItem("hibah_user_aktif"); }} className="bg-rose-600 px-5 py-3 rounded-2xl text-xs font-bold flex items-center gap-2"><LogOut className="w-4 h-4"/> Keluar</button>
+              /* --- ADMIN DASHBOARD --- */
+              <motion.div key="admin" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <div className="bg-slate-900 text-white p-8 rounded-3xl flex justify-between items-center shadow-lg mb-8">
+                  <div><h1 className="text-3xl font-black">Panel Super Admin</h1></div>
+                  <button onClick={() => { setUserLogin(null); localStorage.removeItem("hibah_user_aktif"); }} className="bg-rose-600 px-5 py-2 rounded-xl text-sm font-bold">Keluar</button>
+                </div>
+                <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
+                  <h2 className="text-xl font-black mb-6 flex justify-between">
+                    <span>Manajemen Pengguna</span>
+                    <div className="flex gap-2">
+                       <button onClick={() => setModalImportAkun(true)} className="bg-indigo-600 px-4 py-2 rounded-xl text-xs font-bold text-white flex items-center gap-1"><Upload className="w-4 h-4"/> Import JSON</button>
+                       <button onClick={() => { setIdEditAkun(null); setModalAdminAkun(true); }} className="bg-emerald-600 px-4 py-2 rounded-xl text-xs font-bold text-white flex items-center gap-1"><UserPlus className="w-4 h-4"/> Tambah</button>
+                    </div>
+                  </h2>
+                  <div className="space-y-3 max-h-[30rem] overflow-y-auto pr-2">
+                    {safeAkunList.map(akun => (
+                      <div key={akun.id} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex justify-between items-center">
+                        <div className="flex gap-3 items-center">
+                          {akun.role !== "admin" && <input type="checkbox" checked={selectedAkunIds.includes(akun.id)} onChange={() => togglePilihAkun(akun.id)} className="w-4 h-4 accent-indigo-600"/>}
+                          <div>
+                            <div className="font-bold text-sm">{akun.nama} <span className="uppercase text-[10px] bg-indigo-100 text-indigo-700 px-2 rounded ml-2">{akun.role}</span><span className="uppercase text-[10px] bg-emerald-100 text-emerald-700 px-2 rounded ml-1">{akun.status}</span></div>
+                            <div className="text-xs text-slate-500 mt-1">{akun.email}</div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                           <button onClick={() => bukaModalEditAkun(akun)} className="p-2 bg-blue-100 text-blue-700 rounded-xl"><Edit3 className="w-4 h-4"/></button>
+                           {akun.role !== "admin" && <button onClick={() => hapusAkun(akun.id)} className="p-2 bg-rose-100 text-rose-700 rounded-xl"><Trash2 className="w-4 h-4"/></button>}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-
-                <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
-                  <div className="xl:col-span-7 space-y-8">
-                    {/* Manajemen Akun */}
-                    <div className="bg-white p-8 rounded-[2rem] border shadow-sm">
-                      <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-xl font-black"><Users className="w-5 h-5 inline text-indigo-600 mr-2"/> Manajemen Akun</h2>
-                        {selectedAkunIds.length > 0 && <button onClick={hapusAkunSekaligus} className="bg-rose-100 text-rose-700 px-4 py-2.5 rounded-xl text-xs font-bold"><Trash2 className="w-4 h-4 inline mr-1"/> Hapus Terpilih</button>}
-                      </div>
-                      <div className="space-y-3 max-h-[40rem] overflow-y-auto">
-                        {safeAkunList.map(akun => (
-                          <div key={akun.id} className="p-4 bg-slate-50 border rounded-2xl flex justify-between items-center">
-                            <div className="flex items-center gap-3">
-                              {akun.role !== "admin" && <input type="checkbox" checked={selectedAkunIds.includes(akun.id)} onChange={() => togglePilihAkun(akun.id)} className="w-4 h-4" />}
-                              <div>
-                                <div className="font-extrabold text-sm">{akun.nama} <span className="text-[9px] uppercase px-2 py-0.5 rounded-md bg-slate-200 ml-2">{akun.role}</span> <span className={`text-[9px] uppercase px-2 py-0.5 rounded-md ml-1 ${akun.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>{akun.status}</span></div>
-                                <div className="text-xs text-slate-500 mt-1">{akun.email}</div>
-                              </div>
-                            </div>
-                            <div className="flex gap-2">
-                              {akun.status === "pending" && <button onClick={() => ubahStatusAkun(akun.id, "approved")} className="p-2.5 bg-emerald-100 text-emerald-700 rounded-xl"><UserCheck className="w-4 h-4"/></button>}
-                              <button onClick={() => bukaModalEditAkun(akun)} className="p-2.5 bg-blue-100 text-blue-700 rounded-xl"><Edit3 className="w-4 h-4"/></button>
-                              {akun.role !== "admin" && <button onClick={() => hapusAkun(akun.id)} className="p-2.5 bg-rose-100 text-rose-700 rounded-xl"><Trash2 className="w-4 h-4"/></button>}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Manajemen Kategori */}
-                    <div className="bg-white p-8 rounded-[2rem] border shadow-sm">
-                      <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-xl font-black"><Layers className="w-5 h-5 inline text-amber-500 mr-2"/> Kategori & Jurusan</h2>
-                        <button onClick={() => setModalKategori(true)} className="bg-slate-900 text-white text-xs px-4 py-2.5 rounded-xl font-bold"><PlusCircle className="w-4 h-4 inline mr-1"/> Tambah Kategori</button>
-                      </div>
-                      <div className="space-y-4 max-h-96 overflow-y-auto">
-                        {daftarJenjang.map(j => (
-                          <div key={j.id} className="p-5 border rounded-2xl bg-slate-50/50">
-                            <h3 className="font-extrabold text-sm mb-3 uppercase">{j.nama}</h3>
-                            <div className="flex flex-wrap gap-2">
-                              {j.subJenjang.map(sj => <span key={sj.id} className="bg-white text-xs px-3 py-1.5 rounded-lg border font-semibold">{sj.nama}</span>)}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Log Aktivitas Admin */}
-                  <div className="xl:col-span-5">
-                    <div className="bg-white p-8 rounded-[2rem] border shadow-sm h-full">
-                      <h2 className="text-xl font-black mb-6"><Activity className="w-5 h-5 inline text-emerald-600 mr-2"/> Audit Log</h2>
-                      <div className="space-y-3 max-h-[50rem] overflow-y-auto pr-2">
-                        {logAktivitas.map(log => (
-                          <div key={log.id} className="p-4 rounded-2xl bg-slate-50 border flex flex-col gap-2">
-                            <div className="flex justify-between items-start">
-                              <span className="text-[9px] font-black uppercase bg-slate-200 px-2 py-0.5 rounded">{log.rolePelaku} - {log.namaPelaku}</span>
-                              <span className="font-mono text-[10px] text-slate-400">{log.waktu}</span>
-                            </div>
-                            <p className="text-xs text-slate-600 font-medium">{log.aksi}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* MODAL ADMIN */}
-                {modalAdminAkun && (
-                  <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white rounded-[2rem] p-8 max-w-xl w-full shadow-2xl max-h-[90vh] overflow-y-auto">
-                      <h3 className="text-2xl font-black mb-6">Edit Data & Akses Mengajar</h3>
-                      <form onSubmit={simpanAkunAdmin} className="space-y-4">
-                        <input type="text" required value={namaFormAdmin} onChange={e => setNamaFormAdmin(e.target.value)} placeholder="Nama" className="w-full p-3.5 border rounded-xl" />
-                        <input type="email" required value={emailFormAdmin} onChange={e => setEmailFormAdmin(e.target.value)} placeholder="Email" className="w-full p-3.5 border rounded-xl" />
-                        <select value={roleFormAdmin} onChange={e => setRoleFormAdmin(e.target.value as any)} className="w-full p-3.5 border rounded-xl font-bold"><option value="siswa">Siswa</option><option value="guru">Guru Relawan</option><option value="admin">Admin</option></select>
-                        <select value={statusFormAdmin} onChange={e => setStatusFormAdmin(e.target.value as any)} className="w-full p-3.5 border rounded-xl font-bold"><option value="approved">Aktif (Approved)</option><option value="pending">Pending</option><option value="rejected">Suspended</option></select>
-                        
-                        {roleFormAdmin === "guru" && (
-                          <div className="p-5 border-2 border-indigo-100 bg-indigo-50/50 rounded-2xl">
-                            <h4 className="font-black text-indigo-900 mb-4">Akses Mengajar:</h4>
-                            <div className="max-h-56 overflow-y-auto space-y-4">
-                              {daftarJenjang.map(j => (
-                                <div key={j.id} className="bg-white p-3 border rounded-xl">
-                                  <div className="text-[10px] font-black text-slate-400 mb-2 uppercase">{j.nama}</div>
-                                  <div className="grid grid-cols-2 gap-2">
-                                    {j.subJenjang.map(sj => (
-                                      <label key={sj.id} className="flex items-center gap-2 p-2 border rounded-lg cursor-pointer"><input type="checkbox" checked={aksesMengajarForm.includes(sj.id)} onChange={() => setAksesMengajarForm(prev => prev.includes(sj.id) ? prev.filter(x=>x!==sj.id) : [...prev, sj.id])} /><span className="text-xs font-bold">{sj.nama}</span></label>
-                                    ))}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        <div className="flex gap-3 pt-4"><button type="submit" className="flex-1 bg-emerald-600 text-white font-black py-4 rounded-xl">Simpan Data</button><button type="button" onClick={() => setModalAdminAkun(false)} className="px-6 py-4 bg-slate-100 rounded-xl font-bold">Batal</button></div>
-                      </form>
-                    </div>
-                  </div>
-                )}
-
-                {modalImportAkun && (
-                  <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white rounded-[2rem] p-8 max-w-2xl w-full shadow-2xl">
-                      <h3 className="text-2xl font-black mb-4">Import Akun Massal (JSON)</h3>
-                      <button type="button" onClick={() => setTeksImportJson(TEMPLATE_JSON_CONTOH)} className="text-[11px] bg-indigo-50 text-indigo-600 px-3 py-1 rounded-md font-black mb-2">Muat Template Contoh</button>
-                      <textarea rows={10} value={teksImportJson} onChange={e => setTeksImportJson(e.target.value)} className="w-full p-4 font-mono text-sm bg-slate-900 text-emerald-300 rounded-2xl mb-4" />
-                      <div className="flex gap-3"><button onClick={handleImportJson} className="flex-1 bg-indigo-600 text-white font-black py-4 rounded-xl">Jalankan Import</button><button onClick={() => setModalImportAkun(false)} className="px-6 py-4 bg-slate-100 rounded-xl font-bold">Batal</button></div>
-                    </div>
-                  </div>
-                )}
-
-                {modalKategori && (
-                  <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white rounded-[2rem] p-8 max-w-sm w-full shadow-2xl">
-                      <h3 className="text-xl font-black mb-6">Tambah Kelas Baru</h3>
-                      <form onSubmit={tambahKategoriBaru} className="space-y-4">
-                        <select value={targetJenjangKategori} onChange={e => setTargetJenjangKategori(e.target.value)} className="w-full p-3.5 border rounded-xl bg-slate-50 font-bold">{daftarJenjang.map(j => <option key={j.id} value={j.id}>{j.nama}</option>)}</select>
-                        <input type="text" required value={namaKategoriBaru} onChange={e => setNamaKategoriBaru(e.target.value)} placeholder="Nama Jurusan/Kelas..." className="w-full p-3.5 border rounded-xl bg-slate-50 font-semibold" />
-                        <div className="flex gap-2 pt-2"><button type="submit" className="flex-1 bg-slate-900 text-white font-black py-3.5 rounded-xl">Simpan</button><button type="button" onClick={() => setModalKategori(false)} className="px-5 py-3.5 bg-slate-100 rounded-xl font-bold">Batal</button></div>
-                      </form>
-                    </div>
-                  </div>
-                )}
               </motion.div>
             ) : userLogin.role === "guru" ? (
-              /* ==================== DASHBOARD GURU ==================== */
+              /* --- GURU DASHBOARD --- */
               <motion.div key="guru" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
-                <div className="bg-gradient-to-r from-indigo-700 via-purple-700 to-indigo-900 text-white p-8 sm:p-10 rounded-[2rem] flex flex-wrap justify-between items-center gap-6 shadow-2xl">
-                  <div>
-                    <span className="bg-white/20 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-md">👨‍🏫 Studio Guru</span>
+                <div className="bg-gradient-to-r from-indigo-700 via-purple-700 to-indigo-900 text-white p-8 sm:p-10 rounded-[2rem] flex flex-wrap justify-between items-center gap-6 shadow-2xl relative overflow-hidden">
+                  <div className="relative z-10">
+                    <span className="bg-white/20 text-indigo-50 border border-white/20 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-md">👨‍🏫 Studio Guru</span>
                     <h1 className="text-3xl sm:text-4xl font-black mt-4 mb-2">Selamat Mengajar, {userLogin.nama}!</h1>
-                    <p className="text-indigo-200 text-sm">Akses resmi mengajar di <b>{opsiKelasGuru.length} kelas/jurusan.</b></p>
+                    <p className="text-indigo-200 text-sm">Otorisasi mengajar: <b>{opsiKelasGuru.length} kelas/jurusan.</b></p>
                   </div>
-                  <button onClick={() => { setUserLogin(null); localStorage.removeItem("hibah_user_aktif"); }} className="bg-white/15 text-white text-xs font-bold px-5 py-3 rounded-2xl flex items-center gap-2"><LogOut className="w-4 h-4"/> Keluar Akun</button>
+                  <button onClick={() => { setUserLogin(null); localStorage.removeItem("hibah_user_aktif"); }} className="relative z-10 bg-white/15 hover:bg-white/25 text-white text-xs font-bold px-5 py-3 rounded-2xl transition"><LogOut className="w-4 h-4 inline mr-2"/> Keluar</button>
                 </div>
 
-                <div className="flex gap-4 border-b border-slate-200 pb-2 overflow-x-auto">
-                  <button onClick={() => setGuruTabAktif("materi")} className={`px-6 py-3 rounded-t-2xl font-black text-sm whitespace-nowrap transition-all ${guruTabAktif === "materi" ? "bg-indigo-600 text-white shadow-lg" : "bg-white text-slate-500 hover:bg-slate-50"}`}><BookOpen className="w-4 h-4 inline mr-2"/> Publikasi Materi</button>
-                  <button onClick={() => setGuruTabAktif("kelas")} className={`px-6 py-3 rounded-t-2xl font-black text-sm whitespace-nowrap transition-all ${guruTabAktif === "kelas" ? "bg-indigo-600 text-white shadow-lg" : "bg-white text-slate-500 hover:bg-slate-50"}`}><Users className="w-4 h-4 inline mr-2"/> Kelola Kelompok Belajar</button>
+                {/* TAB GURU: MATERI vs KELAS SISWA */}
+                <div className="flex gap-4 border-b border-slate-200 pb-2">
+                  <button onClick={() => setGuruTabAktif("materi")} className={`px-6 py-3 rounded-t-2xl font-black text-sm transition-all ${guruTabAktif === "materi" ? "bg-indigo-600 text-white shadow-lg" : "bg-white text-slate-500 hover:bg-slate-50"}`}><BookOpen className="w-4 h-4 inline mr-2"/> Buat Materi Baru</button>
+                  <button onClick={() => setGuruTabAktif("kelas")} className={`px-6 py-3 rounded-t-2xl font-black text-sm transition-all ${guruTabAktif === "kelas" ? "bg-indigo-600 text-white shadow-lg" : "bg-white text-slate-500 hover:bg-slate-50"}`}><Users className="w-4 h-4 inline mr-2"/> Kelola Ruang Kelas (Siswa)</button>
                 </div>
 
                 {guruTabAktif === "materi" && (
                   <div className="bg-white p-8 rounded-[2rem] rounded-tl-none border border-slate-200 shadow-sm max-w-4xl">
-                    <h2 className="text-2xl font-black mb-6 flex items-center gap-2"><PlusCircle className="text-indigo-600 w-6 h-6"/> Form Terbitkan Materi & Kuis</h2>
+                    <h2 className="text-2xl font-black mb-6 text-slate-900">Form Publikasi Materi & Kuis</h2>
                     {opsiKelasGuru.length === 0 ? (
-                      <div className="p-8 bg-rose-50 border border-rose-200 rounded-3xl text-center"><ShieldAlert className="w-12 h-12 mx-auto mb-3 text-rose-400"/><p className="text-rose-700 font-bold">Admin belum memberikan akses kelas untuk Anda.</p></div>
+                      <div className="p-8 bg-rose-50 border border-rose-200 rounded-3xl text-center">
+                        <ShieldAlert className="w-12 h-12 mx-auto mb-3 text-rose-400"/>
+                        <p className="text-rose-700 font-bold">Admin belum memberikan akses kelas untuk Anda.</p>
+                      </div>
                     ) : (
                       <form onSubmit={handleGuruBuatMateri} className="space-y-6">
                         <AnimatePresence>{notifGuru && <motion.div className="p-4 bg-emerald-50 text-emerald-800 rounded-2xl font-black text-sm text-center border border-emerald-200">🎉 Materi berhasil diterbitkan!</motion.div>}</AnimatePresence>
                         
                         <div className="p-6 bg-indigo-50 border border-indigo-100 rounded-3xl">
-                          <label className="font-black mb-3 block text-indigo-900 text-sm">📍 Target Kelas:</label>
-                          <select required value={subJenjangPilih} onChange={(e) => setSubJenjangPilih(e.target.value)} className="w-full p-4 bg-white border border-indigo-200 rounded-2xl font-extrabold text-indigo-900 text-sm outline-none">
-                            <option value="" disabled>-- Pilih Kelas yang Ingin Anda Ajar --</option>
+                          <label className="font-black mb-2 block text-indigo-900 text-sm">📍 Target Kelas:</label>
+                          <select required value={subJenjangPilih} onChange={(e) => setSubJenjangPilih(e.target.value)} className="w-full p-4 bg-white border border-indigo-200 rounded-xl font-extrabold text-indigo-900">
+                            <option value="" disabled>-- Pilih Kelas --</option>
                             {opsiKelasGuru.map(sj => <option key={sj.id} value={sj.id}>{sj.namaInduk} ➔ {sj.nama}</option>)}
                           </select>
                         </div>
 
                         <div className="grid grid-cols-2 gap-5">
-                          <div><label className="font-bold mb-1.5 block text-xs text-slate-500">Judul Bab</label><input type="text" required value={judulMateri} onChange={e => setJudulMateri(e.target.value)} className="w-full p-4 border rounded-2xl bg-slate-50 font-semibold text-sm" /></div>
-                          <div><label className="font-bold mb-1.5 block text-xs text-slate-500">Tingkat Kesulitan</label><select value={levelMateri} onChange={(e) => setLevelMateri(e.target.value as any)} className="w-full p-4 border rounded-2xl bg-slate-50 font-extrabold text-sm"><option value="Pemula">Pemula</option><option value="Menengah">Menengah</option><option value="Mahir">Mahir</option></select></div>
+                          <div><label className="font-bold mb-1.5 block text-xs text-slate-500">Judul Bab</label><input type="text" required value={judulMateri} onChange={e => setJudulMateri(e.target.value)} className="w-full p-4 border rounded-xl bg-slate-50" /></div>
+                          <div><label className="font-bold mb-1.5 block text-xs text-slate-500">Tingkat Kesulitan</label><select value={levelMateri} onChange={(e) => setLevelMateri(e.target.value as any)} className="w-full p-4 border rounded-xl bg-slate-50 font-bold"><option value="Pemula">Pemula</option><option value="Menengah">Menengah</option><option value="Mahir">Mahir</option></select></div>
                         </div>
 
-                        <div><label className="font-bold mb-1.5 block text-xs text-slate-500">Link Video YouTube</label><input type="url" required value={videoMateri} onChange={e => setVideoMateri(e.target.value)} className="w-full p-4 border rounded-2xl bg-slate-50 text-sm" /></div>
+                        <div><label className="font-bold mb-1.5 block text-xs text-slate-500">Link Video YouTube</label><input type="url" required value={videoMateri} onChange={e => setVideoMateri(e.target.value)} className="w-full p-4 border rounded-xl bg-slate-50" /></div>
 
-                        {/* Rich Text Editor Materi */}
+                        {/* RICH TEXT EDITOR (Pengganti Textarea) */}
                         <div>
-                          <label className="font-bold mb-1.5 flex justify-between text-xs text-slate-500"><span>Rangkuman Materi (Visual Editor)</span><span className="bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded">NEW!</span></label>
+                          <label className="font-bold mb-1.5 block text-xs text-slate-500 flex justify-between">
+                            <span>Rangkuman Materi (Bisa diformat)</span>
+                            <span className="text-[10px] text-indigo-500 font-bold bg-indigo-50 px-2 py-0.5 rounded">NEW! Rich Text</span>
+                          </label>
                           <RichTextEditor value={rangkumanMateri} onChange={setRangkumanMateri} />
                         </div>
                         
                         <div className="p-6 border-2 border-slate-100 rounded-[2rem] bg-slate-50/50 space-y-5">
-                          <div className="font-black text-base text-slate-900">📝 Soal Kuis Singkat</div>
-                          <input type="text" required value={pertanyaanKuis} onChange={e => setPertanyaanKuis(e.target.value)} placeholder="Pertanyaan kuis..." className="w-full p-4 border border-slate-200 bg-white rounded-2xl text-sm font-semibold" />
+                          <div className="font-black text-base">📝 Kuis Singkat</div>
+                          <input type="text" required value={pertanyaanKuis} onChange={e => setPertanyaanKuis(e.target.value)} placeholder="Pertanyaan kuis..." className="w-full p-4 border bg-white rounded-xl" />
                           <div className="grid grid-cols-2 gap-3">
-                            <input type="text" required value={opsiA} onChange={e => setOpsiA(e.target.value)} placeholder="A" className="p-4 border bg-white rounded-xl text-sm font-semibold" />
-                            <input type="text" required value={opsiB} onChange={e => setOpsiB(e.target.value)} placeholder="B" className="p-4 border bg-white rounded-xl text-sm font-semibold" />
-                            <input type="text" required value={opsiC} onChange={e => setOpsiC(e.target.value)} placeholder="C" className="p-4 border bg-white rounded-xl text-sm font-semibold" />
-                            <input type="text" required value={opsiD} onChange={e => setOpsiD(e.target.value)} placeholder="D" className="p-4 border bg-white rounded-xl text-sm font-semibold" />
+                            <input type="text" required value={opsiA} onChange={e => setOpsiA(e.target.value)} placeholder="Opsi A" className="p-3.5 border bg-white rounded-xl" />
+                            <input type="text" required value={opsiB} onChange={e => setOpsiB(e.target.value)} placeholder="Opsi B" className="p-3.5 border bg-white rounded-xl" />
+                            <input type="text" required value={opsiC} onChange={e => setOpsiC(e.target.value)} placeholder="Opsi C" className="p-3.5 border bg-white rounded-xl" />
+                            <input type="text" required value={opsiD} onChange={e => setOpsiD(e.target.value)} placeholder="Opsi D" className="p-3.5 border bg-white rounded-xl" />
                           </div>
-                          <select value={kunciKuis} onChange={e => setKunciKuis(Number(e.target.value))} className="w-full p-4 border border-emerald-200 bg-emerald-50 text-emerald-900 rounded-2xl font-black text-sm"><option value={0}>A Benar</option><option value={1}>B Benar</option><option value={2}>C Benar</option><option value={3}>D Benar</option></select>
+                          <select value={kunciKuis} onChange={e => setKunciKuis(Number(e.target.value))} className="w-full p-4 border border-emerald-200 bg-emerald-50 font-bold rounded-xl"><option value={0}>Opsi A Benar</option><option value={1}>Opsi B Benar</option><option value={2}>Opsi C Benar</option><option value={3}>Opsi D Benar</option></select>
                         </div>
-                        <button type="submit" className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-black py-5 rounded-2xl shadow-xl hover:scale-[1.01] transition-all">🚀 Publikasikan ke Siswa</button>
+                        <button type="submit" className="w-full bg-indigo-600 text-white font-black py-4 rounded-xl shadow-lg">Publikasikan Materi</button>
                       </form>
                     )}
                   </div>
                 )}
 
+                {/* TAB GURU: KELOLA RUANG KELAS & SISWA */}
                 {guruTabAktif === "kelas" && (
                   <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm max-w-5xl space-y-8">
-                    <h2 className="text-2xl font-black text-slate-900">Manajemen Kelompok Belajar</h2>
-                    <form onSubmit={handleBuatKelompok} className="flex flex-wrap sm:flex-nowrap gap-3 p-6 bg-indigo-50 border border-indigo-100 rounded-3xl">
-                      <input type="text" required value={namaKelompokBaru} onChange={e=>setNamaKelompokBaru(e.target.value)} placeholder="Nama Kelas Baru (Contoh: Fisika 11 IPA 1)" className="flex-1 p-4 rounded-2xl border outline-none font-semibold text-sm w-full"/>
-                      <button type="submit" className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black text-sm shadow-md w-full sm:w-auto">Buat Kelas Baru</button>
+                    <div className="flex justify-between items-center">
+                      <h2 className="text-2xl font-black text-slate-900">Manajemen Ruang Kelas</h2>
+                    </div>
+
+                    <form onSubmit={handleBuatKelompok} className="flex gap-3 p-5 bg-indigo-50 border border-indigo-100 rounded-2xl">
+                      <input type="text" required value={namaKelompokBaru} onChange={e=>setNamaKelompokBaru(e.target.value)} placeholder="Nama Kelas Baru (Contoh: Fisika 11 IPA 1)" className="flex-1 p-3 rounded-xl border outline-none font-semibold text-sm"/>
+                      <button type="submit" className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-md">Buat Kelas</button>
                     </form>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {guruKelompoks.length === 0 ? (
-                        <div className="col-span-2 text-center py-10 text-slate-400 font-medium border-2 border-dashed rounded-3xl">Anda belum memiliki Ruang Kelas. Buat sekarang!</div>
+                        <div className="col-span-2 text-center py-10 text-slate-400 italic border-2 border-dashed rounded-3xl">Anda belum membuat Ruang Kelas satupun.</div>
                       ) : (
                         guruKelompoks.map(kel => (
-                          <div key={kel.id} className="p-6 border border-slate-200 rounded-3xl shadow-sm bg-white">
+                          <div key={kel.id} className="p-6 border border-slate-200 rounded-3xl shadow-sm bg-white hover:shadow-md transition">
                             <h3 className="font-black text-lg mb-2 text-indigo-900">{kel.namaKelas}</h3>
-                            <div className="text-[10px] font-black text-slate-500 mb-4 bg-slate-100 px-3 py-1.5 rounded-lg inline-block uppercase tracking-widest">Siswa Terdaftar: {kel.siswaIds.length} Anak</div>
+                            <div className="text-xs font-bold text-slate-500 mb-4 bg-slate-100 px-3 py-1.5 rounded-lg inline-block">Jumlah Siswa: {kel.siswaIds.length} Anak</div>
                             
                             <form onSubmit={e => { e.preventDefault(); setKelompokAktifGuru(kel.id); handleTambahSiswaKeKelompok(e); }} className="flex gap-2 mb-4">
-                              <select required value={kelompokAktifGuru === kel.id ? pilihSiswaMasuk : ""} onChange={e => { setKelompokAktifGuru(kel.id); setPilihSiswaMasuk(e.target.value); }} className="flex-1 p-3 text-xs border rounded-xl bg-slate-50 font-semibold outline-none">
-                                <option value="" disabled>-- Daftarkan Siswa ke Kelas --</option>
+                              <select required value={kelompokAktifGuru === kel.id ? pilihSiswaMasuk : ""} onChange={e => { setKelompokAktifGuru(kel.id); setPilihSiswaMasuk(e.target.value); }} className="flex-1 p-2 text-xs border rounded-lg bg-slate-50 font-semibold">
+                                <option value="" disabled>-- Masukkan Siswa --</option>
                                 {daftarSiswaApproved.filter(s => !kel.siswaIds.includes(s.id)).map(s => (
                                   <option key={s.id} value={s.id}>{s.nama} ({s.email})</option>
                                 ))}
                               </select>
-                              <button type="submit" className="bg-emerald-600 text-white p-3 rounded-xl font-bold"><PlusCircle className="w-5 h-5"/></button>
+                              <button type="submit" className="bg-emerald-600 text-white p-2 rounded-lg font-bold text-xs"><PlusCircle className="w-4 h-4"/></button>
                             </form>
 
-                            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                            <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
                               {kel.siswaIds.map(sId => {
                                 const sw = daftarAkun.find(a => a.id === sId);
                                 if(!sw) return null;
                                 return (
-                                  <div key={sId} className="flex justify-between items-center p-3 bg-slate-50 border border-slate-100 rounded-2xl text-xs">
-                                    <div className="font-bold flex items-center gap-3"><div className="w-8 h-8 bg-emerald-100 text-emerald-700 rounded-full flex justify-center items-center font-black">{sw.nama.charAt(0)}</div>{sw.nama}</div>
-                                    <button onClick={() => handleHapusSiswaDariKelompok(kel.id, sId)} className="p-2 bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-xl transition"><UserX className="w-4 h-4"/></button>
+                                  <div key={sId} className="flex justify-between items-center p-2.5 bg-slate-50 border rounded-xl text-xs">
+                                    <div className="font-bold flex items-center gap-2"><div className="w-6 h-6 bg-emerald-100 text-emerald-700 rounded-full flex justify-center items-center font-black">{sw.nama.charAt(0)}</div>{sw.nama}</div>
+                                    <button onClick={() => handleHapusSiswaDariKelompok(kel.id, sId)} className="text-rose-400 hover:text-rose-600"><UserX className="w-4 h-4"/></button>
                                   </div>
                                 )
                               })}
@@ -894,42 +826,25 @@ export default function AplikasiHibahIlmu() {
                 )}
               </motion.div>
             ) : (
-              /* ==================== DASHBOARD SISWA ==================== */
+              /* --- SISWA DASHBOARD --- */
               <motion.div key="siswa" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
                 <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-700 text-white p-8 sm:p-10 rounded-[2rem] flex flex-wrap justify-between items-center gap-6 shadow-2xl relative overflow-hidden">
                   <div className="absolute top-0 left-0 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
                   <div className="relative z-10">
-                    <span className="bg-white/20 text-emerald-50 border border-white/20 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-md">🎓 Rapor Siswa</span>
+                    <span className="bg-white/20 text-emerald-50 border border-white/20 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-md">🎓 Dashboard Rapor Siswa</span>
                     <h1 className="text-3xl sm:text-4xl font-black mt-4 mb-2">Halo, {userLogin.nama}!</h1>
-                    <p className="text-emerald-100 text-sm">Pantau pencapaian belajarmu di sini.</p>
                   </div>
-                  <button onClick={() => { setUserLogin(null); localStorage.removeItem("hibah_user_aktif"); }} className="relative z-10 bg-white/15 hover:bg-white/25 text-white text-xs font-bold px-5 py-3 rounded-2xl flex items-center gap-2 transition"><LogOut className="w-4 h-4"/> Keluar</button>
+                  <button onClick={() => { setUserLogin(null); localStorage.removeItem("hibah_user_aktif"); }} className="relative z-10 bg-white/15 text-white text-xs font-bold px-5 py-3 rounded-2xl flex items-center gap-2 transition"><LogOut className="w-4 h-4"/> Keluar</button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="bg-white p-8 rounded-[2rem] border shadow-sm flex items-center gap-5">
                     <div className="p-5 bg-amber-50 text-amber-600 rounded-2xl"><Flame className="w-10 h-10 fill-amber-500" /></div>
-                    <div><div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Poin</div><div className="text-4xl font-black text-slate-900">{poinXP} <span className="text-lg text-amber-500">XP</span></div></div>
+                    <div><div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Poin</div><div className="text-4xl font-black text-slate-900">{poinXP}</div></div>
                   </div>
                   <div className="bg-white p-8 rounded-[2rem] border shadow-sm flex items-center gap-5">
                     <div className="p-5 bg-emerald-50 text-emerald-600 rounded-2xl"><CheckCircle2 className="w-10 h-10" /></div>
-                    <div><div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Materi Selesai</div><div className="text-4xl font-black text-slate-900">{materiSelesai.length} <span className="text-lg text-emerald-600">Bab</span></div></div>
-                  </div>
-                  <div className="bg-white p-8 rounded-[2rem] border shadow-sm flex items-center gap-5">
-                    <div className="p-5 bg-purple-50 text-purple-600 rounded-2xl"><Sparkles className="w-10 h-10" /></div>
-                    <div><div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Pangkat Belajar</div><div className="text-2xl font-black text-purple-700">{poinXP >= 500 ? "🌟 Cendekiawan" : "🌱 Pembelajar"}</div></div>
-                  </div>
-                </div>
-
-                <div className="bg-white p-8 rounded-[2rem] border shadow-sm">
-                  <h2 className="text-xl font-black mb-6 flex items-center gap-2"><Activity className="w-5 h-5 text-emerald-600"/> Riwayat Aktivitas</h2>
-                  <div className="space-y-3 max-h-[30rem] overflow-y-auto pr-2">
-                    {safeLogList.filter(l => l.namaPelaku === userLogin.nama || l.rolePelaku === "siswa").slice(0, 15).map((log) => (
-                      <div key={log.id} className="p-4 bg-slate-50 border rounded-2xl flex flex-wrap justify-between items-center gap-3">
-                        <div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-black">✓</div><span className="text-sm font-semibold">{log.aksi}</span></div>
-                        <span className="font-mono text-[10px] text-slate-400 bg-white px-2.5 py-1 border rounded-md">{log.waktu}</span>
-                      </div>
-                    ))}
+                    <div><div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Modul Selesai</div><div className="text-4xl font-black text-slate-900">{materiSelesai.length}</div></div>
                   </div>
                 </div>
               </motion.div>
@@ -938,194 +853,31 @@ export default function AplikasiHibahIlmu() {
         )}
 
         {/* ==========================================
-            2. MENU TRYOUT UJIAN
-        ========================================== */}
-        {menuAktif === "tryout" && (
-          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="max-w-4xl mx-auto">
-            <div className="rounded-[2rem] p-8 sm:p-10 bg-gradient-to-br from-indigo-600 to-purple-700 text-white shadow-2xl mb-8 flex flex-wrap justify-between items-center gap-6 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
-              <div className="relative z-10"><span className="bg-white/20 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-md">Simulasi Ujian</span><h1 className="text-3xl sm:text-4xl font-black mt-4">Tryout & Latihan Berwaktu</h1></div>
-              {sedangUjian && (
-                <div className="bg-slate-900/80 px-6 py-4 rounded-3xl text-center relative z-10 backdrop-blur-md shadow-xl border border-white/10">
-                  <div className="text-[10px] text-amber-300 font-black uppercase tracking-widest mb-1">Sisa Waktu</div>
-                  <div className={`font-mono text-3xl font-black ${sisaWaktu <= 30 ? "text-rose-400 animate-pulse" : "text-white"}`}>{Math.floor(sisaWaktu / 60)}:{(sisaWaktu % 60).toString().padStart(2, "0")}</div>
-                </div>
-              )}
-            </div>
-
-            {!sedangUjian && !ujianSelesai && (
-              <div className="bg-white rounded-[2rem] p-12 border border-slate-200 text-center shadow-sm">
-                <div className="w-24 h-24 mx-auto bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mb-6 shadow-inner"><Timer className="w-12 h-12" /></div>
-                <h2 className="text-3xl font-black text-slate-900 mb-3">Mulai Simulasi Tryout?</h2>
-                <p className="text-slate-500 text-sm max-w-md mx-auto mb-8 leading-relaxed">Uji kemampuanmu dengan waktu 3 menit. Setiap jawaban benar bernilai +40 XP.</p>
-                <button onClick={() => { setJawabanUserTryout({}); setSisaWaktu(180); setUjianSelesai(false); setSedangUjian(true); }} className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-black px-10 py-5 rounded-2xl shadow-xl hover:scale-105 transition-all inline-flex items-center gap-3"><Play className="w-5 h-5 fill-white" /> MULAI TRYOUT SEKARANG</button>
-              </div>
-            )}
-
-            {sedangUjian && (
-              <div className="space-y-6">
-                {BANK_SOAL_TRYOUT.map((soal, idx) => (
-                  <div key={soal.id} className="bg-white rounded-[2rem] p-8 border border-slate-200 shadow-sm">
-                    <div className="flex items-center gap-3 mb-4"><span className="bg-slate-900 text-white text-xs font-black px-3 py-1 rounded-lg">Soal #{idx + 1}</span><span className="bg-indigo-100 text-indigo-800 text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md">{soal.jenjang}</span></div>
-                    <h3 className="font-extrabold text-xl text-slate-900 mb-6">{soal.pertanyaan}</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {soal.opsi.map((pilihan, opsiIdx) => (
-                        <button key={opsiIdx} onClick={() => setJawabanUserTryout((prev) => ({ ...prev, [idx]: opsiIdx }))} className={`p-4 rounded-2xl border-2 text-left font-bold text-sm transition ${jawabanUserTryout[idx] === opsiIdx ? "border-indigo-600 bg-indigo-50 text-indigo-900 shadow-sm" : "border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700"}`}>
-                          <span className="inline-block w-6 text-slate-400 font-black">{String.fromCharCode(65 + opsiIdx)}.</span> {pilihan}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-                <button onClick={selesaikanTryout} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-5 rounded-[2rem] shadow-xl hover:shadow-2xl transition-all text-lg tracking-wide uppercase">Kumpulkan & Selesai Ujian</button>
-              </div>
-            )}
-
-            {ujianSelesai && (
-              <div className="bg-white rounded-[2rem] p-12 border-2 border-emerald-100 text-center shadow-lg relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-2 bg-emerald-500"></div>
-                <div className="w-24 h-24 mx-auto bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mb-6 shadow-inner"><Trophy className="w-12 h-12" /></div>
-                <h2 className="text-xl font-bold text-slate-500 uppercase tracking-widest mb-2">Ujian Selesai</h2>
-                <div className="text-5xl font-black text-slate-900 mb-8">Skor Anda: <span className="text-emerald-600">{skorTryout}</span> / 100</div>
-                <div className="flex justify-center gap-4">
-                  <button onClick={() => { setUjianSelesai(false); setSedangUjian(false); }} className="bg-slate-900 hover:bg-slate-800 text-white font-bold px-8 py-4 rounded-2xl transition shadow-md">Ulangi Tryout</button>
-                  <button onClick={() => { setMenuAktif("beranda"); setUjianSelesai(false); setSedangUjian(false); }} className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-8 py-4 rounded-2xl transition">Kembali Belajar</button>
-                </div>
-              </div>
-            )}
-          </motion.div>
-        )}
-
-        {/* ==========================================
-            3. MENU FORUM TANYA PR
-        ========================================== */}
-        {menuAktif === "forum" && (
-          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="max-w-4xl mx-auto space-y-8">
-            <div className="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-[2rem] p-8 sm:p-10 text-white shadow-2xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
-              <div className="relative z-10">
-                <span className="bg-white/20 text-emerald-50 border border-white/20 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-md">Komunitas</span>
-                <h1 className="text-3xl sm:text-4xl font-black mt-4 mb-2">Forum Tanya PR</h1>
-                <p className="text-emerald-100 text-sm max-w-lg">Tanyakan kesulitan tugas sekolahmu di sini. Relawan pengajar dan teman-teman lain siap membantu menjawab.</p>
-              </div>
-            </div>
-
-            <form onSubmit={(e) => { e.preventDefault(); if (!tanyaBaru.trim()) return; setDaftarDiskusi([{ id: "pr-" + Date.now(), penanya: userLogin?.nama || "Pelajar", jenjang: "Umum", mapel: mapelBaru, pertanyaan: tanyaBaru, waktu: "Baru saja", jawaban: [] }, ...daftarDiskusi]); setTanyaBaru(""); tambahXP(20); }} className="bg-white rounded-[2rem] p-8 border border-slate-200 shadow-sm space-y-4">
-              <h3 className="font-black text-lg text-slate-900 flex items-center gap-2"><HelpCircle className="w-5 h-5 text-emerald-600"/> Ajukan Pertanyaan Baru</h3>
-              <input type="text" required value={mapelBaru} onChange={(e) => setMapelBaru(e.target.value)} placeholder="Mata Pelajaran (Contoh: Matematika Kelas 10)" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500 transition" />
-              <textarea rows={3} required value={tanyaBaru} onChange={(e) => setTanyaBaru(e.target.value)} placeholder="Tuliskan soal PR atau materi yang membingungkanmu secara detail..." className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500 transition" />
-              <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-2xl shadow-lg transition flex justify-center items-center gap-2"><Send className="w-4 h-4"/> Kirim Pertanyaan ke Forum (+20 XP)</button>
-            </form>
-
-            <div className="space-y-5">
-              {daftarDiskusi.map((item) => (
-                <div key={item.id} className="bg-white rounded-[2rem] p-8 border border-slate-200 shadow-sm transition hover:shadow-md">
-                  <div className="flex flex-wrap justify-between items-start gap-4 mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 border border-indigo-200 flex items-center justify-center font-black text-indigo-700">{item.penanya.charAt(0)}</div>
-                      <div>
-                        <div className="font-black text-sm text-slate-900">{item.penanya}</div>
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{item.waktu}</div>
-                      </div>
-                    </div>
-                    <span className="bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border border-slate-200">{item.mapel}</span>
-                  </div>
-                  <p className="text-slate-800 font-medium mb-5 leading-relaxed">{item.pertanyaan}</p>
-                  
-                  {item.jawaban.length > 0 && (
-                    <div className="space-y-3 mb-5 pl-4 border-l-4 border-emerald-200">
-                      {item.jawaban.map((jwb, i) => (
-                        <div key={i} className="bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
-                          <div className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-1 flex items-center gap-1.5"><UserCheck2 className="w-3.5 h-3.5"/> Dijawab oleh: {jwb.penjawab}</div>
-                          <div className="text-sm text-slate-700 font-medium">{jwb.isi}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="flex flex-wrap sm:flex-nowrap gap-3">
-                    <input type="text" value={balasanInput[item.id] || ""} onChange={(e) => setBalasanInput({ ...balasanInput, [item.id]: e.target.value })} placeholder="Ketik balasan untuk membantu menjawab..." className="flex-1 p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500 transition" />
-                    <button onClick={() => { const isi = balasanInput[item.id]; if (!isi) return; setDaftarDiskusi(daftarDiskusi.map((d) => d.id === item.id ? { ...d, jawaban: [...d.jawaban, { penjawab: userLogin?.nama || "Relawan", isi }] } : d)); setBalasanInput({ ...balasanInput, [item.id]: "" }); tambahXP(35); }} className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white px-6 py-3.5 rounded-xl text-sm font-bold shadow-md transition">Kirim Balasan</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* ==========================================
-            4. MENU TRANSPARANSI & DONASI
-        ========================================== */}
-        {menuAktif === "transparansi" && (
-          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="max-w-4xl mx-auto space-y-6">
-            <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 rounded-[2.5rem] p-10 sm:p-16 text-white text-center shadow-2xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl"></div>
-              <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl"></div>
-              
-              <div className="relative z-10">
-                <div className="w-20 h-20 mx-auto bg-emerald-500/20 border border-emerald-500/30 rounded-3xl flex items-center justify-center mb-6 backdrop-blur-sm"><ShieldCheck className="w-10 h-10 text-emerald-400" /></div>
-                <h1 className="text-4xl sm:text-5xl font-black mb-4">Transparansi Dana Umat</h1>
-                <p className="text-slate-300 text-base max-w-2xl mx-auto mb-10 leading-relaxed">
-                  HibahIlmu adalah platform Open Source nirlaba. Kami 100% transparan. Seluruh donasi sukarela digunakan murni untuk memperpanjang biaya server (VPS) dan domain <strong>hibahilmu.id</strong> agar pendidikan gratis ini terus menyala.
-                </p>
-                
-                <div className="bg-white/10 backdrop-blur-md p-8 rounded-3xl max-w-lg mx-auto text-left border border-white/20 shadow-xl">
-                  <div className="text-[10px] font-black uppercase tracking-widest text-emerald-300 mb-4 text-center">Status Pendanaan Server Tahun 2026</div>
-                  <div className="flex justify-between text-sm font-bold mb-2">
-                    <span className="text-white">Terkumpul: Rp 850.000</span>
-                    <span className="text-slate-400">Target: Rp 1.500.000</span>
-                  </div>
-                  <div className="w-full h-4 bg-slate-800 rounded-full overflow-hidden mb-6 shadow-inner">
-                    <motion.div initial={{ width: 0 }} animate={{ width: "56%" }} transition={{ duration: 1, ease: "easeOut" }} className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full relative"></motion.div>
-                  </div>
-                  <button className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-black py-4 rounded-xl shadow-lg transition transform hover:-translate-y-1">💖 Donasi via Saweria / GoPay</button>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* ==========================================
-            5. MENU UTAMA: BERANDA RUANG KELAS
+            5. BERANDA (MENAMPILKAN RICH TEXT MATERI)
         ========================================== */}
         {menuAktif === "beranda" && (
           <React.Fragment>
-            {/* SUB-MENU A: PILIH JENJANG PENDIDIKAN */}
             {!jenjangAktif && !kelasAktif && (
               <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}>
-                <div className="text-center max-w-4xl mx-auto mb-16 pt-6 relative z-10">
-                  <div className="inline-flex items-center gap-2 bg-white border border-slate-200 shadow-sm px-4 py-1.5 rounded-full text-xs font-bold text-slate-600 mb-6">
-                    <Sparkles className="w-4 h-4 text-amber-500" />
-                    <span>{userLogin ? `Selamat datang kembali, ${userLogin.nama}!` : "Pendidikan Berkualitas untuk Seluruh Anak Bangsa"}</span>
-                  </div>
-                  <h1 className="text-5xl sm:text-7xl font-black text-slate-900 mb-6 leading-[1.1] tracking-tight">
-                    Satu Platform Sejuta Ilmu, <br />
-                    <span className="bg-gradient-to-r from-emerald-600 via-teal-500 to-indigo-600 bg-clip-text text-transparent">Gratis Selamanya.</span>
-                  </h1>
-                  <p className="text-lg text-slate-600 mb-10 max-w-2xl mx-auto leading-relaxed">Pilih jenjang pendidikanmu, temukan materi interaktif, tonton penjelasan video, dan raih skor tertinggi di kuis. Mulai belajar sekarang!</p>
-                  
+                <div className="text-center max-w-4xl mx-auto mb-16 pt-6">
+                  <h1 className="text-5xl sm:text-7xl font-black text-slate-900 mb-6 leading-[1.1] tracking-tight">Satu Platform Sejuta Ilmu, <br /><span className="bg-gradient-to-r from-emerald-600 via-teal-500 to-indigo-600 bg-clip-text text-transparent">Gratis Selamanya.</span></h1>
                   <div className="max-w-2xl mx-auto relative group">
                     <Search className="w-5 h-5 text-slate-400 absolute left-5 top-1/2 -translate-y-1/2 group-focus-within:text-emerald-500 transition" />
-                    <input type="text" value={kataKunci} onChange={(e) => setKataKunci(e.target.value)} placeholder="Cari jenjang atau mata pelajaran (Contoh: SD, Fisika, Matematika)..." className="w-full pl-14 pr-6 py-5 bg-white border border-slate-200 rounded-3xl shadow-lg text-base font-semibold outline-none focus:ring-4 focus:ring-emerald-500/20 transition-all" />
+                    <input type="text" value={kataKunci} onChange={(e) => setKataKunci(e.target.value)} placeholder="Cari jenjang atau mata pelajaran..." className="w-full pl-14 pr-6 py-5 bg-white border border-slate-200 rounded-3xl shadow-lg text-base font-semibold outline-none focus:ring-4 focus:ring-emerald-500/20 transition-all" />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                   {daftarJenjang.filter((j) => j.nama.toLowerCase().includes(kataKunci.toLowerCase())).map((jenjang) => (
-                    <motion.div key={jenjang.id} whileHover={{ y: -8 }} onClick={() => { setJenjangAktif(jenjang); setSubJenjangAktif("semua"); }} className="cursor-pointer bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm hover:shadow-2xl transition-all flex flex-col justify-between relative overflow-hidden group">
+                    <motion.div key={jenjang.id} whileHover={{ y: -8 }} onClick={() => { setJenjangAktif(jenjang); setSubJenjangAktif("semua"); }} className="cursor-pointer bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm hover:shadow-2xl transition-all flex flex-col justify-between">
                       <div className={`h-2.5 w-full bg-gradient-to-r ${jenjang.gradien} absolute top-0 left-0`} />
                       <div>
                         <div className="flex justify-between items-start mb-6">
-                          <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${jenjang.gradien} shadow-md flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300`}>
-                            {renderIkon(jenjang.ikonNama)}
-                          </div>
+                          <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${jenjang.gradien} shadow-md flex items-center justify-center`}>{renderIkon(jenjang.ikonNama)}</div>
                           <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border ${jenjang.badge}`}>{jenjang.subJenjang.length} Jurusan</span>
                         </div>
-                        <h3 className="text-2xl font-black text-slate-900 mb-3 group-hover:text-emerald-600 transition-colors">{jenjang.nama}</h3>
+                        <h3 className="text-2xl font-black text-slate-900 mb-3">{jenjang.nama}</h3>
                         <p className="text-slate-500 text-sm leading-relaxed mb-6">{jenjang.deskripsi}</p>
-                      </div>
-                      <div className="pt-5 border-t border-slate-100 flex justify-between items-center text-sm font-bold text-slate-400 group-hover:text-emerald-600 transition-colors">
-                        <span>Pilih & Buka Ruang Kelas</span><span className="bg-slate-100 group-hover:bg-emerald-100 w-8 h-8 flex items-center justify-center rounded-full transition-colors">→</span>
                       </div>
                     </motion.div>
                   ))}
@@ -1133,126 +885,70 @@ export default function AplikasiHibahIlmu() {
               </motion.div>
             )}
 
-            {/* SUB-MENU B: DAFTAR KELAS & FILTER JURUSAN */}
             {jenjangAktif && !kelasAktif && (
               <motion.div initial={{ opacity: 0, x: 25 }} animate={{ opacity: 1, x: 0 }}>
-                <button onClick={() => setJenjangAktif(null)} className="inline-flex items-center gap-2 text-sm font-bold text-slate-600 bg-white px-5 py-3 rounded-2xl border border-slate-200 mb-8 shadow-sm hover:bg-slate-50 hover:text-slate-900 transition">
-                  <ArrowLeft className="w-4 h-4" /> Kembali ke Semua Jenjang
+                <button onClick={() => setJenjangAktif(null)} className="inline-flex items-center gap-2 text-sm font-bold text-slate-600 bg-white px-5 py-3 rounded-2xl border border-slate-200 mb-8 shadow-sm hover:bg-slate-50 transition">
+                  <ArrowLeft className="w-4 h-4" /> Kembali
                 </button>
-                
-                <div className={`rounded-[2.5rem] p-10 sm:p-14 text-white bg-gradient-to-br ${jenjangAktif.gradien} shadow-2xl mb-10 relative overflow-hidden`}>
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-white/20 rounded-full blur-3xl"></div>
-                  <div className="relative z-10">
-                    <span className="bg-white/20 text-white border border-white/30 text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest shadow-md backdrop-blur-md">{jenjangAktif.tagline}</span>
-                    <h1 className="text-4xl sm:text-5xl font-black mt-5 mb-3 leading-tight">{jenjangAktif.nama}</h1>
-                    <p className="text-white/90 text-base max-w-xl leading-relaxed">{jenjangAktif.deskripsi}</p>
-                  </div>
+                <div className={`rounded-[2.5rem] p-10 sm:p-14 text-white bg-gradient-to-br ${jenjangAktif.gradien} shadow-2xl mb-10`}>
+                  <h1 className="text-4xl sm:text-5xl font-black mt-5 mb-3 leading-tight">{jenjangAktif.nama}</h1>
                 </div>
 
-                {/* FILTER SUB-JENJANG / JURUSAN / KELAS */}
-                <div className="mb-8 flex flex-wrap gap-2.5 items-center p-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
-                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-3 pr-2 whitespace-nowrap">Filter Kelas:</div>
-                  <button onClick={() => setSubJenjangAktif("semua")} className={`px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition ${subJenjangAktif === "semua" ? "bg-slate-900 text-white shadow-md" : "bg-transparent text-slate-600 hover:bg-slate-100"}`}>
-                    Semua Materi
-                  </button>
+                <div className="mb-8 flex flex-wrap gap-2.5 items-center p-2 bg-white rounded-2xl border shadow-sm">
+                  <button onClick={() => setSubJenjangAktif("semua")} className={`px-5 py-2.5 rounded-xl text-sm font-bold transition ${subJenjangAktif === "semua" ? "bg-slate-900 text-white" : "bg-white text-slate-600"}`}>Semua Materi</button>
                   {jenjangAktif.subJenjang.map(sj => (
-                    <button key={sj.id} onClick={() => setSubJenjangAktif(sj.id)} className={`px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition ${subJenjangAktif === sj.id ? "bg-slate-900 text-white shadow-md" : "bg-transparent text-slate-600 hover:bg-slate-100"}`}>
-                      {sj.nama}
-                    </button>
+                    <button key={sj.id} onClick={() => setSubJenjangAktif(sj.id)} className={`px-5 py-2.5 rounded-xl text-sm font-bold transition ${subJenjangAktif === sj.id ? "bg-slate-900 text-white" : "bg-white text-slate-600"}`}>{sj.nama}</button>
                   ))}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {jenjangAktif.kelas
-                    .filter(item => subJenjangAktif === "semua" || item.subJenjangId === subJenjangAktif)
-                    .map((item) => {
+                  {jenjangAktif.kelas.filter(item => subJenjangAktif === "semua" || item.subJenjangId === subJenjangAktif).map((item) => {
                       const selesai = materiSelesai.includes(item.id);
-                      const namaSub = jenjangAktif.subJenjang.find(s => s.id === item.subJenjangId)?.nama || "Umum";
                       return (
-                        <div key={item.id} onClick={() => setKelasAktif(item)} className={`bg-white rounded-[2rem] p-8 border-2 shadow-sm hover:shadow-xl cursor-pointer transition flex flex-col justify-between group ${selesai ? "border-emerald-400 bg-emerald-50/20" : "border-slate-100"}`}>
-                          <div>
-                            <div className="flex justify-between items-center mb-5">
-                              <div className="flex gap-2">
-                                <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 border border-slate-200">📍 {namaSub}</span>
-                                <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100">⚡ {item.level}</span>
-                              </div>
-                              {selesai && <span className="text-[10px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-lg flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/> Selesai</span>}
-                            </div>
-                            <h3 className="text-2xl font-bold text-slate-900 mb-3 group-hover:text-emerald-600 transition-colors">{item.judul}</h3>
-                            <p className="text-sm text-slate-500 mb-6 leading-relaxed line-clamp-2" dangerouslySetInnerHTML={{ __html: item.rangkuman.replace(/<[^>]+>/g, ' ') }}></p>
+                        <div key={item.id} onClick={() => setKelasAktif(item)} className="bg-white rounded-[2rem] p-8 border-2 shadow-sm hover:shadow-xl cursor-pointer transition">
+                          <div className="flex justify-between items-center mb-5">
+                            <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100">⚡ {item.level}</span>
+                            {selesai && <span className="text-[10px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-100 border px-3 py-1.5 rounded-lg flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/> Selesai</span>}
                           </div>
-                          <div className="pt-5 border-t border-slate-100 flex justify-between items-center text-sm font-bold text-slate-400 group-hover:text-emerald-600 transition-colors">
-                            <span className="flex items-center gap-2"><PlayCircle className="w-5 h-5" /> Mulai Belajar & Kuis</span>
-                            <span className="text-xs bg-amber-100 text-amber-700 px-3 py-1.5 rounded-lg font-black">+50 XP</span>
-                          </div>
+                          <h3 className="text-2xl font-bold text-slate-900 mb-3">{item.judul}</h3>
+                          <p className="text-sm text-slate-500 mb-6 leading-relaxed line-clamp-2" dangerouslySetInnerHTML={{ __html: item.rangkuman.replace(/<[^>]+>/g, ' ') }}></p>
                         </div>
                       );
                   })}
-                  
-                  {jenjangAktif.kelas.filter(item => subJenjangAktif === "semua" || item.subJenjangId === subJenjangAktif).length === 0 && (
-                    <div className="col-span-1 md:col-span-2 text-center py-16 border-2 border-dashed border-slate-200 rounded-[2rem] text-slate-400 bg-white">
-                      <BookMarked className="w-16 h-16 mx-auto mb-4 text-slate-300"/>
-                      <p className="font-black text-xl text-slate-600 mb-2">Belum ada materi di kategori ini.</p>
-                      <p className="text-sm font-medium">Guru relawan akan segera menerbitkan kurikulum materi ke kelas ini!</p>
-                    </div>
-                  )}
                 </div>
               </motion.div>
             )}
 
-            {/* SUB-MENU C: HALAMAN MATERI DETAIL & KUIS */}
+            {/* HALAMAN BACA MATERI DENGAN RICH TEXT */}
             {kelasAktif && jenjangAktif && (
               <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}>
-                <div className="flex flex-wrap justify-between items-center gap-4 mb-8">
-                  <button onClick={() => setKelasAktif(null)} className="bg-white px-5 py-3 border border-slate-200 rounded-2xl text-sm font-bold flex items-center gap-2 shadow-sm hover:bg-slate-50 transition">
-                    <ArrowLeft className="w-4 h-4" /> Kembali ke Daftar Materi
-                  </button>
+                <div className="flex justify-between items-center mb-8">
+                  <button onClick={() => setKelasAktif(null)} className="bg-white px-5 py-3 border rounded-2xl text-sm font-bold flex items-center gap-2 shadow-sm"><ArrowLeft className="w-4 h-4" /> Kembali</button>
                   <button onClick={() => toggleSelesaiMateri(kelasAktif.id)} className={`px-6 py-3 rounded-2xl text-sm font-black shadow-md transition flex items-center gap-2 border-2 ${materiSelesai.includes(kelasAktif.id) ? "bg-emerald-50 text-emerald-700 border-emerald-500" : "bg-slate-900 text-white border-slate-900 hover:bg-slate-800"}`}>
-                    {materiSelesai.includes(kelasAktif.id) ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
-                    {materiSelesai.includes(kelasAktif.id) ? "Modul Selesai (+30 XP)" : "Tandai Selesai & Klaim XP"}
+                    {materiSelesai.includes(kelasAktif.id) ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />} Tandai Selesai
                   </button>
                 </div>
 
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                  {/* Kolom Kiri: Video & Ringkasan */}
                   <div className="xl:col-span-2 space-y-8">
                     <div className="bg-white rounded-[2rem] p-6 sm:p-10 border border-slate-200 shadow-sm">
-                      <div className="aspect-video w-full rounded-2xl overflow-hidden bg-slate-900 mb-6 shadow-inner border border-slate-100">
+                      <div className="aspect-video w-full rounded-2xl bg-slate-900 mb-8 overflow-hidden">
                         <iframe src={kelasAktif.videoUrl} title={kelasAktif.judul} className="w-full h-full" allowFullScreen />
                       </div>
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-[10px] font-black bg-slate-100 text-slate-500 px-3 py-1 rounded-md uppercase tracking-widest">{jenjangAktif.nama}</span>
-                        <span className="text-[10px] font-black bg-indigo-50 text-indigo-600 px-3 py-1 rounded-md uppercase tracking-widest border border-indigo-100">{kelasAktif.level}</span>
-                      </div>
-                      <h1 className="text-3xl font-black text-slate-900 mb-6 leading-tight">{kelasAktif.judul}</h1>
+                      <h1 className="text-3xl font-black text-slate-900 mb-6">{kelasAktif.judul}</h1>
                       
-                      {/* RENDER FORMAT HTML RICH TEXT */}
-                      <div className="prose prose-slate max-w-none mb-8" dangerouslySetInnerHTML={{ __html: kelasAktif.rangkuman }}></div>
+                      {/* INI KUNCI RENDER HTML RICH TEXT */}
+                      <div className="prose prose-slate max-w-none mb-8" dangerouslySetInnerHTML={{ __html: kelasAktif.rangkuman || "" }}></div>
                       
                       {kelasAktif.rumusMatematika && (
-                        <div className="mt-6 p-6 bg-slate-900 text-emerald-300 font-mono text-sm rounded-2xl shadow-inner border border-slate-800">
-                          <div className="text-[10px] font-black text-slate-500 mb-3 uppercase tracking-widest flex items-center gap-2"><LayoutDashboard className="w-4 h-4"/> Papan Rumus / Catatan Penting:</div>
-                          <div className="whitespace-pre-wrap text-base leading-relaxed">{kelasAktif.rumusMatematika}</div>
+                        <div className="p-6 bg-slate-900 text-emerald-300 font-mono text-sm rounded-2xl shadow-inner border border-slate-800">
+                          <div className="text-[10px] font-black text-slate-500 mb-3 uppercase tracking-widest flex items-center gap-2"><LayoutDashboard className="w-4 h-4"/> Papan Rumus:</div>
+                          <div className="whitespace-pre-wrap text-base">{kelasAktif.rumusMatematika}</div>
                         </div>
                       )}
                     </div>
-
-                    <div className="bg-amber-50 rounded-[2rem] p-6 sm:p-8 border border-amber-200 shadow-sm relative overflow-hidden">
-                      <div className="absolute -right-4 -bottom-4 opacity-10"><FileEdit className="w-32 h-32 text-amber-900"/></div>
-                      <h3 className="font-black text-lg mb-4 flex items-center gap-2 text-amber-900 relative z-10"><FileEdit className="w-5 h-5" /> Buku Catatan Pribadi Siswa</h3>
-                      <textarea rows={4} value={catatanSiswa} onChange={(e) => setCatatanSiswa(e.target.value)} placeholder="Ketik rangkuman atau hal penting dari video di sini. Catatan ini akan tersimpan otomatis di perangkatmu..." className="w-full p-4 bg-white border border-amber-200 rounded-2xl text-sm font-medium mb-4 outline-none focus:ring-2 focus:ring-amber-500 shadow-inner relative z-10 leading-relaxed" />
-                      <div className="flex items-center gap-4 relative z-10">
-                        <button onClick={() => { localStorage.setItem(`catatan_${kelasAktif.id}`, catatanSiswa); setStatusSimpanCatatan(true); setTimeout(() => setStatusSimpanCatatan(false), 2500); }} className="bg-amber-500 hover:bg-amber-600 text-white font-black px-6 py-3 rounded-xl shadow-md transition">
-                          Simpan Catatan
-                        </button>
-                        <AnimatePresence>
-                          {statusSimpanCatatan && <motion.span initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="text-xs text-emerald-700 font-black flex items-center gap-1 bg-emerald-100 px-3 py-1.5 rounded-lg"><CheckCircle2 className="w-4 h-4"/> Tersimpan Lokal!</motion.span>}
-                        </AnimatePresence>
-                      </div>
-                    </div>
                   </div>
 
-                  {/* Kolom Kanan: Kuis */}
                   <div className="xl:col-span-1">
                     <div className="bg-white rounded-[2rem] p-8 border-2 border-indigo-100 shadow-lg sticky top-28">
                       <div className="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center mb-6"><Trophy className="w-6 h-6"/></div>
@@ -1261,45 +957,16 @@ export default function AplikasiHibahIlmu() {
                       
                       <div className="space-y-3 mb-6">
                         {kelasAktif.kuis.opsi.map((opsi, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => {
-                              setJawabanKuis(idx);
-                              if (idx === kelasAktif.kuis.jawabanBenar) {
-                                if (statusKuis !== "benar") tambahXP(50);
-                                setStatusKuis("benar");
-                              } else {
-                                setStatusKuis("salah");
-                              }
-                            }}
-                            className={`w-full text-left p-4 rounded-2xl border-2 font-bold text-sm transition-all duration-200 flex items-center gap-3 ${
-                              jawabanKuis === idx
-                                ? statusKuis === "benar"
-                                  ? "border-emerald-500 bg-emerald-50 text-emerald-900 shadow-md"
-                                  : "border-rose-500 bg-rose-50 text-rose-900 shadow-md"
-                                : "border-slate-100 hover:border-indigo-300 hover:bg-slate-50 text-slate-700"
-                            }`}
-                          >
-                            <span className={`w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-black ${jawabanKuis === idx ? (statusKuis === "benar" ? "bg-emerald-200 text-emerald-800" : "bg-rose-200 text-rose-800") : "bg-slate-100 text-slate-400"}`}>
-                              {String.fromCharCode(65 + idx)}
-                            </span>
+                          <button key={idx} onClick={() => { setJawabanKuis(idx); if (idx === kelasAktif.kuis.jawabanBenar) { if (statusKuis !== "benar") tambahXP(50); setStatusKuis("benar"); } else { setStatusKuis("salah"); } }} className={`w-full text-left p-4 rounded-2xl border-2 font-bold text-sm transition-all duration-200 flex items-center gap-3 ${jawabanKuis === idx ? statusKuis === "benar" ? "border-emerald-500 bg-emerald-50 text-emerald-900 shadow-md" : "border-rose-500 bg-rose-50 text-rose-900 shadow-md" : "border-slate-100 hover:border-indigo-300 hover:bg-slate-50 text-slate-700"}`}>
+                            <span className={`w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-black ${jawabanKuis === idx ? (statusKuis === "benar" ? "bg-emerald-200 text-emerald-800" : "bg-rose-200 text-rose-800") : "bg-slate-100 text-slate-400"}`}>{String.fromCharCode(65 + idx)}</span>
                             {opsi}
                           </button>
                         ))}
                       </div>
 
                       <AnimatePresence mode="wait">
-                        {statusKuis === "benar" && (
-                          <motion.div key="benar" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="p-5 bg-emerald-50 rounded-2xl text-xs text-emerald-900 font-bold border border-emerald-200 shadow-inner">
-                            <div className="flex items-center gap-2 mb-2 text-sm font-black text-emerald-700"><CheckCircle2 className="w-5 h-5"/> Tepat Sekali! (+50 XP)</div>
-                            <div className="font-medium leading-relaxed opacity-90">{kelasAktif.kuis.pembahasan}</div>
-                          </motion.div>
-                        )}
-                        {statusKuis === "salah" && (
-                          <motion.div key="salah" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="p-4 bg-rose-50 rounded-2xl text-xs text-rose-900 font-bold border border-rose-200 shadow-inner flex items-center gap-2">
-                            <XCircle className="w-5 h-5 text-rose-600"/> Belum tepat, ayo coba pahami lagi!
-                          </motion.div>
-                        )}
+                        {statusKuis === "benar" && <motion.div key="benar" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="p-5 bg-emerald-50 rounded-2xl text-xs text-emerald-900 font-bold border border-emerald-200 shadow-inner"><div className="flex items-center gap-2 mb-2 text-sm font-black text-emerald-700"><CheckCircle2 className="w-5 h-5"/> Tepat Sekali! (+50 XP)</div><div className="font-medium leading-relaxed opacity-90">{kelasAktif.kuis.pembahasan}</div></motion.div>}
+                        {statusKuis === "salah" && <motion.div key="salah" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="p-4 bg-rose-50 rounded-2xl text-xs text-rose-900 font-bold border border-rose-200 shadow-inner flex items-center gap-2">Belum tepat, ayo coba pahami lagi!</motion.div>}
                       </AnimatePresence>
                     </div>
                   </div>
@@ -1308,6 +975,129 @@ export default function AplikasiHibahIlmu() {
             )}
           </React.Fragment>
         )}
+
+        {/* ==========================================
+            TAMBAHAN (Modal Admin Edit/Import dll yang ada di atas)
+        ========================================== */}
+        <AnimatePresence>
+          {modalAdminAkun && (
+            <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+              <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-white rounded-[2rem] p-8 max-w-xl w-full shadow-2xl max-h-[90vh] overflow-y-auto border border-slate-100">
+                <h3 className="text-2xl font-black mb-6 text-slate-900">{idEditAkun ? "Edit Data Pengguna" : "Buat Akun Baru (Oleh Admin)"}</h3>
+                <form onSubmit={simpanAkunAdmin} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div><label className="font-bold mb-1.5 block text-xs text-slate-500 uppercase tracking-wider">Nama Lengkap</label><input type="text" required value={namaFormAdmin} onChange={e => setNamaFormAdmin(e.target.value)} className="w-full p-3.5 border border-slate-200 rounded-xl bg-slate-50 text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500" /></div>
+                    <div><label className="font-bold mb-1.5 block text-xs text-slate-500 uppercase tracking-wider">Email Akun</label><input type="email" required value={emailFormAdmin} onChange={e => setEmailFormAdmin(e.target.value)} className="w-full p-3.5 border border-slate-200 rounded-xl bg-slate-50 text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500" /></div>
+                  </div>
+                  <div>
+                    <label className="font-bold mb-1.5 block text-xs text-slate-500 uppercase tracking-wider">Password {idEditAkun && <span className="normal-case font-normal text-slate-400">(Kosongkan jika tidak diubah)</span>}</label>
+                    <input type="password" value={passFormAdmin} onChange={e => setPassFormAdmin(e.target.value)} placeholder="••••••" className="w-full p-3.5 border border-slate-200 rounded-xl bg-slate-50 text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="font-bold mb-1.5 block text-xs text-slate-500 uppercase tracking-wider">Role / Peran</label>
+                      <select value={roleFormAdmin} onChange={e => setRoleFormAdmin(e.target.value as any)} className="w-full p-3.5 border border-slate-200 rounded-xl bg-slate-50 text-sm font-extrabold text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="siswa">🎓 Siswa</option>
+                        <option value="guru">👨‍🏫 Guru Relawan</option>
+                        <option value="admin">👑 Admin</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="font-bold mb-1.5 block text-xs text-slate-500 uppercase tracking-wider">Status Akun</label>
+                      <select value={statusFormAdmin} onChange={e => setStatusFormAdmin(e.target.value as any)} className="w-full p-3.5 border border-slate-200 rounded-xl bg-slate-50 text-sm font-extrabold text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="approved">✅ Aktif (Approved)</option>
+                        <option value="pending">⏳ Pending</option>
+                        <option value="rejected">❌ Suspended</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="font-bold mb-1.5 block text-xs text-slate-500 uppercase tracking-wider">Info Tambahan (Mapel / Instansi)</label>
+                    <input type="text" value={infoFormAdmin} onChange={e => setInfoFormAdmin(e.target.value)} className="w-full p-3.5 border border-slate-200 rounded-xl bg-slate-50 text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500" />
+                  </div>
+
+                  {roleFormAdmin === "guru" && (
+                    <div className="mt-6 p-5 border-2 border-indigo-100 bg-indigo-50/50 rounded-2xl shadow-inner">
+                      <h4 className="font-black text-indigo-900 mb-4 flex items-center gap-2"><Lock className="w-4 h-4"/> Berikan Akses Mengajar (RBAC):</h4>
+                      <div className="max-h-56 overflow-y-auto space-y-5 pr-2">
+                        {daftarJenjang.map(j => (
+                          <div key={j.id} className="bg-white p-3 border border-indigo-100 rounded-xl">
+                            <div className="text-[10px] font-black text-slate-400 mb-2.5 uppercase tracking-widest">{j.nama}</div>
+                            <div className="grid grid-cols-2 gap-2">
+                              {j.subJenjang.map(sj => {
+                                const diizinkan = aksesMengajarForm.includes(sj.id);
+                                return (
+                                  <label key={sj.id} className={`flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition select-none ${diizinkan ? 'bg-indigo-600 text-white border-indigo-700 shadow-md' : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200'}`}>
+                                    <input type="checkbox" className="hidden" checked={diizinkan} onChange={() => setAksesMengajarForm(prev => prev.includes(sj.id) ? prev.filter(x => x !== sj.id) : [...prev, sj.id])} />
+                                    <div className="text-xs font-bold leading-tight">{sj.nama}</div>
+                                  </label>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-3 pt-6 border-t border-slate-100 mt-6">
+                    <button type="submit" className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-xl shadow-lg transition">💾 Simpan Data Pengguna</button>
+                    <button type="button" onClick={() => setModalAdminAkun(false)} className="px-6 py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition">Batal</button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
+
+          {modalImportAkun && (
+            <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+              <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="bg-white rounded-[2rem] p-8 max-w-2xl w-full shadow-2xl">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-2xl font-black flex items-center gap-2 text-slate-900"><FileSpreadsheet className="w-6 h-6 text-indigo-600" /> Import Akun Massal (JSON)</h3>
+                </div>
+                {notifImport && <div className="mb-4 p-4 bg-emerald-50 border border-emerald-200 text-emerald-900 font-black text-sm rounded-xl text-center">{notifImport}</div>}
+                <form onSubmit={handleImportJson} className="space-y-4">
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Editor JSON Data</label>
+                      <button type="button" onClick={() => setTeksImportJson(TEMPLATE_JSON_CONTOH)} className="text-[11px] bg-indigo-50 text-indigo-600 px-3 py-1 rounded-md font-black hover:bg-indigo-100 transition">Muat Template Contoh</button>
+                    </div>
+                    <textarea rows={10} required value={teksImportJson} onChange={e => setTeksImportJson(e.target.value)} placeholder={`[\n  {\n    "nama": "Nama Siswa",\n    "email": "email@sekolah.id"\n  }\n]`} className="w-full p-4 font-mono text-sm bg-slate-900 text-emerald-300 rounded-2xl shadow-inner outline-none" />
+                  </div>
+                  <div className="flex gap-3 pt-4 border-t border-slate-100">
+                    <button type="submit" className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-xl shadow-lg transition text-sm">🚀 Jalankan Import Data Massal</button>
+                    <button type="button" onClick={() => setModalImportAkun(false)} className="px-6 py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition text-sm">Batal</button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
+
+          {modalKategori && (
+            <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+              <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="bg-white rounded-[2rem] p-8 max-w-sm w-full shadow-2xl">
+                <h3 className="text-xl font-black mb-6 text-slate-900">Tambah Kelas / Prodi Baru</h3>
+                <form onSubmit={tambahKategoriBaru} className="space-y-5">
+                  <div>
+                    <label className="font-bold mb-1.5 block text-xs text-slate-500 uppercase tracking-wider">Jenjang Induk</label>
+                    <select value={targetJenjangKategori} onChange={e => setTargetJenjangKategori(e.target.value)} className="w-full p-3.5 border border-slate-200 rounded-xl bg-slate-50 text-sm font-extrabold text-slate-900 outline-none">
+                      {daftarJenjang.map(j => <option key={j.id} value={j.id}>{j.nama}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="font-bold mb-1.5 block text-xs text-slate-500 uppercase tracking-wider">Nama Sub-Kategori</label>
+                    <input type="text" required value={namaKategoriBaru} onChange={e => setNamaKategoriBaru(e.target.value)} placeholder="Misal: Kelas 10 IPA 1..." className="w-full p-3.5 border border-slate-200 rounded-xl bg-slate-50 text-sm font-semibold outline-none" />
+                  </div>
+                  <div className="flex gap-2 pt-4">
+                    <button type="submit" className="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-black py-3.5 rounded-xl transition shadow-lg">Simpan</button>
+                    <button type="button" onClick={() => setModalKategori(false)} className="px-5 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition">Batal</button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
       </main>
 
       <footer className="border-t border-slate-200 bg-white/50 backdrop-blur-md py-10 mt-20">
@@ -1315,7 +1105,6 @@ export default function AplikasiHibahIlmu() {
           <div className="w-12 h-12 bg-emerald-600 text-white rounded-2xl mx-auto flex items-center justify-center text-2xl mb-4 shadow-lg">🐼</div>
           <p className="font-black text-slate-900 text-lg mb-1">HibahIlmu.id</p>
           <p className="text-xs text-slate-500 font-semibold mb-4">LMS Open Source • Pendidikan Gratis Indonesia</p>
-          <div className="text-[10px] text-slate-400 uppercase tracking-widest">Dibuat dengan dedikasi tinggi oleh Panda Kode</div>
         </div>
       </footer>
     </div>
