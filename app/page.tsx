@@ -36,10 +36,9 @@ import {
   Send,
   HelpCircle,
   Play,
-  CheckCircle,
-  BookMarked,
-  User,
-  Settings,
+  Edit3,
+  UserX2,
+  UserCheck2,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 
@@ -387,7 +386,7 @@ export default function AplikasiHibahIlmu() {
   const [mapelBaru, setMapelBaru] = useState<string>("Matematika");
   const [balasanInput, setBalasanInput] = useState<{ [key: string]: string }>({});
 
-  // State Form Auth / Register & Filter Admin
+  // State Auth Manual / Register
   const [modeAuth, setModeAuth] = useState<"login" | "register">("login");
   const [emailLogin, setEmailLogin] = useState("");
   const [passwordLogin, setPasswordLogin] = useState("");
@@ -396,9 +395,19 @@ export default function AplikasiHibahIlmu() {
   const [namaReg, setNamaReg] = useState("");
   const [emailReg, setEmailReg] = useState("");
   const [passwordReg, setPasswordReg] = useState("");
-  const [roleReg, setRoleReg] = useState<"siswa" | "guru">("siswa");
+  const [roleReg, setRoleReg] = useState<"siswa" | "guru" | "admin">("siswa");
   const [infoReg, setInfoReg] = useState("");
   const [filterLog, setFilterLog] = useState<string>("semua");
+
+  // State Admin Tambah & Edit Akun
+  const [modalAdminAkun, setModalAdminAkun] = useState<boolean>(false);
+  const [idEditAkun, setIdEditAkun] = useState<string | null>(null);
+  const [namaFormAdmin, setNamaFormAdmin] = useState("");
+  const [emailFormAdmin, setEmailFormAdmin] = useState("");
+  const [passFormAdmin, setPassFormAdmin] = useState("");
+  const [roleFormAdmin, setRoleFormAdmin] = useState<"admin" | "guru" | "siswa">("siswa");
+  const [statusFormAdmin, setStatusFormAdmin] = useState<"approved" | "pending" | "rejected">("approved");
+  const [infoFormAdmin, setInfoFormAdmin] = useState("");
 
   // State Guru Buat Materi
   const [jenjangPilih, setJenjangPilih] = useState("sd");
@@ -516,6 +525,10 @@ export default function AplikasiHibahIlmu() {
       setPesanError("Akun kamu masih menunggu persetujuan Admin.");
       return;
     }
+    if (akun.status === "rejected") {
+      setPesanError("Akun ini sedang disuspend (dibekukan). Hubungi Admin.");
+      return;
+    }
     setUserLogin(akun);
     localStorage.setItem("hibah_user_aktif", JSON.stringify(akun));
     catatLog(akun.nama, akun.role, `Berhasil masuk ke Dashboard ${akun.role.toUpperCase()}`, "akun");
@@ -535,6 +548,10 @@ export default function AplikasiHibahIlmu() {
     }
     if (akunDitemukan.status === "pending") {
       setPesanError("⏳ Akun menunggu persetujuan Admin.");
+      return;
+    }
+    if (akunDitemukan.status === "rejected") {
+      setPesanError("❌ Akun ini telah disuspend (dibekukan oleh Admin).");
       return;
     }
     setUserLogin(akunDitemukan);
@@ -566,7 +583,7 @@ export default function AplikasiHibahIlmu() {
     const daftarTerbaru = [akunBaru, ...safeAkunList];
     setDaftarAkun(daftarTerbaru);
     localStorage.setItem("hibah_daftar_akun", JSON.stringify(daftarTerbaru));
-    catatLog(namaReg, roleReg, `Mendaftar akun baru (Menunggu Approval)`, "akun");
+    catatLog(namaReg, roleReg === "admin" ? "admin" : roleReg, `Mendaftar akun baru (Menunggu Approval)`, "akun");
     setPesanSukses("✅ Pendaftaran terkirim! Menunggu persetujuan Admin.");
     setNamaReg("");
     setEmailReg("");
@@ -575,7 +592,7 @@ export default function AplikasiHibahIlmu() {
     setModeAuth("login");
   };
 
-  const ubahStatusAkun = (idTarget: string, statusBaru: "approved" | "rejected") => {
+  const ubahStatusAkun = (idTarget: string, statusBaru: "approved" | "rejected" | "pending") => {
     const safeAkunList = daftarAkun || [];
     const target = safeAkunList.find((a) => a.id === idTarget);
     if (!target) return;
@@ -585,15 +602,94 @@ export default function AplikasiHibahIlmu() {
     );
     setDaftarAkun(daftarTerbaru);
     localStorage.setItem("hibah_daftar_akun", JSON.stringify(daftarTerbaru));
-    catatLog(userLogin?.nama || "Admin", "admin", `${statusBaru === "approved" ? "Menyetujui" : "Menolak"} pendaftaran ${target.nama}`, "akun");
+    
+    let aksiLog = `Mengubah status akun ${target.nama} menjadi ${statusBaru}`;
+    if (statusBaru === "rejected") aksiLog = `Men-suspend (membekukan) akun ${target.nama}`;
+    if (statusBaru === "approved") aksiLog = `Menyetujui / Mengaktifkan kembali akun ${target.nama}`;
+
+    catatLog(userLogin?.nama || "Admin", "admin", aksiLog, "akun");
   };
 
   const hapusAkun = (idTarget: string) => {
     const safeAkunList = daftarAkun || [];
+    const target = safeAkunList.find((a) => a.id === idTarget);
+    if (!target || target.role === "admin") return;
+
     const daftarTerbaru = safeAkunList.filter((a) => a.id !== idTarget);
     setDaftarAkun(daftarTerbaru);
     localStorage.setItem("hibah_daftar_akun", JSON.stringify(daftarTerbaru));
-    catatLog(userLogin?.nama || "Admin", "admin", `Menghapus akun ID ${idTarget}`, "akun");
+    catatLog(userLogin?.nama || "Admin", "admin", `Menghapus permanen akun ${target.nama}`, "akun");
+  };
+
+  // Fungsionalitas Admin: Simpan Tambah / Edit Akun
+  const handleSimpanAkunAdmin = (e: React.FormEvent) => {
+    e.preventDefault();
+    const safeAkunList = daftarAkun || [];
+
+    if (idEditAkun) {
+      // Edit Akun Yang Ada
+      const daftarTerbaru = safeAkunList.map((a) =>
+        a.id === idEditAkun
+          ? {
+              ...a,
+              nama: namaFormAdmin,
+              email: emailFormAdmin,
+              password: passFormAdmin || a.password,
+              role: roleFormAdmin,
+              status: statusFormAdmin,
+              infoTambahan: infoFormAdmin,
+            }
+          : a
+      );
+      setDaftarAkun(daftarTerbaru);
+      localStorage.setItem("hibah_daftar_akun", JSON.stringify(daftarTerbaru));
+      catatLog(userLogin?.nama || "Admin", "admin", `Mengedit data akun: ${namaFormAdmin} (${roleFormAdmin})`, "akun");
+    } else {
+      // Tambah Akun Baru Oleh Admin
+      const akunBaru: AkunPengguna = {
+        id: "adm-usr-" + Date.now(),
+        nama: namaFormAdmin,
+        email: emailFormAdmin,
+        password: passFormAdmin || "123",
+        role: roleFormAdmin,
+        status: statusFormAdmin,
+        infoTambahan: infoFormAdmin || "Dibuat oleh Admin",
+        waktuDaftar: "Oleh Admin",
+      };
+      const daftarTerbaru = [akunBaru, ...safeAkunList];
+      setDaftarAkun(daftarTerbaru);
+      localStorage.setItem("hibah_daftar_akun", JSON.stringify(daftarTerbaru));
+      catatLog(userLogin?.nama || "Admin", "admin", `Membuat akun baru: ${namaFormAdmin} sebagai ${roleFormAdmin.toUpperCase()}`, "akun");
+    }
+
+    setModalAdminAkun(false);
+    setIdEditAkun(null);
+    setNamaFormAdmin("");
+    setEmailFormAdmin("");
+    setPassFormAdmin("");
+    setInfoFormAdmin("");
+  };
+
+  const bukaModalTambahAkun = () => {
+    setIdEditAkun(null);
+    setNamaFormAdmin("");
+    setEmailFormAdmin("");
+    setPassFormAdmin("");
+    setRoleFormAdmin("siswa");
+    setStatusFormAdmin("approved");
+    setInfoFormAdmin("");
+    setModalAdminAkun(true);
+  };
+
+  const bukaModalEditAkun = (akun: AkunPengguna) => {
+    setIdEditAkun(akun.id);
+    setNamaFormAdmin(akun.nama);
+    setEmailFormAdmin(akun.email);
+    setPassFormAdmin("");
+    setRoleFormAdmin(akun.role);
+    setStatusFormAdmin(akun.status);
+    setInfoFormAdmin(akun.infoTambahan);
+    setModalAdminAkun(true);
   };
 
   const handleGuruBuatMateri = (e: React.FormEvent) => {
@@ -757,9 +853,9 @@ export default function AplikasiHibahIlmu() {
         </div>
       </header>
 
-      {/* KONTEN UTAMA BERDASARKAN MENU */}
+      {/* KONTEN UTAMA */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
-        {/* 1. PORTAL DASHBOARD & MULTI-ROLE */}
+        {/* ==================== DASHBOARD & AUTH ==================== */}
         {menuAktif === "dashboard" && (
           <div>
             {!userLogin ? (
@@ -780,14 +876,15 @@ export default function AplikasiHibahIlmu() {
                     </form>
                   ) : (
                     <form onSubmit={handleRegister} className="space-y-4">
-                      <div className="grid grid-cols-2 gap-2">
-                        <button type="button" onClick={() => setRoleReg("siswa")} className={`p-3 border rounded-xl font-bold text-xs ${roleReg === "siswa" ? "bg-emerald-50 border-emerald-600" : ""}`}>Siswa</button>
-                        <button type="button" onClick={() => setRoleReg("guru")} className={`p-3 border rounded-xl font-bold text-xs ${roleReg === "guru" ? "bg-indigo-50 border-indigo-600" : ""}`}>Guru</button>
+                      <div className="grid grid-cols-3 gap-2">
+                        <button type="button" onClick={() => setRoleReg("siswa")} className={`p-2 border rounded-xl font-bold text-xs ${roleReg === "siswa" ? "bg-emerald-50 border-emerald-600" : ""}`}>Siswa</button>
+                        <button type="button" onClick={() => setRoleReg("guru")} className={`p-2 border rounded-xl font-bold text-xs ${roleReg === "guru" ? "bg-indigo-50 border-indigo-600" : ""}`}>Guru</button>
+                        <button type="button" onClick={() => setRoleReg("admin")} className={`p-2 border rounded-xl font-bold text-xs ${roleReg === "admin" ? "bg-amber-50 border-amber-600" : ""}`}>Admin</button>
                       </div>
                       <input type="text" required value={namaReg} onChange={(e) => setNamaReg(e.target.value)} placeholder="Nama Lengkap..." className="w-full p-3 bg-slate-50 border rounded-xl text-sm" />
                       <input type="email" required value={emailReg} onChange={(e) => setEmailReg(e.target.value)} placeholder="Email..." className="w-full p-3 bg-slate-50 border rounded-xl text-sm" />
                       <input type="password" required value={passwordReg} onChange={(e) => setPasswordReg(e.target.value)} placeholder="Password..." className="w-full p-3 bg-slate-50 border rounded-xl text-sm" />
-                      <input type="text" required value={infoReg} onChange={(e) => setInfoReg(e.target.value)} placeholder={roleReg === "guru" ? "Mata Pelajaran..." : "Sekolah..."} className="w-full p-3 bg-slate-50 border rounded-xl text-sm" />
+                      <input type="text" required value={infoReg} onChange={(e) => setInfoReg(e.target.value)} placeholder={roleReg === "guru" ? "Mata Pelajaran..." : "Sekolah / Info..."} className="w-full p-3 bg-slate-50 border rounded-xl text-sm" />
                       <button type="submit" className="w-full bg-slate-900 text-white font-bold py-3 rounded-xl text-sm">Daftar Akun</button>
                     </form>
                   )}
@@ -810,42 +907,123 @@ export default function AplikasiHibahIlmu() {
               </motion.div>
             ) : userLogin.role === "admin" ? (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                <div className="bg-slate-900 text-white p-6 rounded-3xl flex justify-between items-center shadow-lg">
+                <div className="bg-slate-900 text-white p-6 rounded-3xl flex flex-wrap justify-between items-center gap-4 shadow-lg">
                   <div>
                     <span className="bg-amber-400 text-slate-950 text-xs font-black px-3 py-1 rounded-full uppercase">👑 Super Admin</span>
-                    <h1 className="text-2xl font-black mt-2">Pusat Kendali HibahIlmu</h1>
-                    <p className="text-xs text-slate-300">Setujui akun pendaftaran dan audit log aktivitas real-time.</p>
+                    <h1 className="text-2xl font-black mt-2">Pusat Kendali Akun HibahIlmu</h1>
+                    <p className="text-xs text-slate-300">Kelola pendaftaran, edit data, suspend, dan tambah akun baru.</p>
                   </div>
-                  <button onClick={() => { setUserLogin(null); localStorage.removeItem("hibah_user_aktif"); }} className="bg-rose-600 text-white text-xs font-bold px-4 py-2 rounded-xl">Keluar</button>
+                  <div className="flex gap-2">
+                    <button onClick={bukaModalTambahAkun} className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm">
+                      <UserPlus className="w-4 h-4" /> Tambah Akun Baru
+                    </button>
+                    <button onClick={() => { setUserLogin(null); localStorage.removeItem("hibah_user_aktif"); }} className="bg-rose-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5">
+                      <LogOut className="w-4 h-4" /> Keluar
+                    </button>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="bg-white p-6 rounded-3xl border shadow-sm">
-                    <h2 className="text-base font-black mb-3 flex items-center gap-2"><ShieldAlert className="w-5 h-5 text-amber-500" /> Antrean Approval ({safeAkunList.filter((a) => a.status === "pending").length})</h2>
-                    {safeAkunList.filter((a) => a.status === "pending").length === 0 ? (
-                      <div className="p-4 text-center bg-slate-50 text-xs text-slate-500 rounded-xl">🎉 Tidak ada antrean pending.</div>
-                    ) : (
-                      <div className="space-y-2">
-                        {safeAkunList.filter((a) => a.status === "pending").map((c) => (
-                          <div key={c.id} className="p-3 bg-amber-50 border rounded-xl flex justify-between items-center text-xs">
-                            <div><b>{c.nama}</b> ({c.role}) - {c.infoTambahan}</div>
-                            <div className="flex gap-1">
-                              <button onClick={() => ubahStatusAkun(c.id, "approved")} className="bg-emerald-600 text-white px-3 py-1.5 rounded-lg font-bold">Setujui</button>
-                              <button onClick={() => ubahStatusAkun(c.id, "rejected")} className="bg-rose-100 text-rose-700 px-3 py-1.5 rounded-lg font-bold">Tolak</button>
-                            </div>
+                {/* MODAL ADMIN TAMBAH / EDIT AKUN */}
+                {modalAdminAkun && (
+                  <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+                    <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl">
+                      <h3 className="text-xl font-black mb-4">{idEditAkun ? "Edit Data Akun Pengguna" : "Buat Akun Baru (Oleh Admin)"}</h3>
+                      <form onSubmit={handleSimpanAkunAdmin} className="space-y-3 text-xs">
+                        <div>
+                          <label className="font-bold block mb-1">Nama Lengkap</label>
+                          <input type="text" required value={namaFormAdmin} onChange={(e) => setNamaFormAdmin(e.target.value)} placeholder="Nama..." className="w-full p-2.5 border rounded-xl" />
+                        </div>
+                        <div>
+                          <label className="font-bold block mb-1">Email</label>
+                          <input type="email" required value={emailFormAdmin} onChange={(e) => setEmailFormAdmin(e.target.value)} placeholder="Email..." className="w-full p-2.5 border rounded-xl" />
+                        </div>
+                        <div>
+                          <label className="font-bold block mb-1">Password {idEditAkun && "(Kosongkan jika tidak diubah)"}</label>
+                          <input type="password" value={passFormAdmin} onChange={(e) => setPassFormAdmin(e.target.value)} placeholder="Password..." className="w-full p-2.5 border rounded-xl" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="font-bold block mb-1">Peran (Role)</label>
+                            <select value={roleFormAdmin} onChange={(e) => setRoleFormAdmin(e.target.value as any)} className="w-full p-2.5 border rounded-xl font-bold">
+                              <option value="siswa">Siswa</option>
+                              <option value="guru">Guru Relawan</option>
+                              <option value="admin">Admin</option>
+                            </select>
                           </div>
-                        ))}
-                      </div>
-                    )}
+                          <div>
+                            <label className="font-bold block mb-1">Status Akun</label>
+                            <select value={statusFormAdmin} onChange={(e) => setStatusFormAdmin(e.target.value as any)} className="w-full p-2.5 border rounded-xl font-bold">
+                              <option value="approved">Approved (Aktif)</option>
+                              <option value="pending">Pending</option>
+                              <option value="rejected">Suspended (Dibekukan)</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="font-bold block mb-1">Info Tambahan (Mapel / Sekolah)</label>
+                          <input type="text" value={infoFormAdmin} onChange={(e) => setInfoFormAdmin(e.target.value)} placeholder="Info..." className="w-full p-2.5 border rounded-xl" />
+                        </div>
+                        <div className="flex gap-2 pt-3">
+                          <button type="submit" className="flex-1 bg-emerald-600 text-white font-bold py-2.5 rounded-xl text-xs">Simpan Akun</button>
+                          <button type="button" onClick={() => setModalAdminAkun(false)} className="px-4 py-2.5 bg-slate-100 rounded-xl font-bold">Batal</button>
+                        </div>
+                      </form>
+                    </motion.div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  {/* TABEL MANAJEMEN AKUN LENGKAP (EDIT, SUSPEND, HAPUS) */}
+                  <div className="lg:col-span-7 bg-white p-6 rounded-3xl border shadow-sm space-y-4">
+                    <h2 className="text-base font-black flex items-center justify-between">
+                      <span>Kelola Seluruh Akun ({safeAkunList.length})</span>
+                    </h2>
+                    <div className="space-y-2.5 max-h-[30rem] overflow-y-auto pr-1">
+                      {safeAkunList.map((akun) => (
+                        <div key={akun.id} className="p-3.5 bg-slate-50 border rounded-2xl flex justify-between items-center text-xs">
+                          <div>
+                            <div className="font-extrabold text-sm flex items-center gap-1.5">
+                              {akun.nama}
+                              <span className={`text-[10px] uppercase px-2 py-0.5 rounded font-bold ${akun.role === "admin" ? "bg-amber-100 text-amber-900" : akun.role === "guru" ? "bg-indigo-100 text-indigo-900" : "bg-emerald-100 text-emerald-900"}`}>{akun.role}</span>
+                              <span className={`text-[10px] uppercase px-2 py-0.5 rounded font-bold ${akun.status === "approved" ? "bg-emerald-100 text-emerald-700" : akun.status === "pending" ? "bg-amber-100 text-amber-700" : "bg-rose-100 text-rose-700"}`}>{akun.status === "rejected" ? "Suspended" : akun.status}</span>
+                            </div>
+                            <div className="text-slate-500 mt-0.5">{akun.email} • {akun.infoTambahan}</div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {/* Tombol Suspend / Aktifkan Kembali */}
+                            {akun.status === "approved" ? (
+                              <button onClick={() => ubahStatusAkun(akun.id, "rejected")} title="Suspend Akun" className="p-2 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl">
+                                <UserX2 className="w-4 h-4" />
+                              </button>
+                            ) : (
+                              <button onClick={() => ubahStatusAkun(akun.id, "approved")} title="Setujui / Aktifkan" className="p-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl">
+                                <UserCheck2 className="w-4 h-4" />
+                              </button>
+                            )}
+                            {/* Tombol Edit Akun */}
+                            <button onClick={() => bukaModalEditAkun(akun)} title="Edit Akun" className="p-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl">
+                              <Edit3 className="w-4 h-4" />
+                            </button>
+                            {/* Tombol Hapus Akun */}
+                            {akun.role !== "admin" && (
+                              <button onClick={() => hapusAkun(akun.id)} title="Hapus Permanen" className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
-                  <div className="bg-white p-6 rounded-3xl border shadow-sm">
+                  {/* LOG AKTIVITAS */}
+                  <div className="lg:col-span-5 bg-white p-6 rounded-3xl border shadow-sm">
                     <h2 className="text-base font-black mb-3 flex items-center gap-2"><Activity className="w-5 h-5 text-emerald-600" /> Log Aktivitas Real-Time</h2>
-                    <div className="space-y-2 max-h-72 overflow-y-auto text-xs">
+                    <div className="space-y-2 max-h-[30rem] overflow-y-auto text-xs pr-1">
                       {safeLogList.map((l) => (
-                        <div key={l.id} className="p-2.5 bg-slate-50 border rounded-xl flex justify-between">
+                        <div key={l.id} className="p-2.5 bg-slate-50 border rounded-xl flex justify-between gap-2">
                           <span><b>[{l.rolePelaku}] {l.namaPelaku}:</b> {l.aksi}</span>
-                          <span className="font-mono text-slate-400">{l.waktu}</span>
+                          <span className="font-mono text-slate-400 shrink-0">{l.waktu}</span>
                         </div>
                       ))}
                     </div>
