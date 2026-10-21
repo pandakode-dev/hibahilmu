@@ -73,6 +73,8 @@ export default function SistemAkunDanDashboard({
   catatLog,
   daftarJenjang = [],
   tambahMateriDariGuru,
+  poinXP = 0,
+  materiSelesai = [],
 }: SistemDashboardProps) {
   const [modeAuth, setModeAuth] = useState<"login" | "register">("login");
 
