@@ -39,6 +39,9 @@ import {
   Edit3,
   UserX2,
   UserCheck2,
+  Upload,
+  Download,
+  FileSpreadsheet,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 
@@ -409,6 +412,12 @@ export default function AplikasiHibahIlmu() {
   const [statusFormAdmin, setStatusFormAdmin] = useState<"approved" | "pending" | "rejected">("approved");
   const [infoFormAdmin, setInfoFormAdmin] = useState("");
 
+  // State Admin Checkbox Bulk Delete & Import JSON/CSV
+  const [selectedAkunIds, setSelectedAkunIds] = useState<string[]>([]);
+  const [modalImportAkun, setModalImportAkun] = useState<boolean>(false);
+  const [teksImportJson, setTeksImportJson] = useState<string>("");
+  const [notifImport, setNotifImport] = useState<string>("");
+
   // State Guru Buat Materi
   const [jenjangPilih, setJenjangPilih] = useState("sd");
   const [judulMateri, setJudulMateri] = useState("");
@@ -621,13 +630,92 @@ export default function AplikasiHibahIlmu() {
     catatLog(userLogin?.nama || "Admin", "admin", `Menghapus permanen akun ${target.nama}`, "akun");
   };
 
-  // Fungsionalitas Admin: Simpan Tambah / Edit Akun
+  // FITUR HAPUS AKUN SEKALIGUS (BULK DELETE)
+  const hapusAkunSekaligus = () => {
+    if (selectedAkunIds.length === 0) return;
+    if (!confirm(`Yakin ingin menghapus ${selectedAkunIds.length} akun yang dipilih secara permanen?`)) return;
+
+    const safeAkunList = daftarAkun || [];
+    // Jangan biarkan admin utama terhapus
+    const daftarTerbaru = safeAkunList.filter(
+      (a) => !selectedAkunIds.includes(a.id) || a.role === "admin"
+    );
+    setDaftarAkun(daftarTerbaru);
+    localStorage.setItem("hibah_daftar_akun", JSON.stringify(daftarTerbaru));
+    catatLog(userLogin?.nama || "Admin", "admin", `Melakukan hapus massal (bulk delete) pada ${selectedAkunIds.length} akun`, "akun");
+    setSelectedAkunIds([]);
+  };
+
+  const togglePilihAkun = (id: string) => {
+    setSelectedAkunIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  // FITUR IMPORT AKUN MASSAL (JSON TEMPLATE)
+  const handleImportJson = (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const parsedData = JSON.parse(teksImportJson);
+      if (!Array.isArray(parsedData)) {
+        alert("Format JSON harus berupa Array [...]");
+        return;
+      }
+
+      const safeAkunList = daftarAkun || [];
+      const akunBaruMasuk: AkunPengguna[] = parsedData.map((item, idx) => ({
+        id: "import-" + Date.now() + "-" + idx,
+        nama: item.nama || "Tanpa Nama",
+        email: item.email || `user${idx}@hibahilmu.id`,
+        password: item.password || "123",
+        role: item.role === "guru" || item.role === "admin" ? item.role : "siswa",
+        status: "approved",
+        infoTambahan: item.infoTambahan || "Diimpor massal",
+        waktuDaftar: "Massal Import",
+      }));
+
+      const gabungan = [...akunBaruMasuk, ...safeAkunList];
+      setDaftarAkun(gabungan);
+      localStorage.setItem("hibah_daftar_akun", JSON.stringify(gabungan));
+      catatLog(userLogin?.nama || "Admin", "admin", `Berhasil mengimpor ${akunBaruMasuk.length} akun baru secara massal`, "akun");
+      
+      setNotifImport(`✅ Sukses mengimpor ${akunBaruMasuk.length} akun baru!`);
+      setTeksImportJson("");
+      setTimeout(() => {
+        setNotifImport("");
+        setModalImportAkun(false);
+      }, 2500);
+    } catch (err) {
+      alert("Format JSON tidak valid! Periksa kembali tanda kurung dan tanda kutipnya.");
+    }
+  };
+
+  const templateJsonContoh = JSON.stringify(
+    [
+      {
+        nama: "Dewi Lestari, S.Pd",
+        email: "dewi.guru@hibahilmu.id",
+        password: "123",
+        role: "guru",
+        infoTambahan: "Guru Bahasa Indonesia",
+      },
+      {
+        nama: "Ahmad Fauzi",
+        email: "ahmad.siswa@hibahilmu.id",
+        password: "123",
+        role: "siswa",
+        infoTambahan: "Kelas 12 IPA",
+      },
+    ],
+    null,
+    2
+  );
+
   const handleSimpanAkunAdmin = (e: React.FormEvent) => {
     e.preventDefault();
     const safeAkunList = daftarAkun || [];
 
     if (idEditAkun) {
-      // Edit Akun Yang Ada
       const daftarTerbaru = safeAkunList.map((a) =>
         a.id === idEditAkun
           ? {
@@ -645,7 +733,6 @@ export default function AplikasiHibahIlmu() {
       localStorage.setItem("hibah_daftar_akun", JSON.stringify(daftarTerbaru));
       catatLog(userLogin?.nama || "Admin", "admin", `Mengedit data akun: ${namaFormAdmin} (${roleFormAdmin})`, "akun");
     } else {
-      // Tambah Akun Baru Oleh Admin
       const akunBaru: AkunPengguna = {
         id: "adm-usr-" + Date.now(),
         nama: namaFormAdmin,
@@ -911,11 +998,14 @@ export default function AplikasiHibahIlmu() {
                   <div>
                     <span className="bg-amber-400 text-slate-950 text-xs font-black px-3 py-1 rounded-full uppercase">👑 Super Admin</span>
                     <h1 className="text-2xl font-black mt-2">Pusat Kendali Akun HibahIlmu</h1>
-                    <p className="text-xs text-slate-300">Kelola pendaftaran, edit data, suspend, dan tambah akun baru.</p>
+                    <p className="text-xs text-slate-300">Kelola pendaftaran, edit data, suspend, import & hapus sekaligus.</p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
+                    <button onClick={() => setModalImportAkun(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm">
+                      <Upload className="w-4 h-4" /> Import Akun Massal
+                    </button>
                     <button onClick={bukaModalTambahAkun} className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm">
-                      <UserPlus className="w-4 h-4" /> Tambah Akun Baru
+                      <UserPlus className="w-4 h-4" /> Tambah Akun
                     </button>
                     <button onClick={() => { setUserLogin(null); localStorage.removeItem("hibah_user_aktif"); }} className="bg-rose-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5">
                       <LogOut className="w-4 h-4" /> Keluar
@@ -972,39 +1062,83 @@ export default function AplikasiHibahIlmu() {
                   </div>
                 )}
 
+                {/* MODAL IMPORT AKUN MASSAL */}
+                {modalImportAkun && (
+                  <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+                    <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="bg-white rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-2xl space-y-4">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-xl font-black flex items-center gap-2"><FileSpreadsheet className="w-5 h-5 text-indigo-600" /> Import Akun Massal (JSON)</h3>
+                        <button onClick={() => setModalImportAkun(false)} className="text-slate-400 hover:text-slate-700 font-bold">✕</button>
+                      </div>
+
+                      <p className="text-xs text-slate-600 leading-relaxed">
+                        Salin dan tempel format template JSON di bawah ini (atau sesuaikan dengan data siswa/guru Anda), lalu klik <b>Proses Import</b>.
+                      </p>
+
+                      {notifImport && (
+                        <div className="p-3 bg-emerald-50 text-emerald-900 font-bold text-xs rounded-xl">{notifImport}</div>
+                      )}
+
+                      <form onSubmit={handleImportJson} className="space-y-3">
+                        <div>
+                          <div className="flex justify-between items-center mb-1">
+                            <label className="text-xs font-bold">Contoh Template JSON:</label>
+                            <button type="button" onClick={() => setTeksImportJson(templateJsonContoh)} className="text-[11px] text-indigo-600 font-bold hover:underline">Muat Template Contoh</button>
+                          </div>
+                          <textarea rows={7} value={teksImportJson} onChange={(e) => setTeksImportJson(e.target.value)} placeholder="Tempel kode JSON di sini..." className="w-full p-3 font-mono text-xs bg-slate-900 text-emerald-300 rounded-xl" />
+                        </div>
+                        <div className="flex gap-2">
+                          <button type="submit" className="flex-1 bg-indigo-600 text-white font-bold py-3 rounded-xl text-xs">Proses Import Akun</button>
+                          <button type="button" onClick={() => setModalImportAkun(false)} className="px-4 py-3 bg-slate-100 rounded-xl font-bold text-xs">Tutup</button>
+                        </div>
+                      </form>
+                    </motion.div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                  {/* TABEL MANAJEMEN AKUN LENGKAP (EDIT, SUSPEND, HAPUS) */}
+                  {/* TABEL MANAJEMEN AKUN (BULK DELETE & SINGLE ACTIONS) */}
                   <div className="lg:col-span-7 bg-white p-6 rounded-3xl border shadow-sm space-y-4">
-                    <h2 className="text-base font-black flex items-center justify-between">
-                      <span>Kelola Seluruh Akun ({safeAkunList.length})</span>
-                    </h2>
+                    <div className="flex flex-wrap justify-between items-center gap-2">
+                      <h2 className="text-base font-black">
+                        Kelola Akun ({safeAkunList.length})
+                      </h2>
+                      {selectedAkunIds.length > 0 && (
+                        <button onClick={hapusAkunSekaligus} className="bg-rose-600 text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-sm">
+                          <Trash2 className="w-4 h-4" /> Hapus {selectedAkunIds.length} Akun Terpilih
+                        </button>
+                      )}
+                    </div>
+
                     <div className="space-y-2.5 max-h-[30rem] overflow-y-auto pr-1">
                       {safeAkunList.map((akun) => (
-                        <div key={akun.id} className="p-3.5 bg-slate-50 border rounded-2xl flex justify-between items-center text-xs">
-                          <div>
-                            <div className="font-extrabold text-sm flex items-center gap-1.5">
-                              {akun.nama}
-                              <span className={`text-[10px] uppercase px-2 py-0.5 rounded font-bold ${akun.role === "admin" ? "bg-amber-100 text-amber-900" : akun.role === "guru" ? "bg-indigo-100 text-indigo-900" : "bg-emerald-100 text-emerald-900"}`}>{akun.role}</span>
-                              <span className={`text-[10px] uppercase px-2 py-0.5 rounded font-bold ${akun.status === "approved" ? "bg-emerald-100 text-emerald-700" : akun.status === "pending" ? "bg-amber-100 text-amber-700" : "bg-rose-100 text-rose-700"}`}>{akun.status === "rejected" ? "Suspended" : akun.status}</span>
+                        <div key={akun.id} className="p-3.5 bg-slate-50 border rounded-2xl flex justify-between items-center text-xs gap-2">
+                          <div className="flex items-center gap-3">
+                            {akun.role !== "admin" && (
+                              <input type="checkbox" checked={selectedAkunIds.includes(akun.id)} onChange={() => togglePilihAkun(akun.id)} className="w-4 h-4 accent-emerald-600 cursor-pointer" />
+                            )}
+                            <div>
+                              <div className="font-extrabold text-sm flex items-center gap-1.5">
+                                {akun.nama}
+                                <span className={`text-[10px] uppercase px-2 py-0.5 rounded font-bold ${akun.role === "admin" ? "bg-amber-100 text-amber-900" : akun.role === "guru" ? "bg-indigo-100 text-indigo-900" : "bg-emerald-100 text-emerald-900"}`}>{akun.role}</span>
+                                <span className={`text-[10px] uppercase px-2 py-0.5 rounded font-bold ${akun.status === "approved" ? "bg-emerald-100 text-emerald-700" : akun.status === "pending" ? "bg-amber-100 text-amber-700" : "bg-rose-100 text-rose-700"}`}>{akun.status === "rejected" ? "Suspended" : akun.status}</span>
+                              </div>
+                              <div className="text-slate-500 mt-0.5">{akun.email} • {akun.infoTambahan}</div>
                             </div>
-                            <div className="text-slate-500 mt-0.5">{akun.email} • {akun.infoTambahan}</div>
                           </div>
-                          <div className="flex items-center gap-1">
-                            {/* Tombol Suspend / Aktifkan Kembali */}
+                          <div className="flex items-center gap-1 shrink-0">
                             {akun.status === "approved" ? (
                               <button onClick={() => ubahStatusAkun(akun.id, "rejected")} title="Suspend Akun" className="p-2 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl">
                                 <UserX2 className="w-4 h-4" />
                               </button>
                             ) : (
-                              <button onClick={() => ubahStatusAkun(akun.id, "approved")} title="Setujui / Aktifkan" className="p-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl">
+                              <button onClick={() => ubahStatusAkun(akun.id, "approved")} title="Aktifkan Akun" className="p-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl">
                                 <UserCheck2 className="w-4 h-4" />
                               </button>
                             )}
-                            {/* Tombol Edit Akun */}
                             <button onClick={() => bukaModalEditAkun(akun)} title="Edit Akun" className="p-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl">
                               <Edit3 className="w-4 h-4" />
                             </button>
-                            {/* Tombol Hapus Akun */}
                             {akun.role !== "admin" && (
                               <button onClick={() => hapusAkun(akun.id)} title="Hapus Permanen" className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl">
                                 <Trash2 className="w-4 h-4" />
