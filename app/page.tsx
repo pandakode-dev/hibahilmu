@@ -20,12 +20,8 @@ import {
   LayoutDashboard,
   CheckSquare,
   Square,
-  Terminal,
-  Calculator,
   FileEdit,
-  Save,
   Award,
-  XCircle,
   ShieldAlert,
   UserCheck,
   UserX,
@@ -39,12 +35,15 @@ import {
   Trash2,
   Send,
   HelpCircle,
-  RotateCcw,
   Play,
+  CheckCircle,
+  BookMarked,
+  User,
+  Settings,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 
-// --- 1. INTERFACE & STRUKTUR DATA ---
+// --- INTERFACE & STRUKTUR DATA ---
 interface KuisItem {
   tanya: string;
   opsi: string[];
@@ -116,7 +115,7 @@ export interface LogAktivitas {
   kategori: "belajar" | "materi" | "akun" | "komunitas";
 }
 
-// --- 2. DATA KURIKULUM AWAL ---
+// --- DATA KURIKULUM AWAL ---
 const DATA_JENJANG_AWAL: JenjangItem[] = [
   {
     id: "tk",
@@ -348,9 +347,8 @@ export default function AplikasiHibahIlmu() {
   const [jenjangAktif, setJenjangAktif] = useState<JenjangItem | null>(null);
   const [kelasAktif, setKelasAktif] = useState<KelasItem | null>(null);
   const [kataKunci, setKataKunci] = useState<string>("");
-  const [filterLevel, setFilterLevel] = useState<string>("Semua");
 
-  // State Auth & Dashboard
+  // State Auth & Dashboard Multi-Role
   const [daftarAkun, setDaftarAkun] = useState<AkunPengguna[]>(AKUN_DEFAULT);
   const [userLogin, setUserLogin] = useState<AkunPengguna | null>(null);
   const [logAktivitas, setLogAktivitas] = useState<LogAktivitas[]>(LOG_AWAL);
@@ -389,7 +387,7 @@ export default function AplikasiHibahIlmu() {
   const [mapelBaru, setMapelBaru] = useState<string>("Matematika");
   const [balasanInput, setBalasanInput] = useState<{ [key: string]: string }>({});
 
-  // State Form Auth Manual / Register
+  // State Form Auth / Register & Filter Admin
   const [modeAuth, setModeAuth] = useState<"login" | "register">("login");
   const [emailLogin, setEmailLogin] = useState("");
   const [passwordLogin, setPasswordLogin] = useState("");
@@ -674,6 +672,7 @@ export default function AplikasiHibahIlmu() {
         <div className="absolute top-20 right-0 w-[28rem] h-[28rem] bg-emerald-300/25 rounded-full blur-3xl" />
       </div>
 
+      {/* HEADER ATAS */}
       <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/85 border-b border-slate-200/80 shadow-2xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap justify-between items-center gap-3">
           <div
@@ -758,8 +757,9 @@ export default function AplikasiHibahIlmu() {
         </div>
       </header>
 
+      {/* KONTEN UTAMA BERDASARKAN MENU */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
-        {/* ==================== DASHBOARD & AUTH ==================== */}
+        {/* 1. PORTAL DASHBOARD & MULTI-ROLE */}
         {menuAktif === "dashboard" && (
           <div>
             {!userLogin ? (
@@ -769,8 +769,8 @@ export default function AplikasiHibahIlmu() {
                     <button onClick={() => { setModeAuth("login"); setPesanError(""); }} className={`flex-1 py-2.5 rounded-xl text-xs font-bold ${modeAuth === "login" ? "bg-white shadow-xs" : "text-slate-500"}`}>Masuk</button>
                     <button onClick={() => { setModeAuth("register"); setPesanError(""); }} className={`flex-1 py-2.5 rounded-xl text-xs font-bold ${modeAuth === "register" ? "bg-white shadow-xs" : "text-slate-500"}`}>Daftar</button>
                   </div>
-                  {pesanError && <div className="mb-4 p-3 bg-rose-50 text-rose-800 rounded-xl text-xs">{pesanError}</div>}
-                  {pesanSukses && <div className="mb-4 p-3 bg-emerald-50 text-emerald-900 rounded-xl text-xs">{pesanSukses}</div>}
+                  {pesanError && <div className="mb-4 p-3 bg-rose-50 text-rose-800 rounded-xl text-xs font-semibold">{pesanError}</div>}
+                  {pesanSukses && <div className="mb-4 p-3 bg-emerald-50 text-emerald-900 rounded-xl text-xs font-semibold">{pesanSukses}</div>}
 
                   {modeAuth === "login" ? (
                     <form onSubmit={handleLogin} className="space-y-4">
@@ -810,19 +810,20 @@ export default function AplikasiHibahIlmu() {
               </motion.div>
             ) : userLogin.role === "admin" ? (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                <div className="bg-slate-900 text-white p-6 rounded-3xl flex justify-between items-center">
+                <div className="bg-slate-900 text-white p-6 rounded-3xl flex justify-between items-center shadow-lg">
                   <div>
-                    <h1 className="text-2xl font-black">Panel Super Admin</h1>
-                    <p className="text-xs text-slate-300">Persetujuan akun dan pemantauan aktivitas.</p>
+                    <span className="bg-amber-400 text-slate-950 text-xs font-black px-3 py-1 rounded-full uppercase">👑 Super Admin</span>
+                    <h1 className="text-2xl font-black mt-2">Pusat Kendali HibahIlmu</h1>
+                    <p className="text-xs text-slate-300">Setujui akun pendaftaran dan audit log aktivitas real-time.</p>
                   </div>
                   <button onClick={() => { setUserLogin(null); localStorage.removeItem("hibah_user_aktif"); }} className="bg-rose-600 text-white text-xs font-bold px-4 py-2 rounded-xl">Keluar</button>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div className="bg-white p-6 rounded-3xl border shadow-sm">
-                    <h2 className="text-base font-black mb-3">Antrean Approval ({safeAkunList.filter((a) => a.status === "pending").length})</h2>
+                    <h2 className="text-base font-black mb-3 flex items-center gap-2"><ShieldAlert className="w-5 h-5 text-amber-500" /> Antrean Approval ({safeAkunList.filter((a) => a.status === "pending").length})</h2>
                     {safeAkunList.filter((a) => a.status === "pending").length === 0 ? (
-                      <div className="p-4 text-center bg-slate-50 text-xs text-slate-500 rounded-xl">Tidak ada antrean.</div>
+                      <div className="p-4 text-center bg-slate-50 text-xs text-slate-500 rounded-xl">🎉 Tidak ada antrean pending.</div>
                     ) : (
                       <div className="space-y-2">
                         {safeAkunList.filter((a) => a.status === "pending").map((c) => (
@@ -839,7 +840,7 @@ export default function AplikasiHibahIlmu() {
                   </div>
 
                   <div className="bg-white p-6 rounded-3xl border shadow-sm">
-                    <h2 className="text-base font-black mb-3">Log Aktivitas Real-Time</h2>
+                    <h2 className="text-base font-black mb-3 flex items-center gap-2"><Activity className="w-5 h-5 text-emerald-600" /> Log Aktivitas Real-Time</h2>
                     <div className="space-y-2 max-h-72 overflow-y-auto text-xs">
                       {safeLogList.map((l) => (
                         <div key={l.id} className="p-2.5 bg-slate-50 border rounded-xl flex justify-between">
@@ -853,16 +854,17 @@ export default function AplikasiHibahIlmu() {
               </motion.div>
             ) : userLogin.role === "guru" ? (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                <div className="bg-indigo-900 text-white p-6 rounded-3xl flex justify-between items-center">
+                <div className="bg-indigo-900 text-white p-6 rounded-3xl flex justify-between items-center shadow-lg">
                   <div>
-                    <h1 className="text-2xl font-black">Dashboard Guru: {userLogin.nama}</h1>
-                    <p className="text-xs text-indigo-200">Terbitkan materi dan kuis baru.</p>
+                    <span className="bg-white/20 text-xs font-bold px-3 py-1 rounded-full uppercase">👨‍🏫 Dashboard Guru</span>
+                    <h1 className="text-2xl font-black mt-2">Selamat Mengajar, {userLogin.nama}!</h1>
+                    <p className="text-xs text-indigo-200">Terbitkan modul materi dan kuis interaktif.</p>
                   </div>
                   <button onClick={() => { setUserLogin(null); localStorage.removeItem("hibah_user_aktif"); }} className="bg-white/20 text-white text-xs font-bold px-4 py-2 rounded-xl">Keluar</button>
                 </div>
 
                 <div className="bg-white p-6 rounded-3xl border shadow-sm max-w-2xl">
-                  <h2 className="text-lg font-black mb-4">Studio Guru</h2>
+                  <h2 className="text-lg font-black mb-4 flex items-center gap-2"><PlusCircle className="w-5 h-5 text-indigo-600" /> Studio Guru</h2>
                   {notifGuru && <div className="mb-4 p-3 bg-emerald-50 text-emerald-900 text-xs font-bold rounded-xl">Materi berhasil diterbitkan!</div>}
                   <form onSubmit={handleGuruBuatMateri} className="space-y-3 text-xs">
                     <select value={jenjangPilih} onChange={(e) => setJenjangPilih(e.target.value)} className="w-full p-3 bg-slate-50 border rounded-xl font-semibold">
@@ -878,9 +880,10 @@ export default function AplikasiHibahIlmu() {
               </motion.div>
             ) : (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                <div className="bg-emerald-700 text-white p-6 rounded-3xl flex justify-between items-center">
+                <div className="bg-emerald-700 text-white p-6 rounded-3xl flex justify-between items-center shadow-lg">
                   <div>
-                    <h1 className="text-2xl font-black">Dashboard Siswa: {userLogin.nama}</h1>
+                    <span className="bg-white/20 text-xs font-bold px-3 py-1 rounded-full uppercase">🎓 Dashboard Siswa</span>
+                    <h1 className="text-2xl font-black mt-2">Semangat Belajar, {userLogin.nama}!</h1>
                     <p className="text-xs text-emerald-100">Total XP: {poinXP} XP • Selesai: {materiSelesai.length} modul</p>
                   </div>
                   <button onClick={() => { setUserLogin(null); localStorage.removeItem("hibah_user_aktif"); }} className="bg-white/20 text-white text-xs font-bold px-4 py-2 rounded-xl">Keluar</button>
@@ -904,7 +907,7 @@ export default function AplikasiHibahIlmu() {
           </div>
         )}
 
-        {/* ==================== TRYOUT ==================== */}
+        {/* 2. TRYOUT UJIAN */}
         {menuAktif === "tryout" && (
           <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="max-w-4xl mx-auto">
             <div className="rounded-3xl p-8 bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-xl mb-8 flex justify-between items-center">
@@ -960,7 +963,7 @@ export default function AplikasiHibahIlmu() {
           </motion.div>
         )}
 
-        {/* ==================== FORUM PR ==================== */}
+        {/* 3. FORUM TANYA PR */}
         {menuAktif === "forum" && (
           <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="max-w-4xl mx-auto space-y-6">
             <div className="bg-emerald-600 rounded-3xl p-6 sm:p-8 text-white shadow-lg">
@@ -993,7 +996,7 @@ export default function AplikasiHibahIlmu() {
           </motion.div>
         )}
 
-        {/* ==================== TRANSPARANSI ==================== */}
+        {/* 4. DONASI & TRANSPARANSI */}
         {menuAktif === "transparansi" && (
           <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="max-w-4xl mx-auto space-y-6">
             <div className="bg-gradient-to-br from-slate-900 to-emerald-950 rounded-3xl p-8 text-white text-center shadow-xl">
@@ -1013,7 +1016,7 @@ export default function AplikasiHibahIlmu() {
           </motion.div>
         )}
 
-        {/* ==================== RUANG KELAS UTAMA ==================== */}
+        {/* 5. RUANG KELAS UTAMA */}
         {menuAktif === "beranda" && (
           <>
             {!jenjangAktif && !kelasAktif && (
