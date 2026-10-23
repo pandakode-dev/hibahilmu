@@ -105,6 +105,11 @@ export default function AplikasiHibahIlmu() {
   const [poinXP, setPoinXP] = useState<number>(480);
   const [materiSelesai, setMateriSelesai] = useState<string[]>(["materi-sma-1"]);
 
+  // State Skor Kuis Terbaik Per Modul (Penentu Membuka Rantai Modul Bersyarat Berikutnya)
+  const [skorKuisPerModul, setSkorKuisPerModul] = useState<{ [modulId: string]: number }>({
+    "materi-sma-1": 90,
+  });
+
   // State Tryout CBT Proctoring
   const [daftarPaketTryout, setDaftarPaketTryout] = useState<PaketTryout[]>(PAKET_TRYOUT_AWAL);
   const [riwayatTryout, setRiwayatTryout] = useState<RiwayatPercobaanTryout[]>([]);
@@ -189,6 +194,17 @@ export default function AplikasiHibahIlmu() {
     });
   };
 
+  const simpanSkorModul = (modulId: string, skorBaru: number, lulusKkm: boolean) => {
+    setSkorKuisPerModul((prev) => ({
+      ...prev,
+      [modulId]: Math.max(prev[modulId] || 0, skorBaru),
+    }));
+    if (lulusKkm) {
+      setMateriSelesai((prev) => (prev.includes(modulId) ? prev : [...prev, modulId]));
+      tambahXP(50);
+    }
+  };
+
   const kirimNotifikasiKeUser = (
     targetIds: string[],
     judul: string,
@@ -265,7 +281,7 @@ export default function AplikasiHibahIlmu() {
     >
       {/* HEADER NAVBAR DENGAN LOGO HIBAHILMU.JPG */}
       <header
-        className={`sticky top-0 z-50 backdrop-blur-xl border-b shadow-xs ${
+        className={`sticky top-0 z-40 backdrop-blur-xl border-b shadow-xs ${
           darkMode ? "bg-slate-900/90 border-slate-800" : "bg-white/90 border-slate-200/80"
         }`}
       >
@@ -290,17 +306,17 @@ export default function AplikasiHibahIlmu() {
             <div>
               <div className="font-black text-2xl tracking-tight leading-none">HibahIlmu.id</div>
               <div className="text-xs text-emerald-600 dark:text-emerald-400 font-extrabold uppercase tracking-wider mt-1">
-                Wakaf &amp; Hibah Ilmu Gratis
+                WAKAF &amp; HIBAH ILMU GRATIS
               </div>
             </div>
           </div>
 
           <nav className="flex items-center gap-2 overflow-x-auto">
             {[
-              { id: "beranda", label: "Beranda & Skill Tree" },
-              { id: "tryout", label: "Tryout CBT & QR" },
+              { id: "beranda", label: "Beranda & Kelas" },
+              { id: "tryout", label: "Tryout CBT" },
               { id: "leaderboard", label: "Leaderboard XP" },
-              { id: "forum", label: "Forum & Tanya Ahli" },
+              { id: "forum", label: "Forum Tanya PR" },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -402,6 +418,8 @@ export default function AplikasiHibahIlmu() {
             setHanyaMateriDiikuti={setHanyaMateriDiikuti}
             materiSelesai={materiSelesai}
             toggleSelesaiMateri={toggleSelesaiMateri}
+            skorKuisPerModul={skorKuisPerModul}
+            simpanSkorModul={simpanSkorModul}
             tambahXP={tambahXP}
             chatPerMateri={chatPerMateri}
             onKirimChatMateri={(pesan) => {
@@ -570,8 +588,8 @@ export default function AplikasiHibahIlmu() {
             HibahIlmu.id — Gerakan Wakaf &amp; Hibah Ilmu Pengetahuan Indonesia
           </div>
           <p className="max-w-md text-xs text-slate-500">
-            Dibangun dengan dedikasi oleh <strong>Panda Kode</strong> • Arsitektur Modular Multi-File
-            Next.js.
+            Dibangun dengan dedikasi oleh <strong>Panda Kode</strong> • 100% Pendidikan Terbuka Gratis
+            Selamanya.
           </p>
         </div>
       </footer>

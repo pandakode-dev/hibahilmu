@@ -29,7 +29,8 @@ import {
   Trash2,
   Users,
   Timer,
-  CheckCircle2,
+  GitBranch,
+  Layers,
 } from "lucide-react";
 import {
   AkunPengguna,
@@ -50,6 +51,7 @@ import {
   BiodataCV,
   KategoriTes,
   KelasItem,
+  BabModulItem,
   RiwayatPercobaanTryout,
 } from "../types";
 import {
@@ -161,6 +163,7 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
 
   const [guruTabAktif, setGuruTabAktif] = useState<
     | "materi"
+    | "rantai_modul"
     | "tryout_qr"
     | "tugas_rubrik"
     | "analitik"
@@ -179,16 +182,36 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
     | "cv"
   >("showcase_publik");
 
-  // State Form Materi & 5 Jenis Soal Kuis
+  // State Form Materi, Rantai Prasyarat, Bab Berurutan & 5 Jenis Soal Kuis
   const [subJenjangPilih, setSubJenjangPilih] = useState("");
   const [judulMateri, setJudulMateri] = useState("");
-  const [levelMateri] = useState<"Pemula" | "Menengah" | "Mahir">("Pemula");
+  const [levelMateri, setLevelMateri] = useState<"Pemula" | "Menengah" | "Mahir">("Pemula");
+  const [prasyaratKelasPilih, setPrasyaratKelasPilih] = useState<string>("");
+  const [syaratSkorMinimalInput, setSyaratSkorMinimalInput] = useState<number>(80);
   const [videoMateri, setVideoMateri] = useState("");
   const [lampiranMateri, setLampiranMateri] = useState("");
   const [rangkumanMateri, setRangkumanMateri] = useState("");
   const [notifGuru, setNotifGuru] = useState(false);
   const [bukaModalImportCsvKuis, setBukaModalImportCsvKuis] = useState(false);
   const [teksCsvKuis, setTeksCsvKuis] = useState(TEMPLATE_CSV_KUIS);
+
+  // State Daftar Bab Berurutan (Pop-up Coursera / NetAcad)
+  const [daftarBabDraft, setDaftarBabDraft] = useState<BabModulItem[]>([
+    {
+      id: "bab-draft-1",
+      judulBab: "Bab 1: Konsep Dasar & Pengantar Modul",
+      durasiBab: "10 Menit",
+      videoUrl: "",
+      kontenHtml: "<p>Tuliskan penjelasan lengkap untuk Bab 1 di sini...</p>",
+    },
+    {
+      id: "bab-draft-2",
+      judulBab: "Bab 2: Studi Kasus & Implementasi Lanjut",
+      durasiBab: "15 Menit",
+      videoUrl: "",
+      kontenHtml: "<p>Tuliskan penjelasan lengkap untuk Bab 2 di sini...</p>",
+    },
+  ]);
 
   const [daftarKuisDraft, setDaftarKuisDraft] = useState<KuisItem[]>([
     {
@@ -281,6 +304,10 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
     j.subJenjang.map((sj) => ({ ...sj, namaInduk: j.nama }))
   );
 
+  const semuaModulFlat = daftarJenjang.flatMap((j) =>
+    j.kelas.map((k) => ({ ...k, namaJenjang: j.nama }))
+  );
+
   const handleDownloadRekapCsvExcel = () => {
     const header =
       "Tipe Rekap,Nama Pelajar,Judul Tugas atau Ujian,Skor Nilai,Status atau Feedback,Waktu\n";
@@ -306,7 +333,7 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
     document.body.removeChild(link);
   };
 
-  // AI Quiz Generator 4 Soal Multi-Tipe (Termasuk Mencocokkan Pasangan)
+  // AI Quiz Generator 4 Soal Multi-Tipe
   const handleAiGenerateQuiz = () => {
     const teks = bersihkanTagHtml(rangkumanMateri).trim();
     const topik = judulMateri.trim() || "Materi Pembelajaran";
@@ -575,7 +602,7 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
             <ShieldCheck className="w-6 h-6 text-emerald-600 shrink-0" />
             <span>
               <b>100% Gratis &amp; Terverifikasi:</b> Wajib registrasi dan masuk agar setiap materi,
-              RPP, tugas, dan sertifikat dapat dipertanggungjawabkan.
+              rantai modul bersyarat, dan sertifikat dapat dipertanggungjawabkan.
             </span>
           </div>
 
@@ -663,7 +690,7 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
                   waktuDaftar: "Baru saja",
                   xp: 100,
                   aksesMengajar: ["sma-11-ipa", "pt-ti"],
-                  minatSubJenjang: ["sma-11-ipa"],
+                  minatSubJenjang: ["sma-11-ipa", "pt-ti"],
                 };
                 setDaftarAkun([baru, ...daftarAkun]);
                 setPesanSukses("Pendaftaran terkirim! Menunggu verifikasi Admin.");
@@ -758,7 +785,7 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
   }
 
   // ============================================================================
-  // 2. STUDIO GURU (PERBAIKAN LENGKAP PENENTU KUNCI JAWABAN 5 FORMAT KUIS)
+  // 2. STUDIO GURU (TERMASUK MENU RANTAI MODUL BERURUTAN BERSYARAT & BAB POP-UP)
   // ============================================================================
   if (userLogin.role === "guru" || (userLogin.role === "admin" && adminModeGuru)) {
     return (
@@ -799,14 +826,15 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
 
         <div className="flex gap-2 border-b border-slate-200 pb-3 overflow-x-auto">
           {[
-            { id: "materi", label: "1. Hibahkan Materi & AI Quiz", icon: <BookOpen className="w-4 h-4" /> },
-            { id: "tryout_qr", label: "2. Buat Tryout CBT & QR", icon: <Timer className="w-4 h-4" /> },
-            { id: "tugas_rubrik", label: "3. Tugas, Nilai & Absensi", icon: <ClipboardCheck className="w-4 h-4" /> },
-            { id: "analitik", label: "4. Analitik Keaktifan Siswa", icon: <TrendingUp className="w-4 h-4" /> },
-            { id: "bank_soal", label: `5. Bank Soal Kolektif (${bankSoalKolektif.length})`, icon: <Database className="w-4 h-4" /> },
-            { id: "rombel_live", label: `6. Rombel & Jadwal Live (${daftarKelompok.length})`, icon: <Users className="w-4 h-4" /> },
-            { id: "rpp_repo", label: `7. Bank RPP (${rppList.length})`, icon: <FolderArchive className="w-4 h-4" /> },
-            { id: "cv", label: "8. Profil & CV", icon: <Briefcase className="w-4 h-4" /> },
+            { id: "materi", label: "1. Hibahkan Modul & Bab Bersyarat", icon: <BookOpen className="w-4 h-4" /> },
+            { id: "rantai_modul", label: `2. Kelola Rantai Prasyarat & KKM (${semuaModulFlat.length})`, icon: <GitBranch className="w-4 h-4" /> },
+            { id: "tryout_qr", label: "3. Buat Tryout CBT & QR", icon: <Timer className="w-4 h-4" /> },
+            { id: "tugas_rubrik", label: "4. Tugas, Nilai & Absensi", icon: <ClipboardCheck className="w-4 h-4" /> },
+            { id: "analitik", label: "5. Analitik Keaktifan Siswa", icon: <TrendingUp className="w-4 h-4" /> },
+            { id: "bank_soal", label: `6. Bank Soal Kolektif (${bankSoalKolektif.length})`, icon: <Database className="w-4 h-4" /> },
+            { id: "rombel_live", label: `7. Rombel & Jadwal Live (${daftarKelompok.length})`, icon: <Users className="w-4 h-4" /> },
+            { id: "rpp_repo", label: `8. Bank RPP (${rppList.length})`, icon: <FolderArchive className="w-4 h-4" /> },
+            { id: "cv", label: "9. Profil & CV", icon: <Briefcase className="w-4 h-4" /> },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -814,6 +842,7 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
                 setGuruTabAktif(
                   tab.id as
                     | "materi"
+                    | "rantai_modul"
                     | "tryout_qr"
                     | "tugas_rubrik"
                     | "analitik"
@@ -836,15 +865,117 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
 
         {guruTabAktif === "cv" && renderProfilDanCV()}
 
-        {/* TAB 1: HIBAHKAN MATERI BARU + EDITOR KUNCI JAWABAN 5 JENIS SOAL */}
+        {/* TAB 2 BARU: KELOLA RANTAI MODUL BERSYARAT & PASSING GRADE LANGSUNG DARI DASHBOARD PENGAJAR */}
+        {guruTabAktif === "rantai_modul" && (
+          <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-6">
+            <div>
+              <span className="bg-indigo-100 text-indigo-800 text-xs font-black px-3 py-1 rounded-full uppercase">
+                Prerequisite Chain &amp; Passing Grade Manager
+              </span>
+              <h2 className="text-2xl font-black mt-2 flex items-center gap-2">
+                <GitBranch className="w-6 h-6 text-indigo-600" /> Kelola Rantai Urutan Modul &amp;
+                Batas Nilai Kelulusan (KKM)
+              </h2>
+              <p className="text-sm text-slate-500">
+                Atur syarat berantai antar modul secara langsung. Siswa hanya dapat membuka modul
+                berikutnya apabila telah menyelesaikan modul prasyarat dengan nilai kuis minimal
+                sesuai yang Anda tentukan di bawah ini.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              {semuaModulFlat.map((mdl, idx) => (
+                <div
+                  key={mdl.id}
+                  className="p-5 rounded-2xl border-2 border-slate-200 bg-slate-50/70 grid grid-cols-1 lg:grid-cols-12 gap-4 items-center text-sm"
+                >
+                  <div className="lg:col-span-5 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-0.5 rounded bg-slate-900 text-white text-xs font-black">
+                        Modul #{idx + 1}
+                      </span>
+                      <span className="text-xs font-bold text-indigo-600">{mdl.namaJenjang}</span>
+                    </div>
+                    <div className="font-black text-base text-slate-900">{mdl.judul}</div>
+                    <div className="text-xs text-slate-500">
+                      Jumlah Bab Pop-up: <b>{mdl.daftarBab?.length || 2} Bab</b> • Kuis:{" "}
+                      <b>{mdl.daftarKuis.length} Soal</b>
+                    </div>
+                  </div>
+
+                  {/* Pilih Modul Prasyarat */}
+                  <div className="lg:col-span-4">
+                    <label className="text-xs font-black text-slate-600 block mb-1">
+                      Syarat Modul Sebelumnya (Prerequisite):
+                    </label>
+                    <select
+                      value={mdl.prasyaratKelasId || ""}
+                      onChange={(e) => {
+                        const val = e.target.value || undefined;
+                        setDaftarJenjang((prev) =>
+                          prev.map((j) => ({
+                            ...j,
+                            kelas: j.kelas.map((k) =>
+                              k.id === mdl.id ? { ...k, prasyaratKelasId: val } : k
+                            ),
+                          }))
+                        );
+                      }}
+                      className="w-full p-2.5 border rounded-xl bg-white text-xs font-bold text-slate-800"
+                    >
+                      <option value="">-- Terbuka Langsung (Tanpa Prasyarat) --</option>
+                      {semuaModulFlat
+                        .filter((x) => x.id !== mdl.id)
+                        .map((opsiMdl) => (
+                          <option key={opsiMdl.id} value={opsiMdl.id}>
+                            Wajib Lulus: {opsiMdl.judul}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+
+                  {/* Atur Nilai Minimal KKM */}
+                  <div className="lg:col-span-3">
+                    <label className="text-xs font-black text-slate-600 block mb-1">
+                      Minimal Nilai Kuis (0 - 100):
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        value={mdl.syaratSkorMinimal ?? 75}
+                        onChange={(e) => {
+                          const nilaiBaru = Number(e.target.value);
+                          setDaftarJenjang((prev) =>
+                            prev.map((j) => ({
+                              ...j,
+                              kelas: j.kelas.map((k) =>
+                                k.id === mdl.id ? { ...k, syaratSkorMinimal: nilaiBaru } : k
+                              ),
+                            }))
+                          );
+                        }}
+                        className="w-24 p-2.5 border-2 border-indigo-300 rounded-xl bg-white font-black text-center text-indigo-950"
+                      />
+                      <span className="text-xs font-bold text-emerald-700">✓ Tersimpan Otomatis</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 1: HIBAHKAN MATERI BARU + RANTAI PRASYARAT + BAB POP-UP COURSERA/NETACAD */}
         {guruTabAktif === "materi" && (
           <div className="bg-white text-slate-800 p-8 rounded-[2rem] border border-slate-200 max-w-5xl space-y-6 shadow-xs">
             <h2 className="text-2xl font-black">
-              Hibahkan &amp; Publikasikan Materi Baru (Rich Text Editor Pro + AI Quiz Generator)
+              Hibahkan &amp; Publikasikan Materi Baru (Rantai Modul Bersyarat + Bab Pop-up Coursera/NetAcad)
             </h2>
             {notifGuru && (
               <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-2xl font-black">
-                ✓ Materi beserta kuis berhasil diterbitkan ke ruang belajar!
+                ✓ Modul berurutan beserta bab pop-up dan kuis berhasil diterbitkan!
               </div>
             )}
 
@@ -909,7 +1040,10 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
                   pembuatEmail: userLogin.email,
                   tanggalUpload: "Hari ini",
                   level: levelMateri,
-                  durasi: "20 Menit",
+                  prasyaratKelasId: prasyaratKelasPilih || undefined,
+                  syaratSkorMinimal: syaratSkorMinimalInput || 75,
+                  daftarBab: daftarBabDraft,
+                  durasi: "25 Menit",
                   videoUrl: videoMateri.includes("watch?v=")
                     ? videoMateri.replace("watch?v=", "embed/")
                     : videoMateri,
@@ -930,7 +1064,7 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
               }}
               className="space-y-5"
             >
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <select
                   required
                   value={subJenjangPilih}
@@ -957,9 +1091,61 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
                   required
                   value={judulMateri}
                   onChange={(e) => setJudulMateri(e.target.value)}
-                  placeholder="Judul Materi..."
+                  placeholder="Judul Modul (Misal: Modul 2 Komunikasi Data Lanjut)..."
                   className="p-4 border border-slate-300 rounded-xl bg-white text-sm font-bold"
                 />
+                <select
+                  value={levelMateri}
+                  onChange={(e) =>
+                    setLevelMateri(e.target.value as "Pemula" | "Menengah" | "Mahir")
+                  }
+                  className="p-4 border border-slate-300 rounded-xl bg-white text-sm font-bold"
+                >
+                  <option value="Pemula">Level: Pemula (Dasar)</option>
+                  <option value="Menengah">Level: Menengah (Intermediate)</option>
+                  <option value="Mahir">Level: Mahir (Advanced)</option>
+                </select>
+              </div>
+
+              {/* KOTAK PENGATURAN RANTAI MODUL BERSYARAT & PASSING GRADE */}
+              <div className="p-5 rounded-2xl bg-indigo-50/70 border-2 border-indigo-200 space-y-3">
+                <div className="font-black text-sm text-indigo-950 flex items-center gap-2">
+                  <GitBranch className="w-4 h-4 text-indigo-600" /> Pengaturan Rantai Modul
+                  Bersyarat (Prerequisite &amp; Nilai Kelulusan Minimal)
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">
+                      Pilih Modul Prasyarat (Harus Lulus Modul Ini Dulu):
+                    </label>
+                    <select
+                      value={prasyaratKelasPilih}
+                      onChange={(e) => setPrasyaratKelasPilih(e.target.value)}
+                      className="w-full p-3 border border-indigo-200 rounded-xl bg-white font-bold text-slate-800"
+                    >
+                      <option value="">-- Tanpa Prasyarat (Langsung Terbuka) --</option>
+                      {semuaModulFlat.map((kls) => (
+                        <option key={kls.id} value={kls.id}>
+                          Wajib Lulus: {kls.judul} ({kls.namaJenjang})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">
+                      Batas Nilai Kuis Minimal untuk Lulus (Passing Grade 0 - 100):
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={syaratSkorMinimalInput}
+                      onChange={(e) => setSyaratSkorMinimalInput(Number(e.target.value))}
+                      className="w-full p-3 border border-indigo-200 rounded-xl bg-white font-black text-indigo-900"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -968,7 +1154,7 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
                   required
                   value={videoMateri}
                   onChange={(e) => setVideoMateri(e.target.value)}
-                  placeholder="URL Video YouTube (https://...)"
+                  placeholder="URL Video YouTube Utama (https://...)"
                   className="w-full p-4 border border-slate-300 rounded-xl bg-white text-sm"
                 />
                 <input
@@ -980,14 +1166,120 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
                 />
               </div>
 
-              <RichTextEditorPro value={rangkumanMateri} onChange={setRangkumanMateri} />
+              <div>
+                <label className="text-xs font-black uppercase text-slate-500 block mb-2">
+                  Rangkuman Pengantar Modul:
+                </label>
+                <RichTextEditorPro value={rangkumanMateri} onChange={setRangkumanMateri} />
+              </div>
+
+              {/* EDITOR DAFTAR BAB BERURUTAN (UNTUK POP-UP ALA COURSERA / CISCO NETACAD) */}
+              <div className="p-6 bg-slate-50 border-2 border-slate-200 rounded-2xl space-y-4">
+                <div className="flex flex-wrap justify-between items-center gap-2">
+                  <div>
+                    <span className="font-black text-base flex items-center gap-2">
+                      <Layers className="w-4 h-4 text-indigo-600" /> Daftar Bab Modul Pop-up (Mode
+                      Coursera / Cisco NetAcad)
+                    </span>
+                    <p className="text-xs text-slate-500">
+                      Setiap bab di bawah ini akan tampil berurutan di dalam Pop-up Interactive
+                      Course Player sebelum siswa mengerjakan kuis akhir.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setDaftarBabDraft([
+                        ...daftarBabDraft,
+                        {
+                          id: "bab-draft-" + Date.now(),
+                          judulBab: `Bab ${daftarBabDraft.length + 1}: Topik Pembahasan Baru`,
+                          durasiBab: "10 Menit",
+                          videoUrl: "",
+                          kontenHtml: "<p>Isi pembahasan bab...</p>",
+                        },
+                      ])
+                    }
+                    className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-black cursor-pointer"
+                  >
+                    + Tambah Bab Baru
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  {daftarBabDraft.map((bab, bIdx) => (
+                    <div
+                      key={bab.id}
+                      className="p-4 bg-white rounded-xl border border-slate-300 space-y-3 text-xs"
+                    >
+                      <div className="flex justify-between items-center">
+                        <span className="font-black text-indigo-900">
+                          Bab #{bIdx + 1}
+                        </span>
+                        {daftarBabDraft.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setDaftarBabDraft(daftarBabDraft.filter((_, i) => i !== bIdx))
+                            }
+                            className="text-rose-600 font-black"
+                          >
+                            Hapus Bab
+                          </button>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <input
+                          type="text"
+                          value={bab.judulBab}
+                          onChange={(e) =>
+                            setDaftarBabDraft(
+                              daftarBabDraft.map((item, i) =>
+                                i === bIdx ? { ...item, judulBab: e.target.value } : item
+                              )
+                            )
+                          }
+                          placeholder="Judul Bab..."
+                          className="sm:col-span-2 p-2.5 border rounded-lg font-bold"
+                        />
+                        <input
+                          type="text"
+                          value={bab.durasiBab}
+                          onChange={(e) =>
+                            setDaftarBabDraft(
+                              daftarBabDraft.map((item, i) =>
+                                i === bIdx ? { ...item, durasiBab: e.target.value } : item
+                              )
+                            )
+                          }
+                          placeholder="Durasi (Misal: 15 Menit)"
+                          className="p-2.5 border rounded-lg"
+                        />
+                      </div>
+                      <textarea
+                        rows={2}
+                        value={bab.kontenHtml}
+                        onChange={(e) =>
+                          setDaftarBabDraft(
+                            daftarBabDraft.map((item, i) =>
+                              i === bIdx ? { ...item, kontenHtml: e.target.value } : item
+                            )
+                          )
+                        }
+                        placeholder="Isi materi bab (mendukung teks & HTML)..."
+                        className="w-full p-2.5 border rounded-lg"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
 
               {/* EDITOR DAFTAR KUIS LENGKAP DENGAN PENENTU KUNCI JAWABAN BENAR */}
               <div className="p-6 bg-white border-2 border-slate-200 rounded-2xl space-y-5">
                 <div className="flex flex-wrap justify-between items-center gap-3">
                   <div>
                     <span className="font-black text-base">
-                      Daftar Kuis Materi ({daftarKuisDraft.length} Soal)
+                      Daftar Kuis Evaluasi Modul ({daftarKuisDraft.length} Soal)
                     </span>
                     <p className="text-xs text-slate-500">
                       Pilih jenis soal dan klik tombol hijau pada opsi untuk menentukan{" "}
@@ -1038,7 +1330,8 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
                                             ? ["Benar", "Salah"]
                                             : ["", "", "", ""],
                                         jawabanBenar: 0,
-                                        jawabanJamak: tipeBaru === "pilihan_jamak" ? [0, 1] : undefined,
+                                        jawabanJamak:
+                                          tipeBaru === "pilihan_jamak" ? [0, 1] : undefined,
                                         pasangan:
                                           tipeBaru === "mencocokkan"
                                             ? [
@@ -1059,7 +1352,9 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
                             </option>
                             <option value="benar_salah">3. Benar / Salah</option>
                             <option value="isian_singkat">4. Isian Singkat (Teks Kunci)</option>
-                            <option value="mencocokkan">5. Mencocokkan Pasangan (Kiri ↔ Kanan)</option>
+                            <option value="mencocokkan">
+                              5. Mencocokkan Pasangan (Kiri ↔ Kanan)
+                            </option>
                           </select>
                         </div>
 
@@ -1074,7 +1369,6 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
                         </button>
                       </div>
 
-                      {/* Input Pertanyaan */}
                       <input
                         type="text"
                         value={kuis.tanya}
@@ -1089,7 +1383,6 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
                         className="w-full p-3.5 border border-slate-300 rounded-xl bg-white font-bold"
                       />
 
-                      {/* TIPE 1: PILIHAN GANDA + TOMBOL PILIH KUNCI JAWABAN BENAR */}
                       {kuis.tipe === "pilihan_ganda" && (
                         <div className="space-y-2">
                           <div className="text-xs font-black text-emerald-800">
@@ -1103,7 +1396,9 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
                                 <div
                                   key={oIdx}
                                   className={`flex items-center gap-2 p-2 rounded-xl border-2 bg-white ${
-                                    adalahKunci ? "border-emerald-500 bg-emerald-50/40" : "border-slate-200"
+                                    adalahKunci
+                                      ? "border-emerald-500 bg-emerald-50/40"
+                                      : "border-slate-200"
                                   }`}
                                 >
                                   <button
@@ -1121,7 +1416,9 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
                                         : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                                     }`}
                                   >
-                                    {adalahKunci ? "✓ Kunci Benar" : `Pilih ${String.fromCharCode(65 + oIdx)}`}
+                                    {adalahKunci
+                                      ? "✓ Kunci Benar"
+                                      : `Pilih ${String.fromCharCode(65 + oIdx)}`}
                                   </button>
                                   <input
                                     type="text"
@@ -1145,12 +1442,10 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
                         </div>
                       )}
 
-                      {/* TIPE 2: PILIHAN JAMAK + CHECKBOX KUNCI JAWABAN BENAR */}
                       {kuis.tipe === "pilihan_jamak" && (
                         <div className="space-y-2">
                           <div className="text-xs font-black text-indigo-800">
-                            Centang kotak di samping opsi yang termasuk Kunci Jawaban Benar (bisa
-                            lebih dari satu):
+                            Centang kotak di samping opsi yang termasuk Kunci Jawaban Benar:
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {kuis.opsi.map((op, oIdx) => {
@@ -1160,7 +1455,9 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
                                 <div
                                   key={oIdx}
                                   className={`flex items-center gap-2 p-2.5 rounded-xl border-2 bg-white ${
-                                    dicentangKunci ? "border-indigo-500 bg-indigo-50/40" : "border-slate-200"
+                                    dicentangKunci
+                                      ? "border-indigo-500 bg-indigo-50/40"
+                                      : "border-slate-200"
                                   }`}
                                 >
                                   <label className="flex items-center gap-1.5 text-[11px] font-black text-indigo-900 shrink-0 cursor-pointer">
@@ -1203,7 +1500,6 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
                         </div>
                       )}
 
-                      {/* TIPE 3: BENAR / SALAH + TOMBOL KUNCI */}
                       {kuis.tipe === "benar_salah" && (
                         <div className="flex items-center gap-3">
                           <span className="text-xs font-black text-slate-700">
@@ -1234,7 +1530,6 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
                         </div>
                       )}
 
-                      {/* TIPE 4: ISIAN SINGKAT */}
                       {kuis.tipe === "isian_singkat" && (
                         <div className="space-y-1">
                           <label className="text-xs font-black text-emerald-800">
@@ -1250,13 +1545,12 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
                                 )
                               )
                             }
-                            placeholder="Ketik kata kunci jawaban yang benar (Misal: hukum newton)..."
+                            placeholder="Ketik kata kunci jawaban yang benar..."
                             className="w-full p-3 border-2 border-emerald-400 rounded-xl bg-emerald-50/40 text-xs font-bold"
                           />
                         </div>
                       )}
 
-                      {/* TIPE 5: MENCOCOKKAN PASANGAN (EDITOR BARIS KIRI ↔ KANAN LENGKAP) */}
                       {kuis.tipe === "mencocokkan" && (
                         <div className="space-y-3 bg-white p-4 rounded-xl border border-indigo-200">
                           <div className="flex justify-between items-center">
@@ -1304,7 +1598,7 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
                                     )
                                   );
                                 }}
-                                placeholder={`Item Kiri #${pIdx + 1} (Misal: Rumus Gaya)`}
+                                placeholder={`Item Kiri #${pIdx + 1}`}
                                 className="sm:col-span-5 p-2.5 border rounded-lg text-xs font-bold bg-slate-50"
                               />
                               <span className="sm:col-span-1 text-center font-black text-emerald-600">
@@ -1322,7 +1616,7 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
                                     )
                                   );
                                 }}
-                                placeholder={`Pasangan Benar #${pIdx + 1} (Misal: F = m . a)`}
+                                placeholder={`Pasangan Benar #${pIdx + 1}`}
                                 className="sm:col-span-5 p-2.5 border border-emerald-300 rounded-lg text-xs font-bold bg-emerald-50/40"
                               />
                               <button
@@ -1346,7 +1640,6 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
                         </div>
                       )}
 
-                      {/* Input Pembahasan & Bobot Poin XP */}
                       <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 pt-1">
                         <input
                           type="text"
@@ -1409,13 +1702,13 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
                 type="submit"
                 className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-4 rounded-2xl text-base shadow-lg cursor-pointer transition"
               >
-                Terbitkan Materi Terverifikasi Sekarang
+                Terbitkan Modul Berurutan Sekarang
               </button>
             </form>
           </div>
         )}
 
-        {/* TAB 5: BANK SOAL KOLEKTIF BERSAMA (DILENGKAPI FORM SUMBANG SOAL + KUNCI & OPSI) */}
+        {/* TAB 6: BANK SOAL KOLEKTIF BERSAMA */}
         {guruTabAktif === "bank_soal" && (
           <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-6">
             <div>
@@ -1456,7 +1749,7 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
                   required
                   value={topikBankSoalBaru}
                   onChange={(e) => setTopikBankSoalBaru(e.target.value)}
-                  placeholder="Topik / Kategori (Misal: TPA Verbal / AI & RL)..."
+                  placeholder="Topik / Kategori (Misal: TPA Verbal / Komunikasi Data)..."
                   className="p-3 border rounded-xl bg-white font-bold"
                 />
                 <input
@@ -1577,7 +1870,6 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
           </div>
         )}
 
-        {/* TAB 6: ROMBEL & JADWAL LIVE */}
         {guruTabAktif === "rombel_live" && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-white text-slate-800 p-7 rounded-3xl border space-y-4">
