@@ -63,12 +63,22 @@ export interface BabModulItem {
   rumusMatematika?: string;
 }
 
+export type JenisTugasTipe =
+  | "Esai Analisis"
+  | "Proyek Coding / IT"
+  | "Laporan Praktikum"
+  | "Presentasi / Video"
+  | "Resume Jurnal";
+
 export interface TugasItem {
   id: string;
   subJenjangId: string;
   modulId?: string;
   judul: string;
+  jenisTugas?: JenisTugasTipe;
   instruksi: string;
+  waktuBuka?: string;
+  waktuTutup?: string;
   deadline: string;
   pembuatNama: string;
   kriteriaRubrik?: string[];
@@ -85,6 +95,10 @@ export interface KelasItem {
   level: "Pemula" | "Menengah" | "Mahir";
   prasyaratKelasId?: string;
   syaratSkorMinimal?: number;
+  jadwalBukaKuis?: string;
+  jadwalTutupKuis?: string;
+  kuisBolehMundur?: boolean;
+  kuisPakaiCoratCoret?: boolean;
   daftarBab?: BabModulItem[];
   daftarTugasModul?: TugasItem[];
   durasi: string;
@@ -114,6 +128,12 @@ export interface JenjangItem {
 
 export type KategoriTes = "TPA" | "TOEP" | "TOEFL" | "UTBK" | "Akademik";
 
+export type TipeUjianCBT =
+  | "Pilihan Ganda"
+  | "Esai Komprehensif"
+  | "Campuran (PG + Esai)"
+  | "CBT Algoritmik";
+
 export interface SoalTryout {
   id: string;
   pertanyaan: string;
@@ -134,7 +154,13 @@ export interface PaketTryout {
   pembuatNama: string;
   alamatLokasi: string;
   jadwalUjian: string;
+  jadwalBukaSesi?: string;
+  jadwalTutupSesi?: string;
   durasiMenit: number;
+  tipeUjian?: TipeUjianCBT;
+  bolehMundur?: boolean;
+  izinkanKeyboard?: boolean;
+  pakaiCoratCoret?: boolean;
   batasPercobaan: number;
   batasPelanggaran: number;
   wajibFullscreen: boolean;

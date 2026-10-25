@@ -124,41 +124,6 @@ export default function AplikasiHibahIlmu() {
   const [daftarDiskusi, setDaftarDiskusi] = useState<DiskusiPR[]>(DISKUSI_PR_AWAL);
 
   useEffect(() => {
-    if (!sedangUjian || !paketTryoutAktif) return;
-    const catatPelanggaran = (alasan: string) => {
-      setJumlahPelanggaranUjian((prev) => {
-        const total = prev + 1;
-        const batas = paketTryoutAktif.batasPelanggaran || 3;
-        setPesanPeringatanCheat(
-          `PERINGATAN PELANGGARAN (${total}/${batas}): Terdeteksi ${alasan}!`
-        );
-        if (total >= batas) selesaikanTryout();
-        return total;
-      });
-    };
-    const onVis = () => {
-      if (document.hidden) catatPelanggaran("pindah tab browser");
-    };
-    const onBlur = () => catatPelanggaran("menekan Alt+Tab");
-    document.addEventListener("visibilitychange", onVis);
-    window.addEventListener("blur", onBlur);
-    return () => {
-      document.removeEventListener("visibilitychange", onVis);
-      window.removeEventListener("blur", onBlur);
-    };
-  }, [sedangUjian, paketTryoutAktif]);
-
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (sedangUjian && !ujianSelesai && sisaWaktu > 0) {
-      timer = setInterval(() => setSisaWaktu((p) => p - 1), 1000);
-    } else if (sisaWaktu === 0 && sedangUjian) {
-      selesaikanTryout();
-    }
-    return () => clearInterval(timer);
-  }, [sedangUjian, ujianSelesai, sisaWaktu]);
-
-  useEffect(() => {
     if (kelasAktif && userLogin) {
       const jam = new Date().toLocaleTimeString("id-ID", {
         hour: "2-digit",
@@ -252,17 +217,19 @@ export default function AplikasiHibahIlmu() {
     setSedangUjian(true);
   };
 
-  const selesaikanTryout = () => {
+  const selesaikanTryout = (
+    skorManual?: number,
+    pelanggaranManual?: number,
+    statusManual?: "Selesai Normal" | "Diskualifikasi (Auto-Submit)"
+  ) => {
     if (!paketTryoutAktif || !userLogin) return;
     if (document.fullscreenElement && document.exitFullscreen) {
       document.exitFullscreen().catch(() => {});
     }
-    let benar = 0;
-    paketTryoutAktif.daftarSoal.forEach((s, idx) => {
-      if (jawabanUserTryout[idx] === s.jawabanBenar) benar++;
-    });
-    const nilai = Math.round((benar / (paketTryoutAktif.daftarSoal.length || 1)) * 100);
+    const nilai = skorManual ?? 0;
+    const totPelanggaran = pelanggaranManual ?? jumlahPelanggaranUjian;
     setSkorTryout(nilai);
+    setJumlahPelanggaranUjian(totPelanggaran);
     setUjianSelesai(true);
     setSedangUjian(false);
     setRiwayatTryout((prev) => [
@@ -273,13 +240,13 @@ export default function AplikasiHibahIlmu() {
         userId: userLogin.id,
         userNama: userLogin.nama,
         skor: nilai,
-        jumlahPelanggaran: jumlahPelanggaranUjian,
+        jumlahPelanggaran: totPelanggaran,
         waktuSelesai: "Baru saja",
-        statusAkhir: "Selesai Normal",
+        statusAkhir: statusManual || "Selesai Normal",
       },
       ...prev,
     ]);
-    if (benar > 0) tambahXP(benar * 40);
+    if (nilai > 0) tambahXP(50);
   };
 
   const notifikasiUserAktif = daftarNotifikasi.filter((n) =>
