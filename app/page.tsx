@@ -105,12 +105,10 @@ export default function AplikasiHibahIlmu() {
   const [poinXP, setPoinXP] = useState<number>(480);
   const [materiSelesai, setMateriSelesai] = useState<string[]>(["materi-sma-1"]);
 
-  // State Skor Kuis Terbaik Per Modul (Penentu Membuka Rantai Modul Bersyarat Berikutnya)
   const [skorKuisPerModul, setSkorKuisPerModul] = useState<{ [modulId: string]: number }>({
     "materi-sma-1": 90,
   });
 
-  // State Tryout CBT Proctoring
   const [daftarPaketTryout, setDaftarPaketTryout] = useState<PaketTryout[]>(PAKET_TRYOUT_AWAL);
   const [riwayatTryout, setRiwayatTryout] = useState<RiwayatPercobaanTryout[]>([]);
   const [paketTryoutAktif, setPaketTryoutAktif] = useState<PaketTryout | null>(null);
@@ -125,7 +123,6 @@ export default function AplikasiHibahIlmu() {
 
   const [daftarDiskusi, setDaftarDiskusi] = useState<DiskusiPR[]>(DISKUSI_PR_AWAL);
 
-  // Sensor Anti-Cheat CBT (Alt+Tab & Fullscreen)
   useEffect(() => {
     if (!sedangUjian || !paketTryoutAktif) return;
     const catatPelanggaran = (alasan: string) => {
@@ -161,7 +158,6 @@ export default function AplikasiHibahIlmu() {
     return () => clearInterval(timer);
   }, [sedangUjian, ujianSelesai, sisaWaktu]);
 
-  // Presensi Otomatis Saat Membuka Materi
   useEffect(() => {
     if (kelasAktif && userLogin) {
       const jam = new Date().toLocaleTimeString("id-ID", {
@@ -203,6 +199,23 @@ export default function AplikasiHibahIlmu() {
       setMateriSelesai((prev) => (prev.includes(modulId) ? prev : [...prev, modulId]));
       tambahXP(50);
     }
+  };
+
+  const handleKumpulTugasModul = (tugasId: string, jawabanTeks: string) => {
+    if (!userLogin) return;
+    setDaftarPengumpulan((prev) => [
+      {
+        id: "sub-" + Date.now(),
+        tugasId,
+        siswaId: userLogin.id,
+        siswaNama: userLogin.nama,
+        jawabanTeksAtauLink: jawabanTeks,
+        waktuKumpul: "Baru saja",
+      },
+      ...prev,
+    ]);
+    tambahXP(40);
+    alert("✓ Jawaban tugas modul berhasil dikirim dan masuk ke antrean penilaian guru!");
   };
 
   const kirimNotifikasiKeUser = (
@@ -279,7 +292,6 @@ export default function AplikasiHibahIlmu() {
         darkMode ? "bg-slate-950 text-slate-100" : "bg-[#F8FAFC] text-slate-800"
       } ${ukuranTeksBesar ? "text-lg leading-relaxed" : "text-base leading-normal"}`}
     >
-      {/* HEADER NAVBAR DENGAN LOGO HIBAHILMU.JPG */}
       <header
         className={`sticky top-0 z-40 backdrop-blur-xl border-b shadow-xs ${
           darkMode ? "bg-slate-900/90 border-slate-800" : "bg-white/90 border-slate-200/80"
@@ -402,7 +414,6 @@ export default function AplikasiHibahIlmu() {
         </div>
       </header>
 
-      {/* MAIN CONTENT */}
       <main className="max-w-7xl mx-auto px-4 py-10">
         {menuAktif === "beranda" && (
           <RuangBelajarView
@@ -420,6 +431,9 @@ export default function AplikasiHibahIlmu() {
             toggleSelesaiMateri={toggleSelesaiMateri}
             skorKuisPerModul={skorKuisPerModul}
             simpanSkorModul={simpanSkorModul}
+            daftarTugas={daftarTugas}
+            daftarPengumpulan={daftarPengumpulan}
+            onKumpulTugasModul={handleKumpulTugasModul}
             tambahXP={tambahXP}
             chatPerMateri={chatPerMateri}
             onKirimChatMateri={(pesan) => {

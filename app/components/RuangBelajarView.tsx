@@ -30,6 +30,8 @@ import {
   Cpu,
   Globe,
   Maximize2,
+  ClipboardCheck,
+  Send,
 } from "lucide-react";
 import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";
@@ -38,6 +40,8 @@ import {
   KelasItem,
   AkunPengguna,
   PesanChatMateri,
+  TugasItem,
+  PengumpulanTugas,
 } from "../types";
 import { bersihkanTagHtml } from "../mockData";
 import { CourseraNetAcadModal } from "./CourseraNetAcadModal";
@@ -57,6 +61,9 @@ interface RuangBelajarProps {
   toggleSelesaiMateri: (id: string) => void;
   skorKuisPerModul: { [modulId: string]: number };
   simpanSkorModul: (modulId: string, skor: number, lulusKkm: boolean) => void;
+  daftarTugas: TugasItem[];
+  daftarPengumpulan: PengumpulanTugas[];
+  onKumpulTugasModul: (tugasId: string, jawabanTeks: string) => void;
   tambahXP: (xp: number) => void;
   chatPerMateri: { [materiId: string]: PesanChatMateri[] };
   onKirimChatMateri: (pesan: string) => void;
@@ -94,6 +101,9 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
   toggleSelesaiMateri,
   skorKuisPerModul,
   simpanSkorModul,
+  daftarTugas,
+  daftarPengumpulan,
+  onKumpulTugasModul,
   tambahXP,
   chatPerMateri,
   onKirimChatMateri,
@@ -110,7 +120,6 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
   const [kataKunci, setKataKunci] = useState("");
   const [modeVisualSkillTree, setModeVisualSkillTree] = useState(false);
 
-  // State Pop-up Modal ala Coursera / Cisco NetAcad
   const [modulPopupAktif, setModulPopupAktif] = useState<KelasItem | null>(null);
 
   const [sedangBicaraTts, setSedangBicaraTts] = useState(false);
@@ -133,6 +142,11 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
   }>({});
   const [petunjukSocratic, setPetunjukSocratic] = useState<{ [id: string]: string }>({});
 
+  // State Input Jawaban Tugas di Halaman Modul
+  const [inputJawabanTugasModul, setInputJawabanTugasModul] = useState<{
+    [tugasId: string]: string;
+  }>({});
+
   const [bintangUlasanBaru, setBintangUlasanBaru] = useState(5);
   const [komentarUlasanBaru, setKomentarUlasanBaru] = useState("");
   const [inputChatMateri, setInputChatMateri] = useState("");
@@ -149,10 +163,15 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
     j.kelas.map((k) => ({ ...k, namaJenjang: j.nama }))
   );
 
-  // Fungsi Pengecekan Apakah Modul Terkunci oleh Syarat Modul Sebelumnya + Nilai Minimal
   const cekStatusPrasyaratModul = (modul: KelasItem) => {
     if (!modul.prasyaratKelasId) {
-      return { terkunci: false, alasan: "", modulPrasyarat: null, syaratNilai: 0, skorUserSaatIni: 0 };
+      return {
+        terkunci: false,
+        alasan: "",
+        modulPrasyarat: null,
+        syaratNilai: 0,
+        skorUserSaatIni: 0,
+      };
     }
     const modulPrasyarat = semuaKelasFlat.find((m) => m.id === modul.prasyaratKelasId) || null;
     const syaratNilai = modul.syaratSkorMinimal || modulPrasyarat?.syaratSkorMinimal || 75;
@@ -226,13 +245,23 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
   };
 
   // ============================================================================
-  // 1. TAMPILAN RUANG KELAS DETAIL
+  // 1. TAMPILAN RUANG KELAS DETAIL (TERMASUK PENGUMPULAN TUGAS MODUL)
   // ============================================================================
   if (kelasAktif && userLogin) {
     const flashcards = kelasAktif.flashcards || [];
     const kartuSaatIni = flashcards[indeksFlashcard];
     const kkmModulIni = kelasAktif.syaratSkorMinimal || 75;
     const skorTerbaikModulIni = skorKuisPerModul[kelasAktif.id] || 0;
+
+    // Daftar tugas yang terkait dengan modul ini
+    const tugasModulTerkait: TugasItem[] = [
+      ...(kelasAktif.daftarTugasModul || []),
+      ...daftarTugas.filter(
+        (t) =>
+          (t.modulId === kelasAktif.id || t.subJenjangId === kelasAktif.subJenjangId) &&
+          !(kelasAktif.daftarTugasModul || []).some((m) => m.id === t.id)
+      ),
+    ];
 
     return (
       <motion.div
@@ -243,7 +272,11 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
         {modulPopupAktif && (
           <CourseraNetAcadModal
             modul={modulPopupAktif}
+            userLogin={userLogin}
             skorTertinggiSebelumnya={skorKuisPerModul[modulPopupAktif.id] || 0}
+            daftarTugasGlobal={daftarTugas}
+            daftarPengumpulan={daftarPengumpulan}
+            onKumpulTugasModul={onKumpulTugasModul}
             onTutup={() => setModulPopupAktif(null)}
             onSimpanSkorModul={simpanSkorModul}
           />
@@ -258,7 +291,6 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
           </button>
 
           <div className="flex flex-wrap items-center gap-2.5">
-            {/* Tombol Buka Pop-up Per Bab Ala Coursera / NetAcad */}
             <button
               onClick={() => setModulPopupAktif(kelasAktif)}
               className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black flex items-center gap-2 shadow-md cursor-pointer"
@@ -301,7 +333,6 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
           </div>
         </div>
 
-        {/* Banner Info Skor & Passing Grade */}
         <div className="p-4 rounded-2xl bg-indigo-950 text-white flex flex-wrap justify-between items-center gap-4">
           <div className="text-xs sm:text-sm">
             <b>Target Kelulusan Modul (Passing Grade): Minimal {kkmModulIni}/100</b> • Skor Terbaik
@@ -357,7 +388,7 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
             </div>
 
             <div
-              className="prose prose-slate max-w-none leading-relaxed text-base"
+              className="prose prose-slate max-w-none leading-relaxed text-base [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
               dangerouslySetInnerHTML={{ __html: kelasAktif.rangkuman }}
             />
 
@@ -372,7 +403,7 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
           </div>
         </div>
 
-        {/* 3D FLIP FLASHCARDS SPACED REPETITION */}
+        {/* 3D FLIP FLASHCARDS */}
         {flashcards.length > 0 && kartuSaatIni && (
           <div className="bg-gradient-to-br from-indigo-900 via-slate-900 to-emerald-950 text-white rounded-3xl p-8 shadow-xl space-y-5">
             <div className="flex flex-wrap justify-between items-center gap-4">
@@ -827,6 +858,174 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
             })}
           </div>
         </div>
+
+        {/* SEKSI BARU: TUGAS KELAS & PROYEK MANDIRI DI DALAM HALAMAN MODUL */}
+        {tugasModulTerkait.length > 0 && (
+          <div className="bg-white text-slate-800 rounded-3xl p-8 border-2 border-emerald-200 space-y-5 shadow-xs">
+            <div className="flex flex-wrap justify-between items-center gap-2">
+              <h3 className="font-black text-lg flex items-center gap-2 text-emerald-950">
+                <ClipboardCheck className="w-6 h-6 text-emerald-600" /> Tugas Kelas &amp; Proyek
+                Mandiri Modul Ini ({tugasModulTerkait.length} Tugas)
+              </h3>
+              <span className="text-xs font-black bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full">
+                Dinilai dengan AI Rubric Scoring
+              </span>
+            </div>
+
+            <div className="space-y-4">
+              {tugasModulTerkait.map((tgs) => {
+                const kirimanSaya = daftarPengumpulan.find(
+                  (p) => p.tugasId === tgs.id && p.siswaId === userLogin.id
+                );
+                return (
+                  <div
+                    key={tgs.id}
+                    className="p-6 rounded-2xl bg-emerald-50/40 border border-emerald-200 space-y-3 text-sm"
+                  >
+                    <div className="flex flex-wrap justify-between items-center gap-2">
+                      <h4 className="font-black text-base text-slate-900">{tgs.judul}</h4>
+                      <span className="text-xs font-bold text-slate-500">
+                        Tenggat: {tgs.deadline}
+                      </span>
+                    </div>
+                    <p className="text-slate-700 leading-relaxed">{tgs.instruksi}</p>
+
+                    {kirimanSaya ? (
+                      <div className="p-4 bg-white border border-emerald-300 rounded-xl space-y-1 text-xs">
+                        <div className="font-black text-emerald-800">
+                          ✓ Tugas Telah Dikumpulkan ({kirimanSaya.waktuKumpul})
+                        </div>
+                        <p className="text-slate-600">{kirimanSaya.jawabanTeksAtauLink}</p>
+                        <div className="font-black text-indigo-900 pt-1">
+                          Nilai:{" "}
+                          {kirimanSaya.nilai !== undefined
+                            ? `${kirimanSaya.nilai}/100 — ${kirimanSaya.feedbackGuru || "Dinilai"}`
+                            : "Menunggu Verifikasi Nilai Guru"}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                        <input
+                          type="text"
+                          value={inputJawabanTugasModul[tgs.id] || ""}
+                          onChange={(e) =>
+                            setInputJawabanTugasModul({
+                              ...inputJawabanTugasModul,
+                              [tgs.id]: e.target.value,
+                            })
+                          }
+                          placeholder="Ketik uraian jawaban tugas atau link Google Drive / GitHub proyek Anda..."
+                          className="flex-1 p-3.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const isi = (inputJawabanTugasModul[tgs.id] || "").trim();
+                            if (!isi) return;
+                            onKumpulTugasModul(tgs.id, isi);
+                            setInputJawabanTugasModul({ ...inputJawabanTugasModul, [tgs.id]: "" });
+                          }}
+                          className="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-3 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer shrink-0"
+                        >
+                          <Send className="w-4 h-4" /> Kirim Tugas (+40 XP)
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* DISKUSI & ULASAN */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white text-slate-800 rounded-3xl p-6 border space-y-4">
+            <h3 className="font-black text-base flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-indigo-600" /> Diskusi Kelas Materi Ini
+            </h3>
+            <div className="space-y-2.5 max-h-56 overflow-y-auto">
+              {(chatPerMateri[kelasAktif.id] || []).map((ch) => (
+                <div key={ch.id} className="p-3 rounded-2xl bg-slate-50 border text-xs">
+                  <div className="font-black text-slate-900">
+                    {ch.pengirimNama} ({ch.pengirimRole}) •{" "}
+                    <span className="text-slate-400">{ch.waktu}</span>
+                  </div>
+                  <p className="text-slate-700 mt-1">{ch.pesan}</p>
+                </div>
+              ))}
+            </div>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!inputChatMateri.trim()) return;
+                onKirimChatMateri(inputChatMateri);
+                setInputChatMateri("");
+              }}
+              className="flex gap-2"
+            >
+              <input
+                type="text"
+                value={inputChatMateri}
+                onChange={(e) => setInputChatMateri(e.target.value)}
+                placeholder="Tanyakan sesuatu..."
+                className="flex-1 p-3 bg-slate-50 border rounded-xl text-xs"
+              />
+              <button
+                type="submit"
+                className="bg-indigo-600 text-white px-4 py-2.5 rounded-xl text-xs font-bold"
+              >
+                Kirim
+              </button>
+            </form>
+          </div>
+
+          <div className="bg-white text-slate-800 rounded-3xl p-6 border space-y-4">
+            <h3 className="font-black text-base flex items-center gap-2">
+              <Star className="w-5 h-5 text-amber-500 fill-amber-500" /> Beri Rating &amp; Ulasan Modul
+            </h3>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!komentarUlasanBaru.trim()) return;
+                onKirimUlasanMateri(bintangUlasanBaru, komentarUlasanBaru);
+                setKomentarUlasanBaru("");
+              }}
+              className="space-y-3 text-xs"
+            >
+              <div className="flex items-center gap-2">
+                <span className="font-bold">Pilih Bintang:</span>
+                {[1, 2, 3, 4, 5].map((b) => (
+                  <button
+                    key={b}
+                    type="button"
+                    onClick={() => setBintangUlasanBaru(b)}
+                    className={`px-2.5 py-1 rounded-lg font-black ${
+                      bintangUlasanBaru >= b
+                        ? "bg-amber-400 text-slate-950"
+                        : "bg-slate-100 text-slate-400"
+                    }`}
+                  >
+                    ★ {b}
+                  </button>
+                ))}
+              </div>
+              <input
+                type="text"
+                value={komentarUlasanBaru}
+                onChange={(e) => setKomentarUlasanBaru(e.target.value)}
+                placeholder="Tulis kesan belajar modul ini..."
+                className="w-full p-3 bg-slate-50 border rounded-xl"
+              />
+              <button
+                type="submit"
+                className="bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-bold"
+              >
+                Kirim Ulasan (+15 XP)
+              </button>
+            </form>
+          </div>
+        </div>
       </motion.div>
     );
   }
@@ -836,10 +1035,14 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
   // ============================================================================
   return (
     <div className="space-y-14">
-      {modulPopupAktif && (
+      {modulPopupAktif && userLogin && (
         <CourseraNetAcadModal
           modul={modulPopupAktif}
+          userLogin={userLogin}
           skorTertinggiSebelumnya={skorKuisPerModul[modulPopupAktif.id] || 0}
+          daftarTugasGlobal={daftarTugas}
+          daftarPengumpulan={daftarPengumpulan}
+          onKumpulTugasModul={onKumpulTugasModul}
           onTutup={() => setModulPopupAktif(null)}
           onSimpanSkorModul={simpanSkorModul}
         />
@@ -952,6 +1155,76 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
             </div>
           </section>
 
+          <section className="space-y-4">
+            <div className="text-center max-w-2xl mx-auto">
+              <span className="text-xs font-black uppercase tracking-widest text-indigo-600">
+                INTERACTIVE 3D LEARNING EXPERIENCE
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-black mt-1">
+                Sentuh &amp; Gerakkan Kursor pada Kartu Fitur 3D Kami
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+              {[
+                {
+                  id: "3d-1",
+                  ikon: <Cpu className="w-7 h-7 text-white" />,
+                  gradien: "from-indigo-600 to-violet-700",
+                  badge: "AI ENGINE",
+                  judul: "AI Quiz Generator & Rubric",
+                  deskripsi:
+                    "Ubah rangkuman materi menjadi 5 format soal otomatis dan koreksi tugas modul siswa dengan AI Rubric Assistant.",
+                },
+                {
+                  id: "3d-2",
+                  ikon: <Layers className="w-7 h-7 text-white" />,
+                  gradien: "from-emerald-600 to-teal-700",
+                  badge: "COURSERA / NETACAD",
+                  judul: "Pop-up Bab & Tugas Bersyarat",
+                  deskripsi:
+                    "Baca bab secara berurutan, kumpulkan tugas proyek di dalam modul, dan ulangi kuis hingga lulus KKM.",
+                },
+                {
+                  id: "3d-3",
+                  ikon: <Globe className="w-7 h-7 text-white" />,
+                  gradien: "from-amber-500 to-orange-600",
+                  badge: "100% GRATIS",
+                  judul: "Wakaf Ilmu Terbuka Nasional",
+                  deskripsi:
+                    "Tanpa biaya langganan selamanya. Setiap pendidik bisa menghibahkan modul, RPP, dan soal tryout CBT.",
+                },
+              ].map((item) => {
+                const sedangAktif = kartu3DAktif?.id === item.id;
+                return (
+                  <div
+                    key={item.id}
+                    onMouseMove={(e) => handleMouseMoveKartu3D(item.id, e)}
+                    onMouseLeave={() => setKartu3DAktif(null)}
+                    style={{
+                      transform: sedangAktif
+                        ? `perspective(900px) rotateX(${kartu3DAktif.x}deg) rotateY(${kartu3DAktif.y}deg) translateZ(10px)`
+                        : "perspective(900px) rotateX(0deg) rotateY(0deg)",
+                      transition: "transform 0.15s ease-out",
+                    }}
+                    className={`rounded-3xl bg-gradient-to-br ${item.gradien} text-white p-7 shadow-xl border border-white/15 space-y-4 cursor-pointer select-none`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-inner">
+                        {item.ikon}
+                      </div>
+                      <span className="text-[10px] font-black uppercase bg-black/25 px-3 py-1 rounded-full">
+                        {item.badge} • 3D CARD
+                      </span>
+                    </div>
+                    <h3 className="text-xl font-black">{item.judul}</h3>
+                    <p className="text-xs text-white/90 leading-relaxed">{item.deskripsi}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
           <section className="bg-white dark:bg-slate-900 rounded-[2.2rem] p-8 sm:p-10 border border-emerald-200/80 shadow-sm space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5">
               <div>
@@ -1012,7 +1285,7 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
         </>
       )}
 
-      {/* SKILL TREE (PETA RANTAI MODUL BERSYARAT + NILAI KKM) */}
+      {/* SKILL TREE */}
       {modeVisualSkillTree && !jenjangAktif && (
         <div className="bg-white text-slate-800 p-8 rounded-3xl border-2 border-indigo-200 shadow-xl space-y-6">
           <div>
@@ -1022,10 +1295,6 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
             <h2 className="text-2xl font-black mt-2 flex items-center gap-2">
               <GitBranch className="w-6 h-6 text-indigo-600" /> Peta Rantai Modul Bersyarat
             </h2>
-            <p className="text-sm text-slate-500">
-              Modul lanjutan baru akan terbuka jika Anda menyelesaikan modul prasyarat sebelumnya dan
-              mencapai batas nilai kuis minimal (KKM) yang ditentukan pengajar.
-            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
@@ -1060,9 +1329,7 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
                           <Lock className="w-4 h-4" /> Terkunci Syarat
                         </span>
                       ) : (
-                        <span className="text-indigo-600">
-                          Terbuka (KKM: {kkmModul})
-                        </span>
+                        <span className="text-indigo-600">Terbuka (KKM: {kkmModul})</span>
                       )}
                     </div>
 
@@ -1078,22 +1345,20 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
                         🔒 {infoPrasyarat.alasan}
                       </div>
                     ) : (
-                      <div className="flex flex-col gap-2">
-                        <button
-                          onClick={() => {
-                            if (!userLogin) {
-                              onBukaAuthAtauDashboard("siswa");
-                            } else {
-                              setModulPopupAktif(modul);
-                            }
-                          }}
-                          className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs cursor-pointer"
-                        >
-                          {userLogin
-                            ? "🖥️ Buka Pop-up Per Bab (Coursera/NetAcad)"
-                            : "Login untuk Belajar"}
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => {
+                          if (!userLogin) {
+                            onBukaAuthAtauDashboard("siswa");
+                          } else {
+                            setModulPopupAktif(modul);
+                          }
+                        }}
+                        className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs cursor-pointer"
+                      >
+                        {userLogin
+                          ? "🖥️ Buka Pop-up Per Bab (Coursera/NetAcad)"
+                          : "Login untuk Belajar"}
+                      </button>
                     )}
                   </div>
                 </div>
@@ -1256,12 +1521,13 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
 
                     <div className="mt-6 pt-4 border-t flex flex-wrap justify-between items-center gap-2">
                       <span className="text-xs font-bold text-slate-500">
-                        {item.daftarKuis.length} Kuis Evaluasi
+                        {item.daftarKuis.length} Kuis • {(item.daftarTugasModul || []).length} Tugas
                       </span>
 
                       {infoPrasyarat.terkunci ? (
                         <span className="text-xs font-black text-rose-600 flex items-center gap-1">
-                          <Lock className="w-4 h-4" /> Selesaikan Prasyarat &amp; Nilai {infoPrasyarat.syaratNilai}
+                          <Lock className="w-4 h-4" /> Selesaikan Prasyarat &amp; Nilai{" "}
+                          {infoPrasyarat.syaratNilai}
                         </span>
                       ) : userLogin ? (
                         <div className="flex flex-wrap gap-2">

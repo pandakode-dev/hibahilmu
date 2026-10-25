@@ -54,7 +54,6 @@ export interface PesanChatMateri {
   waktu: string;
 }
 
-// FITUR BARU: Struktur Per Bab untuk Pop-up ala Coursera / Cisco NetAcad
 export interface BabModulItem {
   id: string;
   judulBab: string;
@@ -62,6 +61,17 @@ export interface BabModulItem {
   videoUrl?: string;
   kontenHtml: string;
   rumusMatematika?: string;
+}
+
+export interface TugasItem {
+  id: string;
+  subJenjangId: string;
+  modulId?: string;
+  judul: string;
+  instruksi: string;
+  deadline: string;
+  pembuatNama: string;
+  kriteriaRubrik?: string[];
 }
 
 export interface KelasItem {
@@ -73,10 +83,10 @@ export interface KelasItem {
   pembuatEmail: string;
   tanggalUpload: string;
   level: "Pemula" | "Menengah" | "Mahir";
-  // FITUR BARU: Rantai Prasyarat & Passing Grade (KKM)
   prasyaratKelasId?: string;
-  syaratSkorMinimal?: number; // Contoh: 80 (Harus dapat nilai >= 80 di modul prasyarat)
-  daftarBab?: BabModulItem[]; // Daftar Bab Berurutan di dalam Modul
+  syaratSkorMinimal?: number;
+  daftarBab?: BabModulItem[];
+  daftarTugasModul?: TugasItem[];
   durasi: string;
   videoUrl: string;
   lampiranUrl?: string;
@@ -141,16 +151,6 @@ export interface RiwayatPercobaanTryout {
   jumlahPelanggaran: number;
   waktuSelesai: string;
   statusAkhir: "Selesai Normal" | "Diskualifikasi (Auto-Submit)";
-}
-
-export interface TugasItem {
-  id: string;
-  subJenjangId: string;
-  judul: string;
-  instruksi: string;
-  deadline: string;
-  pembuatNama: string;
-  kriteriaRubrik?: string[];
 }
 
 export interface PengumpulanTugas {

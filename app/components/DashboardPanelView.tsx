@@ -9,24 +9,12 @@ import {
   TrendingUp,
   Database,
   Briefcase,
-  Sparkles,
   Download,
   LogOut,
   Wand2,
   Clock,
   FolderArchive,
   QrCode,
-  Coins,
-  Target,
-  Award,
-  Globe,
-  Share2,
-  Printer,
-  PlusCircle,
-  Upload,
-  UserPlus,
-  Edit3,
-  Trash2,
   Users,
   Timer,
   GitBranch,
@@ -48,7 +36,6 @@ import {
   StudyRoomItem,
   PengajuanBeasiswaItem,
   LogAktivitas,
-  BiodataCV,
   KategoriTes,
   KelasItem,
   BabModulItem,
@@ -57,10 +44,12 @@ import {
 import {
   bersihkanTagHtml,
   analisisRubrikEsaiAI,
-  TEMPLATE_CSV_AKUN,
   TEMPLATE_CSV_KUIS,
 } from "../mockData";
 import { RichTextEditorPro } from "./RichTextEditorPro";
+import { ProfilCVSection } from "./dashboard/ProfilCVSection";
+import { AdminPanelSection } from "./dashboard/AdminPanelSection";
+import { SiswaPortalSection } from "./dashboard/SiswaPortalSection";
 
 interface DashboardPanelProps {
   userLogin: AkunPengguna | null;
@@ -115,6 +104,7 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
   setDaftarPaketTryout,
   riwayatTryout,
   daftarTugas,
+  setDaftarTugas,
   daftarPengumpulan,
   setDaftarPengumpulan,
   daftarPresensi,
@@ -149,18 +139,6 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
 
   const [adminModeGuru, setAdminModeGuru] = useState(false);
 
-  const [adminTabAktif, setAdminTabAktif] = useState<
-    "akun" | "beasiswa" | "kategori" | "cv" | "log"
-  >("akun");
-
-  const [akunDieditAdmin, setAkunDieditAdmin] = useState<AkunPengguna | null>(null);
-  const [bukaModalTambahAkun, setBukaModalTambahAkun] = useState(false);
-  const [bukaModalImportCsvAkun, setBukaModalImportCsvAkun] = useState(false);
-  const [teksCsvAkun, setTeksCsvAkun] = useState(TEMPLATE_CSV_AKUN);
-
-  const [jenjangIndukKategoriBaru, setJenjangIndukKategoriBaru] = useState("sma");
-  const [namaSubJenjangBaru, setNamaSubJenjangBaru] = useState("");
-
   const [guruTabAktif, setGuruTabAktif] = useState<
     | "materi"
     | "rantai_modul"
@@ -173,16 +151,7 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
     | "cv"
   >("materi");
 
-  const [siswaTabAktif, setSiswaTabAktif] = useState<
-    | "showcase_publik"
-    | "quests_study"
-    | "tugas"
-    | "rapor_sertifikat"
-    | "beasiswa"
-    | "cv"
-  >("showcase_publik");
-
-  // State Form Materi, Rantai Prasyarat, Bab Berurutan & 5 Jenis Soal Kuis
+  // State Form Materi, Rantai Prasyarat, Bab Berurutan, Tugas Modul & 5 Jenis Soal Kuis
   const [subJenjangPilih, setSubJenjangPilih] = useState("");
   const [judulMateri, setJudulMateri] = useState("");
   const [levelMateri, setLevelMateri] = useState<"Pemula" | "Menengah" | "Mahir">("Pemula");
@@ -195,7 +164,19 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
   const [bukaModalImportCsvKuis, setBukaModalImportCsvKuis] = useState(false);
   const [teksCsvKuis, setTeksCsvKuis] = useState(TEMPLATE_CSV_KUIS);
 
-  // State Daftar Bab Berurutan (Pop-up Coursera / NetAcad)
+  // State Daftar Tugas / Proyek Mandiri yang Disematkan di Dalam Modul Baru
+  const [daftarTugasModulDraft, setDaftarTugasModulDraft] = useState<
+    { id: string; judul: string; instruksi: string; deadline: string }[]
+  >([
+    {
+      id: "tgs-draft-1",
+      judul: "Tugas Praktik Mandiri Modul Ini",
+      instruksi:
+        "Buatlah analisis singkat atau laporan hasil eksperimen dari materi modul ini beserta kesimpulannya.",
+      deadline: "7 Hari setelah modul dibuka",
+    },
+  ]);
+
   const [daftarBabDraft, setDaftarBabDraft] = useState<BabModulItem[]>([
     {
       id: "bab-draft-1",
@@ -225,14 +206,12 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
     },
   ]);
 
-  // State Form Tambah Bank Soal Kolektif Baru
   const [topikBankSoalBaru, setTopikBankSoalBaru] = useState("");
   const [tanyaBankSoalBaru, setTanyaBankSoalBaru] = useState("");
   const [opsiBankSoalBaru, setOpsiBankSoalBaru] = useState<string[]>(["", "", "", ""]);
   const [kunciBankSoalBaru, setKunciBankSoalBaru] = useState<number>(0);
   const [bahasBankSoalBaru, setBahasBankSoalBaru] = useState("");
 
-  // State RPP
   const [judulRppBaru, setJudulRppBaru] = useState("");
   const [mapelRppBaru, setMapelRppBaru] = useState("");
   const [jenjangRppBaru] = useState("Kelas 11 MIPA");
@@ -242,11 +221,9 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
   const [tujuanRppBaru, setTujuanRppBaru] = useState("");
   const [urlRppBaru, setUrlRppBaru] = useState("https://drive.google.com");
 
-  // State Penilaian Guru
   const [inputNilaiGuru, setInputNilaiGuru] = useState<{ [subId: string]: number }>({});
   const [inputFeedbackGuru, setInputFeedbackGuru] = useState<{ [subId: string]: string }>({});
 
-  // State Tryout & QR
   const [judulTryoutBaru, setJudulTryoutBaru] = useState("");
   const [kategoriTesBaru, setKategoriTesBaru] = useState<KategoriTes>("TPA");
   const [alamatTryoutBaru, setAlamatTryoutBaru] = useState(
@@ -263,42 +240,10 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
   ]);
   const [tokenQrInput, setTokenQrInput] = useState("");
 
-  // State Rombel & Jadwal Live
   const [namaRombelBaru, setNamaRombelBaru] = useState("");
   const [pengumumanRombelBaru, setPengumumanRombelBaru] = useState("");
   const [judulLiveBaru, setJudulLiveBaru] = useState("");
   const [jadwalJamLiveBaru, setJadwalJamLiveBaru] = useState("");
-
-  // State Siswa
-  const [klaimQuestIds, setKlaimQuestIds] = useState<string[]>([]);
-  const [jawabanTugasSiswaInput, setJawabanTugasSiswaInput] = useState<{
-    [id: string]: string;
-  }>({});
-  const [judulKaryaBaru, setJudulKaryaBaru] = useState("");
-  const [kategoriKaryaBaru] = useState("Proyek Sains & IT");
-  const [deskripsiKaryaBaru, setDeskripsiKaryaBaru] = useState("");
-  const [linkKaryaBaru, setLinkKaryaBaru] = useState("https://github.com");
-  const [alasanBeasiswaInput, setAlasanBeasiswaInput] = useState("");
-
-  // State Form Biodata & CV Lengkap
-  const [cvFoto, setCvFoto] = useState(userLogin?.cv?.fotoUrl || "");
-  const [cvHeadline, setCvHeadline] = useState(
-    userLogin?.cv?.headline || userLogin?.infoTambahan || ""
-  );
-  const [cvSekolah, setCvSekolah] = useState(userLogin?.cv?.asalSekolahKampus || "");
-  const [cvPendidikan, setCvPendidikan] = useState(userLogin?.cv?.pendidikanTerakhir || "");
-  const [cvBioSingkat, setCvBioSingkat] = useState(userLogin?.cv?.bioSingkat || "");
-  const [cvSkillsTeks, setCvSkillsTeks] = useState(
-    (userLogin?.cv?.skills || []).join(", ")
-  );
-  const [cvPengalamanTeks, setCvPengalamanTeks] = useState(
-    (userLogin?.cv?.pengalaman || []).join("\n")
-  );
-  const [cvPrestasiTeks, setCvPrestasiTeks] = useState(
-    (userLogin?.cv?.prestasi || []).join("\n")
-  );
-  const [cvPortfolioUrl, setCvPortfolioUrl] = useState(userLogin?.cv?.portfolioUrl || "");
-  const [notifSimpanCV, setNotifSimpanCV] = useState(false);
 
   const semuaSubJenjangFlat = daftarJenjang.flatMap((j) =>
     j.subJenjang.map((sj) => ({ ...sj, namaInduk: j.nama }))
@@ -333,7 +278,6 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
     document.body.removeChild(link);
   };
 
-  // AI Quiz Generator 4 Soal Multi-Tipe
   const handleAiGenerateQuiz = () => {
     const teks = bersihkanTagHtml(rangkumanMateri).trim();
     const topik = judulMateri.trim() || "Materi Pembelajaran";
@@ -391,205 +335,10 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
         poin: 60,
       },
     ]);
-    alert(
-      "⚡ AI Quiz Generator berhasil menyusun 4 soal lengkap (Pilihan Ganda, Benar/Salah, Mencocokkan, & Isian Singkat)!"
-    );
+    alert("⚡ AI Quiz Generator berhasil menyusun 4 soal lengkap dari rangkuman Anda!");
   };
 
-  // ============================================================================
-  // KOMPONEN PROFIL & CV 2 KOLOM
-  // ============================================================================
-  const renderProfilDanCV = () => {
-    if (!userLogin) return null;
-    const daftarSkillPreview = cvSkillsTeks
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-
-    return (
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        <div className="lg:col-span-5 bg-white text-slate-800 rounded-3xl overflow-hidden border border-slate-200/90 shadow-md">
-          <div className="h-28 bg-gradient-to-r from-indigo-600 via-blue-600 to-emerald-500" />
-          <div className="px-7 pb-7 -mt-12 space-y-4">
-            <div className="w-24 h-24 rounded-3xl bg-slate-200 border-4 border-white shadow-md overflow-hidden flex items-center justify-center text-3xl font-black text-slate-700">
-              {cvFoto ? (
-                <img src={cvFoto} alt={userLogin.nama} className="w-full h-full object-cover" />
-              ) : (
-                userLogin.nama.charAt(0).toUpperCase()
-              )}
-            </div>
-
-            <div>
-              <h3 className="text-xl font-black text-slate-900">{userLogin.nama}</h3>
-              <p className="text-xs font-extrabold text-indigo-600 mt-0.5">
-                {cvHeadline || userLogin.infoTambahan}
-              </p>
-              <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-                {cvBioSingkat || "Belum ada deskripsi biodata singkat."}
-              </p>
-            </div>
-
-            <div className="pt-4 border-t border-slate-200 space-y-3 text-xs">
-              <div>
-                <div className="font-black uppercase text-slate-400 text-[10px]">
-                  ASAL SEKOLAH / KAMPUS
-                </div>
-                <div className="font-bold text-slate-800 mt-0.5">
-                  {cvSekolah || "-"} ({cvPendidikan || "-"})
-                </div>
-              </div>
-
-              <div>
-                <div className="font-black uppercase text-slate-400 text-[10px] mb-1.5">
-                  SKILLS &amp; KEMAMPUAN
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {daftarSkillPreview.length > 0 ? (
-                    daftarSkillPreview.map((sk, idx) => (
-                      <span
-                        key={idx}
-                        className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-800 font-bold text-[11px]"
-                      >
-                        {sk}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-slate-400">-</span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="lg:col-span-7 bg-white text-slate-800 rounded-3xl p-8 border border-slate-200/90 shadow-xs space-y-5">
-          <h3 className="text-xl font-black flex items-center gap-2">
-            <Briefcase className="w-5 h-5 text-indigo-600" /> Edit Foto Profil, Biodata &amp; CV
-          </h3>
-          {notifSimpanCV && (
-            <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-2xl text-sm font-bold">
-              ✓ Perubahan Biodata dan CV berhasil disimpan!
-            </div>
-          )}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const cvBaru: BiodataCV = {
-                fotoUrl: cvFoto,
-                headline: cvHeadline,
-                bioSingkat: cvBioSingkat,
-                asalSekolahKampus: cvSekolah,
-                pendidikanTerakhir: cvPendidikan,
-                skills: daftarSkillPreview,
-                pengalaman: cvPengalamanTeks
-                  .split("\n")
-                  .map((s) => s.trim())
-                  .filter(Boolean),
-                prestasi: cvPrestasiTeks
-                  .split("\n")
-                  .map((s) => s.trim())
-                  .filter(Boolean),
-                portfolioUrl: cvPortfolioUrl,
-                karyaPublik: userLogin.cv?.karyaPublik || [],
-              };
-              const updated = { ...userLogin, infoTambahan: cvHeadline, cv: cvBaru };
-              setUserLogin(updated);
-              setDaftarAkun(daftarAkun.map((a) => (a.id === userLogin.id ? updated : a)));
-              setNotifSimpanCV(true);
-              setTimeout(() => setNotifSimpanCV(false), 2500);
-            }}
-            className="space-y-4 text-sm"
-          >
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <input
-                type="url"
-                value={cvFoto}
-                onChange={(e) => setCvFoto(e.target.value)}
-                placeholder="URL Foto Profil (https://...)"
-                className="w-full p-3.5 border border-slate-300 rounded-xl bg-white"
-              />
-              <input
-                type="text"
-                value={cvHeadline}
-                onChange={(e) => setCvHeadline(e.target.value)}
-                placeholder="Headline / Spesialisasi"
-                className="w-full p-3.5 border border-slate-300 rounded-xl bg-white font-bold"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <input
-                type="text"
-                value={cvSekolah}
-                onChange={(e) => setCvSekolah(e.target.value)}
-                placeholder="Asal Sekolah / Universitas"
-                className="w-full p-3.5 border border-slate-300 rounded-xl bg-white"
-              />
-              <input
-                type="text"
-                value={cvPendidikan}
-                onChange={(e) => setCvPendidikan(e.target.value)}
-                placeholder="Tingkat / Pendidikan Terakhir"
-                className="w-full p-3.5 border border-slate-300 rounded-xl bg-white"
-              />
-            </div>
-
-            <textarea
-              rows={3}
-              value={cvBioSingkat}
-              onChange={(e) => setCvBioSingkat(e.target.value)}
-              placeholder="Biodata singkat..."
-              className="w-full p-3.5 border border-slate-300 rounded-xl bg-white"
-            />
-
-            <input
-              type="text"
-              value={cvSkillsTeks}
-              onChange={(e) => setCvSkillsTeks(e.target.value)}
-              placeholder="Keahlian / Skills (Pisahkan dengan koma)"
-              className="w-full p-3.5 border border-slate-300 rounded-xl bg-white font-semibold"
-            />
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <textarea
-                rows={2}
-                value={cvPengalamanTeks}
-                onChange={(e) => setCvPengalamanTeks(e.target.value)}
-                placeholder="Pengalaman Mengajar / Organisasi (Pisahkan per baris)"
-                className="w-full p-3.5 border border-slate-300 rounded-xl bg-white text-xs"
-              />
-              <textarea
-                rows={2}
-                value={cvPrestasiTeks}
-                onChange={(e) => setCvPrestasiTeks(e.target.value)}
-                placeholder="Prestasi & Penghargaan (Pisahkan per baris)"
-                className="w-full p-3.5 border border-slate-300 rounded-xl bg-white text-xs"
-              />
-            </div>
-
-            <input
-              type="url"
-              value={cvPortfolioUrl}
-              onChange={(e) => setCvPortfolioUrl(e.target.value)}
-              placeholder="URL Portofolio / LinkedIn / GitHub (https://...)"
-              className="w-full p-3.5 border border-slate-300 rounded-xl bg-white"
-            />
-
-            <button
-              type="submit"
-              className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-4 rounded-xl shadow-md cursor-pointer transition"
-            >
-              Simpan Perubahan Biodata &amp; CV
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  };
-
-  // ============================================================================
   // 1. GERBANG LOGIN & REGISTRASI
-  // ============================================================================
   if (!userLogin) {
     return (
       <motion.div
@@ -784,2431 +533,1583 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
     );
   }
 
-  // ============================================================================
-  // 2. STUDIO GURU (TERMASUK MENU RANTAI MODUL BERURUTAN BERSYARAT & BAB POP-UP)
-  // ============================================================================
-  if (userLogin.role === "guru" || (userLogin.role === "admin" && adminModeGuru)) {
+  // 2. PANEL SUPER ADMIN (PANGGIL KOMPONEN PECAHAN)
+  if (userLogin.role === "admin" && !adminModeGuru) {
     return (
-      <div className="space-y-8">
-        <div className="bg-gradient-to-r from-indigo-700 via-purple-700 to-indigo-900 text-white p-8 rounded-[2rem] flex flex-wrap justify-between items-center gap-6 shadow-2xl">
+      <AdminPanelSection
+        userLogin={userLogin}
+        setUserLogin={setUserLogin}
+        daftarAkun={daftarAkun}
+        setDaftarAkun={setDaftarAkun}
+        daftarJenjang={daftarJenjang}
+        setDaftarJenjang={setDaftarJenjang}
+        daftarBeasiswa={daftarBeasiswa}
+        setDaftarBeasiswa={setDaftarBeasiswa}
+        logAktivitas={logAktivitas}
+        onBukaModeGuru={() => setAdminModeGuru(true)}
+        onDownloadRekapCsv={handleDownloadRekapCsvExcel}
+      />
+    );
+  }
+
+  // 3. PORTAL PELAJAR / SISWA (PANGGIL KOMPONEN PECAHAN)
+  if (userLogin.role === "siswa") {
+    return (
+      <SiswaPortalSection
+        userLogin={userLogin}
+        setUserLogin={setUserLogin}
+        daftarAkun={daftarAkun}
+        setDaftarAkun={setDaftarAkun}
+        poinXP={poinXP}
+        materiSelesai={materiSelesai}
+        tambahXP={tambahXP}
+        studyRooms={studyRooms}
+        daftarTugas={daftarTugas}
+        daftarPengumpulan={daftarPengumpulan}
+        setDaftarPengumpulan={setDaftarPengumpulan}
+        daftarBeasiswa={daftarBeasiswa}
+        setDaftarBeasiswa={setDaftarBeasiswa}
+      />
+    );
+  }
+
+  // 4. STUDIO PENGAJAR / GURU
+  return (
+    <div className="space-y-8">
+      <div className="bg-gradient-to-r from-indigo-700 via-purple-700 to-indigo-900 text-white p-8 rounded-[2rem] flex flex-wrap justify-between items-center gap-6 shadow-2xl">
+        <div>
+          <span className="bg-white/20 text-xs font-black px-3.5 py-1 rounded-full uppercase">
+            {userLogin.role === "admin"
+              ? "MODE GURU (DIAKSES OLEH SUPER ADMIN)"
+              : "STUDIO PENGAJAR & KONTRIBUTOR ILMU"}
+          </span>
+          <h1 className="text-2xl sm:text-4xl font-black mt-2">{userLogin.nama}</h1>
+          <p className="text-indigo-200 text-sm">Penanggung Jawab Materi: {userLogin.email}</p>
+        </div>
+        <div className="flex flex-wrap gap-2.5">
+          <button
+            onClick={handleDownloadRekapCsvExcel}
+            className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs sm:text-sm font-black px-5 py-3 rounded-2xl flex items-center gap-2 shadow-lg cursor-pointer"
+          >
+            <Download className="w-4 h-4" /> Ekspor Rekap Nilai (.CSV / Excel)
+          </button>
+          {userLogin.role === "admin" && (
+            <button
+              onClick={() => setAdminModeGuru(false)}
+              className="bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs sm:text-sm font-black px-5 py-3 rounded-2xl shadow-lg cursor-pointer"
+            >
+              ← Panel Super Admin
+            </button>
+          )}
+          <button
+            onClick={() => setUserLogin(null)}
+            className="bg-white/15 hover:bg-white/25 text-white text-xs sm:text-sm font-bold px-5 py-3 rounded-2xl flex items-center gap-2 cursor-pointer"
+          >
+            <LogOut className="w-4 h-4" /> Keluar
+          </button>
+        </div>
+      </div>
+
+      <div className="flex gap-2 border-b border-slate-200 pb-3 overflow-x-auto">
+        {[
+          { id: "materi", label: "1. Hibahkan Modul, Bab & Tugas", icon: <BookOpen className="w-4 h-4" /> },
+          { id: "rantai_modul", label: `2. Kelola Rantai Prasyarat & KKM (${semuaModulFlat.length})`, icon: <GitBranch className="w-4 h-4" /> },
+          { id: "tryout_qr", label: "3. Buat Tryout CBT & QR", icon: <Timer className="w-4 h-4" /> },
+          { id: "tugas_rubrik", label: "4. Tugas, Nilai & Absensi", icon: <ClipboardCheck className="w-4 h-4" /> },
+          { id: "analitik", label: "5. Analitik Keaktifan Siswa", icon: <TrendingUp className="w-4 h-4" /> },
+          { id: "bank_soal", label: `6. Bank Soal Kolektif (${bankSoalKolektif.length})`, icon: <Database className="w-4 h-4" /> },
+          { id: "rombel_live", label: `7. Rombel & Jadwal Live (${daftarKelompok.length})`, icon: <Users className="w-4 h-4" /> },
+          { id: "rpp_repo", label: `8. Bank RPP (${rppList.length})`, icon: <FolderArchive className="w-4 h-4" /> },
+          { id: "cv", label: "9. Profil & CV", icon: <Briefcase className="w-4 h-4" /> },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() =>
+              setGuruTabAktif(
+                tab.id as
+                  | "materi"
+                  | "rantai_modul"
+                  | "tryout_qr"
+                  | "tugas_rubrik"
+                  | "analitik"
+                  | "bank_soal"
+                  | "rombel_live"
+                  | "rpp_repo"
+                  | "cv"
+              )
+            }
+            className={`px-4 py-3 rounded-2xl font-black text-xs sm:text-sm flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+              guruTabAktif === tab.id
+                ? "bg-indigo-600 text-white shadow-md"
+                : "bg-white text-slate-700 border border-slate-300"
+            }`}
+          >
+            {tab.icon} {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {guruTabAktif === "cv" && (
+        <ProfilCVSection
+          userLogin={userLogin}
+          setUserLogin={(u) => setUserLogin(u)}
+          daftarAkun={daftarAkun}
+          setDaftarAkun={setDaftarAkun}
+        />
+      )}
+
+      {guruTabAktif === "rantai_modul" && (
+        <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-6">
           <div>
-            <span className="bg-white/20 text-xs font-black px-3.5 py-1 rounded-full uppercase">
-              {userLogin.role === "admin"
-                ? "MODE GURU (DIAKSES OLEH SUPER ADMIN)"
-                : "STUDIO PENGAJAR & KONTRIBUTOR ILMU"}
+            <span className="bg-indigo-100 text-indigo-800 text-xs font-black px-3 py-1 rounded-full uppercase">
+              Prerequisite Chain &amp; Passing Grade Manager
             </span>
-            <h1 className="text-2xl sm:text-4xl font-black mt-2">{userLogin.nama}</h1>
-            <p className="text-indigo-200 text-sm">Penanggung Jawab Materi: {userLogin.email}</p>
-          </div>
-          <div className="flex flex-wrap gap-2.5">
-            <button
-              onClick={handleDownloadRekapCsvExcel}
-              className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs sm:text-sm font-black px-5 py-3 rounded-2xl flex items-center gap-2 shadow-lg cursor-pointer"
-            >
-              <Download className="w-4 h-4" /> Ekspor Rekap Nilai (.CSV / Excel)
-            </button>
-            {userLogin.role === "admin" && (
-              <button
-                onClick={() => setAdminModeGuru(false)}
-                className="bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs sm:text-sm font-black px-5 py-3 rounded-2xl shadow-lg cursor-pointer"
-              >
-                ← Panel Super Admin
-              </button>
-            )}
-            <button
-              onClick={() => setUserLogin(null)}
-              className="bg-white/15 hover:bg-white/25 text-white text-xs sm:text-sm font-bold px-5 py-3 rounded-2xl flex items-center gap-2 cursor-pointer"
-            >
-              <LogOut className="w-4 h-4" /> Keluar
-            </button>
-          </div>
-        </div>
-
-        <div className="flex gap-2 border-b border-slate-200 pb-3 overflow-x-auto">
-          {[
-            { id: "materi", label: "1. Hibahkan Modul & Bab Bersyarat", icon: <BookOpen className="w-4 h-4" /> },
-            { id: "rantai_modul", label: `2. Kelola Rantai Prasyarat & KKM (${semuaModulFlat.length})`, icon: <GitBranch className="w-4 h-4" /> },
-            { id: "tryout_qr", label: "3. Buat Tryout CBT & QR", icon: <Timer className="w-4 h-4" /> },
-            { id: "tugas_rubrik", label: "4. Tugas, Nilai & Absensi", icon: <ClipboardCheck className="w-4 h-4" /> },
-            { id: "analitik", label: "5. Analitik Keaktifan Siswa", icon: <TrendingUp className="w-4 h-4" /> },
-            { id: "bank_soal", label: `6. Bank Soal Kolektif (${bankSoalKolektif.length})`, icon: <Database className="w-4 h-4" /> },
-            { id: "rombel_live", label: `7. Rombel & Jadwal Live (${daftarKelompok.length})`, icon: <Users className="w-4 h-4" /> },
-            { id: "rpp_repo", label: `8. Bank RPP (${rppList.length})`, icon: <FolderArchive className="w-4 h-4" /> },
-            { id: "cv", label: "9. Profil & CV", icon: <Briefcase className="w-4 h-4" /> },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() =>
-                setGuruTabAktif(
-                  tab.id as
-                    | "materi"
-                    | "rantai_modul"
-                    | "tryout_qr"
-                    | "tugas_rubrik"
-                    | "analitik"
-                    | "bank_soal"
-                    | "rombel_live"
-                    | "rpp_repo"
-                    | "cv"
-                )
-              }
-              className={`px-4 py-3 rounded-2xl font-black text-xs sm:text-sm flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-                guruTabAktif === tab.id
-                  ? "bg-indigo-600 text-white shadow-md"
-                  : "bg-white text-slate-700 border border-slate-300"
-              }`}
-            >
-              {tab.icon} {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {guruTabAktif === "cv" && renderProfilDanCV()}
-
-        {/* TAB 2 BARU: KELOLA RANTAI MODUL BERSYARAT & PASSING GRADE LANGSUNG DARI DASHBOARD PENGAJAR */}
-        {guruTabAktif === "rantai_modul" && (
-          <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-6">
-            <div>
-              <span className="bg-indigo-100 text-indigo-800 text-xs font-black px-3 py-1 rounded-full uppercase">
-                Prerequisite Chain &amp; Passing Grade Manager
-              </span>
-              <h2 className="text-2xl font-black mt-2 flex items-center gap-2">
-                <GitBranch className="w-6 h-6 text-indigo-600" /> Kelola Rantai Urutan Modul &amp;
-                Batas Nilai Kelulusan (KKM)
-              </h2>
-              <p className="text-sm text-slate-500">
-                Atur syarat berantai antar modul secara langsung. Siswa hanya dapat membuka modul
-                berikutnya apabila telah menyelesaikan modul prasyarat dengan nilai kuis minimal
-                sesuai yang Anda tentukan di bawah ini.
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              {semuaModulFlat.map((mdl, idx) => (
-                <div
-                  key={mdl.id}
-                  className="p-5 rounded-2xl border-2 border-slate-200 bg-slate-50/70 grid grid-cols-1 lg:grid-cols-12 gap-4 items-center text-sm"
-                >
-                  <div className="lg:col-span-5 space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="px-2.5 py-0.5 rounded bg-slate-900 text-white text-xs font-black">
-                        Modul #{idx + 1}
-                      </span>
-                      <span className="text-xs font-bold text-indigo-600">{mdl.namaJenjang}</span>
-                    </div>
-                    <div className="font-black text-base text-slate-900">{mdl.judul}</div>
-                    <div className="text-xs text-slate-500">
-                      Jumlah Bab Pop-up: <b>{mdl.daftarBab?.length || 2} Bab</b> • Kuis:{" "}
-                      <b>{mdl.daftarKuis.length} Soal</b>
-                    </div>
-                  </div>
-
-                  {/* Pilih Modul Prasyarat */}
-                  <div className="lg:col-span-4">
-                    <label className="text-xs font-black text-slate-600 block mb-1">
-                      Syarat Modul Sebelumnya (Prerequisite):
-                    </label>
-                    <select
-                      value={mdl.prasyaratKelasId || ""}
-                      onChange={(e) => {
-                        const val = e.target.value || undefined;
-                        setDaftarJenjang((prev) =>
-                          prev.map((j) => ({
-                            ...j,
-                            kelas: j.kelas.map((k) =>
-                              k.id === mdl.id ? { ...k, prasyaratKelasId: val } : k
-                            ),
-                          }))
-                        );
-                      }}
-                      className="w-full p-2.5 border rounded-xl bg-white text-xs font-bold text-slate-800"
-                    >
-                      <option value="">-- Terbuka Langsung (Tanpa Prasyarat) --</option>
-                      {semuaModulFlat
-                        .filter((x) => x.id !== mdl.id)
-                        .map((opsiMdl) => (
-                          <option key={opsiMdl.id} value={opsiMdl.id}>
-                            Wajib Lulus: {opsiMdl.judul}
-                          </option>
-                        ))}
-                    </select>
-                  </div>
-
-                  {/* Atur Nilai Minimal KKM */}
-                  <div className="lg:col-span-3">
-                    <label className="text-xs font-black text-slate-600 block mb-1">
-                      Minimal Nilai Kuis (0 - 100):
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min={0}
-                        max={100}
-                        value={mdl.syaratSkorMinimal ?? 75}
-                        onChange={(e) => {
-                          const nilaiBaru = Number(e.target.value);
-                          setDaftarJenjang((prev) =>
-                            prev.map((j) => ({
-                              ...j,
-                              kelas: j.kelas.map((k) =>
-                                k.id === mdl.id ? { ...k, syaratSkorMinimal: nilaiBaru } : k
-                              ),
-                            }))
-                          );
-                        }}
-                        className="w-24 p-2.5 border-2 border-indigo-300 rounded-xl bg-white font-black text-center text-indigo-950"
-                      />
-                      <span className="text-xs font-bold text-emerald-700">✓ Tersimpan Otomatis</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* TAB 1: HIBAHKAN MATERI BARU + RANTAI PRASYARAT + BAB POP-UP COURSERA/NETACAD */}
-        {guruTabAktif === "materi" && (
-          <div className="bg-white text-slate-800 p-8 rounded-[2rem] border border-slate-200 max-w-5xl space-y-6 shadow-xs">
-            <h2 className="text-2xl font-black">
-              Hibahkan &amp; Publikasikan Materi Baru (Rantai Modul Bersyarat + Bab Pop-up Coursera/NetAcad)
+            <h2 className="text-2xl font-black mt-2 flex items-center gap-2">
+              <GitBranch className="w-6 h-6 text-indigo-600" /> Kelola Rantai Urutan Modul &amp;
+              Batas Nilai Kelulusan (KKM)
             </h2>
-            {notifGuru && (
-              <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-2xl font-black">
-                ✓ Modul berurutan beserta bab pop-up dan kuis berhasil diterbitkan!
-              </div>
-            )}
+          </div>
 
-            {bukaModalImportCsvKuis && (
-              <div className="p-5 bg-indigo-50 border-2 border-indigo-200 rounded-2xl space-y-3 text-xs">
-                <div className="font-black text-sm text-indigo-950">
-                  Import Soal Kuis Massal via Format CSV (Titik Koma `;`)
+          <div className="space-y-4">
+            {semuaModulFlat.map((mdl, idx) => (
+              <div
+                key={mdl.id}
+                className="p-5 rounded-2xl border-2 border-slate-200 bg-slate-50/70 grid grid-cols-1 lg:grid-cols-12 gap-4 items-center text-sm"
+              >
+                <div className="lg:col-span-5 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded bg-slate-900 text-white text-xs font-black">
+                      Modul #{idx + 1}
+                    </span>
+                    <span className="text-xs font-bold text-indigo-600">{mdl.namaJenjang}</span>
+                  </div>
+                  <div className="font-black text-base text-slate-900">{mdl.judul}</div>
                 </div>
-                <textarea
-                  rows={3}
-                  value={teksCsvKuis}
-                  onChange={(e) => setTeksCsvKuis(e.target.value)}
-                  className="w-full p-3 font-mono bg-white border rounded-xl"
-                />
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const baris = teksCsvKuis.trim().split("\n").slice(1);
-                      const hasil: KuisItem[] = baris
-                        .map((b, i) => {
-                          const kol = b.split(";");
-                          return {
-                            id: "csv-k-" + Date.now() + "-" + i,
-                            tipe: (kol[0] as TipeSoal) || "pilihan_ganda",
-                            tanya: kol[1] || "Soal Impor CSV",
-                            opsi: (kol[2] || "A|B|C|D").split("|"),
-                            jawabanBenar: Number(kol[3] || 0),
-                            pembahasan: kol[6] || "Pembahasan CSV",
-                            poin: Number(kol[7] || 50),
-                          };
-                        })
-                        .filter((x) => x.tanya);
-                      setDaftarKuisDraft([...daftarKuisDraft, ...hasil]);
-                      setBukaModalImportCsvKuis(false);
+
+                <div className="lg:col-span-4">
+                  <label className="text-xs font-black text-slate-600 block mb-1">
+                    Syarat Modul Sebelumnya (Prerequisite):
+                  </label>
+                  <select
+                    value={mdl.prasyaratKelasId || ""}
+                    onChange={(e) => {
+                      const val = e.target.value || undefined;
+                      setDaftarJenjang((prev) =>
+                        prev.map((j) => ({
+                          ...j,
+                          kelas: j.kelas.map((k) =>
+                            k.id === mdl.id ? { ...k, prasyaratKelasId: val } : k
+                          ),
+                        }))
+                      );
                     }}
-                    className="bg-indigo-600 text-white px-4 py-2 rounded-xl font-black"
+                    className="w-full p-2.5 border rounded-xl bg-white text-xs font-bold text-slate-800"
                   >
-                    Proses Import CSV
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setBukaModalImportCsvKuis(false)}
-                    className="bg-white border px-4 py-2 rounded-xl font-bold"
-                  >
-                    Tutup
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!subJenjangPilih) return;
-                const modulBaru: KelasItem = {
-                  id: "mdl-" + Date.now(),
-                  subJenjangId: subJenjangPilih,
-                  judul: judulMateri,
-                  pembuatId: userLogin.id,
-                  pembuatNama: userLogin.nama,
-                  pembuatEmail: userLogin.email,
-                  tanggalUpload: "Hari ini",
-                  level: levelMateri,
-                  prasyaratKelasId: prasyaratKelasPilih || undefined,
-                  syaratSkorMinimal: syaratSkorMinimalInput || 75,
-                  daftarBab: daftarBabDraft,
-                  durasi: "25 Menit",
-                  videoUrl: videoMateri.includes("watch?v=")
-                    ? videoMateri.replace("watch?v=", "embed/")
-                    : videoMateri,
-                  lampiranUrl: lampiranMateri || undefined,
-                  rangkuman: rangkumanMateri,
-                  daftarKuis: daftarKuisDraft,
-                };
-                setDaftarJenjang((prev) =>
-                  prev.map((j) =>
-                    j.subJenjang.some((sj) => sj.id === subJenjangPilih)
-                      ? { ...j, kelas: [modulBaru, ...j.kelas] }
-                      : j
-                  )
-                );
-                setNotifGuru(true);
-                setJudulMateri("");
-                setTimeout(() => setNotifGuru(false), 3000);
-              }}
-              className="space-y-5"
-            >
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <select
-                  required
-                  value={subJenjangPilih}
-                  onChange={(e) => setSubJenjangPilih(e.target.value)}
-                  className="p-4 bg-indigo-50/70 border border-indigo-200 rounded-xl font-extrabold text-sm text-indigo-950"
-                >
-                  <option value="" disabled>
-                    -- Pilih Tingkat Kelas Tujuan --
-                  </option>
-                  {semuaSubJenjangFlat
-                    .filter((sj) => {
-                      if (userLogin.role === "admin") return true;
-                      const akses = userLogin.aksesMengajar || [];
-                      return akses.includes("ALL") || akses.includes(sj.id);
-                    })
-                    .map((sj) => (
-                      <option key={sj.id} value={sj.id}>
-                        {sj.namaInduk} - {sj.nama}
-                      </option>
-                    ))}
-                </select>
-                <input
-                  type="text"
-                  required
-                  value={judulMateri}
-                  onChange={(e) => setJudulMateri(e.target.value)}
-                  placeholder="Judul Modul (Misal: Modul 2 Komunikasi Data Lanjut)..."
-                  className="p-4 border border-slate-300 rounded-xl bg-white text-sm font-bold"
-                />
-                <select
-                  value={levelMateri}
-                  onChange={(e) =>
-                    setLevelMateri(e.target.value as "Pemula" | "Menengah" | "Mahir")
-                  }
-                  className="p-4 border border-slate-300 rounded-xl bg-white text-sm font-bold"
-                >
-                  <option value="Pemula">Level: Pemula (Dasar)</option>
-                  <option value="Menengah">Level: Menengah (Intermediate)</option>
-                  <option value="Mahir">Level: Mahir (Advanced)</option>
-                </select>
-              </div>
-
-              {/* KOTAK PENGATURAN RANTAI MODUL BERSYARAT & PASSING GRADE */}
-              <div className="p-5 rounded-2xl bg-indigo-50/70 border-2 border-indigo-200 space-y-3">
-                <div className="font-black text-sm text-indigo-950 flex items-center gap-2">
-                  <GitBranch className="w-4 h-4 text-indigo-600" /> Pengaturan Rantai Modul
-                  Bersyarat (Prerequisite &amp; Nilai Kelulusan Minimal)
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                  <div>
-                    <label className="font-bold text-slate-700 block mb-1">
-                      Pilih Modul Prasyarat (Harus Lulus Modul Ini Dulu):
-                    </label>
-                    <select
-                      value={prasyaratKelasPilih}
-                      onChange={(e) => setPrasyaratKelasPilih(e.target.value)}
-                      className="w-full p-3 border border-indigo-200 rounded-xl bg-white font-bold text-slate-800"
-                    >
-                      <option value="">-- Tanpa Prasyarat (Langsung Terbuka) --</option>
-                      {semuaModulFlat.map((kls) => (
-                        <option key={kls.id} value={kls.id}>
-                          Wajib Lulus: {kls.judul} ({kls.namaJenjang})
+                    <option value="">-- Terbuka Langsung (Tanpa Prasyarat) --</option>
+                    {semuaModulFlat
+                      .filter((x) => x.id !== mdl.id)
+                      .map((opsiMdl) => (
+                        <option key={opsiMdl.id} value={opsiMdl.id}>
+                          Wajib Lulus: {opsiMdl.judul}
                         </option>
                       ))}
-                    </select>
-                  </div>
+                  </select>
+                </div>
 
-                  <div>
-                    <label className="font-bold text-slate-700 block mb-1">
-                      Batas Nilai Kuis Minimal untuk Lulus (Passing Grade 0 - 100):
-                    </label>
+                <div className="lg:col-span-3">
+                  <label className="text-xs font-black text-slate-600 block mb-1">
+                    Minimal Nilai Kuis (0 - 100):
+                  </label>
+                  <div className="flex items-center gap-2">
                     <input
                       type="number"
                       min={0}
                       max={100}
-                      value={syaratSkorMinimalInput}
-                      onChange={(e) => setSyaratSkorMinimalInput(Number(e.target.value))}
-                      className="w-full p-3 border border-indigo-200 rounded-xl bg-white font-black text-indigo-900"
+                      value={mdl.syaratSkorMinimal ?? 75}
+                      onChange={(e) => {
+                        const nilaiBaru = Number(e.target.value);
+                        setDaftarJenjang((prev) =>
+                          prev.map((j) => ({
+                            ...j,
+                            kelas: j.kelas.map((k) =>
+                              k.id === mdl.id ? { ...k, syaratSkorMinimal: nilaiBaru } : k
+                            ),
+                          }))
+                        );
+                      }}
+                      className="w-24 p-2.5 border-2 border-indigo-300 rounded-xl bg-white font-black text-center text-indigo-950"
                     />
+                    <span className="text-xs font-bold text-emerald-700">✓ Tersimpan</span>
                   </div>
                 </div>
               </div>
+            ))}
+          </div>
+        </div>
+      )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <input
-                  type="url"
-                  required
-                  value={videoMateri}
-                  onChange={(e) => setVideoMateri(e.target.value)}
-                  placeholder="URL Video YouTube Utama (https://...)"
-                  className="w-full p-4 border border-slate-300 rounded-xl bg-white text-sm"
-                />
-                <input
-                  type="url"
-                  value={lampiranMateri}
-                  onChange={(e) => setLampiranMateri(e.target.value)}
-                  placeholder="Link Lampiran Modul PDF/PPT (Opsional)"
-                  className="w-full p-4 border border-slate-300 rounded-xl bg-white text-sm"
-                />
+      {/* TAB 1: HIBAHKAN MATERI BARU + BAB POP-UP + TUGAS MODUL + KUIS */}
+      {guruTabAktif === "materi" && (
+        <div className="bg-white text-slate-800 p-8 rounded-[2rem] border border-slate-200 max-w-5xl space-y-6 shadow-xs">
+          <h2 className="text-2xl font-black">
+            Hibahkan Modul Baru (Bab Coursera/NetAcad + Tugas Kelas + AI Quiz)
+          </h2>
+          {notifGuru && (
+            <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-2xl font-black">
+              ✓ Modul berurutan beserta bab pop-up, tugas kelas, dan kuis berhasil diterbitkan!
+            </div>
+          )}
+
+          {bukaModalImportCsvKuis && (
+            <div className="p-5 bg-indigo-50 border-2 border-indigo-200 rounded-2xl space-y-3 text-xs">
+              <div className="font-black text-sm text-indigo-950">
+                Import Soal Kuis Massal via Format CSV (Titik Koma `;`)
               </div>
-
-              <div>
-                <label className="text-xs font-black uppercase text-slate-500 block mb-2">
-                  Rangkuman Pengantar Modul:
-                </label>
-                <RichTextEditorPro value={rangkumanMateri} onChange={setRangkumanMateri} />
+              <textarea
+                rows={3}
+                value={teksCsvKuis}
+                onChange={(e) => setTeksCsvKuis(e.target.value)}
+                className="w-full p-3 font-mono bg-white border rounded-xl"
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const baris = teksCsvKuis.trim().split("\n").slice(1);
+                    const hasil: KuisItem[] = baris
+                      .map((b, i) => {
+                        const kol = b.split(";");
+                        return {
+                          id: "csv-k-" + Date.now() + "-" + i,
+                          tipe: (kol[0] as TipeSoal) || "pilihan_ganda",
+                          tanya: kol[1] || "Soal Impor CSV",
+                          opsi: (kol[2] || "A|B|C|D").split("|"),
+                          jawabanBenar: Number(kol[3] || 0),
+                          pembahasan: kol[6] || "Pembahasan CSV",
+                          poin: Number(kol[7] || 50),
+                        };
+                      })
+                      .filter((x) => x.tanya);
+                    setDaftarKuisDraft([...daftarKuisDraft, ...hasil]);
+                    setBukaModalImportCsvKuis(false);
+                  }}
+                  className="bg-indigo-600 text-white px-4 py-2 rounded-xl font-black"
+                >
+                  Proses Import CSV
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBukaModalImportCsvKuis(false)}
+                  className="bg-white border px-4 py-2 rounded-xl font-bold"
+                >
+                  Tutup
+                </button>
               </div>
+            </div>
+          )}
 
-              {/* EDITOR DAFTAR BAB BERURUTAN (UNTUK POP-UP ALA COURSERA / CISCO NETACAD) */}
-              <div className="p-6 bg-slate-50 border-2 border-slate-200 rounded-2xl space-y-4">
-                <div className="flex flex-wrap justify-between items-center gap-2">
-                  <div>
-                    <span className="font-black text-base flex items-center gap-2">
-                      <Layers className="w-4 h-4 text-indigo-600" /> Daftar Bab Modul Pop-up (Mode
-                      Coursera / Cisco NetAcad)
-                    </span>
-                    <p className="text-xs text-slate-500">
-                      Setiap bab di bawah ini akan tampil berurutan di dalam Pop-up Interactive
-                      Course Player sebelum siswa mengerjakan kuis akhir.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setDaftarBabDraft([
-                        ...daftarBabDraft,
-                        {
-                          id: "bab-draft-" + Date.now(),
-                          judulBab: `Bab ${daftarBabDraft.length + 1}: Topik Pembahasan Baru`,
-                          durasiBab: "10 Menit",
-                          videoUrl: "",
-                          kontenHtml: "<p>Isi pembahasan bab...</p>",
-                        },
-                      ])
-                    }
-                    className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-black cursor-pointer"
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!subJenjangPilih) return;
+              const idModulBaru = "mdl-" + Date.now();
+              const tugasLengkapModul: TugasItem[] = daftarTugasModulDraft
+                .filter((t) => t.judul.trim() !== "")
+                .map((t, idx) => ({
+                  id: "tgs-m-" + Date.now() + "-" + idx,
+                  subJenjangId: subJenjangPilih,
+                  modulId: idModulBaru,
+                  judul: t.judul,
+                  instruksi: t.instruksi,
+                  deadline: t.deadline || "7 Hari",
+                  pembuatNama: userLogin.nama,
+                }));
+
+              const modulBaru: KelasItem = {
+                id: idModulBaru,
+                subJenjangId: subJenjangPilih,
+                judul: judulMateri,
+                pembuatId: userLogin.id,
+                pembuatNama: userLogin.nama,
+                pembuatEmail: userLogin.email,
+                tanggalUpload: "Hari ini",
+                level: levelMateri,
+                prasyaratKelasId: prasyaratKelasPilih || undefined,
+                syaratSkorMinimal: syaratSkorMinimalInput || 75,
+                daftarBab: daftarBabDraft,
+                daftarTugasModul: tugasLengkapModul,
+                durasi: "25 Menit",
+                videoUrl: videoMateri.includes("watch?v=")
+                  ? videoMateri.replace("watch?v=", "embed/")
+                  : videoMateri,
+                lampiranUrl: lampiranMateri || undefined,
+                rangkuman: rangkumanMateri,
+                daftarKuis: daftarKuisDraft,
+              };
+
+              if (tugasLengkapModul.length > 0) {
+                setDaftarTugas([...tugasLengkapModul, ...daftarTugas]);
+              }
+
+              setDaftarJenjang((prev) =>
+                prev.map((j) =>
+                  j.subJenjang.some((sj) => sj.id === subJenjangPilih)
+                    ? { ...j, kelas: [modulBaru, ...j.kelas] }
+                    : j
+                )
+              );
+              setNotifGuru(true);
+              setJudulMateri("");
+              setTimeout(() => setNotifGuru(false), 3000);
+            }}
+            className="space-y-5"
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <select
+                required
+                value={subJenjangPilih}
+                onChange={(e) => setSubJenjangPilih(e.target.value)}
+                className="p-4 bg-indigo-50/70 border border-indigo-200 rounded-xl font-extrabold text-sm text-indigo-950"
+              >
+                <option value="" disabled>
+                  -- Pilih Tingkat Kelas Tujuan --
+                </option>
+                {semuaSubJenjangFlat.map((sj) => (
+                  <option key={sj.id} value={sj.id}>
+                    {sj.namaInduk} - {sj.nama}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="text"
+                required
+                value={judulMateri}
+                onChange={(e) => setJudulMateri(e.target.value)}
+                placeholder="Judul Modul..."
+                className="p-4 border border-slate-300 rounded-xl bg-white text-sm font-bold"
+              />
+              <select
+                value={levelMateri}
+                onChange={(e) =>
+                  setLevelMateri(e.target.value as "Pemula" | "Menengah" | "Mahir")
+                }
+                className="p-4 border border-slate-300 rounded-xl bg-white text-sm font-bold"
+              >
+                <option value="Pemula">Level: Pemula (Dasar)</option>
+                <option value="Menengah">Level: Menengah (Intermediate)</option>
+                <option value="Mahir">Level: Mahir (Advanced)</option>
+              </select>
+            </div>
+
+            {/* RANTAI PRASYARAT & NILAI KKM */}
+            <div className="p-5 rounded-2xl bg-indigo-50/70 border-2 border-indigo-200 space-y-3">
+              <div className="font-black text-sm text-indigo-950 flex items-center gap-2">
+                <GitBranch className="w-4 h-4 text-indigo-600" /> Pengaturan Rantai Modul
+                Bersyarat (Prerequisite &amp; Nilai Kelulusan Minimal)
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Pilih Modul Prasyarat (Harus Lulus Modul Ini Dulu):
+                  </label>
+                  <select
+                    value={prasyaratKelasPilih}
+                    onChange={(e) => setPrasyaratKelasPilih(e.target.value)}
+                    className="w-full p-3 border border-indigo-200 rounded-xl bg-white font-bold text-slate-800"
                   >
-                    + Tambah Bab Baru
-                  </button>
+                    <option value="">-- Tanpa Prasyarat (Langsung Terbuka) --</option>
+                    {semuaModulFlat.map((kls) => (
+                      <option key={kls.id} value={kls.id}>
+                        Wajib Lulus: {kls.judul} ({kls.namaJenjang})
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
-                <div className="space-y-4">
-                  {daftarBabDraft.map((bab, bIdx) => (
-                    <div
-                      key={bab.id}
-                      className="p-4 bg-white rounded-xl border border-slate-300 space-y-3 text-xs"
-                    >
-                      <div className="flex justify-between items-center">
-                        <span className="font-black text-indigo-900">
-                          Bab #{bIdx + 1}
-                        </span>
-                        {daftarBabDraft.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setDaftarBabDraft(daftarBabDraft.filter((_, i) => i !== bIdx))
-                            }
-                            className="text-rose-600 font-black"
-                          >
-                            Hapus Bab
-                          </button>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <input
-                          type="text"
-                          value={bab.judulBab}
-                          onChange={(e) =>
-                            setDaftarBabDraft(
-                              daftarBabDraft.map((item, i) =>
-                                i === bIdx ? { ...item, judulBab: e.target.value } : item
-                              )
-                            )
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Batas Nilai Kuis Minimal untuk Lulus (Passing Grade 0 - 100):
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={syaratSkorMinimalInput}
+                    onChange={(e) => setSyaratSkorMinimalInput(Number(e.target.value))}
+                    className="w-full p-3 border border-indigo-200 rounded-xl bg-white font-black text-indigo-900"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <input
+                type="url"
+                required
+                value={videoMateri}
+                onChange={(e) => setVideoMateri(e.target.value)}
+                placeholder="URL Video YouTube Utama (https://...)"
+                className="w-full p-4 border border-slate-300 rounded-xl bg-white text-sm"
+              />
+              <input
+                type="url"
+                value={lampiranMateri}
+                onChange={(e) => setLampiranMateri(e.target.value)}
+                placeholder="Link Lampiran Modul PDF/PPT (Opsional)"
+                className="w-full p-4 border border-slate-300 rounded-xl bg-white text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-black uppercase text-slate-500 block mb-2">
+                Rangkuman Pengantar Modul:
+              </label>
+              <RichTextEditorPro value={rangkumanMateri} onChange={setRangkumanMateri} />
+            </div>
+
+            {/* EDITOR DAFTAR BAB BERURUTAN */}
+            <div className="p-6 bg-slate-50 border-2 border-slate-200 rounded-2xl space-y-4">
+              <div className="flex flex-wrap justify-between items-center gap-2">
+                <div>
+                  <span className="font-black text-base flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-indigo-600" /> Daftar Bab Modul Pop-up (Mode
+                    Coursera / Cisco NetAcad)
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDaftarBabDraft([
+                      ...daftarBabDraft,
+                      {
+                        id: "bab-draft-" + Date.now(),
+                        judulBab: `Bab ${daftarBabDraft.length + 1}: Topik Pembahasan Baru`,
+                        durasiBab: "10 Menit",
+                        videoUrl: "",
+                        kontenHtml: "<p>Isi pembahasan bab...</p>",
+                      },
+                    ])
+                  }
+                  className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-black cursor-pointer"
+                >
+                  + Tambah Bab Baru
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {daftarBabDraft.map((bab, bIdx) => (
+                  <div
+                    key={bab.id}
+                    className="p-4 bg-white rounded-xl border border-slate-300 space-y-3 text-xs"
+                  >
+                    <div className="flex justify-between items-center">
+                      <span className="font-black text-indigo-900">Bab #{bIdx + 1}</span>
+                      {daftarBabDraft.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setDaftarBabDraft(daftarBabDraft.filter((_, i) => i !== bIdx))
                           }
-                          placeholder="Judul Bab..."
-                          className="sm:col-span-2 p-2.5 border rounded-lg font-bold"
-                        />
-                        <input
-                          type="text"
-                          value={bab.durasiBab}
-                          onChange={(e) =>
-                            setDaftarBabDraft(
-                              daftarBabDraft.map((item, i) =>
-                                i === bIdx ? { ...item, durasiBab: e.target.value } : item
-                              )
-                            )
-                          }
-                          placeholder="Durasi (Misal: 15 Menit)"
-                          className="p-2.5 border rounded-lg"
-                        />
-                      </div>
-                      <textarea
-                        rows={2}
-                        value={bab.kontenHtml}
+                          className="text-rose-600 font-black"
+                        >
+                          Hapus Bab
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <input
+                        type="text"
+                        value={bab.judulBab}
                         onChange={(e) =>
                           setDaftarBabDraft(
                             daftarBabDraft.map((item, i) =>
-                              i === bIdx ? { ...item, kontenHtml: e.target.value } : item
+                              i === bIdx ? { ...item, judulBab: e.target.value } : item
                             )
                           )
                         }
-                        placeholder="Isi materi bab (mendukung teks & HTML)..."
-                        className="w-full p-2.5 border rounded-lg"
+                        placeholder="Judul Bab..."
+                        className="sm:col-span-2 p-2.5 border rounded-lg font-bold"
+                      />
+                      <input
+                        type="text"
+                        value={bab.durasiBab}
+                        onChange={(e) =>
+                          setDaftarBabDraft(
+                            daftarBabDraft.map((item, i) =>
+                              i === bIdx ? { ...item, durasiBab: e.target.value } : item
+                            )
+                          )
+                        }
+                        placeholder="Durasi (Misal: 15 Menit)"
+                        className="p-2.5 border rounded-lg"
                       />
                     </div>
-                  ))}
+                    <textarea
+                      rows={2}
+                      value={bab.kontenHtml}
+                      onChange={(e) =>
+                        setDaftarBabDraft(
+                          daftarBabDraft.map((item, i) =>
+                            i === bIdx ? { ...item, kontenHtml: e.target.value } : item
+                          )
+                        )
+                      }
+                      placeholder="Isi materi bab..."
+                      className="w-full p-2.5 border rounded-lg"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* FITUR BARU: FORM TAMBAH TUGAS KELAS / PROYEK MANDIRI DI DALAM MODUL */}
+            <div className="p-6 bg-emerald-50/60 border-2 border-emerald-200 rounded-2xl space-y-4">
+              <div className="flex flex-wrap justify-between items-center gap-2">
+                <div>
+                  <span className="font-black text-base text-emerald-950 flex items-center gap-2">
+                    <ClipboardCheck className="w-5 h-5 text-emerald-600" /> Tugas Kelas / Proyek
+                    Mandiri di Dalam Modul Ini ({daftarTugasModulDraft.length} Tugas)
+                  </span>
+                  <p className="text-xs text-slate-600">
+                    Siswa dapat langsung melihat instruksi tugas ini dan mengumpulkan jawabannya di
+                    dalam halaman modul maupun Pop-up Coursera/NetAcad.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDaftarTugasModulDraft([
+                      ...daftarTugasModulDraft,
+                      {
+                        id: "tgs-draft-" + Date.now(),
+                        judul: "",
+                        instruksi: "",
+                        deadline: "7 Hari",
+                      },
+                    ])
+                  }
+                  className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-black cursor-pointer"
+                >
+                  + Tambah Tugas Modul
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {daftarTugasModulDraft.map((tgs, tIdx) => (
+                  <div
+                    key={tgs.id}
+                    className="p-4 bg-white rounded-xl border border-emerald-200 space-y-3 text-xs"
+                  >
+                    <div className="flex justify-between items-center">
+                      <span className="font-black text-emerald-900">
+                        Tugas Modul #{tIdx + 1}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDaftarTugasModulDraft(
+                            daftarTugasModulDraft.filter((_, i) => i !== tIdx)
+                          )
+                        }
+                        className="text-rose-600 font-black"
+                      >
+                        Hapus Tugas
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <input
+                        type="text"
+                        value={tgs.judul}
+                        onChange={(e) =>
+                          setDaftarTugasModulDraft(
+                            daftarTugasModulDraft.map((item, i) =>
+                              i === tIdx ? { ...item, judul: e.target.value } : item
+                            )
+                          )
+                        }
+                        placeholder="Judul Tugas / Proyek Mandiri..."
+                        className="sm:col-span-2 p-2.5 border rounded-lg font-bold"
+                      />
+                      <input
+                        type="text"
+                        value={tgs.deadline}
+                        onChange={(e) =>
+                          setDaftarTugasModulDraft(
+                            daftarTugasModulDraft.map((item, i) =>
+                              i === tIdx ? { ...item, deadline: e.target.value } : item
+                            )
+                          )
+                        }
+                        placeholder="Tenggat Waktu (Misal: 30 Okt 2026)"
+                        className="p-2.5 border rounded-lg"
+                      />
+                    </div>
+                    <textarea
+                      rows={2}
+                      value={tgs.instruksi}
+                      onChange={(e) =>
+                        setDaftarTugasModulDraft(
+                          daftarTugasModulDraft.map((item, i) =>
+                            i === tIdx ? { ...item, instruksi: e.target.value } : item
+                          )
+                        )
+                      }
+                      placeholder="Tuliskan instruksi lengkap pengerjaan tugas dan kriteria penilaian..."
+                      className="w-full p-2.5 border rounded-lg"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* EDITOR DAFTAR KUIS */}
+            <div className="p-6 bg-white border-2 border-slate-200 rounded-2xl space-y-5">
+              <div className="flex flex-wrap justify-between items-center gap-3">
+                <div>
+                  <span className="font-black text-base">
+                    Daftar Kuis Evaluasi Modul ({daftarKuisDraft.length} Soal)
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={handleAiGenerateQuiz}
+                    className="bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                  >
+                    <Wand2 className="w-4 h-4" /> ⚡ AI Generate 4 Soal dari Rangkuman
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBukaModalImportCsvKuis(true)}
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black px-4 py-2.5 rounded-xl cursor-pointer"
+                  >
+                    Import CSV Soal
+                  </button>
                 </div>
               </div>
 
-              {/* EDITOR DAFTAR KUIS LENGKAP DENGAN PENENTU KUNCI JAWABAN BENAR */}
-              <div className="p-6 bg-white border-2 border-slate-200 rounded-2xl space-y-5">
-                <div className="flex flex-wrap justify-between items-center gap-3">
-                  <div>
-                    <span className="font-black text-base">
-                      Daftar Kuis Evaluasi Modul ({daftarKuisDraft.length} Soal)
-                    </span>
-                    <p className="text-xs text-slate-500">
-                      Pilih jenis soal dan klik tombol hijau pada opsi untuk menentukan{" "}
-                      <b>Kunci Jawaban Benar</b>.
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={handleAiGenerateQuiz}
-                      className="bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-2xs cursor-pointer"
-                    >
-                      <Wand2 className="w-4 h-4" /> ⚡ AI Generate 4 Soal dari Rangkuman
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setBukaModalImportCsvKuis(true)}
-                      className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black px-4 py-2.5 rounded-xl cursor-pointer"
-                    >
-                      Import CSV Soal
-                    </button>
-                  </div>
-                </div>
+              <div className="space-y-5">
+                {daftarKuisDraft.map((kuis, kIdx) => (
+                  <div
+                    key={kuis.id}
+                    className="p-5 border-2 border-slate-200 rounded-2xl bg-slate-50/70 space-y-4 text-sm"
+                  >
+                    <div className="flex flex-wrap justify-between items-center gap-2 border-b pb-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-black text-xs bg-slate-900 text-white px-2.5 py-1 rounded-md">
+                          Soal #{kIdx + 1}
+                        </span>
+                        <select
+                          value={kuis.tipe}
+                          onChange={(e) => {
+                            const tipeBaru = e.target.value as TipeSoal;
+                            setDaftarKuisDraft(
+                              daftarKuisDraft.map((item, idx) =>
+                                idx === kIdx
+                                  ? {
+                                      ...item,
+                                      tipe: tipeBaru,
+                                      opsi:
+                                        tipeBaru === "benar_salah"
+                                          ? ["Benar", "Salah"]
+                                          : ["", "", "", ""],
+                                      jawabanBenar: 0,
+                                      jawabanJamak:
+                                        tipeBaru === "pilihan_jamak" ? [0, 1] : undefined,
+                                      pasangan:
+                                        tipeBaru === "mencocokkan"
+                                          ? [
+                                              { kiri: "Rumus Gaya", kanan: "F = m . a" },
+                                              { kiri: "Satuan Gaya", kanan: "Newton (N)" },
+                                            ]
+                                          : undefined,
+                                    }
+                                  : item
+                              )
+                            );
+                          }}
+                          className="px-3 py-1.5 border border-indigo-200 rounded-lg bg-white text-xs font-black text-indigo-950"
+                        >
+                          <option value="pilihan_ganda">1. Pilihan Ganda (1 Kunci Benar)</option>
+                          <option value="pilihan_jamak">
+                            2. Pilihan Jamak (Banyak Kunci Benar)
+                          </option>
+                          <option value="benar_salah">3. Benar / Salah</option>
+                          <option value="isian_singkat">4. Isian Singkat (Teks Kunci)</option>
+                          <option value="mencocokkan">
+                            5. Mencocokkan Pasangan (Kiri ↔ Kanan)
+                          </option>
+                        </select>
+                      </div>
 
-                <div className="space-y-5">
-                  {daftarKuisDraft.map((kuis, kIdx) => (
-                    <div
-                      key={kuis.id}
-                      className="p-5 border-2 border-slate-200 rounded-2xl bg-slate-50/70 space-y-4 text-sm"
-                    >
-                      <div className="flex flex-wrap justify-between items-center gap-2 border-b pb-3">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-black text-xs bg-slate-900 text-white px-2.5 py-1 rounded-md">
-                            Soal #{kIdx + 1}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDaftarKuisDraft(daftarKuisDraft.filter((_, idx) => idx !== kIdx))
+                        }
+                        className="text-xs font-black text-rose-600 hover:underline"
+                      >
+                        Hapus Soal
+                      </button>
+                    </div>
+
+                    <input
+                      type="text"
+                      value={kuis.tanya}
+                      onChange={(e) =>
+                        setDaftarKuisDraft(
+                          daftarKuisDraft.map((item, idx) =>
+                            idx === kIdx ? { ...item, tanya: e.target.value } : item
+                          )
+                        )
+                      }
+                      placeholder="Ketik kalimat pertanyaan soal di sini..."
+                      className="w-full p-3.5 border border-slate-300 rounded-xl bg-white font-bold"
+                    />
+
+                    {kuis.tipe === "pilihan_ganda" && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {kuis.opsi.map((op, oIdx) => {
+                          const adalahKunci = kuis.jawabanBenar === oIdx;
+                          return (
+                            <div
+                              key={oIdx}
+                              className={`flex items-center gap-2 p-2 rounded-xl border-2 bg-white ${
+                                adalahKunci
+                                  ? "border-emerald-500 bg-emerald-50/40"
+                                  : "border-slate-200"
+                              }`}
+                            >
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setDaftarKuisDraft(
+                                    daftarKuisDraft.map((item, idx) =>
+                                      idx === kIdx ? { ...item, jawabanBenar: oIdx } : item
+                                    )
+                                  )
+                                }
+                                className={`px-2.5 py-2 rounded-lg text-[11px] font-black shrink-0 cursor-pointer ${
+                                  adalahKunci
+                                    ? "bg-emerald-600 text-white"
+                                    : "bg-slate-100 text-slate-600"
+                                }`}
+                              >
+                                {adalahKunci
+                                  ? "✓ Kunci Benar"
+                                  : `Pilih ${String.fromCharCode(65 + oIdx)}`}
+                              </button>
+                              <input
+                                type="text"
+                                value={op}
+                                onChange={(e) => {
+                                  const opsiBaru = [...kuis.opsi];
+                                  opsiBaru[oIdx] = e.target.value;
+                                  setDaftarKuisDraft(
+                                    daftarKuisDraft.map((item, idx) =>
+                                      idx === kIdx ? { ...item, opsi: opsiBaru } : item
+                                    )
+                                  );
+                                }}
+                                placeholder={`Teks Opsi ${String.fromCharCode(65 + oIdx)}...`}
+                                className="w-full p-1.5 text-xs font-semibold bg-transparent focus:outline-none"
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {kuis.tipe === "pilihan_jamak" && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {kuis.opsi.map((op, oIdx) => {
+                          const jamakSaatIni = kuis.jawabanJamak || [0, 1];
+                          const dicentangKunci = jamakSaatIni.includes(oIdx);
+                          return (
+                            <div
+                              key={oIdx}
+                              className={`flex items-center gap-2 p-2.5 rounded-xl border-2 bg-white ${
+                                dicentangKunci
+                                  ? "border-indigo-500 bg-indigo-50/40"
+                                  : "border-slate-200"
+                              }`}
+                            >
+                              <label className="flex items-center gap-1.5 text-[11px] font-black text-indigo-900 shrink-0 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={dicentangKunci}
+                                  onChange={() => {
+                                    const baru = dicentangKunci
+                                      ? jamakSaatIni.filter((x) => x !== oIdx)
+                                      : [...jamakSaatIni, oIdx];
+                                    setDaftarKuisDraft(
+                                      daftarKuisDraft.map((item, idx) =>
+                                        idx === kIdx ? { ...item, jawabanJamak: baru } : item
+                                      )
+                                    );
+                                  }}
+                                  className="w-4 h-4 accent-indigo-600"
+                                />
+                                <span>Kunci</span>
+                              </label>
+                              <input
+                                type="text"
+                                value={op}
+                                onChange={(e) => {
+                                  const opsiBaru = [...kuis.opsi];
+                                  opsiBaru[oIdx] = e.target.value;
+                                  setDaftarKuisDraft(
+                                    daftarKuisDraft.map((item, idx) =>
+                                      idx === kIdx ? { ...item, opsi: opsiBaru } : item
+                                    )
+                                  );
+                                }}
+                                placeholder={`Pernyataan ${oIdx + 1}...`}
+                                className="w-full p-1 text-xs font-semibold bg-transparent focus:outline-none"
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {kuis.tipe === "benar_salah" && (
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-black text-slate-700">
+                          Tentukan Kunci Pernyataan Ini:
+                        </span>
+                        {["Benar", "Salah"].map((labelBS, bsIdx) => (
+                          <button
+                            key={labelBS}
+                            type="button"
+                            onClick={() =>
+                              setDaftarKuisDraft(
+                                daftarKuisDraft.map((item, idx) =>
+                                  idx === kIdx
+                                    ? { ...item, opsi: ["Benar", "Salah"], jawabanBenar: bsIdx }
+                                    : item
+                                )
+                              )
+                            }
+                            className={`px-4 py-2 rounded-xl text-xs font-black cursor-pointer ${
+                              kuis.jawabanBenar === bsIdx
+                                ? "bg-emerald-600 text-white"
+                                : "bg-white border text-slate-700"
+                            }`}
+                          >
+                            {kuis.jawabanBenar === bsIdx ? `✓ Kunci: ${labelBS}` : labelBS}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {kuis.tipe === "isian_singkat" && (
+                      <input
+                        type="text"
+                        value={kuis.jawabanTeks || ""}
+                        onChange={(e) =>
+                          setDaftarKuisDraft(
+                            daftarKuisDraft.map((item, idx) =>
+                              idx === kIdx ? { ...item, jawabanTeks: e.target.value } : item
+                            )
+                          )
+                        }
+                        placeholder="Ketik kata kunci jawaban yang benar..."
+                        className="w-full p-3 border-2 border-emerald-400 rounded-xl bg-emerald-50/40 text-xs font-bold"
+                      />
+                    )}
+
+                    {kuis.tipe === "mencocokkan" && (
+                      <div className="space-y-3 bg-white p-4 rounded-xl border border-indigo-200">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-black text-indigo-900">
+                            Pasangan Kiri (Pertanyaan) ↔ Kanan (Jawaban Benar):
                           </span>
-                          <select
-                            value={kuis.tipe}
-                            onChange={(e) => {
-                              const tipeBaru = e.target.value as TipeSoal;
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const listPasangan = kuis.pasangan || [];
                               setDaftarKuisDraft(
                                 daftarKuisDraft.map((item, idx) =>
                                   idx === kIdx
                                     ? {
                                         ...item,
-                                        tipe: tipeBaru,
-                                        opsi:
-                                          tipeBaru === "benar_salah"
-                                            ? ["Benar", "Salah"]
-                                            : ["", "", "", ""],
-                                        jawabanBenar: 0,
-                                        jawabanJamak:
-                                          tipeBaru === "pilihan_jamak" ? [0, 1] : undefined,
-                                        pasangan:
-                                          tipeBaru === "mencocokkan"
-                                            ? [
-                                                { kiri: "Rumus Gaya", kanan: "F = m . a" },
-                                                { kiri: "Satuan Gaya", kanan: "Newton (N)" },
-                                              ]
-                                            : undefined,
+                                        pasangan: [...listPasangan, { kiri: "", kanan: "" }],
                                       }
                                     : item
                                 )
                               );
                             }}
-                            className="px-3 py-1.5 border border-indigo-200 rounded-lg bg-white text-xs font-black text-indigo-950"
+                            className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-lg text-xs font-black"
                           >
-                            <option value="pilihan_ganda">1. Pilihan Ganda (1 Kunci Benar)</option>
-                            <option value="pilihan_jamak">
-                              2. Pilihan Jamak (Banyak Kunci Benar)
-                            </option>
-                            <option value="benar_salah">3. Benar / Salah</option>
-                            <option value="isian_singkat">4. Isian Singkat (Teks Kunci)</option>
-                            <option value="mencocokkan">
-                              5. Mencocokkan Pasangan (Kiri ↔ Kanan)
-                            </option>
-                          </select>
+                            + Tambah Baris Pasangan
+                          </button>
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setDaftarKuisDraft(daftarKuisDraft.filter((_, idx) => idx !== kIdx))
-                          }
-                          className="text-xs font-black text-rose-600 hover:underline"
-                        >
-                          Hapus Soal
-                        </button>
-                      </div>
-
-                      <input
-                        type="text"
-                        value={kuis.tanya}
-                        onChange={(e) =>
-                          setDaftarKuisDraft(
-                            daftarKuisDraft.map((item, idx) =>
-                              idx === kIdx ? { ...item, tanya: e.target.value } : item
-                            )
-                          )
-                        }
-                        placeholder="Ketik kalimat pertanyaan soal di sini..."
-                        className="w-full p-3.5 border border-slate-300 rounded-xl bg-white font-bold"
-                      />
-
-                      {kuis.tipe === "pilihan_ganda" && (
-                        <div className="space-y-2">
-                          <div className="text-xs font-black text-emerald-800">
-                            Klik tombol &ldquo;Kunci Benar&rdquo; di samping opsi yang merupakan
-                            jawaban benar:
-                          </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {kuis.opsi.map((op, oIdx) => {
-                              const adalahKunci = kuis.jawabanBenar === oIdx;
-                              return (
-                                <div
-                                  key={oIdx}
-                                  className={`flex items-center gap-2 p-2 rounded-xl border-2 bg-white ${
-                                    adalahKunci
-                                      ? "border-emerald-500 bg-emerald-50/40"
-                                      : "border-slate-200"
-                                  }`}
-                                >
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setDaftarKuisDraft(
-                                        daftarKuisDraft.map((item, idx) =>
-                                          idx === kIdx ? { ...item, jawabanBenar: oIdx } : item
-                                        )
-                                      )
-                                    }
-                                    className={`px-2.5 py-2 rounded-lg text-[11px] font-black shrink-0 cursor-pointer ${
-                                      adalahKunci
-                                        ? "bg-emerald-600 text-white"
-                                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                                    }`}
-                                  >
-                                    {adalahKunci
-                                      ? "✓ Kunci Benar"
-                                      : `Pilih ${String.fromCharCode(65 + oIdx)}`}
-                                  </button>
-                                  <input
-                                    type="text"
-                                    value={op}
-                                    onChange={(e) => {
-                                      const opsiBaru = [...kuis.opsi];
-                                      opsiBaru[oIdx] = e.target.value;
-                                      setDaftarKuisDraft(
-                                        daftarKuisDraft.map((item, idx) =>
-                                          idx === kIdx ? { ...item, opsi: opsiBaru } : item
-                                        )
-                                      );
-                                    }}
-                                    placeholder={`Teks Opsi ${String.fromCharCode(65 + oIdx)}...`}
-                                    className="w-full p-1.5 text-xs font-semibold bg-transparent focus:outline-none"
-                                  />
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      {kuis.tipe === "pilihan_jamak" && (
-                        <div className="space-y-2">
-                          <div className="text-xs font-black text-indigo-800">
-                            Centang kotak di samping opsi yang termasuk Kunci Jawaban Benar:
-                          </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {kuis.opsi.map((op, oIdx) => {
-                              const jamakSaatIni = kuis.jawabanJamak || [0, 1];
-                              const dicentangKunci = jamakSaatIni.includes(oIdx);
-                              return (
-                                <div
-                                  key={oIdx}
-                                  className={`flex items-center gap-2 p-2.5 rounded-xl border-2 bg-white ${
-                                    dicentangKunci
-                                      ? "border-indigo-500 bg-indigo-50/40"
-                                      : "border-slate-200"
-                                  }`}
-                                >
-                                  <label className="flex items-center gap-1.5 text-[11px] font-black text-indigo-900 shrink-0 cursor-pointer">
-                                    <input
-                                      type="checkbox"
-                                      checked={dicentangKunci}
-                                      onChange={() => {
-                                        const baru = dicentangKunci
-                                          ? jamakSaatIni.filter((x) => x !== oIdx)
-                                          : [...jamakSaatIni, oIdx];
-                                        setDaftarKuisDraft(
-                                          daftarKuisDraft.map((item, idx) =>
-                                            idx === kIdx ? { ...item, jawabanJamak: baru } : item
-                                          )
-                                        );
-                                      }}
-                                      className="w-4 h-4 accent-indigo-600"
-                                    />
-                                    <span>Kunci</span>
-                                  </label>
-                                  <input
-                                    type="text"
-                                    value={op}
-                                    onChange={(e) => {
-                                      const opsiBaru = [...kuis.opsi];
-                                      opsiBaru[oIdx] = e.target.value;
-                                      setDaftarKuisDraft(
-                                        daftarKuisDraft.map((item, idx) =>
-                                          idx === kIdx ? { ...item, opsi: opsiBaru } : item
-                                        )
-                                      );
-                                    }}
-                                    placeholder={`Pernyataan ${oIdx + 1}...`}
-                                    className="w-full p-1 text-xs font-semibold bg-transparent focus:outline-none"
-                                  />
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      {kuis.tipe === "benar_salah" && (
-                        <div className="flex items-center gap-3">
-                          <span className="text-xs font-black text-slate-700">
-                            Tentukan Kunci Pernyataan Ini:
-                          </span>
-                          {["Benar", "Salah"].map((labelBS, bsIdx) => (
-                            <button
-                              key={labelBS}
-                              type="button"
-                              onClick={() =>
+                        {(kuis.pasangan || []).map((pas, pIdx) => (
+                          <div
+                            key={pIdx}
+                            className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center"
+                          >
+                            <input
+                              type="text"
+                              value={pas.kiri}
+                              onChange={(e) => {
+                                const pasBaru = [...(kuis.pasangan || [])];
+                                pasBaru[pIdx] = { ...pasBaru[pIdx], kiri: e.target.value };
                                 setDaftarKuisDraft(
                                   daftarKuisDraft.map((item, idx) =>
-                                    idx === kIdx
-                                      ? { ...item, opsi: ["Benar", "Salah"], jawabanBenar: bsIdx }
-                                      : item
-                                  )
-                                )
-                              }
-                              className={`px-4 py-2 rounded-xl text-xs font-black cursor-pointer ${
-                                kuis.jawabanBenar === bsIdx
-                                  ? "bg-emerald-600 text-white shadow-sm"
-                                  : "bg-white border text-slate-700"
-                              }`}
-                            >
-                              {kuis.jawabanBenar === bsIdx ? `✓ Kunci: ${labelBS}` : labelBS}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-
-                      {kuis.tipe === "isian_singkat" && (
-                        <div className="space-y-1">
-                          <label className="text-xs font-black text-emerald-800">
-                            Kunci Jawaban Teks Singkat (Smart Fuzzy Auto-Grader):
-                          </label>
-                          <input
-                            type="text"
-                            value={kuis.jawabanTeks || ""}
-                            onChange={(e) =>
-                              setDaftarKuisDraft(
-                                daftarKuisDraft.map((item, idx) =>
-                                  idx === kIdx ? { ...item, jawabanTeks: e.target.value } : item
-                                )
-                              )
-                            }
-                            placeholder="Ketik kata kunci jawaban yang benar..."
-                            className="w-full p-3 border-2 border-emerald-400 rounded-xl bg-emerald-50/40 text-xs font-bold"
-                          />
-                        </div>
-                      )}
-
-                      {kuis.tipe === "mencocokkan" && (
-                        <div className="space-y-3 bg-white p-4 rounded-xl border border-indigo-200">
-                          <div className="flex justify-between items-center">
-                            <span className="text-xs font-black text-indigo-900">
-                              Daftar Pasangan Kiri (Pertanyaan) ↔ Kanan (Pasangan Jawaban Benar):
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const listPasangan = kuis.pasangan || [];
-                                setDaftarKuisDraft(
-                                  daftarKuisDraft.map((item, idx) =>
-                                    idx === kIdx
-                                      ? {
-                                          ...item,
-                                          pasangan: [
-                                            ...listPasangan,
-                                            { kiri: "", kanan: "" },
-                                          ],
-                                        }
-                                      : item
+                                    idx === kIdx ? { ...item, pasangan: pasBaru } : item
                                   )
                                 );
                               }}
-                              className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-lg text-xs font-black"
+                              placeholder={`Item Kiri #${pIdx + 1}`}
+                              className="sm:col-span-5 p-2.5 border rounded-lg text-xs font-bold bg-slate-50"
+                            />
+                            <span className="sm:col-span-1 text-center font-black text-emerald-600">
+                              ↔
+                            </span>
+                            <input
+                              type="text"
+                              value={pas.kanan}
+                              onChange={(e) => {
+                                const pasBaru = [...(kuis.pasangan || [])];
+                                pasBaru[pIdx] = { ...pasBaru[pIdx], kanan: e.target.value };
+                                setDaftarKuisDraft(
+                                  daftarKuisDraft.map((item, idx) =>
+                                    idx === kIdx ? { ...item, pasangan: pasBaru } : item
+                                  )
+                                );
+                              }}
+                              placeholder={`Pasangan Benar #${pIdx + 1}`}
+                              className="sm:col-span-5 p-2.5 border border-emerald-300 rounded-lg text-xs font-bold bg-emerald-50/40"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const pasBaru = (kuis.pasangan || []).filter(
+                                  (_, i) => i !== pIdx
+                                );
+                                setDaftarKuisDraft(
+                                  daftarKuisDraft.map((item, idx) =>
+                                    idx === kIdx ? { ...item, pasangan: pasBaru } : item
+                                  )
+                                );
+                              }}
+                              className="sm:col-span-1 text-xs font-black text-rose-600"
                             >
-                              + Tambah Baris Pasangan
+                              ✕
                             </button>
                           </div>
+                        ))}
+                      </div>
+                    )}
 
-                          {(kuis.pasangan || []).map((pas, pIdx) => (
-                            <div
-                              key={pIdx}
-                              className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center"
-                            >
-                              <input
-                                type="text"
-                                value={pas.kiri}
-                                onChange={(e) => {
-                                  const pasBaru = [...(kuis.pasangan || [])];
-                                  pasBaru[pIdx] = { ...pasBaru[pIdx], kiri: e.target.value };
-                                  setDaftarKuisDraft(
-                                    daftarKuisDraft.map((item, idx) =>
-                                      idx === kIdx ? { ...item, pasangan: pasBaru } : item
-                                    )
-                                  );
-                                }}
-                                placeholder={`Item Kiri #${pIdx + 1}`}
-                                className="sm:col-span-5 p-2.5 border rounded-lg text-xs font-bold bg-slate-50"
-                              />
-                              <span className="sm:col-span-1 text-center font-black text-emerald-600">
-                                ↔
-                              </span>
-                              <input
-                                type="text"
-                                value={pas.kanan}
-                                onChange={(e) => {
-                                  const pasBaru = [...(kuis.pasangan || [])];
-                                  pasBaru[pIdx] = { ...pasBaru[pIdx], kanan: e.target.value };
-                                  setDaftarKuisDraft(
-                                    daftarKuisDraft.map((item, idx) =>
-                                      idx === kIdx ? { ...item, pasangan: pasBaru } : item
-                                    )
-                                  );
-                                }}
-                                placeholder={`Pasangan Benar #${pIdx + 1}`}
-                                className="sm:col-span-5 p-2.5 border border-emerald-300 rounded-lg text-xs font-bold bg-emerald-50/40"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const pasBaru = (kuis.pasangan || []).filter(
-                                    (_, i) => i !== pIdx
-                                  );
-                                  setDaftarKuisDraft(
-                                    daftarKuisDraft.map((item, idx) =>
-                                      idx === kIdx ? { ...item, pasangan: pasBaru } : item
-                                    )
-                                  );
-                                }}
-                                className="sm:col-span-1 text-xs font-black text-rose-600"
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 pt-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 pt-1">
+                      <input
+                        type="text"
+                        value={kuis.pembahasan}
+                        onChange={(e) =>
+                          setDaftarKuisDraft(
+                            daftarKuisDraft.map((item, idx) =>
+                              idx === kIdx ? { ...item, pembahasan: e.target.value } : item
+                            )
+                          )
+                        }
+                        placeholder="Tulis pembahasan kunci jawaban..."
+                        className="sm:col-span-9 p-2.5 border rounded-xl bg-white text-xs"
+                      />
+                      <div className="sm:col-span-3 flex items-center gap-1.5 bg-white border rounded-xl px-3 py-2">
+                        <span className="text-xs font-bold text-slate-500">Poin XP:</span>
                         <input
-                          type="text"
-                          value={kuis.pembahasan}
+                          type="number"
+                          value={kuis.poin}
                           onChange={(e) =>
                             setDaftarKuisDraft(
                               daftarKuisDraft.map((item, idx) =>
-                                idx === kIdx ? { ...item, pembahasan: e.target.value } : item
+                                idx === kIdx
+                                  ? { ...item, poin: Number(e.target.value) || 50 }
+                                  : item
                               )
                             )
                           }
-                          placeholder="Tulis penjelasan / pembahasan kunci jawaban..."
-                          className="sm:col-span-9 p-2.5 border rounded-xl bg-white text-xs"
+                          className="w-full font-black text-xs text-amber-700 focus:outline-none"
                         />
-                        <div className="sm:col-span-3 flex items-center gap-1.5 bg-white border rounded-xl px-3 py-2">
-                          <span className="text-xs font-bold text-slate-500">Poin XP:</span>
-                          <input
-                            type="number"
-                            value={kuis.poin}
-                            onChange={(e) =>
-                              setDaftarKuisDraft(
-                                daftarKuisDraft.map((item, idx) =>
-                                  idx === kIdx
-                                    ? { ...item, poin: Number(e.target.value) || 50 }
-                                    : item
-                                )
-                              )
-                            }
-                            className="w-full font-black text-xs text-amber-700 focus:outline-none"
-                          />
-                        </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setDaftarKuisDraft([
-                      ...daftarKuisDraft,
-                      {
-                        id: "draft-" + Date.now(),
-                        tipe: "pilihan_ganda",
-                        tanya: "",
-                        opsi: ["", "", "", ""],
-                        jawabanBenar: 0,
-                        pembahasan: "Pembahasan soal",
-                        poin: 50,
-                      },
-                    ])
-                  }
-                  className="px-4 py-2.5 border-2 border-slate-300 rounded-xl text-xs font-black hover:bg-slate-50 cursor-pointer"
-                >
-                  + Tambah Soal Manual
-                </button>
+                  </div>
+                ))}
               </div>
 
               <button
-                type="submit"
-                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-4 rounded-2xl text-base shadow-lg cursor-pointer transition"
+                type="button"
+                onClick={() =>
+                  setDaftarKuisDraft([
+                    ...daftarKuisDraft,
+                    {
+                      id: "draft-" + Date.now(),
+                      tipe: "pilihan_ganda",
+                      tanya: "",
+                      opsi: ["", "", "", ""],
+                      jawabanBenar: 0,
+                      pembahasan: "Pembahasan soal",
+                      poin: 50,
+                    },
+                  ])
+                }
+                className="px-4 py-2.5 border-2 border-slate-300 rounded-xl text-xs font-black hover:bg-slate-50 cursor-pointer"
               >
-                Terbitkan Modul Berurutan Sekarang
+                + Tambah Soal Manual
               </button>
-            </form>
-          </div>
-        )}
-
-        {/* TAB 6: BANK SOAL KOLEKTIF BERSAMA */}
-        {guruTabAktif === "bank_soal" && (
-          <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-6">
-            <div>
-              <h3 className="text-2xl font-black">Bank Soal Kolektif Bersama</h3>
-              <p className="text-sm text-slate-500">
-                Gudang soal kolaborasi seluruh pengajar lengkap dengan opsi, kunci jawaban benar,
-                dan pembahasan.
-              </p>
             </div>
 
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!tanyaBankSoalBaru.trim()) return;
-                const soalBaru: SoalTryout = {
-                  id: "bank-" + Date.now(),
-                  rumus: topikBankSoalBaru || "Sains & Akademik",
-                  pertanyaan: tanyaBankSoalBaru,
-                  opsi: opsiBankSoalBaru.map((o, i) => o || `Opsi ${String.fromCharCode(65 + i)}`),
-                  jawabanBenar: kunciBankSoalBaru,
-                  pembahasan: bahasBankSoalBaru || "Sesuai konsep dasar materi.",
-                  penyumbangNama: userLogin.nama,
-                };
-                setBankSoalKolektif([soalBaru, ...bankSoalKolektif]);
-                setTanyaBankSoalBaru("");
-                setTopikBankSoalBaru("");
-                setBahasBankSoalBaru("");
-                alert("✓ Soal berhasil ditambahkan ke Bank Soal Kolektif!");
-              }}
-              className="p-6 bg-slate-50 border-2 border-slate-200 rounded-2xl space-y-4 text-sm"
+            <button
+              type="submit"
+              className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-4 rounded-2xl text-base shadow-lg cursor-pointer transition"
             >
-              <div className="font-black text-base">
-                + Sumbang Soal Baru ke Bank Soal Kolektif
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <input
-                  type="text"
-                  required
-                  value={topikBankSoalBaru}
-                  onChange={(e) => setTopikBankSoalBaru(e.target.value)}
-                  placeholder="Topik / Kategori (Misal: TPA Verbal / Komunikasi Data)..."
-                  className="p-3 border rounded-xl bg-white font-bold"
-                />
-                <input
-                  type="text"
-                  required
-                  value={tanyaBankSoalBaru}
-                  onChange={(e) => setTanyaBankSoalBaru(e.target.value)}
-                  placeholder="Pertanyaan Soal..."
-                  className="md:col-span-2 p-3 border rounded-xl bg-white font-bold"
-                />
-              </div>
+              Terbitkan Modul, Bab, Tugas &amp; Kuis Sekarang
+            </button>
+          </form>
+        </div>
+      )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {opsiBankSoalBaru.map((op, oIdx) => (
-                  <div
-                    key={oIdx}
-                    className={`flex items-center gap-2 p-2 rounded-xl border-2 bg-white ${
-                      kunciBankSoalBaru === oIdx ? "border-emerald-500" : "border-slate-200"
+      {guruTabAktif === "bank_soal" && (
+        <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-6">
+          <h3 className="text-2xl font-black">Bank Soal Kolektif Bersama</h3>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!tanyaBankSoalBaru.trim()) return;
+              const soalBaru: SoalTryout = {
+                id: "bank-" + Date.now(),
+                rumus: topikBankSoalBaru || "Sains & Akademik",
+                pertanyaan: tanyaBankSoalBaru,
+                opsi: opsiBankSoalBaru.map((o, i) => o || `Opsi ${String.fromCharCode(65 + i)}`),
+                jawabanBenar: kunciBankSoalBaru,
+                pembahasan: bahasBankSoalBaru || "Sesuai konsep dasar materi.",
+                penyumbangNama: userLogin.nama,
+              };
+              setBankSoalKolektif([soalBaru, ...bankSoalKolektif]);
+              setTanyaBankSoalBaru("");
+              setTopikBankSoalBaru("");
+              setBahasBankSoalBaru("");
+            }}
+            className="p-6 bg-slate-50 border-2 border-slate-200 rounded-2xl space-y-4 text-sm"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <input
+                type="text"
+                required
+                value={topikBankSoalBaru}
+                onChange={(e) => setTopikBankSoalBaru(e.target.value)}
+                placeholder="Topik / Kategori..."
+                className="p-3 border rounded-xl bg-white font-bold"
+              />
+              <input
+                type="text"
+                required
+                value={tanyaBankSoalBaru}
+                onChange={(e) => setTanyaBankSoalBaru(e.target.value)}
+                placeholder="Pertanyaan Soal..."
+                className="md:col-span-2 p-3 border rounded-xl bg-white font-bold"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {opsiBankSoalBaru.map((op, oIdx) => (
+                <div
+                  key={oIdx}
+                  className={`flex items-center gap-2 p-2 rounded-xl border-2 bg-white ${
+                    kunciBankSoalBaru === oIdx ? "border-emerald-500" : "border-slate-200"
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setKunciBankSoalBaru(oIdx)}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-black shrink-0 ${
+                      kunciBankSoalBaru === oIdx
+                        ? "bg-emerald-600 text-white"
+                        : "bg-slate-100 text-slate-600"
                     }`}
                   >
-                    <button
-                      type="button"
-                      onClick={() => setKunciBankSoalBaru(oIdx)}
-                      className={`px-2.5 py-1.5 rounded-lg text-xs font-black shrink-0 ${
-                        kunciBankSoalBaru === oIdx
-                          ? "bg-emerald-600 text-white"
-                          : "bg-slate-100 text-slate-600"
-                      }`}
-                    >
-                      {kunciBankSoalBaru === oIdx
-                        ? "✓ Kunci"
-                        : `Opsi ${String.fromCharCode(65 + oIdx)}`}
-                    </button>
-                    <input
-                      type="text"
-                      value={op}
-                      onChange={(e) => {
-                        const baru = [...opsiBankSoalBaru];
-                        baru[oIdx] = e.target.value;
-                        setOpsiBankSoalBaru(baru);
-                      }}
-                      placeholder={`Isi Opsi ${String.fromCharCode(65 + oIdx)}...`}
-                      className="w-full text-xs font-semibold focus:outline-none"
-                    />
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-3">
-                <input
-                  type="text"
-                  value={bahasBankSoalBaru}
-                  onChange={(e) => setBahasBankSoalBaru(e.target.value)}
-                  placeholder="Pembahasan Kunci Jawaban..."
-                  className="flex-1 p-3 border rounded-xl bg-white text-xs"
-                />
-                <button
-                  type="submit"
-                  className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black text-xs"
-                >
-                  Simpan ke Bank Soal
-                </button>
-              </div>
-            </form>
-
-            <div className="space-y-4">
-              {bankSoalKolektif.map((bs) => (
-                <div
-                  key={bs.id}
-                  className="p-6 border border-slate-300 rounded-2xl bg-white space-y-3"
-                >
-                  <div className="flex flex-wrap justify-between items-center gap-2">
-                    <span className="text-xs font-black text-indigo-600">
-                      {bs.rumus || "Bank Soal"} • {bs.penyumbangNama || "Tim Kontributor"}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSoalTryoutDraft([...soalTryoutDraft, bs]);
-                        alert("✓ Soal berhasil dimasukkan ke Draft Paket Tryout CBT!");
-                      }}
-                      className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-lg text-xs font-black cursor-pointer"
-                    >
-                      + Masukkan ke Draft Tryout CBT
-                    </button>
-                  </div>
-
-                  <p className="font-black text-base text-slate-900">{bs.pertanyaan}</p>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                    {bs.opsi.map((op, idx) => (
-                      <div
-                        key={idx}
-                        className={`p-2.5 rounded-xl border text-xs font-bold flex justify-between ${
-                          idx === bs.jawabanBenar
-                            ? "bg-emerald-50 border-emerald-400 text-emerald-950"
-                            : "bg-slate-50 border-slate-200 text-slate-600"
-                        }`}
-                      >
-                        <span>
-                          {String.fromCharCode(65 + idx)}. {op}
-                        </span>
-                        {idx === bs.jawabanBenar && (
-                          <span className="text-emerald-700 font-black">✓ Kunci Benar</span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-
-                  {bs.pembahasan && (
-                    <div className="text-xs text-slate-500 bg-slate-50 p-3 rounded-xl border">
-                      <b>Pembahasan:</b> {bs.pembahasan}
-                    </div>
-                  )}
+                    {kunciBankSoalBaru === oIdx
+                      ? "✓ Kunci"
+                      : `Opsi ${String.fromCharCode(65 + oIdx)}`}
+                  </button>
+                  <input
+                    type="text"
+                    value={op}
+                    onChange={(e) => {
+                      const baru = [...opsiBankSoalBaru];
+                      baru[oIdx] = e.target.value;
+                      setOpsiBankSoalBaru(baru);
+                    }}
+                    placeholder={`Isi Opsi ${String.fromCharCode(65 + oIdx)}...`}
+                    className="w-full text-xs font-semibold focus:outline-none"
+                  />
                 </div>
               ))}
             </div>
-          </div>
-        )}
 
-        {guruTabAktif === "rombel_live" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white text-slate-800 p-7 rounded-3xl border space-y-4">
-              <h3 className="text-xl font-black">Manajemen Rombongan Belajar (Rombel)</h3>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!namaRombelBaru.trim()) return;
-                  setDaftarKelompok([
-                    {
-                      id: "klp-" + Date.now(),
-                      namaKelas: namaRombelBaru,
-                      pengumuman: pengumumanRombelBaru,
-                      guruId: userLogin.id,
-                      siswaIds: ["siswa-1"],
-                    },
-                    ...daftarKelompok,
-                  ]);
-                  setNamaRombelBaru("");
-                  setPengumumanRombelBaru("");
-                }}
-                className="space-y-3 text-sm"
-              >
-                <input
-                  type="text"
-                  required
-                  value={namaRombelBaru}
-                  onChange={(e) => setNamaRombelBaru(e.target.value)}
-                  placeholder="Nama Rombel / Kelas..."
-                  className="w-full p-3 border rounded-xl bg-slate-50 font-bold"
-                />
-                <input
-                  type="text"
-                  value={pengumumanRombelBaru}
-                  onChange={(e) => setPengumumanRombelBaru(e.target.value)}
-                  placeholder="Pengumuman Kelas..."
-                  className="w-full p-3 border rounded-xl bg-slate-50"
-                />
-                <button
-                  type="submit"
-                  className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-xs font-black"
-                >
-                  + Buat Rombel Baru
-                </button>
-              </form>
-              <div className="space-y-2.5 pt-2">
-                {daftarKelompok.map((klp) => (
-                  <div key={klp.id} className="p-4 border rounded-2xl bg-slate-50 text-xs space-y-1">
-                    <div className="font-black text-sm">{klp.namaKelas}</div>
-                    <p className="text-slate-600">{klp.pengumuman}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-white text-slate-800 p-7 rounded-3xl border space-y-4">
-              <h3 className="text-xl font-black">Jadwal Live Class (Zoom / Google Meet)</h3>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!judulLiveBaru.trim()) return;
-                  setJadwalLive([
-                    {
-                      id: "lv-" + Date.now(),
-                      judulSesi: judulLiveBaru,
-                      pengajarNama: userLogin.nama,
-                      tanggalJam: jadwalJamLiveBaru || "Sabtu, 19:00 WIB",
-                      meetingUrl: "https://meet.google.com",
-                      targetKelas: "Semua Kelas",
-                    },
-                    ...jadwalLive,
-                  ]);
-                  setJudulLiveBaru("");
-                  setJadwalJamLiveBaru("");
-                }}
-                className="space-y-3 text-sm"
-              >
-                <input
-                  type="text"
-                  required
-                  value={judulLiveBaru}
-                  onChange={(e) => setJudulLiveBaru(e.target.value)}
-                  placeholder="Topik Sesi Live..."
-                  className="w-full p-3 border rounded-xl bg-slate-50 font-bold"
-                />
-                <input
-                  type="text"
-                  value={jadwalJamLiveBaru}
-                  onChange={(e) => setJadwalJamLiveBaru(e.target.value)}
-                  placeholder="Hari & Jam (Misal: Minggu, 19:30 WIB)..."
-                  className="w-full p-3 border rounded-xl bg-slate-50"
-                />
-                <button
-                  type="submit"
-                  className="bg-emerald-600 text-white px-5 py-2.5 rounded-xl text-xs font-black"
-                >
-                  + Jadwalkan Sesi Live
-                </button>
-              </form>
-              <div className="space-y-2.5 pt-2">
-                {jadwalLive.map((lv) => (
-                  <div key={lv.id} className="p-4 border rounded-2xl bg-slate-50 text-xs">
-                    <div className="font-black text-sm">{lv.judulSesi}</div>
-                    <div className="text-slate-500">{lv.tanggalJam}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {guruTabAktif === "rpp_repo" && (
-          <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-6">
-            <h2 className="text-2xl font-black flex items-center gap-2">
-              <FolderArchive className="w-6 h-6 text-indigo-600" /> Bank RPP, Modul Ajar Kurikulum
-              Merdeka &amp; RPS Kampus
-            </h2>
-
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!judulRppBaru.trim()) return;
-                const baru: RppItem = {
-                  id: "rpp-" + Date.now(),
-                  judulRpp: judulRppBaru,
-                  mataPelajaran: mapelRppBaru || "Umum",
-                  jenjangKelas: jenjangRppBaru,
-                  kurikulum: kurikulumRppBaru,
-                  pembuatNama: userLogin.nama,
-                  ringkasanTujuan: tujuanRppBaru,
-                  fileUrl: urlRppBaru,
-                  jumlahUnduhan: 1,
-                  tanggalUpload: "Hari ini",
-                };
-                setRppList([baru, ...rppList]);
-                setJudulRppBaru("");
-                setTujuanRppBaru("");
-                alert("Perangkat Ajar / RPP berhasil dipublikasikan!");
-              }}
-              className="p-6 bg-slate-50 border rounded-2xl space-y-4 text-sm"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <input
-                  type="text"
-                  required
-                  value={judulRppBaru}
-                  onChange={(e) => setJudulRppBaru(e.target.value)}
-                  placeholder="Judul RPP / Modul Ajar..."
-                  className="p-3.5 border rounded-xl bg-white font-bold"
-                />
-                <input
-                  type="text"
-                  required
-                  value={mapelRppBaru}
-                  onChange={(e) => setMapelRppBaru(e.target.value)}
-                  placeholder="Mata Pelajaran..."
-                  className="p-3.5 border rounded-xl bg-white"
-                />
-                <select
-                  value={kurikulumRppBaru}
-                  onChange={(e) =>
-                    setKurikulumRppBaru(
-                      e.target.value as "Kurikulum Merdeka" | "K13 Revisi" | "Silabus Kampus / RPS"
-                    )
-                  }
-                  className="p-3.5 border rounded-xl bg-indigo-50 font-black"
-                >
-                  <option value="Kurikulum Merdeka">Kurikulum Merdeka</option>
-                  <option value="K13 Revisi">Kurikulum 2013 Revisi</option>
-                  <option value="Silabus Kampus / RPS">Silabus Kampus / RPS</option>
-                </select>
-              </div>
-              <textarea
-                rows={2}
-                required
-                value={tujuanRppBaru}
-                onChange={(e) => setTujuanRppBaru(e.target.value)}
-                placeholder="Ringkasan Capaian Pembelajaran (CP)..."
-                className="w-full p-3.5 border rounded-xl bg-white"
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="text"
+                value={bahasBankSoalBaru}
+                onChange={(e) => setBahasBankSoalBaru(e.target.value)}
+                placeholder="Pembahasan Kunci Jawaban..."
+                className="flex-1 p-3 border rounded-xl bg-white text-xs"
               />
-              <div className="flex gap-3">
-                <input
-                  type="url"
-                  required
-                  value={urlRppBaru}
-                  onChange={(e) => setUrlRppBaru(e.target.value)}
-                  placeholder="Link Dokumen PDF/Word RPP..."
-                  className="flex-1 p-3.5 border rounded-xl bg-white"
-                />
-                <button
-                  type="submit"
-                  className="bg-indigo-600 text-white px-6 py-3.5 rounded-xl font-black"
-                >
-                  + Bagikan RPP
-                </button>
-              </div>
-            </form>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {rppList.map((rpp) => (
-                <div
-                  key={rpp.id}
-                  className="p-5 border rounded-2xl bg-white flex flex-col justify-between space-y-3 text-sm"
-                >
-                  <div className="space-y-1.5">
-                    <span className="text-xs font-black uppercase px-2.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
-                      {rpp.kurikulum} • {rpp.mataPelajaran}
-                    </span>
-                    <h3 className="font-black text-lg text-slate-900">{rpp.judulRpp}</h3>
-                    <p className="text-slate-600 text-xs">{rpp.ringkasanTujuan}</p>
-                  </div>
-                  <a
-                    href={rpp.fileUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="w-full py-2.5 rounded-xl bg-slate-900 text-white text-center font-bold text-xs"
-                  >
-                    Unduh Dokumen RPP →
-                  </a>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {guruTabAktif === "tugas_rubrik" && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div className="lg:col-span-7 bg-white text-slate-800 p-8 rounded-3xl border space-y-6">
-              <h3 className="text-xl font-black flex items-center gap-2">
-                <ClipboardCheck className="w-5 h-5 text-indigo-600" /> Penilaian Tugas &amp; AI
-                Rubric Scoring Assistant
-              </h3>
-
-              <div className="space-y-4">
-                {daftarPengumpulan.map((sub) => {
-                  const tugasInfo = daftarTugas.find((t) => t.id === sub.tugasId);
-                  return (
-                    <div
-                      key={sub.id}
-                      className="p-5 border rounded-2xl bg-slate-50 space-y-3 text-sm"
-                    >
-                      <div className="flex justify-between font-bold">
-                        <span>
-                          {sub.siswaNama} —{" "}
-                          <span className="text-indigo-600">{tugasInfo?.judul || "Tugas"}</span>
-                        </span>
-                        <span className="text-xs text-slate-400">{sub.waktuKumpul}</span>
-                      </div>
-                      <p className="p-3.5 bg-white border rounded-xl text-slate-700">
-                        {sub.jawabanTeksAtauLink}
-                      </p>
-
-                      <div className="flex flex-wrap items-center justify-between gap-2 bg-indigo-50 p-3 rounded-xl border border-indigo-100">
-                        <span className="text-xs font-bold text-indigo-950">
-                          Kriteria: Argumen (40%), Tata Bahasa (30%), Referensi (30%)
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const hasilAi = analisisRubrikEsaiAI(sub.jawabanTeksAtauLink);
-                            setInputNilaiGuru({
-                              ...inputNilaiGuru,
-                              [sub.id]: hasilAi.rekomendasiTotal,
-                            });
-                            setInputFeedbackGuru({
-                              ...inputFeedbackGuru,
-                              [sub.id]: hasilAi.catatanAi,
-                            });
-                          }}
-                          className="bg-amber-400 text-slate-950 px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-1.5"
-                        >
-                          <Wand2 className="w-3.5 h-3.5" /> ⚡ Jalankan AI Rubric Scoring
-                        </button>
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-2 pt-1">
-                        <input
-                          type="number"
-                          value={inputNilaiGuru[sub.id] ?? sub.nilai ?? 90}
-                          onChange={(e) =>
-                            setInputNilaiGuru({
-                              ...inputNilaiGuru,
-                              [sub.id]: Number(e.target.value),
-                            })
-                          }
-                          className="w-24 p-2.5 border rounded-xl bg-white font-black text-center"
-                        />
-                        <input
-                          type="text"
-                          value={inputFeedbackGuru[sub.id] ?? sub.feedbackGuru ?? ""}
-                          onChange={(e) =>
-                            setInputFeedbackGuru({
-                              ...inputFeedbackGuru,
-                              [sub.id]: e.target.value,
-                            })
-                          }
-                          placeholder="Catatan Feedback Guru..."
-                          className="flex-1 p-2.5 border rounded-xl bg-white"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const n = inputNilaiGuru[sub.id] ?? sub.nilai ?? 90;
-                            const fb =
-                              inputFeedbackGuru[sub.id] ?? sub.feedbackGuru ?? "Sangat baik!";
-                            setDaftarPengumpulan((prev) =>
-                              prev.map((s) =>
-                                s.id === sub.id ? { ...s, nilai: n, feedbackGuru: fb } : s
-                              )
-                            );
-                            kirimNotifikasiKeUser(
-                              [sub.siswaId],
-                              "Tugas Dinilai",
-                              `Nilai Anda: ${n}/100. ${fb}`,
-                              userLogin.nama
-                            );
-                            alert("Nilai divalidasi!");
-                          }}
-                          className="bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-bold"
-                        >
-                          Validasi Nilai
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="lg:col-span-5 bg-white text-slate-800 p-8 rounded-3xl border space-y-4">
-              <h3 className="text-xl font-black flex items-center gap-2">
-                <Clock className="w-5 h-5 text-emerald-600" /> Log Presensi Otomatis &amp; QR Ujian
-              </h3>
-              <div className="space-y-2.5 max-h-96 overflow-y-auto">
-                {daftarPresensi.map((pr) => (
-                  <div
-                    key={pr.id}
-                    className="p-3.5 border rounded-2xl bg-emerald-50/50 flex justify-between items-center text-xs"
-                  >
-                    <div>
-                      <div className="font-black text-slate-900">{pr.siswaNama}</div>
-                      <div className="text-slate-600">{pr.materiJudul}</div>
-                    </div>
-                    <span className="font-mono bg-white px-2.5 py-1 rounded-lg border font-bold text-emerald-700">
-                      {pr.waktuHadir}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {guruTabAktif === "tryout_qr" && (
-          <div className="space-y-8">
-            <div className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white p-8 rounded-3xl space-y-4">
-              <h3 className="text-xl font-black flex items-center gap-2">
-                <QrCode className="w-6 h-6 text-amber-400" /> Scanner Token QR Kartu Ujian Peserta
-              </h3>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!tokenQrInput.trim()) return;
-                  const jam = new Date().toLocaleTimeString("id-ID", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  });
-                  setDaftarPresensi([
-                    {
-                      id: "qr-" + Date.now(),
-                      siswaId: "sis-1",
-                      siswaNama: `Peserta Terverifikasi QR (${tokenQrInput.toUpperCase()})`,
-                      materiJudul: "Presensi Fisik Ruangan CBT via QR Code",
-                      waktuHadir: `${jam} WIB`,
-                      metode: "Scan QR Ujian",
-                    },
-                    ...daftarPresensi,
-                  ]);
-                  setTokenQrInput("");
-                  alert("✓ QR Code Valid! Kehadiran peserta ujian berhasil dicatat.");
-                }}
-                className="flex gap-3 max-w-xl"
-              >
-                <input
-                  type="text"
-                  required
-                  value={tokenQrInput}
-                  onChange={(e) => setTokenQrInput(e.target.value)}
-                  placeholder="Ketik / Scan Token QR Peserta (Misal: HIBAH-SIS-1-TPA)..."
-                  className="flex-1 p-3.5 rounded-xl bg-white/10 border border-white/20 text-white font-mono text-sm"
-                />
-                <button
-                  type="submit"
-                  className="bg-amber-400 text-slate-950 font-black px-6 py-3.5 rounded-xl text-sm"
-                >
-                  Verifikasi QR
-                </button>
-              </form>
-            </div>
-
-            <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-5">
-              <h3 className="text-2xl font-black">
-                Rancang Paket Tryout CBT Baru ({soalTryoutDraft.length} Soal di Draft)
-              </h3>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!judulTryoutBaru.trim()) return;
-                  const baru: PaketTryout = {
-                    id: "pkt-" + Date.now(),
-                    judul: judulTryoutBaru,
-                    kategoriTes: kategoriTesBaru,
-                    jenjang: "SMA & Kuliah",
-                    pembuatId: userLogin.id,
-                    pembuatNama: userLogin.nama,
-                    alamatLokasi: alamatTryoutBaru,
-                    jadwalUjian: "2026-11-15 09:00 WIB",
-                    durasiMenit: 20,
-                    batasPercobaan: 2,
-                    batasPelanggaran: 3,
-                    wajibFullscreen: true,
-                    daftarSoal: soalTryoutDraft,
-                  };
-                  setDaftarPaketTryout([baru, ...daftarPaketTryout]);
-                  setJudulTryoutBaru("");
-                  alert("Paket Tryout CBT baru berhasil diterbitkan!");
-                }}
-                className="space-y-4 text-sm"
-              >
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <input
-                    type="text"
-                    required
-                    value={judulTryoutBaru}
-                    onChange={(e) => setJudulTryoutBaru(e.target.value)}
-                    placeholder="Nama Paket Ujian..."
-                    className="p-3.5 border rounded-xl bg-slate-50 font-bold"
-                  />
-                  <select
-                    value={kategoriTesBaru}
-                    onChange={(e) => setKategoriTesBaru(e.target.value as KategoriTes)}
-                    className="p-3.5 border rounded-xl bg-indigo-50 font-black"
-                  >
-                    <option value="TPA">TPA</option>
-                    <option value="TOEP">TOEP</option>
-                    <option value="TOEFL">TOEFL</option>
-                    <option value="UTBK">UTBK</option>
-                  </select>
-                  <input
-                    type="text"
-                    value={alamatTryoutBaru}
-                    onChange={(e) => setAlamatTryoutBaru(e.target.value)}
-                    placeholder="Lokasi Ruangan..."
-                    className="p-3.5 border rounded-xl bg-slate-50"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="w-full bg-emerald-600 text-white font-black py-4 rounded-2xl"
-                >
-                  Terbitkan Paket Tryout CBT
-                </button>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {guruTabAktif === "analitik" && (
-          <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-6">
-            <h3 className="text-xl font-black">Grafik Keaktifan Belajar Siswa</h3>
-            <div className="grid grid-cols-7 gap-3 items-end h-40 pt-4 px-2 bg-slate-50 rounded-2xl p-4">
-              {[65, 80, 95, 70, 88, 100, 78].map((persen, i) => (
-                <div key={i} className="flex flex-col items-center gap-2 h-full justify-end">
-                  <div
-                    style={{ height: `${persen}%` }}
-                    className="w-full max-w-[42px] rounded-t-xl bg-gradient-to-t from-indigo-600 to-emerald-500"
-                  />
-                  <span className="text-xs font-bold">H-{7 - i}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // ============================================================================
-  // 3. PANEL SUPER ADMIN
-  // ============================================================================
-  if (userLogin.role === "admin") {
-    return (
-      <div className="space-y-8">
-        <div className="bg-[#0B1120] text-white p-8 sm:p-10 rounded-[2rem] space-y-6 shadow-2xl">
-          <div>
-            <span className="bg-amber-400 text-slate-950 text-xs font-black px-3.5 py-1 rounded-full uppercase">
-              SUPER ADMIN
-            </span>
-            <h1 className="text-3xl sm:text-4xl font-black mt-3">{userLogin.nama}</h1>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={handleDownloadRekapCsvExcel}
-              className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs sm:text-sm font-black px-5 py-3 rounded-2xl flex items-center gap-2 cursor-pointer"
-            >
-              <Download className="w-4 h-4" /> Unduh Rekap Excel (.CSV)
-            </button>
-            <button
-              onClick={() => setAdminModeGuru(true)}
-              className="bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs sm:text-sm font-black px-5 py-3 rounded-2xl flex items-center gap-2 cursor-pointer"
-            >
-              <Sparkles className="w-4 h-4" /> Buka Studio Mode Guru
-            </button>
-            <button
-              onClick={() => setBukaModalImportCsvAkun(!bukaModalImportCsvAkun)}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-black px-5 py-3 rounded-2xl flex items-center gap-2 cursor-pointer"
-            >
-              <Upload className="w-4 h-4" /> Import CSV Akun
-            </button>
-            <button
-              onClick={() => setBukaModalTambahAkun(!bukaModalTambahAkun)}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-black px-5 py-3 rounded-2xl flex items-center gap-2 cursor-pointer"
-            >
-              <UserPlus className="w-4 h-4" /> + Tambah Akun
-            </button>
-            <button
-              onClick={() => setUserLogin(null)}
-              className="bg-rose-600 hover:bg-rose-500 text-white text-xs sm:text-sm font-bold px-5 py-3 rounded-2xl flex items-center gap-2 cursor-pointer"
-            >
-              <LogOut className="w-4 h-4" /> Keluar
-            </button>
-          </div>
-        </div>
-
-        <div className="flex gap-2 border-b border-slate-200 pb-3 overflow-x-auto">
-          {[
-            { id: "akun", label: `Data Akun (${daftarAkun.length})` },
-            { id: "beasiswa", label: `Verifikasi Beasiswa (${daftarBeasiswa.length})` },
-            { id: "kategori", label: "Kategori & Prodi" },
-            { id: "cv", label: "Profil & CV Saya" },
-            { id: "log", label: "Log Audit" },
-          ].map((t) => (
-            <button
-              key={t.id}
-              onClick={() =>
-                setAdminTabAktif(t.id as "akun" | "beasiswa" | "kategori" | "cv" | "log")
-              }
-              className={`px-5 py-3 rounded-2xl text-xs sm:text-sm font-black cursor-pointer ${
-                adminTabAktif === t.id
-                  ? "bg-slate-900 text-white"
-                  : "bg-white text-slate-700 border border-slate-300"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-
-        {bukaModalImportCsvAkun && (
-          <div className="bg-white text-slate-800 p-6 rounded-3xl border-2 border-indigo-500 space-y-4 text-sm">
-            <h3 className="font-black text-lg">Import Massal Akun Guru &amp; Siswa via CSV</h3>
-            <textarea
-              rows={4}
-              value={teksCsvAkun}
-              onChange={(e) => setTeksCsvAkun(e.target.value)}
-              className="w-full p-3 font-mono text-xs bg-slate-50 border rounded-xl"
-            />
-            <div className="flex gap-2">
               <button
-                onClick={() => {
-                  const baris = teksCsvAkun.trim().split("\n").slice(1);
-                  const akunBaruList: AkunPengguna[] = baris
-                    .map((b, i) => {
-                      const k = b.split(";");
-                      return {
-                        id: "csv-u-" + Date.now() + "-" + i,
-                        nama: k[0] || "Pengguna Baru",
-                        email: k[1] || `user${i}@hibahilmu.id`,
-                        password: k[2] || "123",
-                        role: (k[3] as "siswa" | "guru" | "admin") || "siswa",
-                        status: "approved" as const,
-                        infoTambahan: k[4] || "Terdaftar via CSV",
-                        waktuDaftar: "Hari ini",
-                        aksesMengajar: ["sma-11-ipa"],
-                        minatSubJenjang: ["sma-11-ipa"],
-                      };
-                    })
-                    .filter((x) => x.email);
-                  setDaftarAkun([...akunBaruList, ...daftarAkun]);
-                  setBukaModalImportCsvAkun(false);
-                }}
-                className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-black text-xs"
+                type="submit"
+                className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black text-xs"
               >
-                Import Sekarang
-              </button>
-              <button
-                onClick={() => setBukaModalImportCsvAkun(false)}
-                className="border px-4 py-2.5 rounded-xl font-bold text-xs"
-              >
-                Batal
+                Simpan ke Bank Soal
               </button>
             </div>
-          </div>
-        )}
+          </form>
 
-        {bukaModalTambahAkun && (
-          <div className="bg-white text-slate-800 p-6 rounded-3xl border-2 border-emerald-500 space-y-4 text-sm">
-            <h3 className="font-black text-lg">Tambah Akun Pengguna Baru</h3>
+          <div className="space-y-4">
+            {bankSoalKolektif.map((bs) => (
+              <div
+                key={bs.id}
+                className="p-6 border border-slate-300 rounded-2xl bg-white space-y-3"
+              >
+                <div className="flex flex-wrap justify-between items-center gap-2">
+                  <span className="text-xs font-black text-indigo-600">
+                    {bs.rumus || "Bank Soal"} • {bs.penyumbangNama || "Tim Kontributor"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSoalTryoutDraft([...soalTryoutDraft, bs]);
+                      alert("✓ Soal dimasukkan ke Draft Paket Tryout CBT!");
+                    }}
+                    className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-lg text-xs font-black cursor-pointer"
+                  >
+                    + Masukkan ke Draft Tryout CBT
+                  </button>
+                </div>
+                <p className="font-black text-base text-slate-900">{bs.pertanyaan}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {guruTabAktif === "rombel_live" && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white text-slate-800 p-7 rounded-3xl border space-y-4">
+            <h3 className="text-xl font-black">Manajemen Rombongan Belajar (Rombel)</h3>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                if (!namaReg || !emailReg) return;
-                const baru: AkunPengguna = {
-                  id: "adm-u-" + Date.now(),
-                  nama: namaReg,
-                  email: emailReg,
-                  password: passwordReg || "123",
-                  role: roleReg,
-                  status: "approved",
-                  infoTambahan: roleReg === "guru" ? "Pengajar Terverifikasi" : "Pelajar Aktif",
-                  waktuDaftar: "Hari ini",
-                  aksesMengajar: ["sma-11-ipa"],
-                  minatSubJenjang: ["sma-11-ipa"],
-                };
-                setDaftarAkun([baru, ...daftarAkun]);
-                setNamaReg("");
-                setEmailReg("");
-                setBukaModalTambahAkun(false);
+                if (!namaRombelBaru.trim()) return;
+                setDaftarKelompok([
+                  {
+                    id: "klp-" + Date.now(),
+                    namaKelas: namaRombelBaru,
+                    pengumuman: pengumumanRombelBaru,
+                    guruId: userLogin.id,
+                    siswaIds: ["siswa-1"],
+                  },
+                  ...daftarKelompok,
+                ]);
+                setNamaRombelBaru("");
+                setPengumumanRombelBaru("");
               }}
-              className="grid grid-cols-1 sm:grid-cols-4 gap-3"
+              className="space-y-3 text-sm"
             >
               <input
                 type="text"
                 required
-                value={namaReg}
-                onChange={(e) => setNamaReg(e.target.value)}
-                placeholder="Nama Lengkap..."
-                className="p-3 border rounded-xl"
+                value={namaRombelBaru}
+                onChange={(e) => setNamaRombelBaru(e.target.value)}
+                placeholder="Nama Rombel / Kelas..."
+                className="w-full p-3 border rounded-xl bg-slate-50 font-bold"
               />
               <input
-                type="email"
-                required
-                value={emailReg}
-                onChange={(e) => setEmailReg(e.target.value)}
-                placeholder="Email..."
-                className="p-3 border rounded-xl"
+                type="text"
+                value={pengumumanRombelBaru}
+                onChange={(e) => setPengumumanRombelBaru(e.target.value)}
+                placeholder="Pengumuman Kelas..."
+                className="w-full p-3 border rounded-xl bg-slate-50"
               />
-              <select
-                value={roleReg}
-                onChange={(e) => setRoleReg(e.target.value as "siswa" | "guru")}
-                className="p-3 border rounded-xl font-bold"
-              >
-                <option value="siswa">Role: Siswa</option>
-                <option value="guru">Role: Guru</option>
-              </select>
               <button
                 type="submit"
-                className="bg-emerald-600 text-white font-black rounded-xl px-4 py-3"
+                className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-xs font-black"
               >
-                Simpan Akun
+                + Buat Rombel Baru
               </button>
             </form>
           </div>
-        )}
 
-        {akunDieditAdmin && (
-          <div className="bg-white text-slate-800 p-8 rounded-3xl border-2 border-indigo-600 shadow-2xl space-y-6">
-            <div className="flex justify-between items-center border-b pb-3">
-              <div>
-                <span className="text-xs font-black uppercase text-indigo-600">
-                  Manajemen Hak Akses &amp; Kategori Kelas Pengguna
-                </span>
-                <h3 className="text-xl font-black">Edit Akun: {akunDieditAdmin.nama}</h3>
-              </div>
+          <div className="bg-white text-slate-800 p-7 rounded-3xl border space-y-4">
+            <h3 className="text-xl font-black">Jadwal Live Class (Zoom / Google Meet)</h3>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!judulLiveBaru.trim()) return;
+                setJadwalLive([
+                  {
+                    id: "lv-" + Date.now(),
+                    judulSesi: judulLiveBaru,
+                    pengajarNama: userLogin.nama,
+                    tanggalJam: jadwalJamLiveBaru || "Sabtu, 19:00 WIB",
+                    meetingUrl: "https://meet.google.com",
+                    targetKelas: "Semua Kelas",
+                  },
+                  ...jadwalLive,
+                ]);
+                setJudulLiveBaru("");
+                setJadwalJamLiveBaru("");
+              }}
+              className="space-y-3 text-sm"
+            >
+              <input
+                type="text"
+                required
+                value={judulLiveBaru}
+                onChange={(e) => setJudulLiveBaru(e.target.value)}
+                placeholder="Topik Sesi Live..."
+                className="w-full p-3 border rounded-xl bg-slate-50 font-bold"
+              />
+              <input
+                type="text"
+                value={jadwalJamLiveBaru}
+                onChange={(e) => setJadwalJamLiveBaru(e.target.value)}
+                placeholder="Hari & Jam..."
+                className="w-full p-3 border rounded-xl bg-slate-50"
+              />
               <button
-                onClick={() => setAkunDieditAdmin(null)}
-                className="text-xs font-black text-rose-600"
+                type="submit"
+                className="bg-emerald-600 text-white px-5 py-2.5 rounded-xl text-xs font-black"
               >
-                ✕ Tutup Editor
+                + Jadwalkan Sesi Live
               </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {guruTabAktif === "rpp_repo" && (
+        <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-6">
+          <h2 className="text-2xl font-black flex items-center gap-2">
+            <FolderArchive className="w-6 h-6 text-indigo-600" /> Bank RPP &amp; RPS Kampus
+          </h2>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!judulRppBaru.trim()) return;
+              const baru: RppItem = {
+                id: "rpp-" + Date.now(),
+                judulRpp: judulRppBaru,
+                mataPelajaran: mapelRppBaru || "Umum",
+                jenjangKelas: jenjangRppBaru,
+                kurikulum: kurikulumRppBaru,
+                pembuatNama: userLogin.nama,
+                ringkasanTujuan: tujuanRppBaru,
+                fileUrl: urlRppBaru,
+                jumlahUnduhan: 1,
+                tanggalUpload: "Hari ini",
+              };
+              setRppList([baru, ...rppList]);
+              setJudulRppBaru("");
+              setTujuanRppBaru("");
+            }}
+            className="p-6 bg-slate-50 border rounded-2xl space-y-4 text-sm"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <input
+                type="text"
+                required
+                value={judulRppBaru}
+                onChange={(e) => setJudulRppBaru(e.target.value)}
+                placeholder="Judul RPP / Modul Ajar..."
+                className="p-3.5 border rounded-xl bg-white font-bold"
+              />
+              <input
+                type="text"
+                required
+                value={mapelRppBaru}
+                onChange={(e) => setMapelRppBaru(e.target.value)}
+                placeholder="Mata Pelajaran..."
+                className="p-3.5 border rounded-xl bg-white"
+              />
+              <select
+                value={kurikulumRppBaru}
+                onChange={(e) =>
+                  setKurikulumRppBaru(
+                    e.target.value as "Kurikulum Merdeka" | "K13 Revisi" | "Silabus Kampus / RPS"
+                  )
+                }
+                className="p-3.5 border rounded-xl bg-indigo-50 font-black"
+              >
+                <option value="Kurikulum Merdeka">Kurikulum Merdeka</option>
+                <option value="K13 Revisi">Kurikulum 2013 Revisi</option>
+                <option value="Silabus Kampus / RPS">Silabus Kampus / RPS</option>
+              </select>
             </div>
+            <button
+              type="submit"
+              className="bg-indigo-600 text-white px-6 py-3.5 rounded-xl font-black"
+            >
+              + Bagikan RPP
+            </button>
+          </form>
+        </div>
+      )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-sm">
-              <div>
-                <label className="text-xs font-bold text-slate-500">Nama Pengguna</label>
-                <input
-                  type="text"
-                  value={akunDieditAdmin.nama}
-                  onChange={(e) =>
-                    setAkunDieditAdmin({ ...akunDieditAdmin, nama: e.target.value })
-                  }
-                  className="w-full p-3 border rounded-xl font-bold mt-1"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-slate-500">Email</label>
-                <input
-                  type="email"
-                  value={akunDieditAdmin.email}
-                  onChange={(e) =>
-                    setAkunDieditAdmin({ ...akunDieditAdmin, email: e.target.value })
-                  }
-                  className="w-full p-3 border rounded-xl mt-1"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-slate-500">Role / Peran</label>
-                <select
-                  value={akunDieditAdmin.role}
-                  onChange={(e) =>
-                    setAkunDieditAdmin({
-                      ...akunDieditAdmin,
-                      role: e.target.value as "admin" | "guru" | "siswa",
-                    })
-                  }
-                  className="w-full p-3 border rounded-xl font-black mt-1 bg-indigo-50"
-                >
-                  <option value="siswa">SISWA</option>
-                  <option value="guru">GURU / PENGAJAR</option>
-                  <option value="admin">SUPER ADMIN</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-bold text-slate-500">Status Verifikasi</label>
-                <select
-                  value={akunDieditAdmin.status}
-                  onChange={(e) =>
-                    setAkunDieditAdmin({
-                      ...akunDieditAdmin,
-                      status: e.target.value as "approved" | "pending" | "rejected",
-                    })
-                  }
-                  className="w-full p-3 border rounded-xl font-black mt-1 bg-emerald-50"
-                >
-                  <option value="approved">APPROVED (Aktif)</option>
-                  <option value="pending">PENDING</option>
-                  <option value="rejected">REJECTED</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="text-xs font-black uppercase text-slate-700">
-                {akunDieditAdmin.role === "siswa"
-                  ? "Tentukan Kategori Kelas / Prodi yang Diikuti Siswa Ini:"
-                  : "Tentukan Hak Akses Kelas / Prodi Tempat Guru Ini Mengajar:"}
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 p-4 bg-slate-50 rounded-2xl border max-h-60 overflow-y-auto">
-                {semuaSubJenjangFlat.map((sj) => {
-                  const listSaatIni =
-                    akunDieditAdmin.role === "siswa"
-                      ? akunDieditAdmin.minatSubJenjang || []
-                      : akunDieditAdmin.aksesMengajar || [];
-                  const dicentang = listSaatIni.includes(sj.id);
-
-                  return (
-                    <label
-                      key={sj.id}
-                      className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-bold cursor-pointer ${
-                        dicentang
-                          ? "bg-indigo-600 text-white border-indigo-600"
-                          : "bg-white text-slate-700"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={dicentang}
-                        onChange={() => {
-                          const baru = dicentang
-                            ? listSaatIni.filter((id) => id !== sj.id)
-                            : [...listSaatIni, sj.id];
-                          if (akunDieditAdmin.role === "siswa") {
-                            setAkunDieditAdmin({ ...akunDieditAdmin, minatSubJenjang: baru });
-                          } else {
-                            setAkunDieditAdmin({ ...akunDieditAdmin, aksesMengajar: baru });
-                          }
-                        }}
-                        className="accent-white"
-                      />
+      {guruTabAktif === "tugas_rubrik" && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-7 bg-white text-slate-800 p-8 rounded-3xl border space-y-6">
+            <h3 className="text-xl font-black flex items-center gap-2">
+              <ClipboardCheck className="w-5 h-5 text-indigo-600" /> Penilaian Tugas &amp; AI Rubric
+              Scoring Assistant
+            </h3>
+            <div className="space-y-4">
+              {daftarPengumpulan.map((sub) => {
+                const tugasInfo = daftarTugas.find((t) => t.id === sub.tugasId);
+                return (
+                  <div
+                    key={sub.id}
+                    className="p-5 border rounded-2xl bg-slate-50 space-y-3 text-sm"
+                  >
+                    <div className="flex justify-between font-bold">
                       <span>
-                        {sj.namaInduk} — {sj.nama}
+                        {sub.siswaNama} —{" "}
+                        <span className="text-indigo-600">{tugasInfo?.judul || "Tugas"}</span>
                       </span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => {
-                  setDaftarAkun(
-                    daftarAkun.map((a) => (a.id === akunDieditAdmin.id ? akunDieditAdmin : a))
-                  );
-                  if (userLogin.id === akunDieditAdmin.id) setUserLogin(akunDieditAdmin);
-                  setAkunDieditAdmin(null);
-                  alert("Data pengguna dan penempatan kategori kelas berhasil diperbarui!");
-                }}
-                className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black text-xs"
-              >
-                Simpan Perubahan User
-              </button>
-            </div>
-          </div>
-        )}
-
-        {adminTabAktif === "cv" && renderProfilDanCV()}
-
-        {adminTabAktif === "akun" && (
-          <div className="bg-white text-slate-800 p-8 rounded-3xl border border-slate-200 space-y-4">
-            {daftarAkun.map((akun) => {
-              const kategoriUser =
-                akun.role === "siswa" ? akun.minatSubJenjang || [] : akun.aksesMengajar || [];
-              return (
-                <div
-                  key={akun.id}
-                  className="p-5 rounded-2xl border border-slate-300 bg-white flex flex-wrap justify-between items-center gap-4"
-                >
-                  <div className="space-y-1">
-                    <div className="font-black text-base flex flex-wrap items-center gap-2">
-                      <span>{akun.nama}</span>
-                      <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded bg-indigo-100 text-indigo-800">
-                        {akun.role}
-                      </span>
-                      <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
-                        {akun.status}
-                      </span>
+                      <span className="text-xs text-slate-400">{sub.waktuKumpul}</span>
                     </div>
-                    <div className="text-xs text-slate-500">{akun.email}</div>
-                    {kategoriUser.length > 0 && (
-                      <div className="flex flex-wrap gap-1 pt-1">
-                        {kategoriUser.map((kid) => {
-                          const namaKls =
-                            semuaSubJenjangFlat.find((s) => s.id === kid)?.nama || kid;
-                          return (
-                            <span
-                              key={kid}
-                              className="text-[10px] font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded border"
-                            >
-                              Kelas: {namaKls}
-                            </span>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setAkunDieditAdmin(akun)}
-                      className="p-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-600 cursor-pointer"
-                      title="Edit User & Tentukan Kategori Kelas"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                    </button>
-                    {akun.role !== "admin" && (
+                    <p className="p-3.5 bg-white border rounded-xl text-slate-700">
+                      {sub.jawabanTeksAtauLink}
+                    </p>
+                    <div className="flex flex-wrap items-center justify-between gap-2 bg-indigo-50 p-3 rounded-xl border border-indigo-100">
+                      <span className="text-xs font-bold text-indigo-950">
+                        Kriteria: Argumen (40%), Tata Bahasa (30%), Referensi (30%)
+                      </span>
                       <button
-                        onClick={() =>
-                          setDaftarAkun(daftarAkun.filter((a) => a.id !== akun.id))
-                        }
-                        className="p-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 cursor-pointer"
-                        title="Hapus Akun"
+                        type="button"
+                        onClick={() => {
+                          const hasilAi = analisisRubrikEsaiAI(sub.jawabanTeksAtauLink);
+                          setInputNilaiGuru({
+                            ...inputNilaiGuru,
+                            [sub.id]: hasilAi.rekomendasiTotal,
+                          });
+                          setInputFeedbackGuru({
+                            ...inputFeedbackGuru,
+                            [sub.id]: hasilAi.catatanAi,
+                          });
+                        }}
+                        className="bg-amber-400 text-slate-950 px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-1.5"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Wand2 className="w-3.5 h-3.5" /> ⚡ Jalankan AI Rubric Scoring
                       </button>
-                    )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                      <input
+                        type="number"
+                        value={inputNilaiGuru[sub.id] ?? sub.nilai ?? 90}
+                        onChange={(e) =>
+                          setInputNilaiGuru({
+                            ...inputNilaiGuru,
+                            [sub.id]: Number(e.target.value),
+                          })
+                        }
+                        className="w-24 p-2.5 border rounded-xl bg-white font-black text-center"
+                      />
+                      <input
+                        type="text"
+                        value={inputFeedbackGuru[sub.id] ?? sub.feedbackGuru ?? ""}
+                        onChange={(e) =>
+                          setInputFeedbackGuru({
+                            ...inputFeedbackGuru,
+                            [sub.id]: e.target.value,
+                          })
+                        }
+                        placeholder="Catatan Feedback Guru..."
+                        className="flex-1 p-2.5 border rounded-xl bg-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const n = inputNilaiGuru[sub.id] ?? sub.nilai ?? 90;
+                          const fb =
+                            inputFeedbackGuru[sub.id] ?? sub.feedbackGuru ?? "Sangat baik!";
+                          setDaftarPengumpulan((prev) =>
+                            prev.map((s) =>
+                              s.id === sub.id ? { ...s, nilai: n, feedbackGuru: fb } : s
+                            )
+                          );
+                          kirimNotifikasiKeUser(
+                            [sub.siswaId],
+                            "Tugas Dinilai",
+                            `Nilai Anda: ${n}/100. ${fb}`,
+                            userLogin.nama
+                          );
+                          alert("Nilai divalidasi!");
+                        }}
+                        className="bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-bold"
+                      >
+                        Validasi Nilai
+                      </button>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        )}
 
-        {adminTabAktif === "kategori" && (
-          <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-6">
-            <h3 className="text-xl font-black">
-              Manajemen Kategori Tingkat Kelas &amp; Program Studi
+          <div className="lg:col-span-5 bg-white text-slate-800 p-8 rounded-3xl border space-y-4">
+            <h3 className="text-xl font-black flex items-center gap-2">
+              <Clock className="w-5 h-5 text-emerald-600" /> Log Presensi Otomatis &amp; QR Ujian
+            </h3>
+            <div className="space-y-2.5 max-h-96 overflow-y-auto">
+              {daftarPresensi.map((pr) => (
+                <div
+                  key={pr.id}
+                  className="p-3.5 border rounded-2xl bg-emerald-50/50 flex justify-between items-center text-xs"
+                >
+                  <div>
+                    <div className="font-black text-slate-900">{pr.siswaNama}</div>
+                    <div className="text-slate-600">{pr.materiJudul}</div>
+                  </div>
+                  <span className="font-mono bg-white px-2.5 py-1 rounded-lg border font-bold text-emerald-700">
+                    {pr.waktuHadir}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {guruTabAktif === "tryout_qr" && (
+        <div className="space-y-8">
+          <div className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white p-8 rounded-3xl space-y-4">
+            <h3 className="text-xl font-black flex items-center gap-2">
+              <QrCode className="w-6 h-6 text-amber-400" /> Scanner Token QR Kartu Ujian Peserta
             </h3>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                if (!namaSubJenjangBaru.trim()) return;
-                const idBaru =
-                  jenjangIndukKategoriBaru + "-" + Date.now().toString().slice(-4);
-                setDaftarJenjang((prev) =>
-                  prev.map((j) =>
-                    j.id === jenjangIndukKategoriBaru
-                      ? {
-                          ...j,
-                          subJenjang: [...j.subJenjang, { id: idBaru, nama: namaSubJenjangBaru }],
-                        }
-                      : j
-                  )
-                );
-                setNamaSubJenjangBaru("");
-                alert("Tingkat Kelas / Prodi baru berhasil ditambahkan!");
+                if (!tokenQrInput.trim()) return;
+                const jam = new Date().toLocaleTimeString("id-ID", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                });
+                setDaftarPresensi([
+                  {
+                    id: "qr-" + Date.now(),
+                    siswaId: "sis-1",
+                    siswaNama: `Peserta Terverifikasi QR (${tokenQrInput.toUpperCase()})`,
+                    materiJudul: "Presensi Fisik Ruangan CBT via QR Code",
+                    waktuHadir: `${jam} WIB`,
+                    metode: "Scan QR Ujian",
+                  },
+                  ...daftarPresensi,
+                ]);
+                setTokenQrInput("");
               }}
-              className="flex flex-wrap gap-3 text-sm"
+              className="flex gap-3 max-w-xl"
             >
-              <select
-                value={jenjangIndukKategoriBaru}
-                onChange={(e) => setJenjangIndukKategoriBaru(e.target.value)}
-                className="p-3.5 border rounded-xl font-bold bg-slate-50"
-              >
-                {daftarJenjang.map((j) => (
-                  <option key={j.id} value={j.id}>
-                    Jenjang: {j.nama}
-                  </option>
-                ))}
-              </select>
               <input
                 type="text"
                 required
-                value={namaSubJenjangBaru}
-                onChange={(e) => setNamaSubJenjangBaru(e.target.value)}
-                placeholder="Nama Tingkat Kelas / Prodi Baru (Misal: Kelas 12 IPS / S1 Kedokteran)..."
-                className="flex-1 p-3.5 border rounded-xl"
+                value={tokenQrInput}
+                onChange={(e) => setTokenQrInput(e.target.value)}
+                placeholder="Ketik / Scan Token QR Peserta..."
+                className="flex-1 p-3.5 rounded-xl bg-white/10 border border-white/20 text-white font-mono text-sm"
               />
               <button
                 type="submit"
-                className="bg-indigo-600 text-white px-6 py-3.5 rounded-xl font-black"
+                className="bg-amber-400 text-slate-950 font-black px-6 py-3.5 rounded-xl text-sm"
               >
-                + Tambah Kategori Kelas
+                Verifikasi QR
               </button>
             </form>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {daftarJenjang.map((j) => (
-                <div key={j.id} className="p-5 border rounded-2xl bg-slate-50 space-y-2">
-                  <div className="font-black text-base">{j.nama}</div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {j.subJenjang.map((sj) => (
-                      <span
-                        key={sj.id}
-                        className="px-3 py-1 bg-white border rounded-xl text-xs font-bold flex items-center gap-1.5"
-                      >
-                        {sj.nama}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {adminTabAktif === "beasiswa" && (
-          <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-4">
-            <h2 className="text-xl font-black">Verifikasi Pengajuan Beasiswa Pelajar</h2>
-            {daftarBeasiswa.map((b) => (
-              <div
-                key={b.id}
-                className="p-4 border rounded-2xl bg-slate-50 flex justify-between items-center"
-              >
-                <div>
-                  <div className="font-black">
-                    {b.pemohonNama} — {b.jenisBeasiswa} ({b.status})
-                  </div>
-                  <p className="text-xs text-slate-600">{b.alasanPengajuan}</p>
-                </div>
-                <button
-                  onClick={() =>
-                    setDaftarBeasiswa(
-                      daftarBeasiswa.map((x) =>
-                        x.id === b.id ? { ...x, status: "Disetujui" } : x
-                      )
-                    )
-                  }
-                  className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold"
-                >
-                  Setujui
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {adminTabAktif === "log" && (
-          <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-2">
-            {logAktivitas.map((log) => (
-              <div key={log.id} className="p-3 bg-slate-50 border rounded-xl text-xs">
-                <b>{log.namaPelaku}:</b> {log.aksi} ({log.waktu})
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // ============================================================================
-  // 4. PORTAL PELAJAR / SISWA
-  // ============================================================================
-  const kirimanSaya = daftarPengumpulan.filter((s) => s.siswaId === userLogin.id);
-  const karyaSaya = userLogin.cv?.karyaPublik || [];
-
-  return (
-    <div className="space-y-8">
-      <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-700 text-white p-8 rounded-[2rem] flex flex-wrap justify-between items-center gap-6 shadow-2xl">
-        <div>
-          <span className="bg-white/20 text-xs font-black px-3 py-1 rounded-full uppercase">
-            Portal Akademik Pelajar
-          </span>
-          <h1 className="text-2xl sm:text-4xl font-black mt-2">Halo, {userLogin.nama}!</h1>
-          <p className="text-emerald-100 text-sm">
-            Total XP: <b>{poinXP} XP</b> • Modul Selesai: <b>{materiSelesai.length} Modul</b>
-          </p>
-        </div>
-        <button
-          onClick={() => setUserLogin(null)}
-          className="bg-white/15 hover:bg-white/25 text-white text-sm font-bold px-5 py-3 rounded-2xl flex items-center gap-2"
-        >
-          <LogOut className="w-4 h-4" /> Keluar
-        </button>
-      </div>
-
-      <div className="flex gap-2 border-b border-slate-200 pb-3 overflow-x-auto">
-        {[
-          {
-            id: "showcase_publik",
-            label: "1. Portofolio Publik Siswa (Showcase)",
-            icon: <Globe className="w-4 h-4" />,
-          },
-          {
-            id: "quests_study",
-            label: "2. Weekly Quests & Study Room",
-            icon: <Target className="w-4 h-4" />,
-          },
-          {
-            id: "tugas",
-            label: "3. Tugas & Nilai Rubrik AI",
-            icon: <ClipboardCheck className="w-4 h-4" />,
-          },
-          {
-            id: "rapor_sertifikat",
-            label: "4. Rapor & Sertifikat PDF",
-            icon: <Award className="w-4 h-4" />,
-          },
-          { id: "beasiswa", label: "5. Portal Beasiswa", icon: <Coins className="w-4 h-4" /> },
-          { id: "cv", label: "6. Edit Profil & CV", icon: <Briefcase className="w-4 h-4" /> },
-        ].map((t) => (
-          <button
-            key={t.id}
-            onClick={() =>
-              setSiswaTabAktif(
-                t.id as
-                  | "showcase_publik"
-                  | "quests_study"
-                  | "tugas"
-                  | "rapor_sertifikat"
-                  | "beasiswa"
-                  | "cv"
-              )
-            }
-            className={`px-4 py-3.5 rounded-2xl font-black text-sm flex items-center gap-2 whitespace-nowrap ${
-              siswaTabAktif === t.id
-                ? "bg-emerald-600 text-white shadow-md"
-                : "bg-white text-slate-700 border"
-            }`}
-          >
-            {t.icon} {t.label}
-          </button>
-        ))}
-      </div>
-
-      {siswaTabAktif === "cv" && renderProfilDanCV()}
-
-      {siswaTabAktif === "showcase_publik" && (
-        <div className="space-y-8">
-          <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-emerald-950 text-white p-8 rounded-[2.5rem] shadow-2xl space-y-6">
-            <div className="flex flex-wrap justify-between items-start gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-20 h-20 rounded-3xl border-2 border-emerald-400 overflow-hidden bg-slate-800 flex items-center justify-center text-3xl font-black">
-                  {userLogin.cv?.fotoUrl ? (
-                    <img
-                      src={userLogin.cv.fotoUrl}
-                      alt={userLogin.nama}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    userLogin.nama.charAt(0)
-                  )}
-                </div>
-                <div>
-                  <span className="bg-emerald-400 text-slate-950 text-xs font-black px-3 py-0.5 rounded-full uppercase">
-                    Verified Student Showcase
-                  </span>
-                  <h2 className="text-3xl font-black mt-1">{userLogin.nama}</h2>
-                  <p className="text-sm text-emerald-200">
-                    {userLogin.cv?.headline || userLogin.infoTambahan} •{" "}
-                    {userLogin.cv?.asalSekolahKampus || "Pelajar Indonesia"}
-                  </p>
-                </div>
-              </div>
-
-              <button
-                onClick={() => {
-                  navigator.clipboard?.writeText(
-                    `https://hibahilmu.id/showcase/${userLogin.id}`
-                  );
-                  alert(
-                    `Tautan Portofolio Publik berhasil disalin: https://hibahilmu.id/showcase/${userLogin.id}`
-                  );
-                }}
-                className="bg-white/15 hover:bg-white/25 text-white px-5 py-3 rounded-2xl text-xs font-black flex items-center gap-2 border border-white/20 cursor-pointer"
-              >
-                <Share2 className="w-4 h-4" /> Bagikan Link Portofolio Publik
-              </button>
-            </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div className="lg:col-span-5 bg-white text-slate-800 p-7 rounded-3xl border space-y-4">
-              <h3 className="text-lg font-black flex items-center gap-2">
-                <PlusCircle className="w-5 h-5 text-emerald-600" /> Tambah Karya ke Showcase Publik
-              </h3>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!judulKaryaBaru.trim()) return;
-                  const karyaBaru = {
-                    id: "kr-" + Date.now(),
-                    judulKarya: judulKaryaBaru,
-                    kategori: kategoriKaryaBaru,
-                    deskripsi: deskripsiKaryaBaru,
-                    linkKarya: linkKaryaBaru,
-                    tanggal: "Oktober 2026",
-                  };
-                  const cvUpdate: BiodataCV = {
-                    ...(userLogin.cv || {
-                      fotoUrl: "",
-                      headline: userLogin.infoTambahan,
-                      bioSingkat: "",
-                      asalSekolahKampus: "",
-                      pendidikanTerakhir: "",
-                      skills: [],
-                      pengalaman: [],
-                      prestasi: [],
-                      portfolioUrl: "",
-                    }),
-                    karyaPublik: [karyaBaru, ...karyaSaya],
-                  };
-                  const updatedUser = { ...userLogin, cv: cvUpdate };
-                  setUserLogin(updatedUser);
-                  setJudulKaryaBaru("");
-                  setDeskripsiKaryaBaru("");
-                  tambahXP(35);
-                }}
-                className="space-y-3 text-sm"
-              >
+          <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-5">
+            <h3 className="text-2xl font-black">
+              Rancang Paket Tryout CBT Baru ({soalTryoutDraft.length} Soal di Draft)
+            </h3>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!judulTryoutBaru.trim()) return;
+                const baru: PaketTryout = {
+                  id: "pkt-" + Date.now(),
+                  judul: judulTryoutBaru,
+                  kategoriTes: kategoriTesBaru,
+                  jenjang: "SMA & Kuliah",
+                  pembuatId: userLogin.id,
+                  pembuatNama: userLogin.nama,
+                  alamatLokasi: alamatTryoutBaru,
+                  jadwalUjian: "2026-11-15 09:00 WIB",
+                  durasiMenit: 20,
+                  batasPercobaan: 2,
+                  batasPelanggaran: 3,
+                  wajibFullscreen: true,
+                  daftarSoal: soalTryoutDraft,
+                };
+                setDaftarPaketTryout([baru, ...daftarPaketTryout]);
+                setJudulTryoutBaru("");
+              }}
+              className="space-y-4 text-sm"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <input
                   type="text"
                   required
-                  value={judulKaryaBaru}
-                  onChange={(e) => setJudulKaryaBaru(e.target.value)}
-                  placeholder="Judul Karya / Proyek..."
-                  className="w-full p-3.5 border rounded-xl bg-slate-50 font-bold"
+                  value={judulTryoutBaru}
+                  onChange={(e) => setJudulTryoutBaru(e.target.value)}
+                  placeholder="Nama Paket Ujian..."
+                  className="p-3.5 border rounded-xl bg-slate-50 font-bold"
                 />
-                <textarea
-                  rows={2}
-                  required
-                  value={deskripsiKaryaBaru}
-                  onChange={(e) => setDeskripsiKaryaBaru(e.target.value)}
-                  placeholder="Deskripsi singkat karya..."
-                  className="w-full p-3.5 border rounded-xl bg-slate-50"
-                />
-                <input
-                  type="url"
-                  value={linkKaryaBaru}
-                  onChange={(e) => setLinkKaryaBaru(e.target.value)}
-                  placeholder="Link GitHub / Google Drive..."
-                  className="w-full p-3.5 border rounded-xl bg-slate-50"
-                />
-                <button
-                  type="submit"
-                  className="w-full bg-emerald-600 text-white font-black py-3.5 rounded-xl"
+                <select
+                  value={kategoriTesBaru}
+                  onChange={(e) => setKategoriTesBaru(e.target.value as KategoriTes)}
+                  className="p-3.5 border rounded-xl bg-indigo-50 font-black"
                 >
-                  + Publikasikan ke Showcase (+35 XP)
-                </button>
-              </form>
-            </div>
-
-            <div className="lg:col-span-7 bg-white text-slate-800 p-7 rounded-3xl border space-y-4">
-              <h3 className="text-lg font-black">Daftar Karya Publik Saya</h3>
-              <div className="space-y-4">
-                {karyaSaya.map((kr) => (
-                  <div key={kr.id} className="p-5 border rounded-2xl bg-slate-50 space-y-2 text-sm">
-                    <h4 className="font-black text-lg text-slate-900">{kr.judulKarya}</h4>
-                    <p className="text-slate-600">{kr.deskripsi}</p>
-                  </div>
-                ))}
+                  <option value="TPA">TPA</option>
+                  <option value="TOEP">TOEP</option>
+                  <option value="TOEFL">TOEFL</option>
+                  <option value="UTBK">UTBK</option>
+                </select>
+                <input
+                  type="text"
+                  value={alamatTryoutBaru}
+                  onChange={(e) => setAlamatTryoutBaru(e.target.value)}
+                  placeholder="Lokasi Ruangan..."
+                  className="p-3.5 border rounded-xl bg-slate-50"
+                />
               </div>
-            </div>
+              <button
+                type="submit"
+                className="w-full bg-emerald-600 text-white font-black py-4 rounded-2xl"
+              >
+                Terbitkan Paket Tryout CBT
+              </button>
+            </form>
           </div>
         </div>
       )}
 
-      {siswaTabAktif === "quests_study" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white text-slate-800 p-7 rounded-3xl border space-y-4">
-            <h3 className="text-xl font-black">Weekly Quests (Tantangan Mingguan)</h3>
-            <div className="p-4 border rounded-2xl bg-slate-50 space-y-2">
-              <div className="font-bold">Selesaikan Minimal 1 Modul Materi (+100 XP)</div>
-              {!klaimQuestIds.includes("q1") ? (
-                <button
-                  onClick={() => {
-                    setKlaimQuestIds(["q1"]);
-                    tambahXP(100);
-                  }}
-                  className="bg-amber-400 text-slate-950 font-black px-4 py-2 rounded-xl text-xs"
-                >
-                  Klaim Hadiah +100 XP
-                </button>
-              ) : (
-                <span className="text-xs font-black text-emerald-600">✓ Sudah Diklaim</span>
-              )}
-            </div>
-          </div>
-
-          <div className="bg-white text-slate-800 p-7 rounded-3xl border space-y-4">
-            <h3 className="text-xl font-black">Peer Study Rooms (Grup Belajar)</h3>
-            {studyRooms.map((sr) => (
-              <div key={sr.id} className="p-4 border rounded-2xl bg-slate-50 text-sm space-y-1">
-                <div className="font-black">{sr.namaGrup}</div>
-                <div className="text-xs text-slate-500">
-                  Kode Undangan: <b>{sr.kodeUndangan}</b> • Anggota: {sr.anggotaNama.join(", ")}
-                </div>
+      {guruTabAktif === "analitik" && (
+        <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-6">
+          <h3 className="text-xl font-black">Grafik Keaktifan Belajar Siswa</h3>
+          <div className="grid grid-cols-7 gap-3 items-end h-40 pt-4 px-2 bg-slate-50 rounded-2xl p-4">
+            {[65, 80, 95, 70, 88, 100, 78].map((persen, i) => (
+              <div key={i} className="flex flex-col items-center gap-2 h-full justify-end">
+                <div
+                  style={{ height: `${persen}%` }}
+                  className="w-full max-w-[42px] rounded-t-xl bg-gradient-to-t from-indigo-600 to-emerald-500"
+                />
+                <span className="text-xs font-bold">H-{7 - i}</span>
               </div>
             ))}
           </div>
-        </div>
-      )}
-
-      {siswaTabAktif === "tugas" && (
-        <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-4">
-          <h3 className="text-xl font-black">Tugas Kelas &amp; Hasil Rubrik AI</h3>
-          {daftarTugas.map((tgs) => {
-            const kumpul = kirimanSaya.find((k) => k.tugasId === tgs.id);
-            return (
-              <div key={tgs.id} className="p-5 border rounded-2xl bg-slate-50 space-y-3 text-sm">
-                <div className="font-black text-base">{tgs.judul}</div>
-                <p className="text-slate-600">{tgs.instruksi}</p>
-                {kumpul ? (
-                  <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl">
-                    <b>Nilai: {kumpul.nilai ?? "Menunggu"} / 100</b> — {kumpul.feedbackGuru}
-                  </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={jawabanTugasSiswaInput[tgs.id] || ""}
-                      onChange={(e) =>
-                        setJawabanTugasSiswaInput({
-                          ...jawabanTugasSiswaInput,
-                          [tgs.id]: e.target.value,
-                        })
-                      }
-                      placeholder="Tuliskan argumen esai & link referensi..."
-                      className="flex-1 p-3 bg-white border rounded-xl"
-                    />
-                    <button
-                      onClick={() => {
-                        const isi = jawabanTugasSiswaInput[tgs.id];
-                        if (!isi) return;
-                        setDaftarPengumpulan([
-                          {
-                            id: "sub-" + Date.now(),
-                            tugasId: tgs.id,
-                            siswaId: userLogin.id,
-                            siswaNama: userLogin.nama,
-                            jawabanTeksAtauLink: isi,
-                            waktuKumpul: "Baru saja",
-                          },
-                          ...daftarPengumpulan,
-                        ]);
-                        tambahXP(40);
-                      }}
-                      className="bg-emerald-600 text-white px-5 py-3 rounded-xl font-black"
-                    >
-                      Kirim Tugas
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {siswaTabAktif === "rapor_sertifikat" && (
-        <div className="bg-gradient-to-br from-amber-50 via-white to-emerald-50 text-slate-900 p-10 rounded-[2.5rem] border-4 border-double border-amber-400 shadow-xl text-center space-y-4">
-          <h2 className="text-3xl font-black">SERTIFIKAT PENGHARGAAN BELAJAR</h2>
-          <div className="text-2xl font-black text-indigo-950 underline">{userLogin.nama}</div>
-          <p className="text-sm text-slate-600">
-            Telah menuntaskan {materiSelesai.length} Modul Pembelajaran dengan reputasi {poinXP} XP.
-          </p>
-          <button
-            onClick={() => window.print()}
-            className="bg-slate-900 text-white font-black px-6 py-3.5 rounded-2xl text-sm inline-flex items-center gap-2"
-          >
-            <Printer className="w-4 h-4" /> Cetak Sertifikat PDF
-          </button>
-        </div>
-      )}
-
-      {siswaTabAktif === "beasiswa" && (
-        <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-4 max-w-2xl">
-          <h3 className="text-xl font-black">Pengajuan Beasiswa Pendidikan Gratis</h3>
-          <input
-            type="text"
-            value={alasanBeasiswaInput}
-            onChange={(e) => setAlasanBeasiswaInput(e.target.value)}
-            placeholder="Tuliskan prestasi atau alasan pengajuan beasiswa..."
-            className="w-full p-3.5 border rounded-xl bg-slate-50 text-sm"
-          />
-          <button
-            onClick={() => {
-              if (!alasanBeasiswaInput.trim()) return;
-              setDaftarBeasiswa([
-                {
-                  id: "bea-" + Date.now(),
-                  pemohonId: userLogin.id,
-                  pemohonNama: userLogin.nama,
-                  jenisBeasiswa: "Beasiswa Prestasi Sains",
-                  alasanPengajuan: alasanBeasiswaInput,
-                  nilaiRataRata: 92,
-                  status: "Menunggu Verifikasi",
-                  tanggalAjuan: "Hari ini",
-                },
-                ...daftarBeasiswa,
-              ]);
-              setAlasanBeasiswaInput("");
-              alert("Pengajuan beasiswa terkirim!");
-            }}
-            className="bg-emerald-600 text-white font-black px-6 py-3.5 rounded-xl text-sm"
-          >
-            Kirim Pengajuan Beasiswa
-          </button>
         </div>
       )}
     </div>
