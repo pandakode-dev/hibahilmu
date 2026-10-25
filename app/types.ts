@@ -237,7 +237,6 @@ export interface JadwalLiveItem {
   targetKelas: string;
 }
 
-// FITUR BARU: Agenda Kegiatan, Webinar & Live Streaming Nasional
 export interface AgendaWebinarItem {
   id: string;
   judulAcara: string;
@@ -247,7 +246,7 @@ export interface AgendaWebinarItem {
     | "Workshop Guru & Dosen"
     | "Tryout Akbar Nasional";
   narasumber: string;
-  tanggalWaktu: string; // Format ISO "2026-10-26T19:00"
+  tanggalWaktu: string;
   platform: "YouTube Live" | "Zoom Meeting" | "Google Meet";
   streamAtauJoinUrl: string;
   targetPeserta: "Semua (Pengajar & Pelajar)" | "Khusus Pengajar" | "Khusus Pelajar/Mahasiswa";
@@ -308,6 +307,7 @@ export interface DonasiItem {
   id: string;
   namaDonatur: string;
   nominal: number;
+  metodePembayaran?: string;
   pesan: string;
   waktu: string;
   namaAnonim?: string;
@@ -322,6 +322,49 @@ export interface TransparansiDonasi {
     nominal: number;
   }[];
   riwayatDonatur: DonasiItem[];
+}
+
+// FITUR BARU: Rekening Bank & E-Wallet (DANA, GoPay, BSI, BCA, Mandiri, dll.) yang Bisa Diatur Admin
+export interface RekeningDonasiItem {
+  id: string;
+  namaBankAtauEwallet: string; // Contoh: "DANA", "Bank Syariah Indonesia (BSI)", "BCA", "GoPay"
+  kategori: "E-Wallet" | "Bank Transfer" | "QRIS";
+  nomorRekening: string; // Contoh: "0812-3456-7890" atau "7123456789"
+  atasNama: string; // Contoh: "Yayasan Wakaf HibahIlmu Indonesia"
+  logoUrl: string; // URL gambar logo bank/DANA atau inisial
+  warnaTema?: string;
+}
+
+// FITUR BARU: Kata Mutiara di Landing Page yang Bisa Diatur Admin
+export interface KataMutiaraItem {
+  id: string;
+  kutipan: string;
+  tokohAtauSumber: string;
+}
+
+// FITUR BARU: Konfigurasi Web (Kata Mutiara Kart3D, Daftar Mutiara, Rekening, Kontak Admin)
+export interface KonfigurasiWeb {
+  kutipanKartu3D: string;
+  headlineGratis: string;
+  daftarKataMutiara: KataMutiaraItem[];
+  daftarRekeningDonasi: RekeningDonasiItem[];
+  nomorKontakWa: string;
+  emailKontakResmi: string;
+  alamatSekretariat: string;
+}
+
+// FITUR BARU: Laporan Bug & Masukan Pengguna (Masuk ke Notifikasi Admin)
+export interface LaporanBugItem {
+  id: string;
+  pelaporNama: string;
+  pelaporRole: string;
+  pelaporKontak: string;
+  kategoriLaporan: "Laporan Bug / Error Teknis" | "Saran Fitur Baru" | "Koreksi Materi / Soal" | "Apresiasi & Masukan Umum";
+  halamanTerkait: string;
+  deskripsiDetail: string;
+  waktuLapor: string;
+  status: "Baru Masuk" | "Sedang Ditinjau Admin" | "Selesai Diperbaiki";
+  balasanAdmin?: string;
 }
 
 export interface KaryaPortofolioSiswa {
@@ -363,8 +406,8 @@ export interface AkunPengguna {
 
 export interface NotifikasiItem {
   id: string;
-  targetUserId: string; // ID User atau "ALL" atau "GURU" atau "SISWA"
-  tipeNotif?: "tugas_deadline" | "kuis_tutup" | "webinar_live" | "info_umum";
+  targetUserId: string; // ID User, "ALL", atau "ADMIN"
+  tipeNotif?: "tugas_deadline" | "kuis_tutup" | "webinar_live" | "bug_masukan" | "donasi_masuk" | "info_umum";
   judul: string;
   pesan: string;
   pengirim: string;

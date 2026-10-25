@@ -18,9 +18,10 @@ import {
   OfficeHourItem,
   DiskusiPR,
   TransparansiDonasi,
+  KonfigurasiWeb,
+  LaporanBugItem,
 } from "./types";
 
-// Fungsi Bantuan Bersihkan Tag HTML
 export function bersihkanTagHtml(teksHtml: string): string {
   if (!teksHtml) return "";
   return teksHtml
@@ -29,7 +30,6 @@ export function bersihkanTagHtml(teksHtml: string): string {
     .join(" ");
 }
 
-// Fungsi Analisis AI Rubric Scoring Esai Siswa
 export function analisisRubrikEsaiAI(teksJawaban: string) {
   const panjangKata = teksJawaban.trim().split(/\s+/).filter(Boolean).length;
   const adaSitasi =
@@ -67,6 +67,100 @@ pilihan_ganda;Berapakah hasil dari 15 x 4?;45|50|60|75;2;;;Karena 15 dikali 4 ad
 
 export const TEMPLATE_CSV_TRYOUT = `pertanyaan;opsi;jawabanBenar;pembahasan;rumus
 "Jika 3x + 5 = 20, berapakah nilai x?";3|5|7|8;1;"3x = 15, maka x = 5";"3x + 5 = 20"`;
+
+// DATA BARU: Konfigurasi Kata Mutiara Landing Page, Rekening Bank/DANA & Kontak (Bisa Diubah Admin)
+export const KONFIGURASI_WEB_AWAL: KonfigurasiWeb = {
+  kutipanKartu3D:
+    "Sebaik-baik manusia adalah yang paling bermanfaat bagi sesama melalui ilmu yang dibagikan.",
+  headlineGratis: "100% Gratis Tanpa Biaya Langganan, Dari Rakyat Untuk Bangsa",
+  nomorKontakWa: "0812-6888-9900 (WhatsApp Layanan Wakaf & Bantuan Teknis)",
+  emailKontakResmi: "layanan@hibahilmu.id",
+  alamatSekretariat: "Gedung Wakaf Pendidikan Digital Nusantara, Indonesia",
+  daftarKataMutiara: [
+    {
+      id: "km-1",
+      kutipan:
+        "Harta akan berkurang apabila dibelanjakan, sedangkan ilmu akan terus bertambah apabila dibagikan dan diajarkan.",
+      tokohAtauSumber: "Filosofi Wakaf Ilmu HibahIlmu.id",
+    },
+    {
+      id: "km-2",
+      kutipan:
+        "Setiap modul berurutan memastikan fondasi pemahaman siswa benar-benar kokoh sebelum melangkah ke tingkat keahlian berikutnya.",
+      tokohAtauSumber: "Mastery Learning & Unlimited Retake",
+    },
+    {
+      id: "km-3",
+      kutipan:
+        "Pendidikan bermutu tinggi adalah hak segala bangsa, 100% gratis tanpa biaya langganan selamanya.",
+      tokohAtauSumber: "Kolaborasi Pendidik Indonesia",
+    },
+  ],
+  daftarRekeningDonasi: [
+    {
+      id: "rek-dana",
+      namaBankAtauEwallet: "DANA (Dompet Digital)",
+      kategori: "E-Wallet",
+      nomorRekening: "0812-6888-9900",
+      atasNama: "Yayasan HibahIlmu Indonesia",
+      logoUrl: "https://upload.wikimedia.org/wikipedia/commons/7/72/Logo_dana_blue.svg",
+      warnaTema: "from-sky-500 to-blue-600",
+    },
+    {
+      id: "rek-gopay",
+      namaBankAtauEwallet: "GoPay / OVO / ShopeePay",
+      kategori: "E-Wallet",
+      nomorRekening: "0812-6888-9900",
+      atasNama: "Yayasan HibahIlmu Indonesia",
+      logoUrl: "",
+      warnaTema: "from-emerald-500 to-teal-600",
+    },
+    {
+      id: "rek-bsi",
+      namaBankAtauEwallet: "Bank Syariah Indonesia (BSI)",
+      kategori: "Bank Transfer",
+      nomorRekening: "7199-8877-66",
+      atasNama: "Wakaf Pendidikan HibahIlmu",
+      logoUrl: "",
+      warnaTema: "from-teal-600 to-emerald-700",
+    },
+    {
+      id: "rek-bca",
+      namaBankAtauEwallet: "Bank Central Asia (BCA)",
+      kategori: "Bank Transfer",
+      nomorRekening: "8420-9911-22",
+      atasNama: "Yayasan HibahIlmu Indonesia",
+      logoUrl: "",
+      warnaTema: "from-indigo-600 to-blue-800",
+    },
+    {
+      id: "rek-mandiri",
+      namaBankAtauEwallet: "Bank Mandiri",
+      kategori: "Bank Transfer",
+      nomorRekening: "108-00-9988776-5",
+      atasNama: "Yayasan HibahIlmu Indonesia",
+      logoUrl: "",
+      warnaTema: "from-amber-500 to-blue-900",
+    },
+  ],
+};
+
+// DATA BARU: Daftar Awal Laporan Bug & Masukan Pengguna
+export const LAPORAN_BUG_AWAL: LaporanBugItem[] = [
+  {
+    id: "bug-1",
+    pelaporNama: "Aisyah Putri",
+    pelaporRole: "siswa",
+    pelaporKontak: "0813-xxxx-xxxx / siswa@hibahilmu.id",
+    kategoriLaporan: "Apresiasi & Masukan Umum",
+    halamanTerkait: "Pop-up Modul Coursera / NetAcad",
+    deskripsiDetail:
+      "Fitur pop-up per bab dan kertas corat-coret sangat membantu saat mengerjakan soal hitungan fisika! Terima kasih tim HibahIlmu.",
+    waktuLapor: "Hari ini, 10:30 WIB",
+    status: "Selesai Diperbaiki",
+    balasanAdmin: "Terima kasih banyak Aisyah atas apresiasi dan semangat belajarnya!",
+  },
+];
 
 export const STRUKTUR_AWAL: JenjangItem[] = [
   {
@@ -892,16 +986,6 @@ export const NOTIF_AWAL: NotifikasiItem[] = [
     waktu: "5 menit lalu",
     dibaca: false,
   },
-  {
-    id: "notif-1",
-    targetUserId: "siswa-1",
-    tipeNotif: "info_umum",
-    judul: "Selamat Datang di HibahIlmu.id!",
-    pesan: "Akun belajar Anda telah aktif. Seluruh modul berurutan dan tryout dapat diakses 100% gratis.",
-    pengirim: "Sistem HibahIlmu",
-    waktu: "Kemarin",
-    dibaca: false,
-  },
 ];
 
 export const LOG_AWAL: LogAktivitas[] = [
@@ -953,6 +1037,7 @@ export const DATA_TRANSPARANSI_DONASI: TransparansiDonasi = {
       id: "don-1",
       namaDonatur: "Bapak H. Abdullah",
       nominal: 500000,
+      metodePembayaran: "Bank Syariah Indonesia (BSI)",
       pesan: "Semoga bermanfaat untuk pengembangan platform pendidikan gratis anak bangsa.",
       waktu: "Kemarin",
     },

@@ -39,8 +39,14 @@ import {
   KelasItem,
   BabModulItem,
   RiwayatPercobaanTryout,
+  KonfigurasiWeb,
+  LaporanBugItem,
 } from "../types";
-import { bersihkanTagHtml, TEMPLATE_CSV_KUIS } from "../mockData";
+import {
+  bersihkanTagHtml,
+  TEMPLATE_CSV_KUIS,
+  KONFIGURASI_WEB_AWAL,
+} from "../mockData";
 import { RichTextEditorPro } from "./RichTextEditorPro";
 import { ProfilCVSection } from "./dashboard/ProfilCVSection";
 import { AdminPanelSection } from "./dashboard/AdminPanelSection";
@@ -87,6 +93,10 @@ interface DashboardPanelProps {
     pengirim: string,
     namaKelas?: string
   ) => void;
+  konfigurasiWeb?: KonfigurasiWeb;
+  setKonfigurasiWeb?: React.Dispatch<React.SetStateAction<KonfigurasiWeb>>;
+  daftarLaporanBug?: LaporanBugItem[];
+  setDaftarLaporanBug?: React.Dispatch<React.SetStateAction<LaporanBugItem[]>>;
   modeRoleAwalAuth?: "siswa" | "guru";
 }
 
@@ -115,6 +125,7 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
   jadwalLive,
   setJadwalLive,
   studyRooms,
+  setStudyRooms,
   daftarBeasiswa,
   setDaftarBeasiswa,
   logAktivitas,
@@ -122,6 +133,10 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
   materiSelesai,
   tambahXP,
   kirimNotifikasiKeUser,
+  konfigurasiWeb = KONFIGURASI_WEB_AWAL,
+  setKonfigurasiWeb = () => {},
+  daftarLaporanBug = [],
+  setDaftarLaporanBug = () => {},
   modeRoleAwalAuth = "siswa",
 }) => {
   const [modeAuth, setModeAuth] = useState<"login" | "register">("login");
@@ -148,14 +163,12 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
     | "cv"
   >("materi");
 
-  // State Form Modul, Jadwal Kuis, & Tugas Modul
   const [subJenjangPilih, setSubJenjangPilih] = useState("");
   const [judulMateri, setJudulMateri] = useState("");
   const [levelMateri, setLevelMateri] = useState<"Pemula" | "Menengah" | "Mahir">("Pemula");
   const [prasyaratKelasPilih, setPrasyaratKelasPilih] = useState<string>("");
   const [syaratSkorMinimalInput, setSyaratSkorMinimalInput] = useState<number>(80);
 
-  // Jadwal Buka-Tutup Sesi Kuis Modul & Aturan Kuis
   const [jadwalBukaKuisInput, setJadwalBukaKuisInput] = useState("2026-10-20T08:00");
   const [jadwalTutupKuisInput, setJadwalTutupKuisInput] = useState("2026-12-31T23:59");
   const [kuisBolehMundurInput, setKuisBolehMundurInput] = useState(true);
@@ -168,7 +181,6 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
   const [bukaModalImportCsvKuis, setBukaModalImportCsvKuis] = useState(false);
   const [teksCsvKuis, setTeksCsvKuis] = useState(TEMPLATE_CSV_KUIS);
 
-  // State Daftar Tugas Modul Lengkap dengan Jenis Tugas & Waktu Buka/Tutup Pengumpulan
   const [daftarTugasModulDraft, setDaftarTugasModulDraft] = useState<
     {
       id: string;
@@ -530,6 +542,10 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
         daftarBeasiswa={daftarBeasiswa}
         setDaftarBeasiswa={setDaftarBeasiswa}
         logAktivitas={logAktivitas}
+        konfigurasiWeb={konfigurasiWeb}
+        setKonfigurasiWeb={setKonfigurasiWeb}
+        daftarLaporanBug={daftarLaporanBug}
+        setDaftarLaporanBug={setDaftarLaporanBug}
         onBukaModeGuru={() => setAdminModeGuru(true)}
         onDownloadRekapCsv={handleDownloadRekapCsvExcel}
       />
@@ -769,7 +785,6 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
         </div>
       )}
 
-      {/* TAB 1: HIBAHKAN MATERI BARU + BAB POP-UP + JADWAL TUGAS & SESI KUIS */}
       {guruTabAktif === "materi" && (
         <div className="bg-white text-slate-800 p-8 rounded-[2rem] border border-slate-200 max-w-5xl space-y-6 shadow-xs">
           <h2 className="text-2xl font-black">
@@ -929,7 +944,6 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
               </select>
             </div>
 
-            {/* RANTAI PRASYARAT & NILAI KKM */}
             <div className="p-5 rounded-2xl bg-indigo-50/70 border-2 border-indigo-200 space-y-3">
               <div className="font-black text-sm text-indigo-950 flex items-center gap-2">
                 <GitBranch className="w-4 h-4 text-indigo-600" /> Pengaturan Rantai Modul
@@ -995,7 +1009,6 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
               <RichTextEditorPro value={rangkumanMateri} onChange={setRangkumanMateri} />
             </div>
 
-            {/* EDITOR DAFTAR BAB BERURUTAN */}
             <div className="p-6 bg-slate-50 border-2 border-slate-200 rounded-2xl space-y-4">
               <div className="flex flex-wrap justify-between items-center gap-2">
                 <span className="font-black text-base flex items-center gap-2">
@@ -1088,7 +1101,6 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
               </div>
             </div>
 
-            {/* FORM TUGAS KELAS + JENIS TUGAS + WAKTU BUKA & TUTUP PENGUMPULAN */}
             <div className="p-6 bg-emerald-50/60 border-2 border-emerald-200 rounded-2xl space-y-4">
               <div className="flex flex-wrap justify-between items-center gap-2">
                 <div>
@@ -1096,9 +1108,6 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
                     <ClipboardCheck className="w-5 h-5 text-emerald-600" /> Jenis Tugas &amp; Waktu
                     Buka-Tutup Pengumpulan Tugas ({daftarTugasModulDraft.length} Tugas)
                   </span>
-                  <p className="text-xs text-slate-600">
-                    Tentukan jenis tugas serta kapan sesi pengumpulan tugas dibuka dan ditutup.
-                  </p>
                 </div>
                 <button
                   type="button"
@@ -1225,7 +1234,7 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
                           )
                         )
                       }
-                      placeholder="Tuliskan instruksi lengkap pengerjaan tugas dan kriteria penilaian..."
+                      placeholder="Tuliskan instruksi lengkap pengerjaan tugas..."
                       className="w-full p-2.5 border rounded-lg"
                     />
                   </div>
@@ -1233,15 +1242,11 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
               </div>
             </div>
 
-            {/* EDITOR DAFTAR KUIS + JADWAL BUKA/TUTUP SESI KUIS MODUL */}
             <div className="p-6 bg-white border-2 border-slate-200 rounded-2xl space-y-5">
               <div className="flex flex-wrap justify-between items-center gap-3">
-                <div>
-                  <span className="font-black text-base">
-                    Daftar Kuis Evaluasi Modul &amp; Jadwal Sesi Kuis ({daftarKuisDraft.length}{" "}
-                    Soal)
-                  </span>
-                </div>
+                <span className="font-black text-base">
+                  Daftar Kuis Evaluasi Modul &amp; Jadwal Sesi Kuis ({daftarKuisDraft.length} Soal)
+                </span>
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
@@ -1260,7 +1265,6 @@ export const DashboardPanelView: React.FC<DashboardPanelProps> = ({
                 </div>
               </div>
 
-              {/* Pengaturan Waktu Buka-Tutup Sesi Kuis & Kertas Corat-Coret */}
               <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
                 <div>
                   <label className="font-black text-amber-950 flex items-center gap-1 mb-1">
