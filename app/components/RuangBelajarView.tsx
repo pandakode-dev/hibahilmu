@@ -32,6 +32,7 @@ import {
   Maximize2,
   ClipboardCheck,
   Send,
+  Bug,
 } from "lucide-react";
 import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";
@@ -42,11 +43,12 @@ import {
   PesanChatMateri,
   TugasItem,
   PengumpulanTugas,
+  KonfigurasiWeb,
 } from "../types";
-import { bersihkanTagHtml } from "../mockData";
+import { bersihkanTagHtml, KONFIGURASI_WEB_AWAL } from "../mockData";
 import { CourseraNetAcadModal } from "./CourseraNetAcadModal";
 
-interface RuangBelajarProps {
+export interface RuangBelajarProps {
   daftarJenjang: JenjangItem[];
   jenjangAktif: JenjangItem | null;
   setJenjangAktif: (j: JenjangItem | null) => void;
@@ -69,6 +71,8 @@ interface RuangBelajarProps {
   onKirimChatMateri: (pesan: string) => void;
   onKirimUlasanMateri: (bintang: number, komentar: string) => void;
   onBukaAuthAtauDashboard: (rolePilih?: "siswa" | "guru") => void;
+  konfigurasiWeb?: KonfigurasiWeb;
+  onBukaMenuLain?: (menu: string) => void;
 }
 
 export function renderIkonJenjang(nama: string) {
@@ -109,6 +113,8 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
   onKirimChatMateri,
   onKirimUlasanMateri,
   onBukaAuthAtauDashboard,
+  konfigurasiWeb = KONFIGURASI_WEB_AWAL,
+  onBukaMenuLain,
 }) => {
   const [rotasi3D, setRotasi3D] = useState({ x: 8, y: -12 });
   const [kartu3DAktif, setKartu3DAktif] = useState<{
@@ -142,7 +148,6 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
   }>({});
   const [petunjukSocratic, setPetunjukSocratic] = useState<{ [id: string]: string }>({});
 
-  // State Input Jawaban Tugas di Halaman Modul
   const [inputJawabanTugasModul, setInputJawabanTugasModul] = useState<{
     [tugasId: string]: string;
   }>({});
@@ -244,16 +249,12 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
     setJawabanCocok({});
   };
 
-  // ============================================================================
-  // 1. TAMPILAN RUANG KELAS DETAIL (TERMASUK PENGUMPULAN TUGAS MODUL)
-  // ============================================================================
   if (kelasAktif && userLogin) {
     const flashcards = kelasAktif.flashcards || [];
     const kartuSaatIni = flashcards[indeksFlashcard];
     const kkmModulIni = kelasAktif.syaratSkorMinimal || 75;
     const skorTerbaikModulIni = skorKuisPerModul[kelasAktif.id] || 0;
 
-    // Daftar tugas yang terkait dengan modul ini
     const tugasModulTerkait: TugasItem[] = [
       ...(kelasAktif.daftarTugasModul || []),
       ...daftarTugas.filter(
@@ -403,7 +404,6 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
           </div>
         </div>
 
-        {/* 3D FLIP FLASHCARDS */}
         {flashcards.length > 0 && kartuSaatIni && (
           <div className="bg-gradient-to-br from-indigo-900 via-slate-900 to-emerald-950 text-white rounded-3xl p-8 shadow-xl space-y-5">
             <div className="flex flex-wrap justify-between items-center gap-4">
@@ -415,9 +415,6 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
                   <Brain className="w-5 h-5 text-emerald-400" /> Kartu Hafalan 3D Interaktif (Kartu{" "}
                   {indeksFlashcard + 1} dari {flashcards.length})
                 </h3>
-              </div>
-              <div className="text-xs text-slate-300">
-                Klik kartu untuk efek putar 3D pertanyaan &amp; jawaban
               </div>
             </div>
 
@@ -444,7 +441,6 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
 
             <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-300">Tingkat Penguasaan:</span>
                 {(["ulangi", "cukup", "mahir"] as const).map((lvl) => (
                   <button
                     key={lvl}
@@ -859,7 +855,6 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
           </div>
         </div>
 
-        {/* SEKSI BARU: TUGAS KELAS & PROYEK MANDIRI DI DALAM HALAMAN MODUL */}
         {tugasModulTerkait.length > 0 && (
           <div className="bg-white text-slate-800 rounded-3xl p-8 border-2 border-emerald-200 space-y-5 shadow-xs">
             <div className="flex flex-wrap justify-between items-center gap-2">
@@ -938,7 +933,6 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
           </div>
         )}
 
-        {/* DISKUSI & ULASAN */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white text-slate-800 rounded-3xl p-6 border space-y-4">
             <h3 className="font-black text-base flex items-center gap-2">
@@ -1030,9 +1024,6 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
     );
   }
 
-  // ============================================================================
-  // 2. TAMPILAN LANDING PAGE UTAMA + SKILL TREE RANTAI PRASYARAT NILAI
-  // ============================================================================
   return (
     <div className="space-y-14">
       {modulPopupAktif && userLogin && (
@@ -1071,23 +1062,40 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
                 SMA, Kuliah, TPA &amp; TOEFL.
               </p>
 
-              <div className="flex flex-wrap items-center gap-4 pt-2">
+              <div className="flex flex-wrap items-center gap-3.5 pt-2">
                 <button
                   onClick={() => {
                     const el = document.getElementById("katalog-jenjang");
                     el?.scrollIntoView({ behavior: "smooth" });
                   }}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-black px-7 py-4 rounded-2xl text-sm shadow-lg shadow-emerald-600/25 flex items-center gap-2 cursor-pointer transition"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-black px-6 py-4 rounded-2xl text-sm shadow-lg shadow-emerald-600/25 flex items-center gap-2 cursor-pointer transition"
                 >
                   <Sparkles className="w-4 h-4" /> Jelajahi Ruang Kelas
                 </button>
 
                 <button
                   onClick={() => onBukaAuthAtauDashboard("guru")}
-                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-black px-7 py-4 rounded-2xl text-sm shadow-lg shadow-indigo-600/25 flex items-center gap-2 cursor-pointer transition"
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-black px-6 py-4 rounded-2xl text-sm shadow-lg shadow-indigo-600/25 flex items-center gap-2 cursor-pointer transition"
                 >
-                  <HeartHandshake className="w-4 h-4" /> Ikut Menyumbang Ilmu (Jadi Pengajar)
+                  <HeartHandshake className="w-4 h-4" /> Ikut Menyumbang Ilmu
                 </button>
+
+                {onBukaMenuLain && (
+                  <>
+                    <button
+                      onClick={() => onBukaMenuLain("donasi")}
+                      className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-5 py-4 rounded-2xl text-xs sm:text-sm flex items-center gap-2 cursor-pointer transition shadow-md"
+                    >
+                      💝 Wakaf &amp; Donasi (DANA/Bank)
+                    </button>
+                    <button
+                      onClick={() => onBukaMenuLain("lapor_bug")}
+                      className="bg-slate-900 hover:bg-slate-800 text-white font-black px-5 py-4 rounded-2xl text-xs sm:text-sm flex items-center gap-2 cursor-pointer transition"
+                    >
+                      <Bug className="w-4 h-4 text-amber-400" /> Lapor Bug / Masukan
+                    </button>
+                  </>
+                )}
               </div>
             </div>
 
@@ -1132,13 +1140,12 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
                 >
                   <div className="flex justify-between items-center text-[11px] font-bold">
                     <span className="text-slate-300 flex items-center gap-1">
-                      <Bot className="w-3.5 h-3.5 text-emerald-400" /> Prerequisite Chain &amp; NetAcad
+                      <Bot className="w-3.5 h-3.5 text-emerald-400" /> AI Socratic &amp; Auto-Grader
                     </span>
                     <span className="text-amber-300 font-black">100% Wakaf Gratis</span>
                   </div>
                   <p className="text-sm font-extrabold italic leading-relaxed text-white">
-                    &ldquo;Sebaik-baik manusia adalah yang paling bermanfaat bagi sesama melalui
-                    ilmu yang dibagikan.&rdquo;
+                    &ldquo;{konfigurasiWeb.kutipanKartu3D}&rdquo;
                   </p>
                 </div>
 
@@ -1229,11 +1236,11 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5">
               <div>
                 <span className="inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-900 text-xs font-black px-3.5 py-1 rounded-full uppercase">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600" /> Rantai Pembelajaran Bersyarat
-                  &amp; 100% Gratis
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" /> Komitmen Wakaf Pendidikan
+                  Abadi &amp; Kata-Kata Mutiara
                 </span>
                 <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-2">
-                  Sistem Modul Berurutan dengan Passing Grade ala Coursera &amp; NetAcad
+                  {konfigurasiWeb.headlineGratis}
                 </h2>
               </div>
               <button
@@ -1248,44 +1255,31 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              <div className="p-5 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-2">
-                <Quote className="w-6 h-6 text-emerald-600" />
-                <p className="text-sm font-bold italic text-slate-800">
-                  &ldquo;Harta akan berkurang apabila dibelanjakan, sedangkan ilmu akan terus
-                  bertambah apabila dibagikan dan diajarkan.&rdquo;
-                </p>
-                <div className="text-xs font-black text-emerald-800 pt-1">
-                  — Filosofi Wakaf Ilmu HibahIlmu.id
-                </div>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-indigo-50/70 border border-indigo-200 space-y-2">
-                <Quote className="w-6 h-6 text-indigo-600" />
-                <p className="text-sm font-bold italic text-slate-800">
-                  &ldquo;Setiap modul berurutan memastikan fondasi pemahaman siswa benar-benar kokoh
-                  sebelum melangkah ke tingkat keahlian berikutnya.&rdquo;
-                </p>
-                <div className="text-xs font-black text-indigo-800 pt-1">
-                  — Mastery Learning &amp; Unlimited Retake
-                </div>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-2">
-                <Quote className="w-6 h-6 text-amber-600" />
-                <p className="text-sm font-bold italic text-slate-800">
-                  &ldquo;Pendidikan bermutu tinggi adalah hak segala bangsa, 100% gratis tanpa biaya
-                  langganan selamanya.&rdquo;
-                </p>
-                <div className="text-xs font-black text-amber-900 pt-1">
-                  — Kolaborasi Pendidik Indonesia
-                </div>
-              </div>
+              {konfigurasiWeb.daftarKataMutiara.map((km, idx) => {
+                const gayaKotak =
+                  idx % 3 === 0
+                    ? "bg-emerald-50/70 border-emerald-200 text-emerald-800"
+                    : idx % 3 === 1
+                    ? "bg-indigo-50/70 border-indigo-200 text-indigo-800"
+                    : "bg-amber-50/70 border-amber-200 text-amber-900";
+                return (
+                  <div
+                    key={km.id}
+                    className={`p-5 rounded-2xl border space-y-2 ${gayaKotak}`}
+                  >
+                    <Quote className="w-6 h-6 opacity-80" />
+                    <p className="text-sm font-bold italic text-slate-800">
+                      &ldquo;{km.kutipan}&rdquo;
+                    </p>
+                    <div className="text-xs font-black pt-1">— {km.tokohAtauSumber}</div>
+                  </div>
+                );
+              })}
             </div>
           </section>
         </>
       )}
 
-      {/* SKILL TREE */}
       {modeVisualSkillTree && !jenjangAktif && (
         <div className="bg-white text-slate-800 p-8 rounded-3xl border-2 border-indigo-200 shadow-xl space-y-6">
           <div>
@@ -1368,7 +1362,6 @@ export const RuangBelajarView: React.FC<RuangBelajarProps> = ({
         </div>
       )}
 
-      {/* KATALOG JENJANG PENDIDIKAN */}
       {!jenjangAktif ? (
         <section id="katalog-jenjang" className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">

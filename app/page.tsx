@@ -611,8 +611,8 @@ export default function AplikasiHibahIlmu() {
               if (rolePilih) setModeRoleAuth(rolePilih);
               setMenuAktif("dashboard");
             }}
-            konfigurasiWeb={konfigurasiWeb}
-            onBukaMenuLain={(menuTujuan) => setMenuAktif(menuTujuan)}
+konfigurasiWeb={konfigurasiWeb}
+            onBukaMenuLain={(menuTujuan: string) => setMenuAktif(menuTujuan)}
           />
         )}
 
