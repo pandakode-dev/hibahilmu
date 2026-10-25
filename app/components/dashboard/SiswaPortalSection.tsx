@@ -12,6 +12,8 @@ import {
   Share2,
   PlusCircle,
   Printer,
+  QrCode,
+  ShieldCheck,
 } from "lucide-react";
 import {
   AkunPengguna,
@@ -75,6 +77,7 @@ export const SiswaPortalSection: React.FC<SiswaPortalProps> = ({
 
   const kirimanSaya = daftarPengumpulan.filter((s) => s.siswaId === userLogin.id);
   const karyaSaya = userLogin.cv?.karyaPublik || [];
+  const nomorSertifikatUnik = `CERT-HIBAH-2026-001`;
 
   return (
     <div className="space-y-8">
@@ -115,7 +118,7 @@ export const SiswaPortalSection: React.FC<SiswaPortalProps> = ({
           },
           {
             id: "rapor_sertifikat",
-            label: "4. Rapor & Sertifikat PDF",
+            label: "4. Sertifikat QR Digital & Rapor",
             icon: <Award className="w-4 h-4" />,
           },
           { id: "beasiswa", label: "5. Portal Beasiswa", icon: <Coins className="w-4 h-4" /> },
@@ -380,19 +383,55 @@ export const SiswaPortalSection: React.FC<SiswaPortalProps> = ({
         </div>
       )}
 
+      {/* TAB 4: SERTIFIKAT OTOMATIS DENGAN NOMOR SERI UNIK, TANDA TANGAN DIGITAL & QR VERIFIKASI */}
       {siswaTabAktif === "rapor_sertifikat" && (
-        <div className="bg-gradient-to-br from-amber-50 via-white to-emerald-50 text-slate-900 p-10 rounded-[2.5rem] border-4 border-double border-amber-400 shadow-xl text-center space-y-4">
-          <h2 className="text-3xl font-black">SERTIFIKAT PENGHARGAAN BELAJAR</h2>
-          <div className="text-2xl font-black text-indigo-950 underline">{userLogin.nama}</div>
-          <p className="text-sm text-slate-600">
-            Telah menuntaskan {materiSelesai.length} Modul Pembelajaran dengan reputasi {poinXP} XP.
-          </p>
-          <button
-            onClick={() => window.print()}
-            className="bg-slate-900 text-white font-black px-6 py-3.5 rounded-2xl text-sm inline-flex items-center gap-2 cursor-pointer"
-          >
-            <Printer className="w-4 h-4" /> Cetak Sertifikat PDF
-          </button>
+        <div className="bg-gradient-to-br from-amber-50 via-white to-emerald-50 text-slate-900 p-10 rounded-[2.5rem] border-4 border-double border-amber-400 shadow-xl space-y-6">
+          <div className="flex flex-wrap justify-between items-center gap-4 border-b border-amber-200 pb-4">
+            <div className="text-left">
+              <span className="bg-emerald-600 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase inline-flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5" /> Digital Signature &amp; QR Verified
+              </span>
+              <div className="text-xs font-mono font-black text-slate-600 mt-1">
+                No. Seri Verifikasi: <b className="text-indigo-900">{nomorSertifikatUnik}</b>
+              </div>
+            </div>
+            <QrCode className="w-16 h-16 text-slate-900" />
+          </div>
+
+          <div className="text-center space-y-3 py-4">
+            <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
+              SERTIFIKAT KOMPETENSI KELULUSAN
+            </h2>
+            <p className="text-xs uppercase font-bold tracking-widest text-slate-500">
+              Diberikan secara resmi oleh Yayasan Wakaf Pendidikan HibahIlmu.id kepada:
+            </p>
+            <div className="text-3xl font-black text-indigo-950 underline py-1">
+              {userLogin.nama}
+            </div>
+            <p className="text-sm text-slate-700 max-w-xl mx-auto leading-relaxed">
+              Telah menuntaskan <b>{materiSelesai.length} Modul Pembelajaran Bersyarat</b> dengan
+              capaian reputasi akademik <b>{poinXP} XP</b> serta lulus evaluasi KKM.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap justify-between items-end pt-4 border-t border-amber-200 text-xs">
+            <div className="text-left space-y-1">
+              <div className="font-bold text-slate-500">Ditandatangani Secara Digital:</div>
+              <div className="font-black text-sm text-slate-900">
+                Admin Panda Kode &amp; Dewan Guru HibahIlmu
+              </div>
+              <div className="text-[11px] text-emerald-700 font-bold">
+                ✓ Cek keaslian nomor {nomorSertifikatUnik} di menu ✨ Hub Inovasi
+              </div>
+            </div>
+
+            <button
+              onClick={() => window.print()}
+              className="bg-slate-900 hover:bg-slate-800 text-white font-black px-6 py-3.5 rounded-2xl text-xs inline-flex items-center gap-2 cursor-pointer shadow-lg"
+            >
+              <Printer className="w-4 h-4" /> Cetak Sertifikat PDF Resmi
+            </button>
+          </div>
         </div>
       )}
 

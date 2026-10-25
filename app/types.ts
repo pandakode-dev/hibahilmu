@@ -54,6 +54,15 @@ export interface PesanChatMateri {
   waktu: string;
 }
 
+export interface DiskusiBabItem {
+  id: string;
+  babId: string;
+  pengirimNama: string;
+  pengirimRole: string;
+  pertanyaanAtauKomentar: string;
+  waktu: string;
+}
+
 export interface BabModulItem {
   id: string;
   judulBab: string;
@@ -61,6 +70,7 @@ export interface BabModulItem {
   videoUrl?: string;
   kontenHtml: string;
   rumusMatematika?: string;
+  diskusiBab?: DiskusiBabItem[];
 }
 
 export type JenisTugasTipe =
@@ -143,6 +153,9 @@ export interface SoalTryout {
   jawabanBenar: number;
   pembahasan: string;
   penyumbangNama?: string;
+  ratingPeerReview?: number;
+  upvotesGuru?: number;
+  statusValidasiSoal?: "Terverifikasi Peer-Review" | "Menunggu Review";
 }
 
 export interface PaketTryout {
@@ -161,6 +174,8 @@ export interface PaketTryout {
   bolehMundur?: boolean;
   izinkanKeyboard?: boolean;
   pakaiCoratCoret?: boolean;
+  acakSoalDanOpsi?: boolean;
+  izinkanResumeTeknis?: boolean;
   batasPercobaan: number;
   batasPelanggaran: number;
   wajibFullscreen: boolean;
@@ -216,7 +231,11 @@ export interface OfficeHourItem {
   topikBahasan: string;
   jadwalHariJam: string;
   meetingUrl: string;
-  antreanPertanyaan: { namaSiswa: string; pertanyaan: string }[];
+  antreanPertanyaan: {
+    namaSiswa: string;
+    pertanyaan: string;
+    jamSlotBooking?: string;
+  }[];
 }
 
 export interface PresensiItem {
@@ -225,7 +244,7 @@ export interface PresensiItem {
   siswaNama: string;
   materiJudul: string;
   waktuHadir: string;
-  metode?: "Otomatis Modul" | "Scan QR Ujian";
+  metode?: "Otomatis Modul" | "Scan QR Ujian" | "QR Live 5 Menit";
 }
 
 export interface JadwalLiveItem {
@@ -249,7 +268,10 @@ export interface AgendaWebinarItem {
   tanggalWaktu: string;
   platform: "YouTube Live" | "Zoom Meeting" | "Google Meet";
   streamAtauJoinUrl: string;
-  targetPeserta: "Semua (Pengajar & Pelajar)" | "Khusus Pengajar" | "Khusus Pelajar/Mahasiswa";
+  targetPeserta:
+    | "Semua (Pengajar & Pelajar)"
+    | "Khusus Pengajar"
+    | "Khusus Pelajar/Mahasiswa";
   sedangLive?: boolean;
   kuotaPeserta?: number;
   pesertaTerdaftarIds?: string[];
@@ -324,25 +346,22 @@ export interface TransparansiDonasi {
   riwayatDonatur: DonasiItem[];
 }
 
-// FITUR BARU: Rekening Bank & E-Wallet (DANA, GoPay, BSI, BCA, Mandiri, dll.) yang Bisa Diatur Admin
 export interface RekeningDonasiItem {
   id: string;
-  namaBankAtauEwallet: string; // Contoh: "DANA", "Bank Syariah Indonesia (BSI)", "BCA", "GoPay"
+  namaBankAtauEwallet: string;
   kategori: "E-Wallet" | "Bank Transfer" | "QRIS";
-  nomorRekening: string; // Contoh: "0812-3456-7890" atau "7123456789"
-  atasNama: string; // Contoh: "Yayasan Wakaf HibahIlmu Indonesia"
-  logoUrl: string; // URL gambar logo bank/DANA atau inisial
+  nomorRekening: string;
+  atasNama: string;
+  logoUrl: string;
   warnaTema?: string;
 }
 
-// FITUR BARU: Kata Mutiara di Landing Page yang Bisa Diatur Admin
 export interface KataMutiaraItem {
   id: string;
   kutipan: string;
   tokohAtauSumber: string;
 }
 
-// FITUR BARU: Konfigurasi Web (Kata Mutiara Kart3D, Daftar Mutiara, Rekening, Kontak Admin)
 export interface KonfigurasiWeb {
   kutipanKartu3D: string;
   headlineGratis: string;
@@ -353,18 +372,52 @@ export interface KonfigurasiWeb {
   alamatSekretariat: string;
 }
 
-// FITUR BARU: Laporan Bug & Masukan Pengguna (Masuk ke Notifikasi Admin)
 export interface LaporanBugItem {
   id: string;
   pelaporNama: string;
   pelaporRole: string;
   pelaporKontak: string;
-  kategoriLaporan: "Laporan Bug / Error Teknis" | "Saran Fitur Baru" | "Koreksi Materi / Soal" | "Apresiasi & Masukan Umum";
+  kategoriLaporan:
+    | "Laporan Bug / Error Teknis"
+    | "Saran Fitur Baru"
+    | "Koreksi Materi / Soal"
+    | "Apresiasi & Masukan Umum";
   halamanTerkait: string;
   deskripsiDetail: string;
   waktuLapor: string;
   status: "Baru Masuk" | "Sedang Ditinjau Admin" | "Selesai Diperbaiki";
   balasanAdmin?: string;
+}
+
+// FITUR INOVASI BARU:
+export interface BadgeAchievementItem {
+  id: string;
+  namaBadge: string;
+  deskripsi: string;
+  ikon: string;
+  syaratXp: number;
+  warna: string;
+}
+
+export interface CatatanKolaboratifItem {
+  id: string;
+  judulCatatan: string;
+  modulTerkait: string;
+  pembuatNama: string;
+  isiCatatan: string;
+  visibilitas: "Publik" | "Study Room";
+  waktuUpdate: string;
+  likes: number;
+}
+
+export interface SertifikatTerverifikasiItem {
+  nomorSertifikat: string;
+  namaPemilik: string;
+  peran: string;
+  jumlahModulSelesai: number;
+  skorRataRata: number;
+  tanggalTerbit: string;
+  statusValid: boolean;
 }
 
 export interface KaryaPortofolioSiswa {
@@ -399,6 +452,7 @@ export interface AkunPengguna {
   infoTambahan: string;
   waktuDaftar: string;
   xp?: number;
+  xpMingguan?: number;
   aksesMengajar?: string[];
   minatSubJenjang?: string[];
   cv?: BiodataCV;
@@ -406,8 +460,14 @@ export interface AkunPengguna {
 
 export interface NotifikasiItem {
   id: string;
-  targetUserId: string; // ID User, "ALL", atau "ADMIN"
-  tipeNotif?: "tugas_deadline" | "kuis_tutup" | "webinar_live" | "bug_masukan" | "donasi_masuk" | "info_umum";
+  targetUserId: string;
+  tipeNotif?:
+    | "tugas_deadline"
+    | "kuis_tutup"
+    | "webinar_live"
+    | "bug_masukan"
+    | "donasi_masuk"
+    | "info_umum";
   judul: string;
   pesan: string;
   pengirim: string;
@@ -423,6 +483,7 @@ export interface LogAktivitas {
   rolePelaku: "admin" | "guru" | "siswa";
   aksi: string;
   kategori: "belajar" | "materi" | "akun" | "komunitas" | "sistem";
+  levelKeamanan?: "Normal" | "Peringatan" | "Mencurigakan";
 }
 
 export interface KelompokBelajar {

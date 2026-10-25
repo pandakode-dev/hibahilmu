@@ -17,6 +17,7 @@ import {
   Edit3,
   Trash2,
   Calendar,
+  MessageSquare,
 } from "lucide-react";
 import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";
@@ -26,6 +27,7 @@ import {
   TugasItem,
   PengumpulanTugas,
   AkunPengguna,
+  DiskusiBabItem,
 } from "../types";
 
 interface CourseraNetAcadModalProps {
@@ -84,6 +86,33 @@ export const CourseraNetAcadModal: React.FC<CourseraNetAcadModalProps> = ({
     daftarBab[0]?.id || "bab-1",
   ]);
 
+  // FITUR BARU: State Diskusi Kontekstual Spesifik per Bab (Contextual Q&A)
+  const [diskusiPerBab, setDiskusiPerBab] = useState<{
+    [babId: string]: DiskusiBabItem[];
+  }>({
+    [daftarBab[0]?.id || "bab-1"]: [
+      {
+        id: "db-1",
+        babId: daftarBab[0]?.id || "bab-1",
+        pengirimNama: "Aisyah Putri",
+        pengirimRole: "siswa",
+        pertanyaanAtauKomentar:
+          "Bagian pengantar di bab ini sangat jelas! Apakah konsep ini juga keluar di soal kuis akhir modul?",
+        waktu: "15 menit lalu",
+      },
+      {
+        id: "db-2",
+        babId: daftarBab[0]?.id || "bab-1",
+        pengirimNama: modul.pembuatNama,
+        pengirimRole: "guru",
+        pertanyaanAtauKomentar:
+          "Betul sekali Aisyah, pastikan pahami rumus dasarnya karena akan diujikan pada soal nomor 1 & 2.",
+        waktu: "5 menit lalu",
+      },
+    ],
+  });
+  const [inputKomentarBab, setInputKomentarBab] = useState("");
+
   const [jawabanPG, setJawabanPG] = useState<{ [kuisId: string]: number }>({});
   const [jawabanJamak, setJawabanJamak] = useState<{ [kuisId: string]: number[] }>({});
   const [jawabanIsian, setJawabanIsian] = useState<{ [kuisId: string]: string }>({});
@@ -100,7 +129,6 @@ export const CourseraNetAcadModal: React.FC<CourseraNetAcadModalProps> = ({
 
   const [inputTugasPopup, setInputTugasPopup] = useState<{ [tugasId: string]: string }>({});
 
-  // State Corat-Coret di dalam Kuis Modul
   const [bukaCoratCoretKuis, setBukaCoratCoretKuis] = useState(false);
   const canvasKuisRef = useRef<HTMLCanvasElement | null>(null);
   const [sedangMenggambar, setSedangMenggambar] = useState(false);
@@ -108,7 +136,6 @@ export const CourseraNetAcadModal: React.FC<CourseraNetAcadModalProps> = ({
   const kkmModul = modul.syaratSkorMinimal || 75;
   const babSaatIni = daftarBab[indeksBabAktif];
 
-  // Fungsi Cek Apakah Sesi Buka/Tutup Sedang Aktif
   const cekSesiWaktuAktif = (waktuBuka?: string, waktuTutup?: string) => {
     const now = new Date().getTime();
     const tBuka = waktuBuka ? new Date(waktuBuka).getTime() : 0;
@@ -129,6 +156,25 @@ export const CourseraNetAcadModal: React.FC<CourseraNetAcadModalProps> = ({
     } else {
       setModeKonten("kuis");
     }
+  };
+
+  const handleKirimDiskusiBab = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!babSaatIni || !inputKomentarBab.trim()) return;
+    const listLama = diskusiPerBab[babSaatIni.id] || [];
+    const itemBaru: DiskusiBabItem = {
+      id: "db-" + Date.now(),
+      babId: babSaatIni.id,
+      pengirimNama: userLogin.nama,
+      pengirimRole: userLogin.role,
+      pertanyaanAtauKomentar: inputKomentarBab.trim(),
+      waktu: "Baru saja",
+    };
+    setDiskusiPerBab({
+      ...diskusiPerBab,
+      [babSaatIni.id]: [...listLama, itemBaru],
+    });
+    setInputKomentarBab("");
   };
 
   const hitungDanKumpulkanKuis = () => {
@@ -281,6 +327,7 @@ export const CourseraNetAcadModal: React.FC<CourseraNetAcadModalProps> = ({
             {daftarBab.map((bab, idx) => {
               const aktif = modeKonten === "bab" && indeksBabAktif === idx;
               const selesai = babSelesaiDibaca.includes(bab.id);
+              const jmlDiskusi = (diskusiPerBab[bab.id] || []).length;
               return (
                 <button
                   key={bab.id}
@@ -308,8 +355,11 @@ export const CourseraNetAcadModal: React.FC<CourseraNetAcadModalProps> = ({
                     )}
                   </div>
                   <div className="flex-1">
-                    <div className="text-[11px] font-black uppercase opacity-80">
-                      Bab {idx + 1} • {bab.durasiBab}
+                    <div className="text-[11px] font-black uppercase opacity-80 flex justify-between">
+                      <span>
+                        Bab {idx + 1} • {bab.durasiBab}
+                      </span>
+                      <span>💬 {jmlDiskusi}</span>
                     </div>
                     <div className="font-bold text-sm leading-snug mt-0.5">{bab.judulBab}</div>
                   </div>
@@ -401,7 +451,62 @@ export const CourseraNetAcadModal: React.FC<CourseraNetAcadModalProps> = ({
                   </div>
                 )}
 
-                <div className="pt-6 border-t flex justify-between items-center">
+                {/* FITUR BARU: RUANG DISKUSI SPESIFIK PER BAB (CONTEXTUAL Q&A) */}
+                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-black text-sm flex items-center gap-2 text-indigo-950">
+                      <MessageSquare className="w-4 h-4 text-indigo-600" /> Tanya Jawab Spesifik{" "}
+                      {babSaatIni.judulBab} ({(diskusiPerBab[babSaatIni.id] || []).length})
+                    </h4>
+                    <span className="text-[10px] font-black uppercase bg-indigo-100 text-indigo-800 px-2.5 py-0.5 rounded">
+                      Contextual Q&amp;A per Bab
+                    </span>
+                  </div>
+
+                  <div className="space-y-2.5 max-h-48 overflow-y-auto pr-1">
+                    {(diskusiPerBab[babSaatIni.id] || []).length === 0 ? (
+                      <p className="text-xs text-slate-400 italic">
+                        Belum ada pertanyaan pada bab ini. Jadilah yang pertama bertanya!
+                      </p>
+                    ) : (
+                      (diskusiPerBab[babSaatIni.id] || []).map((kom) => (
+                        <div
+                          key={kom.id}
+                          className="p-3 rounded-xl bg-white border border-slate-200 text-xs space-y-1"
+                        >
+                          <div className="flex justify-between items-center">
+                            <span className="font-black text-slate-900">
+                              {kom.pengirimNama}{" "}
+                              <span className="text-[10px] uppercase px-2 py-0.5 rounded bg-slate-100 text-indigo-700">
+                                {kom.pengirimRole}
+                              </span>
+                            </span>
+                            <span className="text-[10px] text-slate-400">{kom.waktu}</span>
+                          </div>
+                          <p className="text-slate-700">{kom.pertanyaanAtauKomentar}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <form onSubmit={handleKirimDiskusiBab} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={inputKomentarBab}
+                      onChange={(e) => setInputKomentarBab(e.target.value)}
+                      placeholder={`Tanyakan sesuatu khusus tentang Bab ${indeksBabAktif + 1} ini...`}
+                      className="flex-1 p-2.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold"
+                    />
+                    <button
+                      type="submit"
+                      className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-xs font-black cursor-pointer"
+                    >
+                      Kirim
+                    </button>
+                  </form>
+                </div>
+
+                <div className="pt-4 border-t flex justify-between items-center">
                   <button
                     disabled={indeksBabAktif === 0}
                     onClick={() => setIndeksBabAktif((prev) => Math.max(0, prev - 1))}
@@ -425,7 +530,7 @@ export const CourseraNetAcadModal: React.FC<CourseraNetAcadModalProps> = ({
               </div>
             )}
 
-            {/* MODE 2: UJIAN AKHIR MODUL + SESI BUKA/TUTUP + KERTAS CORAT-CORET */}
+            {/* MODE 2: UJIAN AKHIR MODUL */}
             {modeKonten === "kuis" && (
               <div className="space-y-6">
                 <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 text-white flex flex-wrap justify-between items-center gap-4">
@@ -457,7 +562,6 @@ export const CourseraNetAcadModal: React.FC<CourseraNetAcadModalProps> = ({
                   )}
                 </div>
 
-                {/* Kanvas Corat-Coret Kuis Modul */}
                 {bukaCoratCoretKuis && (
                   <div className="p-4 rounded-2xl bg-slate-100 border-2 border-dashed border-indigo-300 space-y-2">
                     <div className="flex justify-between items-center text-xs font-black text-indigo-900">
@@ -696,7 +800,7 @@ export const CourseraNetAcadModal: React.FC<CourseraNetAcadModalProps> = ({
               </div>
             )}
 
-            {/* MODE 3: PENGUMPULAN TUGAS PROYEK MODUL + VALIDASI WAKTU BUKA/TUTUP */}
+            {/* MODE 3: PENGUMPULAN TUGAS PROYEK MODUL */}
             {modeKonten === "tugas" && (
               <div className="space-y-6">
                 <div className="p-6 rounded-2xl bg-gradient-to-r from-emerald-700 to-teal-800 text-white space-y-2">

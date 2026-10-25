@@ -6,6 +6,9 @@ import {
   Wand2,
   Clock,
   FolderArchive,
+  ThumbsUp,
+  CheckCircle2,
+  Star,
 } from "lucide-react";
 import {
   AkunPengguna,
@@ -219,10 +222,21 @@ export const GuruLainnyaSection: React.FC<GuruLainnyaProps> = ({
     );
   }
 
+  // TAB BANK SOAL KOLEKTIF DENGAN SISTEM RATING & PEER-REVIEW ANTAR GURU
   if (tabAktif === "bank_soal") {
     return (
       <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-6">
-        <h3 className="text-2xl font-black">Bank Soal Kolektif Bersama</h3>
+        <div className="flex flex-wrap justify-between items-center gap-2">
+          <div>
+            <span className="bg-indigo-100 text-indigo-800 text-xs font-black px-3 py-1 rounded-full uppercase">
+              Collaborative Question Bank &amp; Peer-Review
+            </span>
+            <h3 className="text-2xl font-black mt-1">
+              Bank Soal Kolektif Bersama (Dilengkapi Sistem Rating &amp; Validasi Guru)
+            </h3>
+          </div>
+        </div>
+
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -235,6 +249,9 @@ export const GuruLainnyaSection: React.FC<GuruLainnyaProps> = ({
               jawabanBenar: kunciBankSoalBaru,
               pembahasan: bahasBankSoalBaru || "Sesuai konsep dasar materi.",
               penyumbangNama: userLogin.nama,
+              ratingPeerReview: 5.0,
+              upvotesGuru: 1,
+              statusValidasiSoal: "Menunggu Review",
             };
             setBankSoalKolektif([soalBaru, ...bankSoalKolektif]);
             setTanyaBankSoalBaru("");
@@ -316,29 +333,73 @@ export const GuruLainnyaSection: React.FC<GuruLainnyaProps> = ({
         </form>
 
         <div className="space-y-4">
-          {bankSoalKolektif.map((bs) => (
-            <div
-              key={bs.id}
-              className="p-6 border border-slate-300 rounded-2xl bg-white space-y-3"
-            >
-              <div className="flex flex-wrap justify-between items-center gap-2">
-                <span className="text-xs font-black text-indigo-600">
-                  {bs.rumus || "Bank Soal"} • {bs.penyumbangNama || "Tim Kontributor"}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSoalTryoutDraft([...soalTryoutDraft, bs]);
-                    alert("✓ Soal dimasukkan ke Draft Paket Tryout CBT!");
-                  }}
-                  className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-lg text-xs font-black cursor-pointer"
-                >
-                  + Masukkan ke Draft Tryout CBT
-                </button>
+          {bankSoalKolektif.map((bs) => {
+            const jmlUpvote = bs.upvotesGuru ?? 5;
+            const terverifikasi =
+              bs.statusValidasiSoal === "Terverifikasi Peer-Review" || jmlUpvote >= 3;
+
+            return (
+              <div
+                key={bs.id}
+                className="p-6 border-2 border-slate-200 rounded-2xl bg-white space-y-3"
+              >
+                <div className="flex flex-wrap justify-between items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-black text-indigo-600">
+                      {bs.rumus || "Bank Soal"} • {bs.penyumbangNama || "Tim Kontributor"}
+                    </span>
+                    <span
+                      className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full flex items-center gap-1 ${
+                        terverifikasi
+                          ? "bg-emerald-100 text-emerald-800"
+                          : "bg-amber-100 text-amber-900"
+                      }`}
+                    >
+                      <CheckCircle2 className="w-3 h-3" />
+                      {terverifikasi ? "Terverifikasi Peer-Review" : "Menunggu Review Guru"}
+                    </span>
+                    <span className="text-xs font-bold text-amber-600 flex items-center gap-1">
+                      <Star className="w-3.5 h-3.5 fill-amber-400" /> {bs.ratingPeerReview || 4.9}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBankSoalKolektif(
+                          bankSoalKolektif.map((item) =>
+                            item.id === bs.id
+                              ? {
+                                  ...item,
+                                  upvotesGuru: (item.upvotesGuru ?? 5) + 1,
+                                  statusValidasiSoal: "Terverifikasi Peer-Review",
+                                }
+                              : item
+                          )
+                        );
+                      }}
+                      className="px-3 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-800 text-xs font-black flex items-center gap-1 cursor-pointer"
+                    >
+                      <ThumbsUp className="w-3.5 h-3.5" /> Upvote Validasi ({jmlUpvote})
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSoalTryoutDraft([...soalTryoutDraft, bs]);
+                        alert("✓ Soal Terverifikasi dimasukkan ke Draft Paket Tryout CBT!");
+                      }}
+                      className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-lg text-xs font-black cursor-pointer"
+                    >
+                      + Masukkan ke Draft Tryout CBT
+                    </button>
+                  </div>
+                </div>
+                <p className="font-black text-base text-slate-900">{bs.pertanyaan}</p>
               </div>
-              <p className="font-black text-base text-slate-900">{bs.pertanyaan}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     );

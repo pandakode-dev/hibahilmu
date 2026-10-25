@@ -17,6 +17,9 @@ import {
   Edit3,
   Keyboard,
   Calendar,
+  ThumbsUp,
+  CheckCircle2,
+  Sparkles,
 } from "lucide-react";
 import {
   PaketTryout,
@@ -83,7 +86,15 @@ export const TryoutDanForumView: React.FC<TryoutForumProps> = ({
   const [paketKartuQr, setPaketKartuQr] = useState<PaketTryout | null>(null);
   const [judulDiskusiBaru, setJudulDiskusiBaru] = useState("");
   const [isiDiskusiBaru, setIsiDiskusiBaru] = useState("");
+  const [inputJawabanForum, setInputJawabanForum] = useState<{ [diskusiId: string]: string }>({});
+
+  // State Booking Slot 1-on-1 Office Hours
   const [inputTanyaOh, setInputTanyaOh] = useState<{ [id: string]: string }>({});
+  const [slotJamPilih, setSlotJamPilih] = useState<{ [id: string]: string }>({});
+
+  // State Papan Peringkat Mingguan (Weekly Leaderboard Reset)
+  const [modePeringkat, setModePeringkat] = useState<"all_time" | "mingguan">("all_time");
+  const [sudahResetMingguan, setSudahResetMingguan] = useState(false);
 
   const cekStatusSesiUjian = (pkt: PaketTryout) => {
     const now = new Date().getTime();
@@ -97,14 +108,22 @@ export const TryoutDanForumView: React.FC<TryoutForumProps> = ({
   };
 
   // ============================================================================
-  // 1. TAMPILAN LEADERBOARD XP & TRANSPARANSI WAKAF
+  // 1. TAMPILAN LEADERBOARD XP (ALL-TIME & WEEKLY RESET) + TRANSPARANSI WAKAF
   // ============================================================================
   if (modeMenu === "leaderboard") {
     const peringkat = [...daftarAkun]
-      .map((a) => ({
-        ...a,
-        totalXp: a.id === userLogin.id ? poinXP : a.xp || 300,
-      }))
+      .map((a) => {
+        const xpAllTime = a.id === userLogin.id ? poinXP : a.xp || 300;
+        const xpMingguIni = sudahResetMingguan
+          ? a.id === userLogin.id
+            ? 120
+            : 80
+          : Math.round(xpAllTime * 0.35);
+        return {
+          ...a,
+          totalXp: modePeringkat === "all_time" ? xpAllTime : xpMingguIni,
+        };
+      })
       .sort((a, b) => b.totalXp - a.totalXp);
 
     return (
@@ -112,28 +131,69 @@ export const TryoutDanForumView: React.FC<TryoutForumProps> = ({
         <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 text-white p-8 rounded-[2.2rem] shadow-xl flex flex-wrap justify-between items-center gap-6">
           <div>
             <span className="bg-black/20 text-xs font-black px-3 py-1 rounded-full uppercase">
-              National EdTech Gamification
+              National EdTech Gamification • Weekly &amp; All-Time
             </span>
             <h1 className="text-3xl font-black mt-2 flex items-center gap-2">
               <Crown className="w-8 h-8" /> Papan Peringkat Reputasi (Leaderboard XP)
             </h1>
           </div>
-          <div className="bg-white/20 px-6 py-4 rounded-2xl text-right">
-            <div className="text-xs font-bold uppercase">Reputasi Anda</div>
-            <div className="text-3xl font-black">{poinXP} XP</div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="bg-black/20 p-1.5 rounded-2xl flex gap-1 text-xs font-black">
+              <button
+                onClick={() => setModePeringkat("all_time")}
+                className={`px-4 py-2 rounded-xl cursor-pointer ${
+                  modePeringkat === "all_time" ? "bg-white text-slate-900" : "text-white"
+                }`}
+              >
+                Sepanjang Masa (All-Time)
+              </button>
+              <button
+                onClick={() => setModePeringkat("mingguan")}
+                className={`px-4 py-2 rounded-xl cursor-pointer ${
+                  modePeringkat === "mingguan" ? "bg-white text-slate-900" : "text-white"
+                }`}
+              >
+                🔥 Kompetisi Mingguan
+              </button>
+            </div>
+
+            {modePeringkat === "mingguan" && (
+              <button
+                onClick={() => {
+                  setSudahResetMingguan(true);
+                  alert("🔄 Siklus Poin Mingguan berhasil di-reset untuk pekan kompetisi baru!");
+                }}
+                className="bg-slate-950/80 hover:bg-slate-900 text-amber-300 px-4 py-2.5 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5" /> Simulasikan Reset Mingguan
+              </button>
+            )}
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-7 bg-white text-slate-800 p-8 rounded-3xl border space-y-4">
-            <h3 className="text-xl font-black">Top Kontributor &amp; Pelajar Aktif</h3>
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-black">
+                {modePeringkat === "all_time"
+                  ? "Top Kontributor & Pelajar Sepanjang Masa"
+                  : "🔥 Klasemen XP Minggu Ini (Reset Setiap Senin)"}
+              </h3>
+            </div>
             {peringkat.map((u, idx) => (
               <div
                 key={u.id}
                 className="p-4 rounded-2xl border bg-slate-50 flex justify-between items-center"
               >
                 <div className="flex items-center gap-3">
-                  <span className="w-8 h-8 rounded-xl bg-slate-900 text-white font-black text-xs flex items-center justify-center">
+                  <span
+                    className={`w-8 h-8 rounded-xl font-black text-xs flex items-center justify-center ${
+                      idx === 0
+                        ? "bg-amber-400 text-slate-950"
+                        : "bg-slate-900 text-white"
+                    }`}
+                  >
                     #{idx + 1}
                   </span>
                   <div>
@@ -176,16 +236,24 @@ export const TryoutDanForumView: React.FC<TryoutForumProps> = ({
   }
 
   // ============================================================================
-  // 2. TAMPILAN FORUM DISKUSI PR & LIVE OFFICE HOURS
+  // 2. TAMPILAN FORUM PR (BEST ANSWER UPVOTE +50 XP) & BOOKING 1-ON-1 OFFICE HOURS
   // ============================================================================
   if (modeMenu === "forum") {
     return (
       <div className="space-y-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Kolom Kiri: Forum PR dengan Best Answer Validation */}
           <div className="lg:col-span-7 bg-white text-slate-800 p-8 rounded-3xl border space-y-6">
-            <h2 className="text-2xl font-black flex items-center gap-2">
-              <MessageSquare className="w-6 h-6 text-indigo-600" /> Forum Tanya Jawab PR Bersama
-            </h2>
+            <div>
+              <span className="bg-indigo-100 text-indigo-800 text-xs font-black px-3 py-1 rounded-full uppercase">
+                Peer-to-Peer Q&amp;A + Best Answer Verification
+              </span>
+              <h2 className="text-2xl font-black mt-2 flex items-center gap-2">
+                <MessageSquare className="w-6 h-6 text-indigo-600" /> Forum Tanya Jawab PR &amp;
+                Validasi Jawaban Terbaik
+              </h2>
+            </div>
+
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -235,41 +303,226 @@ export const TryoutDanForumView: React.FC<TryoutForumProps> = ({
               </button>
             </form>
 
-            <div className="space-y-4">
+            <div className="space-y-5">
               {daftarDiskusi.map((d) => (
-                <div key={d.id} className="p-5 border rounded-2xl bg-white space-y-2">
-                  <div className="text-xs font-bold text-indigo-600">
-                    {d.mapel} • Oleh {d.penanya} ({d.waktu})
+                <div
+                  key={d.id}
+                  className="p-6 border-2 border-slate-200 rounded-3xl bg-white space-y-4"
+                >
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-bold text-indigo-600">
+                      {d.mapel} • Oleh <b>{d.penanya}</b> ({d.waktu})
+                    </span>
+                    {d.solved && (
+                      <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-black flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Terjawab (Solved)
+                      </span>
+                    )}
                   </div>
-                  <h4 className="font-black text-base">{d.judul}</h4>
-                  <p className="text-sm text-slate-600">{d.pertanyaan}</p>
+
+                  <div>
+                    <h4 className="font-black text-lg text-slate-900">{d.judul}</h4>
+                    <p className="text-sm text-slate-600 mt-1">{d.pertanyaan}</p>
+                  </div>
+
+                  {/* Daftar Jawaban & Tombol Tandai Best Answer */}
+                  <div className="space-y-2.5 pl-4 border-l-2 border-indigo-200">
+                    {d.jawaban.map((jwb) => (
+                      <div
+                        key={jwb.id}
+                        className={`p-3.5 rounded-2xl border text-xs space-y-1.5 ${
+                          jwb.isBestAnswer
+                            ? "bg-emerald-50 border-emerald-400"
+                            : "bg-slate-50 border-slate-200"
+                        }`}
+                      >
+                        <div className="flex flex-wrap justify-between items-center gap-2">
+                          <span className="font-black text-slate-900">
+                            {jwb.penjawab} ({jwb.rolePenjawab})
+                          </span>
+                          <div className="flex items-center gap-2">
+                            {jwb.isBestAnswer && (
+                              <span className="px-2.5 py-0.5 rounded bg-emerald-600 text-white font-black text-[10px]">
+                                ★ JAWABAN TERBAIK (+50 XP)
+                              </span>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setDaftarDiskusi(
+                                  daftarDiskusi.map((item) =>
+                                    item.id === d.id
+                                      ? {
+                                          ...item,
+                                          jawaban: item.jawaban.map((x) =>
+                                            x.id === jwb.id
+                                              ? { ...x, upvotes: x.upvotes + 1 }
+                                              : x
+                                          ),
+                                        }
+                                      : item
+                                  )
+                                );
+                              }}
+                              className="px-2.5 py-1 rounded-lg bg-white border font-bold flex items-center gap-1 cursor-pointer"
+                            >
+                              <ThumbsUp className="w-3 h-3 text-indigo-600" /> {jwb.upvotes}
+                            </button>
+
+                            {!jwb.isBestAnswer && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setDaftarDiskusi(
+                                    daftarDiskusi.map((item) =>
+                                      item.id === d.id
+                                        ? {
+                                            ...item,
+                                            solved: true,
+                                            jawaban: item.jawaban.map((x) => ({
+                                              ...x,
+                                              isBestAnswer: x.id === jwb.id,
+                                            })),
+                                          }
+                                        : item
+                                    )
+                                  );
+                                  tambahXP(50);
+                                }}
+                                className="px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-black cursor-pointer"
+                              >
+                                ★ Tandai Jawaban Terbaik
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        <p className="text-slate-700">{jwb.isi}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Form Tambah Jawaban */}
+                  <div className="flex gap-2 pt-1">
+                    <input
+                      type="text"
+                      value={inputJawabanForum[d.id] || ""}
+                      onChange={(e) =>
+                        setInputJawabanForum({ ...inputJawabanForum, [d.id]: e.target.value })
+                      }
+                      placeholder="Bantu jawab pertanyaan teman Anda (+25 XP)..."
+                      className="flex-1 p-2.5 bg-slate-50 border rounded-xl text-xs font-semibold"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const isi = (inputJawabanForum[d.id] || "").trim();
+                        if (!isi) return;
+                        setDaftarDiskusi(
+                          daftarDiskusi.map((item) =>
+                            item.id === d.id
+                              ? {
+                                  ...item,
+                                  jawaban: [
+                                    ...item.jawaban,
+                                    {
+                                      id: "jwb-" + Date.now(),
+                                      penjawab: userLogin.nama,
+                                      rolePenjawab: userLogin.role,
+                                      isi,
+                                      waktu: "Baru saja",
+                                      upvotes: 1,
+                                    },
+                                  ],
+                                }
+                              : item
+                          )
+                        );
+                        setInputJawabanForum({ ...inputJawabanForum, [d.id]: "" });
+                        tambahXP(25);
+                      }}
+                      className="bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-xs font-black cursor-pointer"
+                    >
+                      Jawab
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
 
+          {/* Kolom Kanan: Booking Slot Konsultasi Privat 1-on-1 (Office Hours) */}
           <div className="lg:col-span-5 bg-white text-slate-800 p-8 rounded-3xl border space-y-5">
-            <h3 className="text-xl font-black flex items-center gap-2">
-              <Video className="w-5 h-5 text-emerald-600" /> Klinik Konsultasi Pakar (Office Hours)
-            </h3>
+            <div>
+              <span className="bg-emerald-100 text-emerald-800 text-xs font-black px-3 py-1 rounded-full uppercase">
+                1-on-1 Mentorship Booking
+              </span>
+              <h3 className="text-xl font-black mt-2 flex items-center gap-2">
+                <Video className="w-5 h-5 text-emerald-600" /> Booking Slot Konsultasi Pakar
+                (Office Hours)
+              </h3>
+            </div>
+
             {officeHours.map((oh) => (
               <div key={oh.id} className="p-5 rounded-2xl bg-slate-50 border space-y-3 text-xs">
                 <div className="font-black text-base text-slate-900">{oh.topikBahasan}</div>
                 <div className="text-slate-600">
                   Narasumber: <b>{oh.namaAhli}</b> • {oh.jadwalHariJam}
                 </div>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={inputTanyaOh[oh.id] || ""}
-                    onChange={(e) => setInputTanyaOh({ ...inputTanyaOh, [oh.id]: e.target.value })}
-                    placeholder="Titip pertanyaan antrean..."
-                    className="flex-1 p-2.5 bg-white border rounded-xl"
-                  />
+
+                {/* Daftar Antrean Slot 1-on-1 */}
+                <div className="space-y-1.5 pt-1">
+                  <div className="font-black text-[11px] uppercase text-slate-400">
+                    Slot Konsultasi Terpesan ({oh.antreanPertanyaan.length}):
+                  </div>
+                  {oh.antreanPertanyaan.map((ant, idx) => (
+                    <div
+                      key={idx}
+                      className="p-2.5 rounded-xl bg-white border flex justify-between items-center"
+                    >
+                      <span>
+                        <b>{ant.namaSiswa}:</b> {ant.pertanyaan}
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 font-black text-[10px] shrink-0">
+                        {ant.jamSlotBooking || "16:00 WIB"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="space-y-2 pt-2 border-t">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <select
+                      value={slotJamPilih[oh.id] || "Slot 1 (16:00 - 16:20 WIB)"}
+                      onChange={(e) =>
+                        setSlotJamPilih({ ...slotJamPilih, [oh.id]: e.target.value })
+                      }
+                      className="p-2.5 bg-white border rounded-xl font-bold"
+                    >
+                      <option value="Slot 1 (16:00 - 16:20 WIB)">
+                        Slot 1 (16:00 - 16:20 WIB)
+                      </option>
+                      <option value="Slot 2 (16:20 - 16:40 WIB)">
+                        Slot 2 (16:20 - 16:40 WIB)
+                      </option>
+                      <option value="Slot 3 (16:40 - 17:00 WIB)">
+                        Slot 3 (16:40 - 17:00 WIB)
+                      </option>
+                    </select>
+                    <input
+                      type="text"
+                      value={inputTanyaOh[oh.id] || ""}
+                      onChange={(e) =>
+                        setInputTanyaOh({ ...inputTanyaOh, [oh.id]: e.target.value })
+                      }
+                      placeholder="Topik konsultasi 1-on-1..."
+                      className="p-2.5 bg-white border rounded-xl"
+                    />
+                  </div>
                   <button
                     onClick={() => {
                       const isi = inputTanyaOh[oh.id];
                       if (!isi) return;
+                      const slot = slotJamPilih[oh.id] || "Slot 1 (16:00 - 16:20 WIB)";
                       setOfficeHours(
                         officeHours.map((x) =>
                           x.id === oh.id
@@ -277,17 +530,23 @@ export const TryoutDanForumView: React.FC<TryoutForumProps> = ({
                                 ...x,
                                 antreanPertanyaan: [
                                   ...x.antreanPertanyaan,
-                                  { namaSiswa: userLogin.nama, pertanyaan: isi },
+                                  {
+                                    namaSiswa: userLogin.nama,
+                                    pertanyaan: isi,
+                                    jamSlotBooking: slot,
+                                  },
                                 ],
                               }
                             : x
                         )
                       );
                       setInputTanyaOh({ ...inputTanyaOh, [oh.id]: "" });
+                      tambahXP(20);
+                      alert(`✓ Slot Konsultasi 1-on-1 (${slot}) berhasil dipesan!`);
                     }}
-                    className="bg-emerald-600 text-white px-4 py-2 rounded-xl font-black"
+                    className="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-black cursor-pointer"
                   >
-                    Antre
+                    Booking Slot 1-on-1 (+20 XP)
                   </button>
                 </div>
               </div>
@@ -299,7 +558,7 @@ export const TryoutDanForumView: React.FC<TryoutForumProps> = ({
   }
 
   // ============================================================================
-  // 3. TAMPILAN PUSAT TRYOUT CBT ANTI-CHEAT, CORAT-CORET & JADWAL SESI
+  // 3. TAMPILAN PUSAT TRYOUT CBT ANTI-CHEAT
   // ============================================================================
   if (sedangUjian && paketTryoutAktif) {
     return (
@@ -335,14 +594,14 @@ export const TryoutDanForumView: React.FC<TryoutForumProps> = ({
     <div className="space-y-8">
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-8 rounded-[2.2rem] shadow-xl space-y-2">
         <span className="bg-emerald-400 text-slate-950 text-xs font-black px-3 py-1 rounded-full uppercase">
-          Proctored CBT Engine
+          Proctored CBT Engine + Auto-Randomize &amp; Resume
         </span>
         <h1 className="text-3xl font-black mt-2">
-          Pusat Simulasi Ujian CBT, Kertas Corat-Coret &amp; Sensor Pelanggaran
+          Pusat Simulasi Ujian CBT, Acak Soal Otomatis &amp; Sensor Pelanggaran
         </h1>
         <p className="text-sm text-slate-300">
-          Dilengkapi jadwal buka-tutup sesi otomatis, opsi penguncian navigasi mundur soal, blokir
-          keyboard, dan deteksi pindah tab browser.
+          Dilengkapi pengacakan soal otomatis, pemulihan sesi ujian (*auto-resume*) saat kendala
+          teknis, kertas corat-coret, dan penguncian tombol mundur.
         </p>
       </div>
 
@@ -402,7 +661,6 @@ export const TryoutDanForumView: React.FC<TryoutForumProps> = ({
                   </div>
                 </div>
 
-                {/* Badge Aturan Ujian */}
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   <span className="text-[11px] font-bold bg-slate-100 px-2.5 py-1 rounded-lg flex items-center gap-1">
                     <Lock className="w-3 h-3 text-amber-600" />
@@ -415,6 +673,9 @@ export const TryoutDanForumView: React.FC<TryoutForumProps> = ({
                   <span className="text-[11px] font-bold bg-slate-100 px-2.5 py-1 rounded-lg flex items-center gap-1">
                     <Keyboard className="w-3 h-3 text-rose-600" />
                     {pkt.izinkanKeyboard ? "Keyboard Aktif" : "Keyboard Diblokir"}
+                  </span>
+                  <span className="text-[11px] font-bold bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-lg flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" /> Auto-Random &amp; Resume
                   </span>
                 </div>
               </div>
@@ -433,7 +694,7 @@ export const TryoutDanForumView: React.FC<TryoutForumProps> = ({
                   className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-300 text-white px-5 py-2.5 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer"
                 >
                   <Play className="w-3.5 h-3.5 fill-white" />
-                  {statusSesi.terbuka ? "Mulai Ujian CBT" : statusSesi.label}
+                  {statusSesi.terbuka ? "Mulai / Lanjutkan CBT" : statusSesi.label}
                 </button>
               </div>
             </div>

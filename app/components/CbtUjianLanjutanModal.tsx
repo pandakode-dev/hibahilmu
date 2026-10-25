@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   Clock,
   Send,
@@ -10,6 +10,8 @@ import {
   Lock,
   Keyboard,
   XCircle,
+  Shuffle,
+  RotateCcw,
 } from "lucide-react";
 import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";
@@ -32,13 +34,24 @@ export const CbtUjianLanjutanModal: React.FC<CbtUjianProps> = ({
   onSelesaiUjian,
   onBatal,
 }) => {
+  const storageKey = `cbt_resume_${paket.id}_${userNama}`;
+
+  // Randomization Engine: Acak urutan soal jika paket.acakSoalDanOpsi aktif (default true)
+  const daftarSoalTeracak = useMemo(() => {
+    const salinan = [...(paket.daftarSoal || [])];
+    if (paket.acakSoalDanOpsi ?? true) {
+      return salinan.sort(() => Math.random() - 0.5);
+    }
+    return salinan;
+  }, [paket.id]);
+
   const [indeksSoal, setIndeksSoal] = useState(0);
   const [jawaban, setJawaban] = useState<{ [key: number]: number }>({});
   const [sisaDetik, setSisaDetik] = useState((paket.durasiMenit || 15) * 60);
   const [pelanggaran, setPelanggaran] = useState(0);
   const [pesanPeringatan, setPesanPeringatan] = useState("");
+  const [infoResumeTeknis, setInfoResumeTeknis] = useState(false);
 
-  // State Corat-Coret (Scratchpad Canvas)
   const [bukaCoratCoret, setBukaCoratCoret] = useState(Boolean(paket.pakaiCoratCoret ?? true));
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -48,7 +61,37 @@ export const CbtUjianLanjutanModal: React.FC<CbtUjianProps> = ({
   const pakaiCoratCoret = paket.pakaiCoratCoret ?? true;
   const maxBatasPelanggaran = paket.batasPelanggaran || 3;
 
+  // Fitur Resume Ujian Khusus Kendala Teknis: Muat progres tersimpan dari localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.sisaDetik > 10) {
+          setJawaban(parsed.jawaban || {});
+          setIndeksSoal(parsed.indeksSoal || 0);
+          setSisaDetik(parsed.sisaDetik);
+          setPelanggaran(parsed.pelanggaran || 0);
+          setInfoResumeTeknis(true);
+        }
+      }
+    } catch {}
+  }, [storageKey]);
+
+  // Simpan otomatis setiap ada perubahan jawaban atau waktu
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify({ jawaban, indeksSoal, sisaDetik, pelanggaran })
+      );
+    } catch {}
+  }, [jawaban, indeksSoal, sisaDetik, pelanggaran, storageKey]);
+
   const hitungDanKumpul = (diskualifikasi: boolean, jmlPelanggaranAkhir = pelanggaran) => {
+    try {
+      localStorage.removeItem(storageKey);
+    } catch {}
     if (document.fullscreenElement && document.exitFullscreen) {
       document.exitFullscreen().catch(() => {});
     }
@@ -57,14 +100,13 @@ export const CbtUjianLanjutanModal: React.FC<CbtUjianProps> = ({
       return;
     }
     let benar = 0;
-    paket.daftarSoal.forEach((soal, idx) => {
+    daftarSoalTeracak.forEach((soal, idx) => {
       if (jawaban[idx] === soal.jawabanBenar) benar++;
     });
-    const nilaiAkhir = Math.round((benar / (paket.daftarSoal.length || 1)) * 100);
+    const nilaiAkhir = Math.round((benar / (daftarSoalTeracak.length || 1)) * 100);
     onSelesaiUjian(nilaiAkhir, jmlPelanggaranAkhir, "Selesai Normal");
   };
 
-  // Sensor Pindah Tab / Keluar Jendela / Klik Kanan
   useEffect(() => {
     const catatPelanggaran = (alasan: string) => {
       setPelanggaran((prev) => {
@@ -99,7 +141,6 @@ export const CbtUjianLanjutanModal: React.FC<CbtUjianProps> = ({
     };
   }, [maxBatasPelanggaran, jawaban]);
 
-  // Sensor Blokir Keyboard
   useEffect(() => {
     if (!izinkanKeyboard) {
       const handleKeyDown = (e: KeyboardEvent) => {
@@ -120,7 +161,6 @@ export const CbtUjianLanjutanModal: React.FC<CbtUjianProps> = ({
     }
   }, [izinkanKeyboard, maxBatasPelanggaran, jawaban]);
 
-  // Timer Hitung Mundur
   useEffect(() => {
     const timer = setInterval(() => {
       setSisaDetik((prev) => {
@@ -174,20 +214,22 @@ export const CbtUjianLanjutanModal: React.FC<CbtUjianProps> = ({
     return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   };
 
-  const soalAktif = paket.daftarSoal[indeksSoal];
+  const soalAktif = daftarSoalTeracak[indeksSoal];
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950 text-slate-100 flex flex-col p-4 sm:p-6 select-none overflow-y-auto">
-      {/* Header Atas CBT */}
       <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex flex-wrap justify-between items-center gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[11px] font-black uppercase bg-indigo-600 text-white px-3 py-0.5 rounded-full">
               {paket.tipeUjian || "Pilihan Ganda"}
             </span>
+            <span className="text-[11px] font-bold bg-emerald-500/20 text-emerald-300 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
+              <Shuffle className="w-3 h-3" /> Soal Diacak Otomatis
+            </span>
             <span className="text-[11px] font-bold bg-slate-800 text-amber-300 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
               <Lock className="w-3 h-3" />
-              {bolehMundur ? "Bisa Mundur Soal" : "Tidak Bisa Mundur (One-Way)"}
+              {bolehMundur ? "Bisa Mundur Soal" : "Tidak Bisa Mundur"}
             </span>
             <span className="text-[11px] font-bold bg-slate-800 text-rose-300 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
               <Keyboard className="w-3 h-3" />
@@ -224,12 +266,24 @@ export const CbtUjianLanjutanModal: React.FC<CbtUjianProps> = ({
             type="button"
             onClick={onBatal}
             className="p-2.5 rounded-xl bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white cursor-pointer"
-            title="Batalkan / Keluar"
+            title="Simpan Sementara & Keluar"
           >
             <XCircle className="w-5 h-5" />
           </button>
         </div>
       </div>
+
+      {infoResumeTeknis && (
+        <div className="mt-3 p-3 bg-emerald-600/20 border border-emerald-500/40 text-emerald-300 rounded-xl text-xs font-bold flex items-center justify-between">
+          <span className="flex items-center gap-2">
+            <RotateCcw className="w-4 h-4" /> Mode Auto-Resume Aktif: Jawaban dan sisa waktu Anda
+            sebelumnya berhasil dipulihkan!
+          </span>
+          <button onClick={() => setInfoResumeTeknis(false)} className="underline">
+            Tutup
+          </button>
+        </div>
+      )}
 
       {pesanPeringatan && (
         <div className="mt-4 p-4 bg-rose-600 text-white rounded-2xl font-black text-xs sm:text-sm flex items-center gap-3 shadow-lg">
@@ -238,7 +292,6 @@ export const CbtUjianLanjutanModal: React.FC<CbtUjianProps> = ({
         </div>
       )}
 
-      {/* Body Soal & Kertas Corat-Coret */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-5 flex-1">
         <div
           className={`${
@@ -248,10 +301,10 @@ export const CbtUjianLanjutanModal: React.FC<CbtUjianProps> = ({
           <div className="bg-slate-900 border border-slate-800 p-6 sm:p-8 rounded-3xl space-y-5">
             <div className="flex justify-between items-center text-xs font-black text-slate-400">
               <span>
-                SOAL NOMOR {indeksSoal + 1} DARI {paket.daftarSoal.length}
+                SOAL NOMOR {indeksSoal + 1} DARI {daftarSoalTeracak.length}
               </span>
               <div className="flex gap-1.5">
-                {paket.daftarSoal.map((_, idx) => (
+                {daftarSoalTeracak.map((_, idx) => (
                   <button
                     key={idx}
                     type="button"
@@ -317,7 +370,7 @@ export const CbtUjianLanjutanModal: React.FC<CbtUjianProps> = ({
               ← Sebelumnya {!bolehMundur && "(Dikunci)"}
             </button>
 
-            {indeksSoal < paket.daftarSoal.length - 1 ? (
+            {indeksSoal < daftarSoalTeracak.length - 1 ? (
               <button
                 type="button"
                 onClick={() => setIndeksSoal((prev) => prev + 1)}
@@ -337,7 +390,6 @@ export const CbtUjianLanjutanModal: React.FC<CbtUjianProps> = ({
           </div>
         </div>
 
-        {/* Kanvas Corat-Coret Samping */}
         {bukaCoratCoret && pakaiCoratCoret && (
           <div className="lg:col-span-5 bg-slate-900 border border-slate-800 p-5 rounded-3xl flex flex-col space-y-3">
             <div className="flex justify-between items-center">

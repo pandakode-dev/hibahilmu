@@ -9,6 +9,8 @@ import {
   Moon,
   Type,
   CheckCheck,
+  Accessibility,
+  Volume2,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 
@@ -68,10 +70,17 @@ import {
   AgendaWebinarView,
 } from "./components/AgendaDanAlertBanner";
 import { DonasiDanBugView } from "./components/DonasiDanBugView";
+import { FiturInovasiHubView } from "./components/FiturInovasiHubView";
 
 export default function AplikasiHibahIlmu() {
   const [darkMode, setDarkMode] = useState<boolean>(false);
   const [ukuranTeksBesar, setUkuranTeksBesar] = useState<boolean>(false);
+  
+  // State Aksesibilitas Ramah Disabilitas
+  const [kontrasTinggi, setKontrasTinggi] = useState<boolean>(false);
+  const [spasiTeksLebar, setSpasiTeksLebar] = useState<boolean>(false);
+  const [bukaMenuAksesibilitas, setBukaMenuAksesibilitas] = useState<boolean>(false);
+
   const [menuAktif, setMenuAktif] = useState<string>("beranda");
   const [modeRoleAuth, setModeRoleAuth] = useState<"siswa" | "guru">("siswa");
 
@@ -89,7 +98,6 @@ export default function AplikasiHibahIlmu() {
   const [daftarNotifikasi, setDaftarNotifikasi] = useState<NotifikasiItem[]>(NOTIF_AWAL);
   const [bukaMenuNotif, setBukaMenuNotif] = useState<boolean>(false);
 
-  // State Konfigurasi Web (Kata Mutiara, Rekening Bank/DANA, Kontak) & Laporan Bug
   const [konfigurasiWeb, setKonfigurasiWeb] =
     useState<KonfigurasiWeb>(KONFIGURASI_WEB_AWAL);
   const [daftarLaporanBug, setDaftarLaporanBug] =
@@ -216,7 +224,6 @@ export default function AplikasiHibahIlmu() {
     setDaftarNotifikasi((prev) => [baru, ...prev]);
   };
 
-  // Fungsi Saat Pengguna Mengirim Laporan Bug / Masukan -> Otomatis Masuk ke Notifikasi Admin
   const handleKirimLaporanBugKeAdmin = (laporanBaru: LaporanBugItem) => {
     setDaftarLaporanBug((prev) => [laporanBaru, ...prev]);
     const notifUntukAdmin: NotifikasiItem = {
@@ -232,7 +239,6 @@ export default function AplikasiHibahIlmu() {
     setDaftarNotifikasi((prev) => [notifUntukAdmin, ...prev]);
   };
 
-  // Fungsi Saat Donatur Mengirim Konfirmasi Donasi -> Masuk ke Notifikasi Admin
   const handleKirimNotifDonasiKeAdmin = (
     namaDonatur: string,
     nominal: number,
@@ -353,6 +359,17 @@ export default function AplikasiHibahIlmu() {
     if (nilai > 0) tambahXP(50);
   };
 
+  const bacakanLayarAksesibilitas = () => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(
+        `Selamat datang di Hibah Ilmu Indonesia. Anda sedang berada di menu ${menuAktif}. Gunakan navigasi atas untuk berpindah ke Ruang Belajar, Webinar, Tryout CBT, Hub Inovasi, atau Donasi Wakaf.`
+      );
+      u.lang = "id-ID";
+      window.speechSynthesis.speak(u);
+    }
+  };
+
   const notifikasiUserAktif = daftarNotifikasi.filter((n) =>
     userLogin ? n.targetUserId === userLogin.id || n.targetUserId === "ALL" : n.targetUserId === "ALL"
   );
@@ -361,13 +378,21 @@ export default function AplikasiHibahIlmu() {
   return (
     <div
       className={`min-h-screen font-sans antialiased relative overflow-x-hidden transition-colors duration-200 ${
-        darkMode ? "bg-slate-950 text-slate-100" : "bg-[#F8FAFC] text-slate-800"
-      } ${ukuranTeksBesar ? "text-lg leading-relaxed" : "text-base leading-normal"}`}
+        kontrasTinggi
+          ? "bg-black text-yellow-300 contrast-125"
+          : darkMode
+          ? "bg-slate-950 text-slate-100"
+          : "bg-[#F8FAFC] text-slate-800"
+      } ${ukuranTeksBesar ? "text-lg leading-relaxed" : "text-base leading-normal"} ${
+        spasiTeksLebar ? "tracking-wider leading-loose" : ""
+      }`}
     >
       {/* HEADER NAVBAR */}
       <header
         className={`sticky top-0 z-40 backdrop-blur-xl border-b shadow-xs ${
-          darkMode ? "bg-slate-900/90 border-slate-800" : "bg-white/90 border-slate-200/80"
+          darkMode || kontrasTinggi
+            ? "bg-slate-900/95 border-slate-800"
+            : "bg-white/90 border-slate-200/80"
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 py-3.5 flex flex-wrap justify-between items-center gap-4">
@@ -399,10 +424,11 @@ export default function AplikasiHibahIlmu() {
           <nav className="flex items-center gap-1.5 overflow-x-auto">
             {[
               { id: "beranda", label: "Beranda & Kelas" },
-              { id: "webinar", label: "🔴 Webinar & Agenda" },
+              { id: "inovasi", label: "✨ Hub Inovasi" },
+              { id: "webinar", label: "🔴 Webinar" },
               { id: "tryout", label: "Tryout CBT" },
               { id: "donasi", label: "💝 Wakaf & Donasi" },
-              { id: "lapor_bug", label: "🐞 Lapor Bug / Masukan" },
+              { id: "lapor_bug", label: "🐞 Lapor Bug" },
               { id: "forum", label: "Forum PR" },
               { id: "leaderboard", label: "Leaderboard" },
             ].map((tab) => (
@@ -413,10 +439,10 @@ export default function AplikasiHibahIlmu() {
                   setJenjangAktif(null);
                   setKelasAktif(null);
                 }}
-                className={`px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition whitespace-nowrap cursor-pointer ${
+                className={`px-3 py-2.5 rounded-xl text-xs font-extrabold transition whitespace-nowrap cursor-pointer ${
                   menuAktif === tab.id
                     ? "bg-emerald-600 text-white shadow-sm"
-                    : darkMode
+                    : darkMode || kontrasTinggi
                     ? "text-slate-200 hover:bg-slate-800"
                     : "text-slate-700 hover:bg-slate-100"
                 }`}
@@ -426,14 +452,52 @@ export default function AplikasiHibahIlmu() {
             ))}
           </nav>
 
-          <div className="flex items-center gap-2.5 relative">
-            <button
-              onClick={() => setUkuranTeksBesar(!ukuranTeksBesar)}
-              className="p-2.5 rounded-xl border text-sm font-black cursor-pointer"
-              title="Perbesar Ukuran Font"
-            >
-              <Type className="w-4 h-4" />
-            </button>
+          <div className="flex items-center gap-2 relative">
+            <div className="relative">
+              <button
+                onClick={() => setBukaMenuAksesibilitas(!bukaMenuAksesibilitas)}
+                className="p-2.5 rounded-xl border bg-indigo-50 text-indigo-800 cursor-pointer"
+                title="Fitur Ramah Disabilitas (Aksesibilitas)"
+              >
+                <Accessibility className="w-4 h-4" />
+              </button>
+
+              {bukaMenuAksesibilitas && (
+                <div className="absolute right-0 mt-2 w-72 bg-white text-slate-800 rounded-3xl shadow-2xl border-2 border-indigo-200 p-4 z-50 space-y-2.5 text-xs">
+                  <div className="font-black text-sm border-b pb-2 text-indigo-950">
+                    ♿ Pengaturan Ramah Disabilitas
+                  </div>
+                  <button
+                    onClick={() => setUkuranTeksBesar(!ukuranTeksBesar)}
+                    className="w-full text-left p-2.5 rounded-xl border font-bold flex justify-between items-center cursor-pointer"
+                  >
+                    <span>Perbesar Font Teks</span>
+                    <b>{ukuranTeksBesar ? "Aktif ✓" : "Normal"}</b>
+                  </button>
+                  <button
+                    onClick={() => setKontrasTinggi(!kontrasTinggi)}
+                    className="w-full text-left p-2.5 rounded-xl border font-bold flex justify-between items-center cursor-pointer"
+                  >
+                    <span>Mode Kontras Tinggi</span>
+                    <b>{kontrasTinggi ? "Aktif ✓" : "Mati"}</b>
+                  </button>
+                  <button
+                    onClick={() => setSpasiTeksLebar(!spasiTeksLebar)}
+                    className="w-full text-left p-2.5 rounded-xl border font-bold flex justify-between items-center cursor-pointer"
+                  >
+                    <span>Spasi Huruf Lebar (Disleksia)</span>
+                    <b>{spasiTeksLebar ? "Aktif ✓" : "Normal"}</b>
+                  </button>
+                  <button
+                    onClick={bacakanLayarAksesibilitas}
+                    className="w-full p-2.5 rounded-xl bg-indigo-600 text-white font-black flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Volume2 className="w-4 h-4" /> Bacakan Panduan Layar (TTS)
+                  </button>
+                </div>
+              )}
+            </div>
+
             <button
               onClick={() => setDarkMode(!darkMode)}
               className="p-2.5 rounded-xl border cursor-pointer"
@@ -446,17 +510,15 @@ export default function AplikasiHibahIlmu() {
               )}
             </button>
 
-            <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 text-amber-900 px-3.5 py-2 rounded-xl text-sm font-black">
+            <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 text-amber-900 px-3 py-2 rounded-xl text-xs sm:text-sm font-black">
               <Flame className="w-4 h-4 fill-amber-500 text-amber-500" />
               <span>{poinXP} XP</span>
             </div>
 
-            {/* LONCENG NOTIFIKASI (TERMASUK NOTIFIKASI BUG & DONASI UNTUK ADMIN) */}
             <div className="relative">
               <button
                 onClick={() => setBukaMenuNotif(!bukaMenuNotif)}
                 className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 relative cursor-pointer"
-                title="Notifikasi Tugas, Webinar, Donasi & Laporan Bug"
               >
                 <Bell className="w-4 h-4" />
                 {jumlahBelumDibaca > 0 && (
@@ -521,7 +583,7 @@ export default function AplikasiHibahIlmu() {
                 setJenjangAktif(null);
                 setKelasAktif(null);
               }}
-              className="px-5 py-2.5 rounded-xl text-sm font-black bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-2 shadow-md cursor-pointer"
+              className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-2 shadow-md cursor-pointer"
             >
               <LayoutDashboard className="w-4 h-4" />
               <span>{userLogin ? `Panel ${userLogin.role}` : "Masuk / Daftar"}</span>
@@ -611,8 +673,22 @@ export default function AplikasiHibahIlmu() {
               if (rolePilih) setModeRoleAuth(rolePilih);
               setMenuAktif("dashboard");
             }}
-konfigurasiWeb={konfigurasiWeb}
+            konfigurasiWeb={konfigurasiWeb}
             onBukaMenuLain={(menuTujuan: string) => setMenuAktif(menuTujuan)}
+          />
+        )}
+
+        {menuAktif === "inovasi" && (
+          <FiturInovasiHubView
+            userLogin={userLogin}
+            poinXP={poinXP}
+            materiSelesai={materiSelesai}
+            rppList={rppList}
+            setRppList={setRppList}
+            daftarPresensi={daftarPresensi}
+            setDaftarPresensi={setDaftarPresensi}
+            daftarPaketTryout={daftarPaketTryout}
+            tambahXP={tambahXP}
           />
         )}
 
