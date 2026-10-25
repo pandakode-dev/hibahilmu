@@ -237,6 +237,25 @@ export interface JadwalLiveItem {
   targetKelas: string;
 }
 
+// FITUR BARU: Agenda Kegiatan, Webinar & Live Streaming Nasional
+export interface AgendaWebinarItem {
+  id: string;
+  judulAcara: string;
+  kategoriAcara:
+    | "Webinar Nasional"
+    | "Live Streaming Kelas"
+    | "Workshop Guru & Dosen"
+    | "Tryout Akbar Nasional";
+  narasumber: string;
+  tanggalWaktu: string; // Format ISO "2026-10-26T19:00"
+  platform: "YouTube Live" | "Zoom Meeting" | "Google Meet";
+  streamAtauJoinUrl: string;
+  targetPeserta: "Semua (Pengajar & Pelajar)" | "Khusus Pengajar" | "Khusus Pelajar/Mahasiswa";
+  sedangLive?: boolean;
+  kuotaPeserta?: number;
+  pesertaTerdaftarIds?: string[];
+}
+
 export interface StudyRoomItem {
   id: string;
   namaGrup: string;
@@ -344,7 +363,8 @@ export interface AkunPengguna {
 
 export interface NotifikasiItem {
   id: string;
-  targetUserId: string;
+  targetUserId: string; // ID User atau "ALL" atau "GURU" atau "SISWA"
+  tipeNotif?: "tugas_deadline" | "kuis_tutup" | "webinar_live" | "info_umum";
   judul: string;
   pesan: string;
   pengirim: string;

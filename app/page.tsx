@@ -8,6 +8,8 @@ import {
   Sun,
   Moon,
   Type,
+  Radio,
+  CheckCheck,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 
@@ -31,6 +33,7 @@ import {
   StudyRoomItem,
   PengajuanBeasiswaItem,
   DiskusiPR,
+  AgendaWebinarItem,
 } from "./types";
 
 import {
@@ -44,6 +47,7 @@ import {
   TUGAS_AWAL,
   PENGUMPULAN_AWAL,
   JADWAL_LIVE_AWAL,
+  AGENDA_WEBINAR_AWAL,
   STUDY_ROOMS_AWAL,
   BEASISWA_AWAL,
   RPP_REPOSITORY_AWAL,
@@ -54,6 +58,10 @@ import {
 import { RuangBelajarView } from "./components/RuangBelajarView";
 import { TryoutDanForumView } from "./components/TryoutDanForumView";
 import { DashboardPanelView } from "./components/DashboardPanelView";
+import {
+  SmartAlertBanner,
+  AgendaWebinarView,
+} from "./components/AgendaDanAlertBanner";
 
 export default function AplikasiHibahIlmu() {
   const [darkMode, setDarkMode] = useState<boolean>(false);
@@ -84,6 +92,8 @@ export default function AplikasiHibahIlmu() {
   const [bankSoalKolektif, setBankSoalKolektif] =
     useState<SoalTryout[]>(BANK_SOAL_KOLEKTIF_AWAL);
   const [jadwalLive, setJadwalLive] = useState<JadwalLiveItem[]>(JADWAL_LIVE_AWAL);
+  const [agendaList, setAgendaList] =
+    useState<AgendaWebinarItem[]>(AGENDA_WEBINAR_AWAL);
   const [studyRooms, setStudyRooms] = useState<StudyRoomItem[]>(STUDY_ROOMS_AWAL);
   const [daftarBeasiswa, setDaftarBeasiswa] =
     useState<PengajuanBeasiswaItem[]>(BEASISWA_AWAL);
@@ -123,6 +133,9 @@ export default function AplikasiHibahIlmu() {
 
   const [daftarDiskusi, setDaftarDiskusi] = useState<DiskusiPR[]>(DISKUSI_PR_AWAL);
 
+  const semuaModulFlat = daftarJenjang.flatMap((j) => j.kelas);
+
+  // Presensi Otomatis Saat Membuka Materi
   useEffect(() => {
     if (kelasAktif && userLogin) {
       const jam = new Date().toLocaleTimeString("id-ID", {
@@ -166,8 +179,28 @@ export default function AplikasiHibahIlmu() {
     }
   };
 
+  // Fungsi Broadcast Notifikasi ke Semua (Pengajar & Mahasiswa)
+  const kirimBroadcastNotif = (
+    judul: string,
+    pesan: string,
+    tipeNotif: "tugas_deadline" | "kuis_tutup" | "webinar_live" | "info_umum" = "info_umum"
+  ) => {
+    const baru: NotifikasiItem = {
+      id: "notif-bc-" + Date.now(),
+      targetUserId: "ALL",
+      tipeNotif,
+      judul,
+      pesan,
+      pengirim: userLogin?.nama || "Sistem Pengingat HibahIlmu",
+      waktu: "Baru saja",
+      dibaca: false,
+    };
+    setDaftarNotifikasi((prev) => [baru, ...prev]);
+  };
+
   const handleKumpulTugasModul = (tugasId: string, jawabanTeks: string) => {
     if (!userLogin) return;
+    const tugasInfo = daftarTugas.find((t) => t.id === tugasId);
     setDaftarPengumpulan((prev) => [
       {
         id: "sub-" + Date.now(),
@@ -179,8 +212,27 @@ export default function AplikasiHibahIlmu() {
       },
       ...prev,
     ]);
+    // Kirim notifikasi otomatis ke Pengajar & Mahasiswa bahwa tugas berhasil dikumpulkan
+    kirimBroadcastNotif(
+      `📥 Tugas Dikumpulkan: ${tugasInfo?.judul || "Tugas Modul"}`,
+      `Mahasiswa/Siswa ${userLogin.nama} telah mengumpulkan tugas sebelum batas waktu tutup. Pengajar dapat memeriksa di tab AI Rubric Scoring.`,
+      "tugas_deadline"
+    );
     tambahXP(40);
-    alert("✓ Jawaban tugas modul berhasil dikirim dan masuk ke antrean penilaian guru!");
+    alert("✓ Jawaban tugas modul berhasil dikirim dan notifikasi telah diteruskan ke Pengajar!");
+  };
+
+  // Fungsi Pembungkus saat Guru menambahkan Tugas Baru agar otomatis mengirim Notifikasi ke Semua
+  const handleSetDaftarTugasDenganNotif = (listBaru: TugasItem[]) => {
+    if (listBaru.length > daftarTugas.length) {
+      const tugasTerbaru = listBaru[0];
+      kirimBroadcastNotif(
+        `📝 TUGAS BARU DIBUKA: ${tugasTerbaru.judul}`,
+        `Pengajar ${tugasTerbaru.pembuatNama} telah menerbitkan tugas baru. Batas waktu pengumpulan (tutup): ${tugasTerbaru.deadline}.`,
+        "tugas_deadline"
+      );
+    }
+    setDaftarTugas(listBaru);
   };
 
   const kirimNotifikasiKeUser = (
@@ -193,6 +245,7 @@ export default function AplikasiHibahIlmu() {
     const baru: NotifikasiItem[] = targetIds.map((uid, i) => ({
       id: "notif-" + Date.now() + "-" + i,
       targetUserId: uid,
+      tipeNotif: "info_umum",
       judul,
       pesan,
       pengirim,
@@ -249,9 +302,11 @@ export default function AplikasiHibahIlmu() {
     if (nilai > 0) tambahXP(50);
   };
 
+  // Semua pengguna (termasuk tamu atau yang sudah login sebagai Guru/Siswa/Admin) bisa melihat notifikasi ALL
   const notifikasiUserAktif = daftarNotifikasi.filter((n) =>
-    userLogin ? n.targetUserId === userLogin.id || n.targetUserId === "ALL" : false
+    userLogin ? n.targetUserId === userLogin.id || n.targetUserId === "ALL" : n.targetUserId === "ALL"
   );
+  const jumlahBelumDibaca = notifikasiUserAktif.filter((n) => !n.dibaca).length;
 
   return (
     <div
@@ -259,6 +314,7 @@ export default function AplikasiHibahIlmu() {
         darkMode ? "bg-slate-950 text-slate-100" : "bg-[#F8FAFC] text-slate-800"
       } ${ukuranTeksBesar ? "text-lg leading-relaxed" : "text-base leading-normal"}`}
     >
+      {/* HEADER NAVBAR */}
       <header
         className={`sticky top-0 z-40 backdrop-blur-xl border-b shadow-xs ${
           darkMode ? "bg-slate-900/90 border-slate-800" : "bg-white/90 border-slate-200/80"
@@ -293,6 +349,7 @@ export default function AplikasiHibahIlmu() {
           <nav className="flex items-center gap-2 overflow-x-auto">
             {[
               { id: "beranda", label: "Beranda & Kelas" },
+              { id: "webinar", label: "🔴 Webinar & Agenda" },
               { id: "tryout", label: "Tryout CBT" },
               { id: "leaderboard", label: "Leaderboard XP" },
               { id: "forum", label: "Forum Tanya PR" },
@@ -320,14 +377,14 @@ export default function AplikasiHibahIlmu() {
           <div className="flex items-center gap-2.5 relative">
             <button
               onClick={() => setUkuranTeksBesar(!ukuranTeksBesar)}
-              className="p-2.5 rounded-xl border text-sm font-black"
+              className="p-2.5 rounded-xl border text-sm font-black cursor-pointer"
               title="Perbesar Ukuran Font"
             >
               <Type className="w-4 h-4" />
             </button>
             <button
               onClick={() => setDarkMode(!darkMode)}
-              className="p-2.5 rounded-xl border"
+              className="p-2.5 rounded-xl border cursor-pointer"
               title="Mode Gelap / Terang"
             >
               {darkMode ? (
@@ -342,29 +399,65 @@ export default function AplikasiHibahIlmu() {
               <span>{poinXP} XP</span>
             </div>
 
-            {userLogin && (
-              <div className="relative">
-                <button
-                  onClick={() => setBukaMenuNotif(!bukaMenuNotif)}
-                  className="p-2.5 rounded-xl bg-slate-100 text-slate-700 relative"
-                >
-                  <Bell className="w-4 h-4" />
-                </button>
-                {bukaMenuNotif && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white text-slate-800 rounded-3xl shadow-2xl border p-4 z-50">
-                    <div className="font-black text-sm border-b pb-2 mb-2">Kotak Notifikasi</div>
-                    <div className="space-y-2 max-h-60 overflow-y-auto">
-                      {notifikasiUserAktif.map((n) => (
-                        <div key={n.id} className="p-3 rounded-xl border text-xs bg-slate-50">
-                          <div className="font-black">{n.judul}</div>
-                          <p className="text-slate-600">{n.pesan}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+            {/* LONCENG NOTIFIKASI UNTUK SEMUA (PENGAJAR & MAHASISWA) */}
+            <div className="relative">
+              <button
+                onClick={() => setBukaMenuNotif(!bukaMenuNotif)}
+                className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 relative cursor-pointer"
+                title="Notifikasi Tugas, Kuis & Webinar"
+              >
+                <Bell className="w-4 h-4" />
+                {jumlahBelumDibaca > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-rose-600 text-white text-[10px] font-black flex items-center justify-center animate-bounce">
+                    {jumlahBelumDibaca}
+                  </span>
                 )}
-              </div>
-            )}
+              </button>
+
+              {bukaMenuNotif && (
+                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white text-slate-800 rounded-3xl shadow-2xl border-2 border-slate-200 p-4 z-50 space-y-3">
+                  <div className="flex justify-between items-center border-b pb-2">
+                    <span className="font-black text-sm">
+                      Pusat Notifikasi ({notifikasiUserAktif.length})
+                    </span>
+                    <button
+                      onClick={() =>
+                        setDaftarNotifikasi((prev) =>
+                          prev.map((n) => ({ ...n, dibaca: true }))
+                        )
+                      }
+                      className="text-[11px] font-bold text-indigo-600 flex items-center gap-1 cursor-pointer"
+                    >
+                      <CheckCheck className="w-3.5 h-3.5" /> Tandai Semua Dibaca
+                    </button>
+                  </div>
+
+                  <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+                    {notifikasiUserAktif.map((n) => (
+                      <div
+                        key={n.id}
+                        className={`p-3.5 rounded-2xl border text-xs space-y-1 ${
+                          n.tipeNotif === "tugas_deadline"
+                            ? "bg-amber-50/80 border-amber-300"
+                            : n.tipeNotif === "webinar_live"
+                            ? "bg-rose-50/80 border-rose-300"
+                            : "bg-slate-50 border-slate-200"
+                        }`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="font-black text-slate-900">{n.judul}</span>
+                          <span className="text-[10px] text-slate-400">{n.waktu}</span>
+                        </div>
+                        <p className="text-slate-600 leading-relaxed">{n.pesan}</p>
+                        <div className="text-[10px] font-bold text-indigo-600 pt-0.5">
+                          Oleh: {n.pengirim}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
 
             <button
               onClick={() => {
@@ -381,7 +474,27 @@ export default function AplikasiHibahIlmu() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-10">
+      {/* FLOATING ALERT BANNER UNTUK ACARA WEBINAR & DEADLINE TUGAS/KUIS */}
+      <SmartAlertBanner
+        userLogin={userLogin}
+        agendaList={agendaList}
+        daftarTugas={daftarTugas}
+        daftarPengumpulan={daftarPengumpulan}
+        semuaModul={semuaModulFlat}
+        onBukaMenuAgenda={() => {
+          setMenuAktif("webinar");
+          setJenjangAktif(null);
+          setKelasAktif(null);
+        }}
+        onBukaMenuTugas={() => {
+          setMenuAktif("dashboard");
+          setJenjangAktif(null);
+          setKelasAktif(null);
+        }}
+      />
+
+      {/* MAIN CONTENT */}
+      <main className="max-w-7xl mx-auto px-4 py-8">
         {menuAktif === "beranda" && (
           <RuangBelajarView
             daftarJenjang={daftarJenjang}
@@ -445,6 +558,19 @@ export default function AplikasiHibahIlmu() {
           />
         )}
 
+        {/* MENU BARU: AGENDA WEBINAR & LIVE STREAMING */}
+        {menuAktif === "webinar" && (
+          <AgendaWebinarView
+            userLogin={userLogin}
+            agendaList={agendaList}
+            setAgendaList={setAgendaList}
+            daftarTugas={daftarTugas}
+            semuaModul={semuaModulFlat}
+            onKirimBroadcastNotif={kirimBroadcastNotif}
+            tambahXP={tambahXP}
+          />
+        )}
+
         {(menuAktif === "tryout" || menuAktif === "forum" || menuAktif === "leaderboard") &&
           (!userLogin ? (
             <DashboardPanelView
@@ -458,7 +584,7 @@ export default function AplikasiHibahIlmu() {
               setDaftarPaketTryout={setDaftarPaketTryout}
               riwayatTryout={riwayatTryout}
               daftarTugas={daftarTugas}
-              setDaftarTugas={setDaftarTugas}
+              setDaftarTugas={handleSetDaftarTugasDenganNotif}
               daftarPengumpulan={daftarPengumpulan}
               setDaftarPengumpulan={setDaftarPengumpulan}
               daftarPresensi={daftarPresensi}
@@ -528,7 +654,7 @@ export default function AplikasiHibahIlmu() {
             setDaftarPaketTryout={setDaftarPaketTryout}
             riwayatTryout={riwayatTryout}
             daftarTugas={daftarTugas}
-            setDaftarTugas={setDaftarTugas}
+            setDaftarTugas={handleSetDaftarTugasDenganNotif}
             daftarPengumpulan={daftarPengumpulan}
             setDaftarPengumpulan={setDaftarPengumpulan}
             daftarPresensi={daftarPresensi}
