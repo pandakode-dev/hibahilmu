@@ -14,6 +14,9 @@ import {
   CheckCircle2,
   Search,
   Sparkles,
+  Users,
+  Compass,
+  UserCheck,
 } from "lucide-react";
 import {
   AkunPengguna,
@@ -21,7 +24,12 @@ import {
   RppItem,
   PresensiItem,
   PaketTryout,
+  JenjangItem,
 } from "../types";
+import { STRUKTUR_AWAL } from "../mockData";
+import { SocialLearningSection } from "./ekosistem/SocialLearningSection";
+import { GuruCoTeachingSection } from "./ekosistem/GuruCoTeachingSection";
+import { KarierDanOfflineSection } from "./ekosistem/KarierDanOfflineSection";
 
 interface FiturInovasiHubProps {
   userLogin: AkunPengguna | null;
@@ -33,6 +41,12 @@ interface FiturInovasiHubProps {
   setDaftarPresensi: React.Dispatch<React.SetStateAction<PresensiItem[]>>;
   daftarPaketTryout: PaketTryout[];
   tambahXP: (xp: number) => void;
+  daftarJenjang?: JenjangItem[];
+  kirimBroadcastNotif?: (
+    judul: string,
+    pesan: string,
+    tipeNotif?: "tugas_deadline" | "kuis_tutup" | "webinar_live" | "info_umum"
+  ) => void;
 }
 
 const DAFTAR_BADGE = [
@@ -46,7 +60,7 @@ const DAFTAR_BADGE = [
   },
   {
     id: "bg-2",
-    nama: "Kستريا Kuis & Flashcard",
+    nama: "Ksatria Kuis & Flashcard",
     deskripsi: "Mengumpulkan lebih dari 400 XP dari latihan kuis multi-format.",
     syaratXp: 400,
     ikon: "⚡",
@@ -80,15 +94,19 @@ export const FiturInovasiHubView: React.FC<FiturInovasiHubProps> = ({
   setDaftarPresensi,
   daftarPaketTryout,
   tambahXP,
+  daftarJenjang = STRUKTUR_AWAL,
+  kirimBroadcastNotif = () => {},
 }) => {
   const [subTab, setSubTab] = useState<
+    | "social_pomodoro"
+    | "karier_offline_bot"
+    | "co_teaching_ews"
     | "badges_notes"
     | "ai_rpp_qr"
     | "analisis_butir_soal"
     | "verifikasi_sertifikat"
-  >("badges_notes");
+  >("social_pomodoro");
 
-  // 1. State Catatan Kolaboratif
   const [daftarCatatan, setDaftarCatatan] = useState<CatatanKolaboratifItem[]>([
     {
       id: "note-1",
@@ -103,7 +121,7 @@ export const FiturInovasiHubView: React.FC<FiturInovasiHubProps> = ({
     },
     {
       id: "note-2",
-      judulCatatan: "Triks Cepat Penurunan Rumus Hukum II Newton Bidang Miring",
+      judulCatatan: "Trik Cepat Penurunan Rumus Hukum II Newton Bidang Miring",
       modulTerkait: "Modul 1: Hukum II Newton & Energi Kinetik",
       pembuatNama: "Bapak Budi Santoso, M.Pd",
       isiCatatan:
@@ -118,17 +136,14 @@ export const FiturInovasiHubView: React.FC<FiturInovasiHubProps> = ({
   const [isiNoteBaru, setIsiNoteBaru] = useState("");
   const [visibilitasNoteBaru, setVisibilitasNoteBaru] = useState<"Publik" | "Study Room">("Publik");
 
-  // 2. State AI Lesson Plan & RPP Generator
   const [topikAiRpp, setTopikAiRpp] = useState("");
   const [jenjangAiRpp, setJenjangAiRpp] = useState("SMA Kelas 11 / Kuliah");
   const [hasilAiRpp, setHasilAiRpp] = useState<string>("");
 
-  // 3. State QR Presensi Live 5 Menit
   const [kodeQrLiveAktif, setKodeQrLiveAktif] = useState<string>("LIVE-HIBAH-8821");
   const [sisaDetikQrLive, setSisaDetikQrLive] = useState<number>(300);
   const [inputTokenSiswaLive, setInputTokenSiswaLive] = useState("");
 
-  // 4. State Verifikasi Sertifikat Digital
   const [inputNomorSertifikat, setInputNomorSertifikat] = useState("CERT-HIBAH-2026-001");
   const [hasilCekSertifikat, setHasilCekSertifikat] = useState<{
     ketemu: boolean;
@@ -180,56 +195,62 @@ export const FiturInovasiHubView: React.FC<FiturInovasiHubProps> = ({
 
   return (
     <div className="space-y-8">
-      {/* Header Hub Inovasi */}
       <div className="bg-gradient-to-r from-indigo-900 via-slate-900 to-emerald-950 text-white p-8 rounded-[2.2rem] shadow-2xl space-y-3">
         <span className="bg-amber-400 text-slate-950 text-xs font-black px-3.5 py-1 rounded-full uppercase">
-          Next-Gen EdTech Innovation Hub
+          Next-Gen EdTech Innovation Hub • 4 Kategori Ekosistem Baru
         </span>
         <h1 className="text-2xl sm:text-4xl font-black">
-          Pusat Fitur Pintar: Lencana XP, Catatan Bersama, AI RPP, Analisis Soal &amp; Verifikasi Sertifikat
+          Pusat Ekosistem Pintar: Co-Study Pomodoro, Mentor Sebaya, AI Early Warning, Pohon Karier &amp; Mode Offline
         </h1>
         <p className="text-xs sm:text-sm text-indigo-200 max-w-3xl">
-          Eksplorasi seluruh perangkat pembelajaran kolaboratif, asisten pengajar berbasis AI,
-          analitik psikometri butir soal CBT, hingga validasi sertifikat lulusan ber-QR Code.
+          Seluruh inovasi sosial, kolaborasi multi-pengajar, gamifikasi peti harta karun harian,
+          unduhan materi offline, hingga integrasi bot WhatsApp/Telegram terpadu di satu tempat.
         </p>
       </div>
 
-      {/* Navigasi Sub-Tab */}
+      {/* Navigasi 7 Sub-Tab Inovasi */}
       <div className="flex gap-2 border-b border-slate-200 pb-3 overflow-x-auto">
         {[
           {
+            id: "social_pomodoro",
+            label: "1. Live Study, Mentor Sebaya & Hackathon",
+            icon: <Users className="w-4 h-4" />,
+          },
+          {
+            id: "karier_offline_bot",
+            label: "2. Pohon Karier, Mystery Box, Offline & Bot WA",
+            icon: <Compass className="w-4 h-4" />,
+          },
+          {
+            id: "co_teaching_ews",
+            label: "3. Co-Teaching, AI Early Warning & Ekspor RPP .DOC",
+            icon: <UserCheck className="w-4 h-4" />,
+          },
+          {
             id: "badges_notes",
-            label: "1. Lencana XP & Catatan Bersama",
+            label: "4. Lencana XP & Catatan Bersama",
             icon: <Award className="w-4 h-4" />,
           },
           {
             id: "ai_rpp_qr",
-            label: "2. AI RPP Assistant & QR Live 5 Menit",
+            label: "5. AI RPP Assistant & QR Live 5m",
             icon: <Wand2 className="w-4 h-4" />,
           },
           {
             id: "analisis_butir_soal",
-            label: "3. Analisis Statistik Butir Soal CBT",
+            label: "6. Statistik Butir Soal CBT",
             icon: <BarChart3 className="w-4 h-4" />,
           },
           {
             id: "verifikasi_sertifikat",
-            label: "4. Cek Keaslian Sertifikat Digital (QR)",
+            label: "7. Validator Sertifikat QR",
             icon: <ShieldCheck className="w-4 h-4" />,
           },
         ].map((t) => (
           <button
             key={t.id}
-            onClick={() =>
-              setSubTab(
-                t.id as
-                  | "badges_notes"
-                  | "ai_rpp_qr"
-                  | "analisis_butir_soal"
-                  | "verifikasi_sertifikat"
-              )
-            }
-            className={`px-4 py-3 rounded-2xl text-xs sm:text-sm font-black flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+            onClick={() => setSubTab(t.id as typeof subTab)}
+            className={`px-4 py-3 rounded-2xl text-xs font-black flex items-center gap-2 whitespace-nowrap cursor-pointer ${
               subTab === t.id
                 ? "bg-indigo-600 text-white shadow-md"
                 : "bg-white text-slate-700 border border-slate-300"
@@ -240,7 +261,33 @@ export const FiturInovasiHubView: React.FC<FiturInovasiHubProps> = ({
         ))}
       </div>
 
-      {/* SUB-TAB 1: BADGES ACHIEVEMENTS & COLLABORATIVE NOTES */}
+      {subTab === "social_pomodoro" && (
+        <SocialLearningSection
+          userLogin={userLogin}
+          poinXP={poinXP}
+          tambahXP={tambahXP}
+        />
+      )}
+
+      {subTab === "karier_offline_bot" && (
+        <KarierDanOfflineSection
+          userLogin={userLogin}
+          daftarJenjang={daftarJenjang}
+          materiSelesai={materiSelesai}
+          tambahXP={tambahXP}
+          kirimBroadcastNotif={kirimBroadcastNotif}
+        />
+      )}
+
+      {subTab === "co_teaching_ews" && (
+        <GuruCoTeachingSection
+          userLogin={userLogin}
+          daftarJenjang={daftarJenjang}
+          rppList={rppList}
+          kirimBroadcastNotif={kirimBroadcastNotif}
+        />
+      )}
+
       {subTab === "badges_notes" && (
         <div className="space-y-8">
           <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-5">
@@ -280,7 +327,6 @@ export const FiturInovasiHubView: React.FC<FiturInovasiHubProps> = ({
             </div>
           </div>
 
-          {/* Catatan Belajar Bersama (Collaborative Notes) */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <div className="lg:col-span-5 bg-white text-slate-800 p-7 rounded-3xl border space-y-4">
               <h3 className="text-lg font-black flex items-center gap-2">
@@ -339,7 +385,7 @@ export const FiturInovasiHubView: React.FC<FiturInovasiHubProps> = ({
                   required
                   value={isiNoteBaru}
                   onChange={(e) => setIsiNoteBaru(e.target.value)}
-                  placeholder="Tuliskan poin penting, jembatan keledai (mnemonik), atau rangkuman rumus..."
+                  placeholder="Tuliskan poin penting atau rangkuman rumus..."
                   className="w-full p-3 border rounded-xl bg-slate-50"
                 />
                 <button
@@ -394,7 +440,6 @@ export const FiturInovasiHubView: React.FC<FiturInovasiHubProps> = ({
         </div>
       )}
 
-      {/* SUB-TAB 2: AI LESSON PLAN & RPP ASSISTANT + QR PRESENSI LIVE 5 MENIT */}
       {subTab === "ai_rpp_qr" && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-7 bg-white text-slate-800 p-8 rounded-3xl border space-y-5">
@@ -464,7 +509,6 @@ export const FiturInovasiHubView: React.FC<FiturInovasiHubProps> = ({
             )}
           </div>
 
-          {/* QR Code Absensi Sesi Kelas Live (Aktif 5 Menit) */}
           <div className="lg:col-span-5 bg-slate-900 text-white p-8 rounded-3xl space-y-5">
             <div className="flex justify-between items-center">
               <span className="text-xs font-black uppercase bg-emerald-500 text-slate-950 px-3 py-1 rounded-full">
@@ -489,20 +533,18 @@ export const FiturInovasiHubView: React.FC<FiturInovasiHubProps> = ({
               </div>
             </div>
 
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setKodeQrLiveAktif(
-                    "LIVE-HIBAH-" + Math.floor(1000 + Math.random() * 9000)
-                  );
-                  setSisaDetikQrLive(300);
-                }}
-                className="w-full py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-xs font-black cursor-pointer"
-              >
-                🔄 Buat Token QR 5 Menit Baru (Untuk Pengajar)
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setKodeQrLiveAktif(
+                  "LIVE-HIBAH-" + Math.floor(1000 + Math.random() * 9000)
+                );
+                setSisaDetikQrLive(300);
+              }}
+              className="w-full py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-xs font-black cursor-pointer"
+            >
+              🔄 Buat Token QR 5 Menit Baru (Untuk Pengajar)
+            </button>
 
             <form
               onSubmit={(e) => {
@@ -550,7 +592,6 @@ export const FiturInovasiHubView: React.FC<FiturInovasiHubProps> = ({
         </div>
       )}
 
-      {/* SUB-TAB 3: ANALISIS STATISTIK BUTIR SOAL CBT (ITEM ANALYSIS) */}
       {subTab === "analisis_butir_soal" && (
         <div className="bg-white text-slate-800 p-8 rounded-3xl border space-y-6">
           <div>
@@ -566,7 +607,6 @@ export const FiturInovasiHubView: React.FC<FiturInovasiHubProps> = ({
           <div className="space-y-4">
             {daftarPaketTryout.flatMap((pkt) =>
               pkt.daftarSoal.map((soal, sIdx) => {
-                // Simulasi statistik psikometri terukur per butir soal
                 const dist = sIdx % 2 === 0 ? [12, 18, 58, 12] : [10, 64, 16, 10];
                 const tingkatKesukaran = sIdx % 2 === 0 ? "Sedang (P = 0.58)" : "Mudah (P = 0.64)";
                 const dayaPembeda = "Sangat Baik (D = 0.42)";
@@ -631,7 +671,6 @@ export const FiturInovasiHubView: React.FC<FiturInovasiHubProps> = ({
         </div>
       )}
 
-      {/* SUB-TAB 4: VERIFIKASI KEASLIAN SERTIFIKAT DIGITAL BER-QR CODE */}
       {subTab === "verifikasi_sertifikat" && (
         <div className="bg-white text-slate-800 p-8 rounded-3xl border max-w-3xl mx-auto space-y-6">
           <div className="text-center space-y-2">

@@ -689,6 +689,8 @@ export default function AplikasiHibahIlmu() {
             setDaftarPresensi={setDaftarPresensi}
             daftarPaketTryout={daftarPaketTryout}
             tambahXP={tambahXP}
+            daftarJenjang={daftarJenjang}
+            kirimBroadcastNotif={kirimBroadcastNotif}
           />
         )}
 
