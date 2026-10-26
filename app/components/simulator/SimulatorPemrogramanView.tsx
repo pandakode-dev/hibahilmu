@@ -11,7 +11,6 @@ import {
   Sparkles,
   PlusCircle,
   Code2,
-  Cpu,
   Layers,
   BarChart3,
   Copy,
@@ -42,7 +41,7 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
 
   const modulKategoriIni = daftarModul.filter((m) => m.kategoriId === kategoriAktif);
   const [modulAktif, setModulAktif] = useState<ModulSimulatorItem>(
-    MODUL_PEMBELAJARAN_SIMULATOR_AWAL[0]
+    MODUL_PEMBELAJAR_SIMULATOR_AWAL[0]
   );
 
   const [kodeEditor, setKodeEditor] = useState<string>(
@@ -97,7 +96,6 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
 
   const jalankanSimulatorKode = () => {
     const jam = new Date().toLocaleTimeString("id-ID");
-    // Eksekusi cerdas: ambil seluruh pernyataan print / printf / fprintf / Serial.println dari kodeEditor
     const barisKode = kodeEditor.split("\n");
     const barisCetak = barisKode
       .filter(
@@ -265,8 +263,10 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
         })}
       </div>
 
-      {/* KANVAS KHUSUS JIKA MEMILIH WOKWI IOT ATAU EWB ELEKTRONIKA */}
-      {(kategoriAktif === "wokwi" || kategoriAktif === "ewb") && (
+      {/* KANVAS DRAG & DROP INTERAKTIF KHUSUS WOKWI IOT, EWB ELEKTRONIKA, & MATLAB SIMULINK */}
+      {(kategoriAktif === "wokwi" ||
+        kategoriAktif === "ewb" ||
+        kategoriAktif === "matlab") && (
         <ElectronicAndIotCanvas mode={kategoriAktif} />
       )}
 
@@ -367,7 +367,6 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
               ))}
             </div>
 
-            {/* Form Install Library Baru */}
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -393,14 +392,14 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
                 type="text"
                 value={namaLibBaru}
                 onChange={(e) => setNamaLibBaru(e.target.value)}
-                placeholder="Nama Library (Scikit, Axios)..."
+                placeholder="Nama Library..."
                 className="p-2.5 border rounded-xl bg-slate-50 font-bold"
               />
               <input
                 type="text"
                 value={importLibBaru}
                 onChange={(e) => setImportLibBaru(e.target.value)}
-                placeholder="Statement import / #include..."
+                placeholder="Statement import..."
                 className="p-2.5 border rounded-xl bg-slate-50 font-mono"
               />
               <button
@@ -416,7 +415,6 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
         {/* KOLOM KANAN (7 KOLOM): CODE EDITOR IDE, TERMINAL OUTPUT & VISUAL PREVIEW */}
         <div className="lg:col-span-7 space-y-6">
           <div className="bg-slate-950 text-slate-100 rounded-3xl overflow-hidden border-2 border-slate-800 shadow-2xl">
-            {/* Bar Atas Code Editor */}
             <div className="bg-slate-900 px-5 py-3.5 border-b border-slate-800 flex flex-wrap justify-between items-center gap-3">
               <div className="flex items-center gap-2">
                 <Code2 className="w-4 h-4 text-emerald-400" />
@@ -453,7 +451,6 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
               </div>
             </div>
 
-            {/* Area Teks Editor Kode */}
             <textarea
               rows={13}
               value={kodeEditor}
@@ -462,7 +459,6 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
               className="w-full p-5 bg-slate-950 text-emerald-300 font-mono text-xs sm:text-sm leading-relaxed focus:outline-none resize-y"
             />
 
-            {/* Konsol Terminal Output */}
             <div className="border-t border-slate-800 bg-black/60 p-5 space-y-2">
               <div className="flex justify-between items-center text-[11px] font-mono text-slate-400">
                 <span>TERMINAL OUTPUT &amp; COMPILER LOG</span>
@@ -474,7 +470,6 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
             </div>
           </div>
 
-          {/* LIVE VISUALIZER KHUSUS NEXT.JS ATAU PLOT GRAFIK MATLAB / PYTHON */}
           {kategoriAktif === "nextjs" && (
             <div className="bg-white text-slate-800 p-6 rounded-3xl border-2 border-indigo-200 space-y-3 shadow-md">
               <div className="flex justify-between items-center text-xs font-black text-indigo-900">
