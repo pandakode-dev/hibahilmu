@@ -41,7 +41,7 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
 
   const modulKategoriIni = daftarModul.filter((m) => m.kategoriId === kategoriAktif);
   const [modulAktif, setModulAktif] = useState<ModulSimulatorItem>(
-    MODUL_PEMBELAJAR_SIMULATOR_AWAL[0]
+    MODUL_PEMBELAJARAN_SIMULATOR_AWAL[0]
   );
 
   const [kodeEditor, setKodeEditor] = useState<string>(
