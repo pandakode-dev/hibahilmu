@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   Sun,
   Moon,
-  Type,
   CheckCheck,
   Accessibility,
   Volume2,
@@ -71,12 +70,11 @@ import {
 } from "./components/AgendaDanAlertBanner";
 import { DonasiDanBugView } from "./components/DonasiDanBugView";
 import { FiturInovasiHubView } from "./components/FiturInovasiHubView";
+import { SimulatorPemrogramanView } from "./components/simulator/SimulatorPemrogramanView";
 
 export default function AplikasiHibahIlmu() {
   const [darkMode, setDarkMode] = useState<boolean>(false);
   const [ukuranTeksBesar, setUkuranTeksBesar] = useState<boolean>(false);
-  
-  // State Aksesibilitas Ramah Disabilitas
   const [kontrasTinggi, setKontrasTinggi] = useState<boolean>(false);
   const [spasiTeksLebar, setSpasiTeksLebar] = useState<boolean>(false);
   const [bukaMenuAksesibilitas, setBukaMenuAksesibilitas] = useState<boolean>(false);
@@ -363,7 +361,7 @@ export default function AplikasiHibahIlmu() {
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(
-        `Selamat datang di Hibah Ilmu Indonesia. Anda sedang berada di menu ${menuAktif}. Gunakan navigasi atas untuk berpindah ke Ruang Belajar, Webinar, Tryout CBT, Hub Inovasi, atau Donasi Wakaf.`
+        `Selamat datang di Hibah Ilmu Indonesia. Anda sedang berada di menu ${menuAktif}. Gunakan navigasi atas untuk berpindah ke Ruang Belajar, Simulator Coding dan IoT, Hub Inovasi, Webinar, Tryout CBT, atau Donasi Wakaf.`
       );
       u.lang = "id-ID";
       window.speechSynthesis.speak(u);
@@ -424,6 +422,7 @@ export default function AplikasiHibahIlmu() {
           <nav className="flex items-center gap-1.5 overflow-x-auto">
             {[
               { id: "beranda", label: "Beranda & Kelas" },
+              { id: "simulator", label: "💻 Simulator Coding & IoT" },
               { id: "inovasi", label: "✨ Hub Inovasi" },
               { id: "webinar", label: "🔴 Webinar" },
               { id: "tryout", label: "Tryout CBT" },
@@ -676,6 +675,11 @@ export default function AplikasiHibahIlmu() {
             konfigurasiWeb={konfigurasiWeb}
             onBukaMenuLain={(menuTujuan: string) => setMenuAktif(menuTujuan)}
           />
+        )}
+
+        {/* MENU BARU: SIMULATOR PROGRAMMING, NEXT.JS, MATLAB, WOKWI IOT & EWB */}
+        {menuAktif === "simulator" && (
+          <SimulatorPemrogramanView userLogin={userLogin} tambahXP={tambahXP} />
         )}
 
         {menuAktif === "inovasi" && (

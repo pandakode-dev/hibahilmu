@@ -17,6 +17,9 @@ import {
   Users,
   Compass,
   UserCheck,
+  Bot,
+  Sprout,
+  Briefcase,
 } from "lucide-react";
 import {
   AkunPengguna,
@@ -26,10 +29,13 @@ import {
   PaketTryout,
   JenjangItem,
 } from "../types";
-import { STRUKTUR_AWAL } from "../mockData";
+import { STRUKTUR_AWAL, PENGUMPULAN_AWAL } from "../mockData";
 import { SocialLearningSection } from "./ekosistem/SocialLearningSection";
 import { GuruCoTeachingSection } from "./ekosistem/GuruCoTeachingSection";
 import { KarierDanOfflineSection } from "./ekosistem/KarierDanOfflineSection";
+import { AiPersonalizationSection } from "./ekosistem/AiPersonalizationSection";
+import { ImmersiveGardenSection } from "./ekosistem/ImmersiveGardenSection";
+import { AiCareerInterviewSection } from "./ekosistem/AiCareerInterviewSection";
 
 interface FiturInovasiHubProps {
   userLogin: AkunPengguna | null;
@@ -98,6 +104,9 @@ export const FiturInovasiHubView: React.FC<FiturInovasiHubProps> = ({
   kirimBroadcastNotif = () => {},
 }) => {
   const [subTab, setSubTab] = useState<
+    | "ai_multimodal_voice"
+    | "whiteboard_garden"
+    | "ai_portfolio_interview"
     | "social_pomodoro"
     | "karier_offline_bot"
     | "co_teaching_ews"
@@ -105,7 +114,7 @@ export const FiturInovasiHubView: React.FC<FiturInovasiHubProps> = ({
     | "ai_rpp_qr"
     | "analisis_butir_soal"
     | "verifikasi_sertifikat"
-  >("social_pomodoro");
+  >("ai_multimodal_voice");
 
   const [daftarCatatan, setDaftarCatatan] = useState<CatatanKolaboratifItem[]>([
     {
@@ -197,53 +206,69 @@ export const FiturInovasiHubView: React.FC<FiturInovasiHubProps> = ({
     <div className="space-y-8">
       <div className="bg-gradient-to-r from-indigo-900 via-slate-900 to-emerald-950 text-white p-8 rounded-[2.2rem] shadow-2xl space-y-3">
         <span className="bg-amber-400 text-slate-950 text-xs font-black px-3.5 py-1 rounded-full uppercase">
-          Next-Gen EdTech Innovation Hub • 4 Kategori Ekosistem Baru
+          Next-Gen EdTech Innovation Hub • 10 Modul Ekosistem Modern
         </span>
         <h1 className="text-2xl sm:text-4xl font-black">
-          Pusat Ekosistem Pintar: Co-Study Pomodoro, Mentor Sebaya, AI Early Warning, Pohon Karier &amp; Mode Offline
+          Pusat Ekosistem Pintar: AI Multi-Modal, Voice Tutor, Whiteboard, Pohon Ilmu &amp; AI
+          Mock Interview
         </h1>
         <p className="text-xs sm:text-sm text-indigo-200 max-w-3xl">
-          Seluruh inovasi sosial, kolaborasi multi-pengajar, gamifikasi peti harta karun harian,
-          unduhan materi offline, hingga integrasi bot WhatsApp/Telegram terpadu di satu tempat.
+          Eksplorasi ekstraktor PDF/Video ke Flashcard 3D, asisten suara AI, papan tulis kolaboratif,
+          kebun Pohon Ilmu, pembuat portofolio otomatis, hingga simulasi wawancara kerja/beasiswa.
         </p>
       </div>
 
-      {/* Navigasi 7 Sub-Tab Inovasi */}
+      {/* Navigasi 10 Sub-Tab Inovasi Lengkap */}
       <div className="flex gap-2 border-b border-slate-200 pb-3 overflow-x-auto">
         {[
           {
+            id: "ai_multimodal_voice",
+            label: "1. AI PDF/Video Extractor & Voice Tutor",
+            icon: <Bot className="w-4 h-4" />,
+          },
+          {
+            id: "whiteboard_garden",
+            label: "2. Whiteboard Study Room & Pohon Ilmu",
+            icon: <Sprout className="w-4 h-4" />,
+          },
+          {
+            id: "ai_portfolio_interview",
+            label: "3. AI Portfolio Builder & Mock Interview",
+            icon: <Briefcase className="w-4 h-4" />,
+          },
+          {
             id: "social_pomodoro",
-            label: "1. Live Study, Mentor Sebaya & Hackathon",
+            label: "4. Live Study Pomodoro & Mentor Sebaya",
             icon: <Users className="w-4 h-4" />,
           },
           {
             id: "karier_offline_bot",
-            label: "2. Pohon Karier, Mystery Box, Offline & Bot WA",
+            label: "5. Pohon Karier, Mystery Box & Offline",
             icon: <Compass className="w-4 h-4" />,
           },
           {
             id: "co_teaching_ews",
-            label: "3. Co-Teaching, AI Early Warning & Ekspor RPP .DOC",
+            label: "6. Co-Teaching & AI Early Warning",
             icon: <UserCheck className="w-4 h-4" />,
           },
           {
             id: "badges_notes",
-            label: "4. Lencana XP & Catatan Bersama",
+            label: "7. Lencana XP & Catatan Bersama",
             icon: <Award className="w-4 h-4" />,
           },
           {
             id: "ai_rpp_qr",
-            label: "5. AI RPP Assistant & QR Live 5m",
+            label: "8. AI RPP & QR Live 5m",
             icon: <Wand2 className="w-4 h-4" />,
           },
           {
             id: "analisis_butir_soal",
-            label: "6. Statistik Butir Soal CBT",
+            label: "9. Statistik Butir Soal CBT",
             icon: <BarChart3 className="w-4 h-4" />,
           },
           {
             id: "verifikasi_sertifikat",
-            label: "7. Validator Sertifikat QR",
+            label: "10. Validator Sertifikat QR",
             icon: <ShieldCheck className="w-4 h-4" />,
           },
         ].map((t) => (
@@ -260,6 +285,30 @@ export const FiturInovasiHubView: React.FC<FiturInovasiHubProps> = ({
           </button>
         ))}
       </div>
+
+      {subTab === "ai_multimodal_voice" && (
+        <AiPersonalizationSection userLogin={userLogin} tambahXP={tambahXP} />
+      )}
+
+      {subTab === "whiteboard_garden" && (
+        <ImmersiveGardenSection
+          userLogin={userLogin}
+          poinXP={poinXP}
+          materiSelesai={materiSelesai}
+          tambahXP={tambahXP}
+        />
+      )}
+
+      {subTab === "ai_portfolio_interview" && (
+        <AiCareerInterviewSection
+          userLogin={userLogin}
+          poinXP={poinXP}
+          materiSelesai={materiSelesai}
+          daftarJenjang={daftarJenjang}
+          daftarPengumpulan={PENGUMPULAN_AWAL}
+          tambahXP={tambahXP}
+        />
+      )}
 
       {subTab === "social_pomodoro" && (
         <SocialLearningSection
