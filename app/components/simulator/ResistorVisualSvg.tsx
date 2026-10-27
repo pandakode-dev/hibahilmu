@@ -217,10 +217,126 @@ export const VisualKomponenRealistis: React.FC<{
   }
 
   // ============================================================================
-  // 4. SOLENOID DOOR LOCK 12V (ANIMASI TUAS BESI PENGUNCI PINTU MAJU-MUNDUR!)
+  // 4. MODUL RELAY 1-CHANNEL, 2-CHANNEL, DAN 4-CHANNEL (VISUALISASI ASLI!)
+  // ============================================================================
+  if (tipe === "relay_1ch" || tipe === "relay_5v" || tipe === "relay_2ch" || tipe === "relay_4ch") {
+    const jmlCh = tipe === "relay_4ch" ? 4 : tipe === "relay_2ch" ? 2 : 1;
+    const lebarSvg = jmlCh === 4 ? 220 : jmlCh === 2 ? 150 : 110;
+    const tinggiSvg = jmlCh === 4 ? 124 : jmlCh === 2 ? 120 : 115;
+
+    return (
+      <svg
+        viewBox={`0 0 ${lebarSvg} ${tinggiSvg}`}
+        className={isIkon ? "w-20 h-12" : "w-full h-full overflow-visible"}
+      >
+        {/* Papan PCB Merah/Hitam Modul Relay */}
+        <rect
+          x="8"
+          y="10"
+          width={lebarSvg - 16}
+          height={tinggiSvg - 20}
+          rx="6"
+          fill="#7f1d1d"
+          stroke={nyala ? "#34d399" : "#f87171"}
+          strokeWidth="2"
+        />
+
+        {/* Render Kotak Relay Biru Songle & Terminal Sekrup Hijau per Channel */}
+        {Array.from({ length: jmlCh }).map((_, chIdx) => {
+          const offsetX =
+            jmlCh === 1
+              ? 18
+              : jmlCh === 2
+              ? 14 + chIdx * 66
+              : 12 + chIdx * 50;
+          const lebarKotak = jmlCh === 4 ? 42 : jmlCh === 2 ? 56 : 74;
+
+          return (
+            <g key={chIdx}>
+              {/* Blok Terminal Sekrup Hijau Atas (NO, COM, NC) */}
+              <rect
+                x={offsetX + 2}
+                y="12"
+                width={lebarKotak - 4}
+                height="16"
+                rx="2"
+                fill="#16a34a"
+                stroke="#86efac"
+                strokeWidth="1"
+              />
+              {/* Kotak Relay Biru Songle SRD-05VDC-SL-C */}
+              <rect
+                x={offsetX}
+                y="32"
+                width={lebarKotak}
+                height="48"
+                rx="4"
+                fill="#1d4ed8"
+                stroke="#60a5fa"
+                strokeWidth="1.5"
+              />
+              {/* Animasi Kontak Sakelar Internal Relay (COM ke NO atau NC) */}
+              <circle cx={offsetX + lebarKotak / 2} cy="66" r="3" fill="#facc15" />
+              <line
+                x1={offsetX + lebarKotak / 2}
+                y1="66"
+                x2={
+                  nyala
+                    ? offsetX + lebarKotak / 2 - 10
+                    : offsetX + lebarKotak / 2 + 10
+                }
+                y2="46"
+                stroke={nyala ? "#4ade80" : "#94a3b8"}
+                strokeWidth="2.5"
+              />
+              <text
+                x={offsetX + lebarKotak / 2}
+                y="43"
+                textAnchor="middle"
+                fill="#ffffff"
+                fontSize={jmlCh === 4 ? "6.5" : "7.5"}
+                fontWeight="900"
+              >
+                CH{chIdx + 1}: {nyala ? "NO (ON)" : "NC (OFF)"}
+              </text>
+              {/* Lampu LED Indikator Trigger Channel */}
+              <circle
+                cx={offsetX + lebarKotak / 2}
+                cy="88"
+                r="3.5"
+                fill={nyala ? "#ef4444" : "#334155"}
+                className={nyala ? "animate-ping" : ""}
+              />
+              <circle
+                cx={offsetX + lebarKotak / 2}
+                cy="88"
+                r="3.5"
+                fill={nyala ? "#ef4444" : "#334155"}
+              />
+            </g>
+          );
+        })}
+
+        <text
+          x={lebarSvg / 2}
+          y={tinggiSvg - 15}
+          textAnchor="middle"
+          fill="#fde047"
+          fontSize="7"
+          fontFamily="monospace"
+          fontWeight="bold"
+        >
+          RELAY {jmlCh}CH 5V OPTO
+        </text>
+      </svg>
+    );
+  }
+
+  // ============================================================================
+  // 5. SOLENOID DOOR LOCK 12V (MURNI ON/OFF + 2 PIN KABEL MERAH VCC+ & HITAM GND-)
   // ============================================================================
   if (tipe === "solenoid_lock") {
-    const terbuka = nyala; // Saat HIGH/nyala, solenoid menarik tuas besi ke dalam (UNLOCKED)
+    const terbuka = nyala;
     return (
       <svg viewBox="0 0 120 98" className={isIkon ? "w-16 h-12" : "w-full h-full overflow-visible"}>
         {!isIkon && (
@@ -232,10 +348,9 @@ export const VisualKomponenRealistis: React.FC<{
             fontSize="8"
             fontWeight="900"
           >
-            {terbuka ? "🔓 UNLOCKED (Tuas Ditarik)" : "🔒 LOCKED (Pintu Terkunci)"}
+            {terbuka ? "🔓 UNLOCKED (ON - 12V Masuk)" : "🔒 LOCKED (OFF - Terkunci)"}
           </text>
         )}
-        {/* Bodi Logam Kumparan Solenoid */}
         <rect
           x="18"
           y="14"
@@ -246,9 +361,8 @@ export const VisualKomponenRealistis: React.FC<{
           stroke={terbuka ? "#34d399" : "#94a3b8"}
           strokeWidth="2.5"
         />
-        {/* Kumparan Tembaga Internal */}
         <rect x="26" y="22" width="44" height="34" rx="3" fill="#78350f" stroke="#f59e0b" strokeWidth="1.5" />
-        {/* Tuas Lidah Besi Pengunci (Bergerak Maju-Mundur dengan Transisi Mulus) */}
+        {/* Tuas Lidah Besi Pengunci Maju/Mundur */}
         <g
           style={{
             transform: terbuka ? "translateX(-16px)" : "translateX(0px)",
@@ -265,26 +379,75 @@ export const VisualKomponenRealistis: React.FC<{
         <text x="48" y="42" textAnchor="middle" fill="#fde047" fontSize="7.5" fontWeight="900">
           SOLENOID 12V
         </text>
-        {[30, 60, 90].map((x, idx) => (
-          <line key={idx} x1={x} y1="64" x2={x} y2="90" stroke="#eab308" strokeWidth="3.5" />
-        ))}
+        {/* 2 Kabel Asli di Bawah: Merah (+) x=38 & Hitam (-) x=82 */}
+        <line x1="38" y1="64" x2="38" y2="90" stroke="#ef4444" strokeWidth="4" />
+        <line x1="82" y1="64" x2="82" y2="90" stroke="#64748b" strokeWidth="4" />
+        <text x="27" y="82" fill="#f87171" fontSize="7" fontWeight="bold">
+          12V+
+        </text>
+        <text x="92" y="82" fill="#94a3b8" fontSize="7" fontWeight="bold">
+          GND-
+        </text>
       </svg>
     );
   }
 
   // ============================================================================
-  // 5. SENSOR INFRARED (IR) OBSTACLE AVOIDANCE (SINAR LASER IR & OBJEK TANGAN)
+  // 6. POMPA AIR MINI SUBMERSIBLE DC (2 KAKI KABEL MERAH VCC+ & HITAM GND- KE RELAY)
   // ============================================================================
+  if (tipe === "water_pump") {
+    return (
+      <svg viewBox="0 0 120 98" className={isIkon ? "w-16 h-12" : "w-full h-full overflow-visible"}>
+        {!isIkon && nyala && (
+          <g className="animate-bounce">
+            <circle cx="60" cy="-8" r="4.5" fill="#38bdf8" />
+            <circle cx="46" cy="-16" r="3.5" fill="#0ea5e9" />
+            <circle cx="74" cy="-15" r="3.5" fill="#38bdf8" />
+            <text x="60" y="-24" textAnchor="middle" fill="#38bdf8" fontSize="7.5" fontWeight="900">
+              💦 POMPA MENYEMBUR (ON)
+            </text>
+          </g>
+        )}
+        <rect
+          x="22"
+          y="14"
+          width="76"
+          height="50"
+          rx="8"
+          fill="#0284c7"
+          stroke={nyala ? "#34d399" : "#7dd3fc"}
+          strokeWidth="2.5"
+        />
+        <rect x="52" y="2" width="16" height="14" rx="3" fill="#e2e8f0" />
+        <text x="60" y="38" textAnchor="middle" fill="#ffffff" fontSize="8" fontWeight="900">
+          MINI WATER PUMP
+        </text>
+        <text x="60" y="50" textAnchor="middle" fill="#fde047" fontSize="7" fontWeight="bold">
+          {nyala ? "STATUS: ON (AKTIF)" : "STATUS: OFF (MATI)"}
+        </text>
+        {/* 2 Kabel Asli di Bawah: Merah (+) x=38 & Hitam (-) x=82 */}
+        <line x1="38" y1="64" x2="38" y2="90" stroke="#ef4444" strokeWidth="4" />
+        <line x1="82" y1="64" x2="82" y2="90" stroke="#64748b" strokeWidth="4" />
+        <text x="27" y="82" fill="#f87171" fontSize="7" fontWeight="bold">
+          VCC+
+        </text>
+        <text x="92" y="82" fill="#94a3b8" fontSize="7" fontWeight="bold">
+          GND-
+        </text>
+      </svg>
+    );
+  }
+
+  // 7. Sensor Infrared (IR) Obstacle Avoidance (Jarak 2-30 cm)
   if (tipe === "ir_obstacle") {
-    const jarakMm = nilaiSensor ?? 35;
-    const terhalang = nyala && jarakMm <= 60;
-    const posObjekY = -12 - (jarakMm / 180) * 45;
+    const jarakCm = nilaiSensor ?? 8;
+    const terhalang = nyala && jarakCm <= 15;
+    const posObjekY = -10 - (jarakCm / 30) * 42;
 
     return (
       <svg viewBox="0 0 120 98" className={isIkon ? "w-16 h-12" : "w-full h-full overflow-visible"}>
         {!isIkon && (
           <g>
-            {/* Sinar Pancaran IR LED (Merah Putus-putus) & Pantulan Balik */}
             <line
               x1="42"
               y1="8"
@@ -307,7 +470,6 @@ export const VisualKomponenRealistis: React.FC<{
                 className="animate-ping"
               />
             )}
-            {/* Objek Tangan / Halangan di Depan Sensor IR */}
             <g transform={`translate(60, ${posObjekY})`}>
               <rect
                 x="-36"
@@ -320,12 +482,11 @@ export const VisualKomponenRealistis: React.FC<{
                 strokeWidth="1.5"
               />
               <text x="0" y="-6" textAnchor="middle" fill="#fde047" fontSize="7" fontWeight="bold">
-                ✋ {terhalang ? `HALANGAN (${jarakMm}mm)` : `Bebas (${jarakMm}mm)`}
+                ✋ {terhalang ? `OBJEK (${jarakCm} cm)` : `Aman (${jarakCm} cm)`}
               </text>
             </g>
           </g>
         )}
-        {/* Dioda IR Transmitter (Hitam/Biru) & Photodiode Receiver */}
         <rect x="34" y="6" width="14" height="14" rx="7" fill="#1e1b4b" stroke="#60a5fa" strokeWidth="1.5" />
         <rect x="72" y="6" width="14" height="14" rx="7" fill="#0f172a" stroke="#f87171" strokeWidth="1.5" />
         <rect x="20" y="18" width="80" height="46" rx="5" fill="#1d4ed8" stroke="#60a5fa" strokeWidth="2" />
@@ -341,24 +502,16 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // ============================================================================
-  // 6. SENSOR API (FLAME SENSOR KY-026) DENGAN ANIMASI NYALA API BERKOBAR
-  // ============================================================================
+  // 8. Sensor Api (Flame Sensor KY-026: 0-100%)
   if (tipe === "flame_sensor") {
-    const intensitasApi = nilaiSensor ?? 85;
+    const intensitasApi = nilaiSensor ?? 80;
     const adaApi = nyala && intensitasApi >= 50;
     return (
       <svg viewBox="0 0 120 98" className={isIkon ? "w-16 h-12" : "w-full h-full overflow-visible"}>
         {!isIkon && adaApi && (
           <g transform="translate(60, -22)" className="animate-bounce">
-            <path
-              d="M 0 -16 C 12 -4, 14 8, 0 14 C -14 8, -12 -4, 0 -16 Z"
-              fill="#ef4444"
-            />
-            <path
-              d="M 0 -8 C 7 0, 8 8, 0 12 C -8 8, -7 0, 0 -8 Z"
-              fill="#facc15"
-            />
+            <path d="M 0 -16 C 12 -4, 14 8, 0 14 C -14 8, -12 -4, 0 -16 Z" fill="#ef4444" />
+            <path d="M 0 -8 C 7 0, 8 8, 0 12 C -8 8, -7 0, 0 -8 Z" fill="#facc15" />
             <text x="0" y="-20" textAnchor="middle" fill="#fde047" fontSize="7.5" fontWeight="900">
               🔥 API TERDETEKSI ({intensitasApi}%)
             </text>
@@ -376,46 +529,21 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // ============================================================================
-  // 7. MOTOR DC, KIPAS DC COOLING FAN & POMPA AIR MINI (ANIMASI PUTAR & AIR!)
-  // ============================================================================
-  if (tipe === "kipas_dc" || tipe === "dc_motor" || tipe === "water_pump") {
-    const speedRpm = nilaiSensor ?? 120;
-    const aktifBerputar = nyala && speedRpm > 10;
-
-    if (tipe === "water_pump") {
-      return (
-        <svg viewBox="0 0 120 98" className={isIkon ? "w-16 h-12" : "w-full h-full overflow-visible"}>
-          {!isIkon && aktifBerputar && (
-            <g className="animate-bounce">
-              <circle cx="60" cy="-8" r="4" fill="#38bdf8" />
-              <circle cx="48" cy="-16" r="3.5" fill="#0ea5e9" />
-              <circle cx="72" cy="-14" r="3.5" fill="#38bdf8" />
-              <text x="60" y="-24" textAnchor="middle" fill="#38bdf8" fontSize="7.5" fontWeight="900">
-                💦 POMPA MENYEMBUR ({speedRpm} L/h)
-              </text>
-            </g>
-          )}
-          <rect x="22" y="14" width="76" height="50" rx="8" fill="#0284c7" stroke="#7dd3fc" strokeWidth="2.5" />
-          <rect x="52" y="2" width="16" height="14" rx="3" fill="#e2e8f0" />
-          <text x="60" y="42" textAnchor="middle" fill="#ffffff" fontSize="8" fontWeight="900">
-            WATER PUMP
-          </text>
-          {[30, 60, 90].map((x, idx) => (
-            <line key={idx} x1={x} y1="64" x2={x} y2="90" stroke="#eab308" strokeWidth="3.5" />
-          ))}
-        </svg>
-      );
-    }
+  // 9. Kipas DC & Motor DC (PWM 0 - 255)
+  if (tipe === "kipas_dc" || tipe === "dc_motor") {
+    const pwmVal = nilaiSensor ?? 200;
+    const aktifBerputar = nyala && pwmVal > 10;
 
     return (
       <svg viewBox="0 0 120 98" className={isIkon ? "w-16 h-12" : "w-full h-full overflow-visible"}>
         <rect x="24" y="6" width="72" height="60" rx="10" fill="#0f172a" stroke="#38bdf8" strokeWidth="2.5" />
         <circle cx="60" cy="36" r="24" fill="#1e293b" stroke="#475569" strokeWidth="1.5" />
-        {/* Baling-Baling Kipas / Rotor Motor Berputar */}
         <g
           className={aktifBerputar ? "animate-spin" : ""}
-          style={{ transformOrigin: "60px 36px", animationDuration: "0.6s" }}
+          style={{
+            transformOrigin: "60px 36px",
+            animationDuration: `${Math.max(0.2, 1.5 - (pwmVal / 255) * 1.2)}s`,
+          }}
         >
           <ellipse cx="60" cy="20" rx="6" ry="12" fill="#38bdf8" />
           <ellipse cx="60" cy="52" rx="6" ry="12" fill="#38bdf8" />
@@ -430,11 +558,9 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // ============================================================================
-  // 8. SENSOR KELEMBAPAN TANAH (SOIL MOISTURE), HUJAN (RAINDROP) & WATER LEVEL
-  // ============================================================================
+  // 10. Soil Moisture, Raindrop & Water Level (0 - 100%)
   if (tipe === "soil_moisture" || tipe === "rain_sensor" || tipe === "water_level") {
-    const kadarAir = nilaiSensor ?? 70;
+    const kadarAir = Math.max(0, Math.min(100, nilaiSensor ?? 65));
     const basah = kadarAir >= 50;
     return (
       <svg viewBox="0 0 140 95" className={isIkon ? "w-18 h-12" : "w-full h-full overflow-visible"}>
@@ -446,16 +572,14 @@ export const VisualKomponenRealistis: React.FC<{
           </g>
         )}
         <rect x="20" y="8" width="100" height="58" rx="6" fill="#0f172a" stroke="#38bdf8" strokeWidth="2" />
-        {/* Garis-garis Jejak Konduktif Sensor Air/Tanah */}
         {[35, 52, 70, 88, 105].map((x) => (
           <line key={x} x1={x} y1="16" x2={x} y2="56" stroke="#eab308" strokeWidth="3.5" />
         ))}
-        {/* Lapisan Air Biru Naik Turun Sesuai Nilai Sensor */}
         <rect
           x="22"
-          y={64 - Math.min(48, (kadarAir / 180) * 48)}
+          y={64 - (kadarAir / 100) * 48}
           width="96"
-          height={Math.min(48, (kadarAir / 180) * 48)}
+          height={(kadarAir / 100) * 48}
           fill="#0ea5e9"
           opacity="0.45"
         />
@@ -466,14 +590,11 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // ============================================================================
-  // 9. RFID RC522 SMART CARD READER (ANIMASI KARTU TAP)
-  // ============================================================================
+  // 11. RFID RC522
   if (tipe === "rfid_rc522") {
     return (
       <svg viewBox="0 0 130 100" className={isIkon ? "w-18 h-12" : "w-full h-full overflow-visible"}>
         <rect x="10" y="6" width="110" height="66" rx="6" fill="#1e3a8a" stroke="#60a5fa" strokeWidth="2" />
-        {/* Kumparan Antena NFC/RFID */}
         <rect x="20" y="14" width="90" height="44" rx="4" fill="none" stroke="#eab308" strokeWidth="1.5" strokeDasharray="4 2" />
         <text x="65" y="36" textAnchor="middle" fill="#ffffff" fontSize="8.5" fontWeight="900">
           RFID RC522
@@ -493,12 +614,12 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // 10. Sensor Suhu DHT22
+  // 12. Sensor Suhu DHT22 (-40 s/d +80 °C)
   if (tipe === "dht22") {
-    const suhu = nilaiSensor ?? 29;
+    const suhu = nilaiSensor ?? 28.5;
     const isPanas = suhu >= 33;
-    const isDingin = suhu <= 20;
-    const tinggiAirRaksa = Math.max(6, Math.min(44, ((suhu - 10) / 45) * 44));
+    const isDingin = suhu <= 18;
+    const tinggiAirRaksa = Math.max(4, Math.min(44, ((suhu + 40) / 120) * 44));
 
     return (
       <svg viewBox="0 0 100 115" className={isIkon ? "w-14 h-12" : "w-full h-full overflow-visible"}>
@@ -524,7 +645,7 @@ export const VisualKomponenRealistis: React.FC<{
         <rect x="80" y={60 - tinggiAirRaksa} width="6" height={tinggiAirRaksa} rx="3" fill={isPanas ? "#ef4444" : isDingin ? "#38bdf8" : "#22c55e"} />
         <circle cx="83" cy="64" r="6" fill={isPanas ? "#ef4444" : isDingin ? "#38bdf8" : "#22c55e"} />
         <text x="43" y="70" textAnchor="middle" fill="#0284c7" fontSize="8.5" fontWeight="900">
-          {suhu}°C | 65%
+          {suhu}°C
         </text>
         {[23, 41, 59, 77].map((x, idx) => (
           <line key={idx} x1={x} y1="78" x2={x} y2="108" stroke="#eab308" strokeWidth="3.5" />
@@ -533,11 +654,11 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // 11. Sensor Ultrasonik HC-SR04
+  // 13. Sensor Ultrasonik HC-SR04 (2 cm s/d 400 cm)
   if (tipe === "ultrasonik") {
-    const jarakCm = Math.max(2, Math.min(200, nilaiSensor ?? 45));
-    const offsetOrangY = -18 - (jarakCm / 200) * 65;
-    const dekatSekali = jarakCm <= 35;
+    const jarakCm = Math.max(2, Math.min(400, nilaiSensor ?? 45));
+    const offsetOrangY = -16 - (jarakCm / 400) * 65;
+    const dekatSekali = jarakCm <= 40;
 
     return (
       <svg viewBox="0 0 140 95" className={isIkon ? "w-20 h-12" : "w-full h-full overflow-visible"}>
@@ -578,11 +699,11 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // 12. Sensor Gerak PIR
+  // 14. Sensor Gerak PIR (Sudut FOV -60° s/d +60°)
   if (tipe === "pir_sensor") {
-    const posOrang = nilaiSensor ?? 60;
-    const terdeteksi = nyala && posOrang >= 30 && posOrang <= 150;
-    const offsetXOrang = ((posOrang - 90) / 90) * 42;
+    const sudutOrang = nilaiSensor ?? 0;
+    const terdeteksi = nyala && sudutOrang >= -35 && sudutOrang <= 35;
+    const offsetXOrang = (sudutOrang / 60) * 44;
 
     return (
       <svg viewBox="0 0 120 98" className={isIkon ? "w-16 h-12" : "w-full h-full overflow-visible"}>
@@ -601,7 +722,7 @@ export const VisualKomponenRealistis: React.FC<{
               <path d="M -7 8 C -7 1, 7 1, 7 8 Z" fill={terdeteksi ? "#dc2626" : "#64748b"} />
               <rect x="-38" y="-24" width="76" height="13" rx="3" fill="#0f172a" stroke={terdeteksi ? "#ef4444" : "#475569"} />
               <text x="0" y="-15" textAnchor="middle" fill={terdeteksi ? "#fde047" : "#cbd5e1"} fontSize="7" fontWeight="bold">
-                {terdeteksi ? "🏃 GERAKAN TERDETEKSI!" : "🚶 Aman (Diluar Zona)"}
+                {terdeteksi ? "🏃 GERAKAN TERDETEKSI!" : `🚶 Diluar Zona (${sudutOrang}°)`}
               </text>
             </g>
           </g>
@@ -618,15 +739,15 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // 13. Sensor Cahaya LDR
+  // 15. Sensor Cahaya LDR (0 - 1000 Lux)
   if (tipe === "ldr_sensor") {
-    const lux = nilaiSensor ?? 80;
-    const terang = lux >= 60;
+    const lux = nilaiSensor ?? 450;
+    const terang = lux >= 300;
     return (
       <svg viewBox="0 0 120 98" className={isIkon ? "w-16 h-12" : "w-full h-full overflow-visible"}>
         {!isIkon && (
           <g transform="translate(60, -18)">
-            <circle cx="0" cy="0" r={8 + (lux / 180) * 10} fill="#facc15" opacity={0.25 + (lux / 180) * 0.5} className={terang ? "animate-pulse" : ""} />
+            <circle cx="0" cy="0" r={7 + (lux / 1000) * 12} fill="#facc15" opacity={0.2 + (lux / 1000) * 0.6} className={terang ? "animate-pulse" : ""} />
             <circle cx="0" cy="0" r="6" fill={terang ? "#fde047" : "#64748b"} />
             <text x="0" y="-12" textAnchor="middle" fill="#fde047" fontSize="7.5" fontWeight="bold">
               ☀️ Cahaya: {lux} Lux
@@ -643,18 +764,18 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // 14. Layar OLED / LCD 16x2 / MQ-2 Gas
+  // 16. Layar OLED / LCD 16x2 / MQ-2 Gas (100 - 10000 ppm)
   if (tipe === "oled_display" || tipe === "lcd_16x2" || tipe === "mq2_gas") {
     const isLcd = tipe === "lcd_16x2";
     const isGas = tipe === "mq2_gas";
-    const bahayaGas = isGas && (nilaiSensor ?? 50) >= 70;
+    const bahayaGas = isGas && (nilaiSensor ?? 350) >= 1000;
 
     return (
       <svg viewBox="0 0 140 95" className={isIkon ? "w-20 h-12" : "w-full h-full overflow-visible"}>
         {!isIkon && isGas && (
           <g className="animate-bounce">
-            <circle cx="45" cy="-10" r={6 + ((nilaiSensor || 40) / 180) * 8} fill={bahayaGas ? "#ef4444" : "#94a3b8"} opacity="0.45" />
-            <circle cx="70" cy="-16" r={8 + ((nilaiSensor || 40) / 180) * 10} fill={bahayaGas ? "#f97316" : "#cbd5e1"} opacity="0.5" />
+            <circle cx="45" cy="-10" r={6 + Math.min(10, (nilaiSensor || 350) / 1000)} fill={bahayaGas ? "#ef4444" : "#94a3b8"} opacity="0.5" />
+            <circle cx="70" cy="-16" r={8 + Math.min(12, (nilaiSensor || 350) / 1000)} fill={bahayaGas ? "#f97316" : "#cbd5e1"} opacity="0.55" />
             <text x="70" y="-28" textAnchor="middle" fill="#fde047" fontSize="7.5" fontWeight="900">
               💨 Gas: {nilaiSensor} ppm
             </text>
@@ -675,7 +796,7 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // 15. LED & Buzzer
+  // 17. LED & Buzzer
   if (
     tipe === "led_hijau" ||
     tipe === "led_merah" ||
@@ -714,15 +835,30 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // 16. Servo, Potensiometer, Transistor
+  // ============================================================================
+  // 18. MOTOR SERVO 180° (POSITIONAL) & MOTOR SERVO 360° (CONTINUOUS ROTATION)
+  // ============================================================================
   if (
     tipe === "servo" ||
+    tipe === "servo_360" ||
     tipe === "potensiometer" ||
     tipe === "transistor_npn"
   ) {
+    const isServo360 = tipe === "servo_360";
+    const berputar360 = isServo360 && nyala && (nilaiSensor ?? 60) !== 0;
+
     return (
       <svg viewBox="0 0 120 98" className={isIkon ? "w-16 h-12" : "w-full h-full overflow-visible"}>
-        <rect x="18" y="10" width="84" height="54" rx="6" fill="#1e293b" stroke="#38bdf8" strokeWidth="2" />
+        <rect
+          x="18"
+          y="10"
+          width="84"
+          height="54"
+          rx="6"
+          fill="#1e293b"
+          stroke={isServo360 ? "#f59e0b" : "#38bdf8"}
+          strokeWidth="2"
+        />
         {tipe === "servo" ? (
           <g
             style={{
@@ -734,12 +870,37 @@ export const VisualKomponenRealistis: React.FC<{
             <circle cx="45" cy="37" r="13" fill="#0284c7" />
             <rect x="41" y="6" width="8" height="34" rx="4" fill="#f8fafc" stroke="#0284c7" />
           </g>
+        ) : isServo360 ? (
+          <g
+            className={berputar360 ? "animate-spin" : ""}
+            style={{
+              transformOrigin: "45px 37px",
+              animationDuration: `${Math.max(0.35, 1.6 - (Math.abs(nilaiSensor || 50) / 100) * 1.1)}s`,
+              animationDirection: (nilaiSensor ?? 60) < 0 ? "reverse" : "normal",
+            }}
+          >
+            <circle cx="45" cy="37" r="14" fill="#d97706" />
+            <rect x="41" y="14" width="8" height="46" rx="4" fill="#f8fafc" />
+            <rect x="22" y="33" width="46" height="8" rx="4" fill="#f8fafc" />
+          </g>
         ) : (
-          <circle cx="60" cy="34" r="16" fill="#0f172a" stroke="#facc15" strokeWidth="2.5" />
+          <g
+            style={{
+              transform: `rotate(${((nilaiSensor ?? 2048) / 4095) * 270 - 135}deg)`,
+              transformOrigin: "57px 34px",
+              transition: "transform 0.2s ease-out",
+            }}
+          >
+            <circle cx="57" cy="34" r="16" fill="#0f172a" stroke="#facc15" strokeWidth="2.5" />
+            <line x1="57" y1="34" x2="57" y2="20" stroke="#38bdf8" strokeWidth="3" />
+          </g>
         )}
-        <text x="78" y="42" textAnchor="middle" fill="#fde047" fontSize="9" fontWeight="900">
+        <text x="80" y="36" textAnchor="middle" fill="#fde047" fontSize="7.5" fontWeight="900">
+          {tipe === "servo" ? "SG90 180°" : isServo360 ? "360° CONT" : "ADC"}
+        </text>
+        <text x="80" y="48" textAnchor="middle" fill="#ffffff" fontSize="8" fontWeight="900">
           {nilaiSensor}
-          {tipe === "servo" ? "°" : ""}
+          {tipe === "servo" ? "°" : isServo360 ? "%" : ""}
         </text>
         {[30, 60, 90].map((x, idx) => (
           <line key={idx} x1={x} y1="64" x2={x} y2="90" stroke="#eab308" strokeWidth="3.5" />
