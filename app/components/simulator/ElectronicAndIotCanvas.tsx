@@ -28,9 +28,11 @@ import {
   hitungGelangWarnaResistor,
 } from "./ResistorVisualSvg";
 import {
-  ambilInfoPinKomponen,
-  IotCloudBlynkPanel,
-} from "./IotCloudBlynkPanel";
+  ambilLayoutFisikKomponen,
+  warnaTitikPin,
+  TitikPinFisik,
+} from "./pinoutDefinitions";
+import { IotCloudBlynkPanel } from "./IotCloudBlynkPanel";
 
 export interface TitikSikuKabel {
   x: number;
@@ -55,7 +57,7 @@ export interface KabelKoneksiItem {
   keId: string;
   pinTujuan: string;
   warna: string;
-  titikSiku?: TitikSikuKabel[]; // Array koordinat siku kabel yang bisa ditarik-tarik seperti Wokwi
+  titikSiku?: TitikSikuKabel[];
 }
 
 interface CanvasProps {
@@ -81,88 +83,63 @@ const PILIHAN_WARNA_KABEL = [
   { nama: "Oranye (Sinyal)", hex: "#f97316" },
 ];
 
-// Gudang Komponen Diperbanyak (Termasuk 5 Jenis Mikrokontroler untuk Dual/Multi-MCU TX-RX)
 const PALET_KOMPONEN: {
   [key in "wokwi" | "ewb" | "matlab"]: ItemPaletGudang[];
 } = {
   wokwi: [
-    { tipe: "esp32", label: "ESP32 DevKit V1 (WiFi)", kategori: "Microcontroller" },
-    { tipe: "arduino_uno", label: "Arduino Uno R3", kategori: "Microcontroller" },
-    { tipe: "esp8266_nodemcu", label: "NodeMCU ESP8266", kategori: "Microcontroller" },
-    { tipe: "stm32_bluepill", label: "STM32 BluePill ARM", kategori: "Microcontroller" },
-    { tipe: "raspberry_pico", label: "Raspberry Pi Pico", kategori: "Microcontroller" },
-    { tipe: "breadboard", label: "Breadboard Mini", kategori: "Microcontroller" },
+    { tipe: "esp32", label: "ESP32 DevKit (30 Pin)", kategori: "Microcontroller" },
+    { tipe: "arduino_uno", label: "Arduino Uno (28 Pin)", kategori: "Microcontroller" },
+    { tipe: "esp8266_nodemcu", label: "NodeMCU ESP8266 (30p)", kategori: "Microcontroller" },
+    { tipe: "stm32_bluepill", label: "STM32 BluePill (32p)", kategori: "Microcontroller" },
+    { tipe: "raspberry_pico", label: "Raspberry Pi Pico (32p)", kategori: "Microcontroller" },
     {
       tipe: "dht22",
-      label: "Sensor Suhu DHT22",
+      label: "Sensor Suhu DHT22 (4p)",
       kategori: "Sensor IoT",
       defaultSensor: 29,
     },
     {
       tipe: "ultrasonik",
-      label: "Ultrasonik HC-SR04",
+      label: "Ultrasonik HC-SR04 (4p)",
       kategori: "Sensor IoT",
       defaultSensor: 45,
     },
     {
       tipe: "mq2_gas",
-      label: "Sensor Gas & Asap MQ-2",
+      label: "Sensor Gas MQ-2 (4p)",
       kategori: "Sensor IoT",
       defaultSensor: 320,
     },
-    { tipe: "pir_sensor", label: "Sensor Gerak PIR", kategori: "Sensor IoT" },
+    { tipe: "pir_sensor", label: "Sensor Gerak PIR (3p)", kategori: "Sensor IoT" },
     {
       tipe: "ldr_sensor",
-      label: "Sensor Cahaya LDR",
+      label: "Sensor Cahaya LDR (3p)",
       kategori: "Sensor IoT",
       defaultSensor: 500,
     },
     {
       tipe: "oled_display",
-      label: "Layar OLED I2C",
+      label: "Layar OLED I2C (4p)",
       kategori: "Aktuator & Layar",
       defaultSensor: 100,
     },
     {
       tipe: "lcd_16x2",
-      label: "LCD 16x2 I2C",
+      label: "LCD 16x2 I2C (4p)",
       kategori: "Aktuator & Layar",
       defaultSensor: 25,
     },
     {
-      tipe: "neopixel_ring",
-      label: "NeoPixel RGB Ring",
-      kategori: "Aktuator & Layar",
-    },
-    {
-      tipe: "seven_segment",
-      label: "7-Segment Display",
-      kategori: "Aktuator & Layar",
-      defaultSensor: 8,
-    },
-    {
       tipe: "servo",
-      label: "Motor Servo SG90",
+      label: "Motor Servo SG90 (3p)",
       kategori: "Aktuator & Layar",
       defaultSensor: 90,
     },
-    {
-      tipe: "stepper_motor",
-      label: "Stepper Motor NEMA17",
-      kategori: "Aktuator & Layar",
-      defaultSensor: 45,
-    },
-    {
-      tipe: "l298n_driver",
-      label: "Driver Motor L298N",
-      kategori: "Aktuator & Layar",
-    },
-    { tipe: "buzzer", label: "Buzzer Piezo Alarm", kategori: "Aktuator & Layar" },
-    { tipe: "relay_5v", label: "Modul Relay 5V IoT", kategori: "Aktuator & Layar" },
-    { tipe: "keypad_4x4", label: "Keypad Matriks 4x4", kategori: "Pasif & Input" },
-    { tipe: "led_hijau", label: "LED Hijau 5mm", kategori: "Pasif & Input" },
-    { tipe: "led_merah", label: "LED Merah 5mm", kategori: "Pasif & Input" },
-    { tipe: "led_kuning", label: "LED Kuning 5mm", kategori: "Pasif & Input" },
+    { tipe: "buzzer", label: "Buzzer Piezo (2p)", kategori: "Aktuator & Layar" },
+    { tipe: "keypad_4x4", label: "Keypad Matriks 4x4 (8p)", kategori: "Pasif & Input" },
+    { tipe: "led_hijau", label: "LED Hijau 5mm (2p)", kategori: "Pasif & Input" },
+    { tipe: "led_merah", label: "LED Merah 5mm (2p)", kategori: "Pasif & Input" },
+    { tipe: "led_kuning", label: "LED Kuning 5mm (2p)", kategori: "Pasif & Input" },
     {
       tipe: "resistor",
       label: "Resistor Gelang Warna",
@@ -171,11 +148,10 @@ const PALET_KOMPONEN: {
     },
     {
       tipe: "potensiometer",
-      label: "Potensiometer Analog",
+      label: "Potensiometer (3p)",
       kategori: "Pasif & Input",
       defaultSensor: 50,
     },
-    { tipe: "push_button", label: "Sakelar Push Button", kategori: "Pasif & Input" },
   ],
   ewb: [
     {
@@ -189,12 +165,6 @@ const PALET_KOMPONEN: {
       label: "Generator Sinyal AC",
       kategori: "Power & Ground",
       defaultSensor: 50,
-    },
-    {
-      tipe: "trafo_stepdown",
-      label: "Transformator CT 12V",
-      kategori: "Power & Ground",
-      defaultSensor: 12,
     },
     { tipe: "gnd", label: "Ground (GND 0V)", kategori: "Power & Ground" },
     {
@@ -215,47 +185,20 @@ const PALET_KOMPONEN: {
       kategori: "Komponen RLC",
       defaultSensor: 25,
     },
-    {
-      tipe: "potensiometer",
-      label: "Resistor Variabel (Pot)",
-      kategori: "Komponen RLC",
-      defaultSensor: 50,
-    },
     { tipe: "dioda", label: "Dioda Penyearah 1N4007", kategori: "Semikonduktor & IC" },
     {
       tipe: "transistor_npn",
       label: "Transistor NPN 2N2222",
       kategori: "Semikonduktor & IC",
     },
-    { tipe: "opamp_741", label: "Op-Amp Analog LM741", kategori: "Semikonduktor & IC" },
-    { tipe: "ic_ne555", label: "IC Timer NE555P", kategori: "Semikonduktor & IC" },
     {
       tipe: "gerbang_logika",
       label: "Gerbang AND (7408)",
       kategori: "Gerbang Logika & Alat",
     },
-    { tipe: "ic_or", label: "Gerbang OR (7432)", kategori: "Gerbang Logika & Alat" },
-    { tipe: "ic_xor", label: "Gerbang XOR (7486)", kategori: "Gerbang Logika & Alat" },
-    {
-      tipe: "multimeter",
-      label: "Multimeter Digital",
-      kategori: "Gerbang Logika & Alat",
-      defaultSensor: 12,
-    },
     {
       tipe: "osiloskop",
       label: "Osiloskop 2-Channel",
-      kategori: "Gerbang Logika & Alat",
-    },
-    {
-      tipe: "func_generator",
-      label: "Function Generator",
-      kategori: "Gerbang Logika & Alat",
-      defaultSensor: 100,
-    },
-    {
-      tipe: "led_hijau",
-      label: "Lampu Indikator Uji",
       kategori: "Gerbang Logika & Alat",
     },
   ],
@@ -265,12 +208,6 @@ const PALET_KOMPONEN: {
       label: "Sine Wave Generator",
       kategori: "Sources",
       defaultSensor: 50,
-    },
-    {
-      tipe: "Step Input",
-      label: "Step Reference u(t)",
-      kategori: "Sources",
-      defaultSensor: 1,
     },
     {
       tipe: "PID Controller",
@@ -284,243 +221,200 @@ const PALET_KOMPONEN: {
       kategori: "Continuous",
       defaultSensor: 1,
     },
-    { tipe: "Integrator", label: "Integrator (1/s)", kategori: "Continuous" },
-    { tipe: "Derivative", label: "Derivative (du/dt)", kategori: "Continuous" },
-    { tipe: "Gain K", label: "Gain Amplifier (K)", kategori: "Math & Logic" },
-    { tipe: "Sum (+ / -)", label: "Sum Junction (+/-)", kategori: "Math & Logic" },
-    { tipe: "Mux Signal", label: "Signal Multiplexer", kategori: "Math & Logic" },
     { tipe: "Scope Plot", label: "Simulink Scope Viewer", kategori: "Sinks" },
-    { tipe: "To Workspace", label: "Export to Workspace", kategori: "Sinks" },
   ],
 };
 
-// Rangkaian Default Wokwi Langsung Menampilkan 2 Mikrokontroler (ESP32 + Arduino Uno Terhubung TX/RX)
 const KOMPONEN_AWAL_PER_MODE: {
   [key in "wokwi" | "ewb" | "matlab"]: NodeKomponenKanvas[];
 } = {
   wokwi: [
-    { id: "wk-1", tipe: "esp32", label: "MCU #1: ESP32 Master", x: 25, y: 40, nyala: true },
+    { id: "wk-1", tipe: "esp32", label: "ESP32 Master (30p)", x: 35, y: 35, nyala: true },
     {
       id: "wk-2",
       tipe: "arduino_uno",
-      label: "MCU #2: Arduino Uno Slave",
-      x: 25,
-      y: 235,
+      label: "Arduino Uno Slave (28p)",
+      x: 470,
+      y: 35,
       nyala: true,
     },
     {
       id: "wk-3",
-      tipe: "resistor",
-      label: "R1 Pembatas Arus",
-      x: 270,
-      y: 35,
-      nilaiResistor: 330,
-    },
-    { id: "wk-4", tipe: "led_hijau", label: "LED Indikator", x: 465, y: 30, nyala: true },
-    {
-      id: "wk-5",
       tipe: "dht22",
-      label: "DHT22 Suhu",
-      x: 285,
-      y: 195,
+      label: "Sensor DHT22 (4p)",
+      x: 265,
+      y: 30,
       nilaiSensor: 31,
     },
     {
-      id: "wk-6",
-      tipe: "servo",
-      label: "Servo Pintu",
-      x: 455,
-      y: 205,
-      nilaiSensor: 90,
+      id: "wk-4",
+      tipe: "resistor",
+      label: "R1 (330 Ω)",
+      x: 255,
+      y: 195,
+      nilaiResistor: 330,
     },
+    { id: "wk-5", tipe: "led_hijau", label: "LED Indikator", x: 435, y: 185, nyala: true },
   ],
   ewb: [
-    {
-      id: "ewb-1",
-      tipe: "vcc_dc",
-      label: "Sumber Vcc 12V",
-      x: 30,
-      y: 80,
-      nilaiSensor: 12,
-    },
+    { id: "ewb-1", tipe: "vcc_dc", label: "Sumber DC 12V", x: 35, y: 90, nilaiSensor: 12 },
     {
       id: "ewb-2",
       tipe: "resistor",
-      label: "Resistor R1 (Atas)",
-      x: 220,
-      y: 45,
+      label: "Resistor R1",
+      x: 230,
+      y: 55,
       nilaiResistor: 1000,
     },
     {
       id: "ewb-3",
       tipe: "resistor",
-      label: "Resistor R2 (Beban)",
-      x: 220,
-      y: 195,
+      label: "Resistor R2",
+      x: 230,
+      y: 175,
       nilaiResistor: 2200,
     },
-    {
-      id: "ewb-4",
-      tipe: "osiloskop",
-      label: "Osiloskop Tektronix",
-      x: 440,
-      y: 110,
-      nyala: true,
-    },
+    { id: "ewb-4", tipe: "osiloskop", label: "Osiloskop CH1", x: 450, y: 100, nyala: true },
   ],
   matlab: [
-    {
-      id: "sim-1",
-      tipe: "Sine Wave",
-      label: "Input Referensi r(t)",
-      x: 25,
-      y: 115,
-      nilaiSensor: 10,
-    },
-    {
-      id: "sim-2",
-      tipe: "PID Controller",
-      label: "Blok Kendali PID",
-      x: 205,
-      y: 115,
-      nilaiSensor: 5,
-    },
-    {
-      id: "sim-3",
-      tipe: "Transfer Fcn",
-      label: "Plant Motor DC",
-      x: 385,
-      y: 115,
-      nilaiSensor: 1,
-    },
-    {
-      id: "sim-4",
-      tipe: "Scope Plot",
-      label: "Output Scope y(t)",
-      x: 545,
-      y: 115,
-    },
+    { id: "sim-1", tipe: "Sine Wave", label: "Input r(t)", x: 30, y: 110, nilaiSensor: 10 },
+    { id: "sim-2", tipe: "PID Controller", label: "PID", x: 215, y: 110, nilaiSensor: 5 },
+    { id: "sim-3", tipe: "Transfer Fcn", label: "Plant G(s)", x: 400, y: 110, nilaiSensor: 1 },
+    { id: "sim-4", tipe: "Scope Plot", label: "Scope y(t)", x: 575, y: 110 },
   ],
 };
 
-// Kabel Default Menggunakan Jalur Siku Orthogonal (titikSiku) yang Bisa Ditarik-Tarik
+// Kabel Default Terhubung Tepat ke ID Pin Fisik (TX2 -> D0_RX, RX2 -> D1_TX, GPIO15 -> DATA, GPIO2 -> PIN_1)
 const KABEL_AWAL_PER_MODE: {
   [key in "wokwi" | "ewb" | "matlab"]: KabelKoneksiItem[];
 } = {
   wokwi: [
     {
-      id: "w-txrx-1",
+      id: "w-uart-1",
       dariId: "wk-1",
-      pinAsal: "TX2 (GPIO17)",
+      pinAsal: "GPIO17", // TX2 di kanan ESP32
       keId: "wk-2",
-      pinTujuan: "D0 (RX)",
+      pinTujuan: "D0_RX", // D0 (RX) di atas Arduino Uno
       warna: "#22c55e",
       titikSiku: [
-        { x: 200, y: 95 },
-        { x: 200, y: 270 },
+        { x: 225, y: 165 },
+        { x: 638, y: 15 },
       ],
     },
     {
-      id: "w-txrx-2",
+      id: "w-uart-2",
       dariId: "wk-2",
-      pinAsal: "D1 (TX)",
+      pinAsal: "D1_TX", // D1 (TX) di atas Arduino Uno
       keId: "wk-1",
-      pinTujuan: "RX2 (GPIO16)",
+      pinTujuan: "GPIO16", // RX2 di kanan ESP32
       warna: "#facc15",
       titikSiku: [
-        { x: 220, y: 295 },
-        { x: 220, y: 115 },
+        { x: 626, y: 25 },
+        { x: 235, y: 178 },
       ],
     },
     {
-      id: "w-1",
+      id: "w-dht-data",
       dariId: "wk-1",
-      pinAsal: "GPIO2 (LED)",
+      pinAsal: "GPIO15",
       keId: "wk-3",
-      pinTujuan: "Pin 1 (Kaki Kiri)",
-      warna: "#38bdf8",
-      titikSiku: [{ x: 245, y: 75 }],
-    },
-    {
-      id: "w-2",
-      dariId: "wk-3",
-      pinAsal: "Pin 2 (Kaki Kanan)",
-      keId: "wk-4",
-      pinTujuan: "Anoda (+)",
-      warna: "#ef4444",
-      titikSiku: [{ x: 430, y: 75 }],
-    },
-    {
-      id: "w-3",
-      dariId: "wk-2",
-      pinAsal: "D2",
-      keId: "wk-5",
-      pinTujuan: "2: DATA (SDA)",
+      pinTujuan: "DATA", // Kaki ke-2 bawah DHT22
       warna: "#a855f7",
-      titikSiku: [{ x: 255, y: 260 }],
+      titikSiku: [{ x: 306, y: 215 }],
+    },
+    {
+      id: "w-led-1",
+      dariId: "wk-1",
+      pinAsal: "GPIO2",
+      keId: "wk-4",
+      pinTujuan: "PIN_1", // Kaki kiri resistor
+      warna: "#38bdf8",
+      titikSiku: [{ x: 225, y: 245 }],
+    },
+    {
+      id: "w-led-2",
+      dariId: "wk-4",
+      pinAsal: "PIN_2", // Kaki kanan resistor
+      keId: "wk-5",
+      pinTujuan: "ANODA", // Kaki positif bawah LED
+      warna: "#ef4444",
+      titikSiku: [{ x: 420, y: 245 }],
     },
   ],
   ewb: [
     {
       id: "e-1",
       dariId: "ewb-1",
-      pinAsal: "Terminal Positif (+V)",
+      pinAsal: "OUT_1",
       keId: "ewb-2",
-      pinTujuan: "Pin 1 (Kaki Kiri)",
+      pinTujuan: "PIN_1",
       warna: "#ef4444",
-      titikSiku: [{ x: 180, y: 95 }],
+      titikSiku: [{ x: 195, y: 105 }],
     },
     {
       id: "e-2",
       dariId: "ewb-2",
-      pinAsal: "Pin 2 (Kaki Kanan)",
+      pinAsal: "PIN_2",
       keId: "ewb-3",
-      pinTujuan: "Pin 1 (Kaki Kiri)",
+      pinTujuan: "PIN_1",
       warna: "#38bdf8",
-      titikSiku: [{ x: 375, y: 95 }, { x: 375, y: 225 }],
+      titikSiku: [{ x: 395, y: 105 }, { x: 395, y: 225 }],
     },
     {
       id: "e-3",
       dariId: "ewb-2",
-      pinAsal: "Pin 2 (Kaki Kanan)",
+      pinAsal: "PIN_2",
       keId: "ewb-4",
-      pinTujuan: "Channel 1 (CH1)",
+      pinTujuan: "IN_1",
       warna: "#22c55e",
-      titikSiku: [{ x: 410, y: 150 }],
+      titikSiku: [{ x: 420, y: 145 }],
     },
   ],
   matlab: [
     {
       id: "m-1",
       dariId: "sim-1",
-      pinAsal: "Out1",
+      pinAsal: "OUT_1",
       keId: "sim-2",
-      pinTujuan: "In1 (Error)",
+      pinTujuan: "IN_1",
       warna: "#f97316",
-      titikSiku: [{ x: 185, y: 160 }],
     },
     {
       id: "m-2",
       dariId: "sim-2",
-      pinAsal: "Out1 (u)",
+      pinAsal: "OUT_1",
       keId: "sim-3",
-      pinTujuan: "In1",
+      pinTujuan: "IN_1",
       warna: "#38bdf8",
-      titikSiku: [{ x: 365, y: 160 }],
     },
     {
       id: "m-3",
       dariId: "sim-3",
-      pinAsal: "Out1 (y)",
+      pinAsal: "OUT_1",
       keId: "sim-4",
-      pinTujuan: "Scope In",
+      pinTujuan: "IN_1",
       warna: "#22c55e",
-      titikSiku: [{ x: 525, y: 160 }],
     },
   ],
 };
 
-// Fungsi Pembantu: Membangun Path SVG Orthogonal Siku-Siku (90 Derajat) ala Wokwi
+// Hitung koordinat absolut (x, y) suatu titik pin di kanvas
+function cariKoordinatPinAbsolut(
+  node: NodeKomponenKanvas,
+  idAtauNamaPin: string
+): { x: number; y: number; pinObj: TitikPinFisik } {
+  const layout = ambilLayoutFisikKomponen(node.tipe);
+  const found =
+    layout.pins.find(
+      (p) => p.idPin === idAtauNamaPin || p.nama === idAtauNamaPin
+    ) || layout.pins[0];
+  return {
+    x: node.x + found.x,
+    y: node.y + found.y + 18, // +18px offset header label atas komponen
+    pinObj: found,
+  };
+}
+
 function bangunJalurSikuWokwi(
   x1: number,
   y1: number,
@@ -540,7 +434,6 @@ function bangunJalurSikuWokwi(
   for (let i = 0; i < handles.length; i++) {
     const prev = semuaTitik[semuaTitik.length - 1];
     const curr = handles[i];
-    // Buat patahan siku 90 derajat antara titik sebelumnya dan handle saat ini
     if (prev.x !== curr.x && prev.y !== curr.y) {
       semuaTitik.push({ x: curr.x, y: prev.y });
     }
@@ -583,7 +476,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
   const [cariKomponen, setCariKomponen] = useState<string>("");
 
   const [ukuranKanvas, setUkuranKanvas] = useState<"kecil" | "sedang" | "besar" | "penuh">(
-    "sedang"
+    "besar"
   );
   const [skalaZoom, setSkalaZoom] = useState<number>(1);
 
@@ -592,18 +485,25 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
   );
   const [sedangGeserId, setSedangGeserId] = useState<string | null>(null);
 
-  // State Interaktif Kabel: Klik Kabel untuk Munculkan Siku & Ganti Warna Langsung
+  // State Hover Titik Pin Fisik (Munculkan Nama & Keterangan saat Didekatkan)
+  const [hoveredPinInfo, setHoveredPinInfo] = useState<{
+    nodeLabel: string;
+    pin: TitikPinFisik;
+    absX: number;
+    absY: number;
+  } | null>(null);
+
   const [idKabelTerpilih, setIdKabelTerpilih] = useState<string | null>(null);
   const [sedangGeserSiku, setSedangGeserSiku] = useState<{
     kabelId: string;
     indeksTitik: number;
   } | null>(null);
 
-  // State Tarik Kabel Langsung dari Pin Komponen ke Komponen Lain
   const [warnaKabelAktif, setWarnaKabelAktif] = useState<string>("#22c55e");
   const [sedangTarikKabelDariPin, setSedangTarikKabelDariPin] = useState<{
     nodeId: string;
-    namaPin: string;
+    nodeLabel: string;
+    pin: TitikPinFisik;
     xAsal: number;
     yAsal: number;
   } | null>(null);
@@ -612,13 +512,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     y: 150,
   });
 
-  // State Form Manual Tarik Garis
-  const [pinAsalPilih, setPinAsalPilih] = useState<string>("TX2 (GPIO17)");
-  const [idTujuanManual, setIdTujuanManual] = useState<string>(
-    KOMPONEN_AWAL_PER_MODE[mode][1]?.id || ""
-  );
-  const [pinTujuanPilih, setPinTujuanPilih] = useState<string>("D0 (RX)");
-
   const [bukaDashboardIot, setBukaDashboardIot] = useState<boolean>(true);
 
   useEffect(() => {
@@ -626,7 +519,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     setCariKomponen("");
     const listAwal = KOMPONEN_AWAL_PER_MODE[mode];
     setIdKomponenTerpilih(listAwal[0]?.id || null);
-    setIdTujuanManual(listAwal[1]?.id || "");
     setIdKabelTerpilih(null);
     setSedangTarikKabelDariPin(null);
   }, [mode]);
@@ -650,27 +542,20 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
   const kabelSaatIni = daftarKabel[mode] || [];
   const komponenTerpilih =
     nodesSaatIni.find((n) => n.id === idKomponenTerpilih) || nodesSaatIni[0] || null;
+  const layoutTerpilih = komponenTerpilih
+    ? ambilLayoutFisikKomponen(komponenTerpilih.tipe)
+    : null;
   const kabelTerpilihObj =
     kabelSaatIni.find((k) => k.id === idKabelTerpilih) || null;
 
-  const infoPinTerpilih = komponenTerpilih
-    ? ambilInfoPinKomponen(komponenTerpilih.tipe)
-    : null;
-
-  const nodeTujuanManualObj =
-    nodesSaatIni.find((n) => n.id === idTujuanManual) || nodesSaatIni[1] || null;
-  const infoPinTujuanObj = nodeTujuanManualObj
-    ? ambilInfoPinKomponen(nodeTujuanManualObj.tipe)
-    : null;
-
   const tinggiKanvasPx =
     ukuranKanvas === "kecil"
-      ? "h-[350px]"
+      ? "h-[360px]"
       : ukuranKanvas === "sedang"
       ? "h-[480px]"
       : ukuranKanvas === "besar"
-      ? "h-[640px]"
-      : "h-[800px]";
+      ? "h-[600px]"
+      : "h-[780px]";
 
   const tambahKomponenKeKanvas = (
     tipe: string,
@@ -683,9 +568,9 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     const baru: NodeKomponenKanvas = {
       id: `${mode}-node-${Date.now()}`,
       tipe,
-      label: `${label} #${nodesSaatIni.length + 1}`,
-      x: Math.max(15, Math.min(600, xPos)),
-      y: Math.max(15, Math.min(480, yPos)),
+      label: `${label.split(" (")[0]} #${nodesSaatIni.length + 1}`,
+      x: Math.max(15, Math.min(580, xPos)),
+      y: Math.max(15, Math.min(380, yPos)),
       nilaiResistor: defaultResistor ?? (tipe === "resistor" ? 1000 : undefined),
       nilaiSensor: defaultSensor ?? 25,
       nyala: true,
@@ -717,7 +602,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     } catch {}
   };
 
-  // Fungsi Mouse Move Utama di Kanvas: Geser Komponen, Geser Titik Siku Kabel, atau Preview Tarik Kabel
   const handleMouseMoveKanvas = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
@@ -735,16 +619,15 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
           if (kbl.id !== sedangGeserSiku.kabelId) return kbl;
           const asal = nodesSaatIni.find((n) => n.id === kbl.dariId);
           const tujuan = nodesSaatIni.find((n) => n.id === kbl.keId);
-          const x1 = (asal?.x || 0) + 70;
-          const y1 = (asal?.y || 0) + 50;
-          const x2 = (tujuan?.x || 0) + 70;
-          const y2 = (tujuan?.y || 0) + 50;
+          if (!asal || !tujuan) return kbl;
+          const p1 = cariKoordinatPinAbsolut(asal, kbl.pinAsal);
+          const p2 = cariKoordinatPinAbsolut(tujuan, kbl.pinTujuan);
           const listSikuLama =
             kbl.titikSiku && kbl.titikSiku.length > 0
               ? [...kbl.titikSiku]
               : [
-                  { x: Math.round((x1 + x2) / 2), y: y1 },
-                  { x: Math.round((x1 + x2) / 2), y: y2 },
+                  { x: Math.round((p1.x + p2.x) / 2), y: p1.y },
+                  { x: Math.round((p1.x + p2.x) / 2), y: p2.y },
                 ];
           listSikuLama[sedangGeserSiku.indeksTitik] = {
             x: Math.max(10, mouseX),
@@ -757,14 +640,8 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     }
 
     if (sedangGeserId) {
-      const xBaru = Math.max(
-        10,
-        Math.min(rect.width / skalaZoom - 130, mouseX - 60)
-      );
-      const yBaru = Math.max(
-        10,
-        Math.min(rect.height / skalaZoom - 90, mouseY - 40)
-      );
+      const xBaru = Math.max(10, mouseX - 65);
+      const yBaru = Math.max(10, mouseY - 40);
       setDaftarNode({
         ...daftarNode,
         [mode]: nodesSaatIni.map((n) =>
@@ -786,28 +663,30 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
 
   const tambahKabelKoneksi = (
     dariId: string,
-    pinDari: string,
+    pinDariId: string,
     keId: string,
-    pinKe: string,
+    pinKeId: string,
     warna: string
   ) => {
-    if (!dariId || !keId || dariId === keId) return;
+    if (!dariId || !keId || (dariId === keId && pinDariId === pinKeId)) return;
     const asal = nodesSaatIni.find((n) => n.id === dariId);
     const tujuan = nodesSaatIni.find((n) => n.id === keId);
-    const midX = Math.round(((asal?.x || 100) + (tujuan?.x || 300)) / 2) + 60;
-    const yAsal = (asal?.y || 100) + 50;
-    const yTujuan = (tujuan?.y || 200) + 50;
+    if (!asal || !tujuan) return;
+
+    const p1 = cariKoordinatPinAbsolut(asal, pinDariId);
+    const p2 = cariKoordinatPinAbsolut(tujuan, pinKeId);
+    const midX = Math.round((p1.x + p2.x) / 2);
 
     const baru: KabelKoneksiItem = {
       id: "kbl-" + Date.now(),
       dariId,
-      pinAsal: pinDari,
+      pinAsal: pinDariId,
       keId,
-      pinTujuan: pinKe,
+      pinTujuan: pinKeId,
       warna,
       titikSiku: [
-        { x: midX, y: yAsal },
-        { x: midX, y: yTujuan },
+        { x: midX, y: p1.y },
+        { x: midX, y: p2.y },
       ],
     };
     setDaftarKabel({
@@ -831,11 +710,11 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
       ...daftarKabel,
       [mode]: kabelSaatIni.map((k) => {
         if (k.id !== kabelId) return k;
-        const sikuSaatIni = k.titikSiku || [{ x: 250, y: 150 }];
-        const terakhir = sikuSaatIni[sikuSaatIni.length - 1] || { x: 250, y: 150 };
+        const sikuSaatIni = k.titikSiku || [{ x: 260, y: 150 }];
+        const terakhir = sikuSaatIni[sikuSaatIni.length - 1] || { x: 260, y: 150 };
         return {
           ...k,
-          titikSiku: [...sikuSaatIni, { x: terakhir.x + 35, y: terakhir.y + 35 }],
+          titikSiku: [...sikuSaatIni, { x: terakhir.x + 35, y: terakhir.y + 30 }],
         };
       }),
     });
@@ -862,7 +741,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
   return (
     <div className="space-y-6">
       <div className="bg-slate-900 text-white p-6 rounded-3xl border-2 border-indigo-500/40 space-y-6 shadow-2xl">
-        {/* HEADER BAR MEJA KERJA & KONTROL UKURAN KANVAS */}
+        {/* HEADER BAR MEJA KERJA */}
         <div className="flex flex-wrap justify-between items-center gap-4 border-b border-slate-800 pb-4">
           <div className="flex items-center gap-2.5">
             {mode === "wokwi" ? (
@@ -874,14 +753,14 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
             )}
             <div>
               <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded bg-emerald-500 text-slate-950">
-                Wokwi-Style Orthogonal Wire Editor • Dual-MCU TX/RX Ready
+                Exact Pin-Pad Schematic Engine • 30-Pin ESP32 &amp; 28-Pin Arduino
               </span>
               <h3 className="font-black text-base sm:text-lg text-white mt-0.5">
                 {mode === "wokwi"
-                  ? "Wokwi IoT Studio (Tarik Kabel Langsung dari Pin, Edit Siku Kabel & Dual-MCU TX/RX)"
+                  ? "Wokwi IoT Studio — Dekatkan Kursor ke Titik Pin Komponen untuk Melihat Nama Pin & Menarik Kabel"
                   : mode === "ewb"
-                  ? "EWB (Electronics Workbench) — Rangkaian RLC, Resistor 4-Gelang & Kabel Siku"
-                  : "MATLAB Simulink — Diagram Blok Sistem Kendali PID & Pengolahan Sinyal"}
+                  ? "EWB (Electronics Workbench) — Rangkaian RLC, Resistor 4-Gelang & Pin Fisik"
+                  : "MATLAB Simulink — Diagram Blok Sistem Kendali PID"}
               </h3>
             </div>
           </div>
@@ -980,8 +859,8 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
             <div className="flex items-center gap-2 text-xs">
               <Move className="w-4 h-4 text-amber-400" />
               <span className="font-black uppercase text-amber-300">
-                Gudang Komponen ({komponenPaletTersaring.length} Item — Bisa Pasang 2+
-                Mikrokontroler untuk UART TX/RX):
+                Gudang Komponen ({komponenPaletTersaring.length} Item): Tarik (Drag &amp; Drop) atau
+                Klik untuk Menaruh ke Meja Rangkaian
               </span>
             </div>
 
@@ -991,7 +870,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                 type="text"
                 value={cariKomponen}
                 onChange={(e) => setCariKomponen(e.target.value)}
-                placeholder="Cari ESP32, Arduino, STM32, Sensor..."
+                placeholder="Cari ESP32, Arduino, DHT22, Resistor..."
                 className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-400"
               />
             </div>
@@ -1015,9 +894,9 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
             ))}
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-9 gap-2.5 max-h-56 overflow-y-auto pr-1">
+          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-10 gap-2.5 max-h-48 overflow-y-auto pr-1">
             {komponenPaletTersaring.map((item, idx) => {
-              const infoPinMini = ambilInfoPinKomponen(item.tipe);
+              const layoutInfo = ambilLayoutFisikKomponen(item.tipe);
               return (
                 <div
                   key={`${item.tipe}-${idx}`}
@@ -1038,15 +917,14 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                       item.defaultSensor
                     )
                   }
-                  className="p-2.5 rounded-2xl bg-slate-900 hover:bg-indigo-950/90 border border-slate-800 hover:border-emerald-400 cursor-grab active:cursor-grabbing flex flex-col items-center justify-between text-center gap-1 transition group shadow-xs"
-                  title={`${item.label} (${infoPinMini.jumlahPin} Pin) — ${infoPinMini.fungsiSingkat}`}
+                  className="p-2 rounded-2xl bg-slate-900 hover:bg-indigo-950/90 border border-slate-800 hover:border-emerald-400 cursor-grab active:cursor-grabbing flex flex-col items-center justify-between text-center gap-1 transition group"
                 >
                   <div className="w-full flex justify-between items-center text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-950 text-indigo-300">
-                    <span className="truncate">{item.kategori}</span>
-                    <span className="text-amber-300 shrink-0">{infoPinMini.jumlahPin}p</span>
+                    <span className="truncate">{item.kategori.split(" ")[0]}</span>
+                    <span className="text-amber-300 shrink-0">{layoutInfo.pins.length}p</span>
                   </div>
 
-                  <div className="h-12 flex items-center justify-center py-0.5 group-hover:scale-105 transition-transform">
+                  <div className="h-11 flex items-center justify-center py-0.5 group-hover:scale-105 transition-transform">
                     <VisualKomponenRealistis
                       tipe={item.tipe}
                       nilaiResistor={item.defaultResistor || 220}
@@ -1059,74 +937,62 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                   <div className="font-bold text-[10px] text-white group-hover:text-emerald-300 leading-tight line-clamp-1">
                     {item.label}
                   </div>
-
-                  <span className="text-[9px] text-emerald-400 flex items-center gap-0.5 font-black">
-                    <PlusCircle className="w-2.5 h-2.5" /> Tarik / Klik
-                  </span>
                 </div>
               );
             })}
           </div>
         </div>
 
-        {/* BAR TARIK GARIS CEPAT & PILIH WARNA KABEL DEFAULT */}
-        <div className="bg-slate-950/95 p-4 rounded-3xl border border-indigo-500/30 space-y-3 text-xs">
-          <div className="flex flex-wrap justify-between items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Cable className="w-4 h-4 text-sky-400" />
-              <span className="font-black uppercase text-sky-300">
-                Cara Cepat Tarik Kabel: Klik Badge Pin di Bawah Komponen Kanvas ➔ Arahkan ke Pin
-                Komponen Tujuan!
+        {/* BAR PILIH WARNA KABEL & INDIKATOR PIN YANG SEDANG DIDEKATI (HOVER) */}
+        <div className="bg-slate-950/95 p-3.5 rounded-3xl border border-indigo-500/30 flex flex-wrap justify-between items-center gap-3 text-xs">
+          <div className="flex items-center gap-2">
+            <Cable className="w-4 h-4 text-emerald-400 shrink-0" />
+            {hoveredPinInfo ? (
+              <div className="font-mono text-xs bg-slate-900 border border-amber-400/60 px-3 py-1 rounded-xl text-white">
+                📍 <b>{hoveredPinInfo.nodeLabel}</b> ➔{" "}
+                <span className="text-amber-300 font-black">
+                  Pin #{hoveredPinInfo.pin.nomorPin}: {hoveredPinInfo.pin.nama}
+                </span>{" "}
+                <span className="text-slate-300">({hoveredPinInfo.pin.keterangan})</span>
+              </div>
+            ) : (
+              <span className="font-bold text-slate-300">
+                Dekatkan kursor ke titik bulat pada kaki komponen di kanvas untuk melihat nama pin
+                (VCC/GND/TX/RX/GPIO), lalu klik titik tersebut untuk menarik kabel!
               </span>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[11px] font-bold text-slate-400 mr-1">
-                Warna Kabel Baru:
-              </span>
-              {PILIHAN_WARNA_KABEL.map((w) => (
-                <button
-                  key={w.hex}
-                  type="button"
-                  onClick={() => {
-                    setWarnaKabelAktif(w.hex);
-                    if (idKabelTerpilih) ubahWarnaKabel(idKabelTerpilih, w.hex);
-                  }}
-                  className={`px-2.5 py-1 rounded-lg text-[10px] font-black flex items-center gap-1.5 border cursor-pointer ${
-                    warnaKabelAktif === w.hex
-                      ? "bg-white text-slate-950 border-white shadow-sm"
-                      : "bg-slate-900 text-slate-300 border-slate-800"
-                  }`}
-                >
-                  <span
-                    style={{ backgroundColor: w.hex }}
-                    className="w-3 h-3 rounded-full inline-block"
-                  />
-                  <span>{w.nama}</span>
-                </button>
-              ))}
-            </div>
+            )}
           </div>
 
-          {sedangTarikKabelDariPin && (
-            <div className="p-2.5 rounded-xl bg-emerald-600/30 border border-emerald-400 text-xs font-black text-emerald-200 flex justify-between items-center animate-pulse">
-              <span>
-                🔌 Sedang menarik kabel dari Pin [{sedangTarikKabelDariPin.namaPin}]... Klik salah
-                satu Pin atau Komponen tujuan di kanvas!
-              </span>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[11px] font-bold text-slate-400 mr-1">
+              Warna Kabel:
+            </span>
+            {PILIHAN_WARNA_KABEL.map((w) => (
               <button
+                key={w.hex}
                 type="button"
-                onClick={() => setSedangTarikKabelDariPin(null)}
-                className="px-2.5 py-0.5 rounded bg-rose-600 text-white text-[10px] cursor-pointer"
+                onClick={() => {
+                  setWarnaKabelAktif(w.hex);
+                  if (idKabelTerpilih) ubahWarnaKabel(idKabelTerpilih, w.hex);
+                }}
+                className={`px-2 py-1 rounded-lg text-[10px] font-black flex items-center gap-1 border cursor-pointer ${
+                  warnaKabelAktif === w.hex
+                    ? "bg-white text-slate-950 border-white"
+                    : "bg-slate-900 text-slate-300 border-slate-800"
+                }`}
               >
-                Batalkan (ESC)
+                <span
+                  style={{ backgroundColor: w.hex }}
+                  className="w-2.5 h-2.5 rounded-full inline-block"
+                />
+                <span>{w.nama.split(" ")[0]}</span>
               </button>
-            </div>
-          )}
+            ))}
+          </div>
         </div>
 
         {/* ====================================================================
-            AREA UTAMA: KANVAS DRAG & DROP (8 KOLOM) + INSPEKTOR & PINOUT (4 KOLOM)
+            AREA UTAMA: KANVAS DRAG & DROP (8 KOLOM) + INSPEKTOR & TABEL PIN (4 KOLOM)
            ==================================================================== */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* KANVAS DRAG-AND-DROP INTERAKTIF */}
@@ -1145,20 +1011,21 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
             }}
             onClick={() => {
               setIdKabelTerpilih(null);
+              if (sedangTarikKabelDariPin) setSedangTarikKabelDariPin(null);
             }}
             className={`${
               ukuranKanvas === "penuh" ? "lg:col-span-12" : "lg:col-span-8"
-            } ${tinggiKanvasPx} rounded-3xl bg-[#070d19] border-2 border-dashed border-slate-700 relative overflow-auto select-none bg-[radial-gradient(#1e293b_1.5px,transparent_1.5px)] [background-size:20px_20px] transition-all duration-200`}
+            } ${tinggiKanvasPx} rounded-3xl bg-[#070d19] border-2 border-dashed border-slate-700 relative overflow-auto select-none bg-[radial-gradient(#1e293b_1.5px,transparent_1.5px)] [background-size:20px_20px]`}
           >
-            {/* FLOATING POP-UP TOOLBAR SAAT KABEL DIKLIK (GANTI WARNA LANGSUNG & TAMBAH SIKU) */}
+            {/* FLOATING POP-UP TOOLBAR SAAT KABEL DIKLIK */}
             {kabelTerpilihObj && (
               <div
                 onClick={(e) => e.stopPropagation()}
-                className="sticky top-3 left-3 z-30 inline-flex flex-wrap items-center gap-2 bg-slate-900/95 border-2 border-amber-400 px-3.5 py-2 rounded-2xl shadow-2xl text-xs ml-3 mt-3"
+                className="sticky top-3 left-3 z-40 inline-flex flex-wrap items-center gap-2 bg-slate-900/95 border-2 border-amber-400 px-3.5 py-2 rounded-2xl shadow-2xl text-xs ml-3 mt-3"
               >
                 <span className="font-black text-amber-300 flex items-center gap-1">
-                  <CornerDownRight className="w-3.5 h-3.5" /> Edit Kabel [{kabelTerpilihObj.pinAsal}{" "}
-                  ➔ {kabelTerpilihObj.pinTujuan}]:
+                  <CornerDownRight className="w-3.5 h-3.5" /> Kabel [{kabelTerpilihObj.pinAsal} ➔{" "}
+                  {kabelTerpilihObj.pinTujuan}]:
                 </span>
                 <div className="flex items-center gap-1">
                   {PILIHAN_WARNA_KABEL.map((w) => (
@@ -1167,7 +1034,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                       type="button"
                       onClick={() => ubahWarnaKabel(kabelTerpilihObj.id, w.hex)}
                       style={{ backgroundColor: w.hex }}
-                      className={`w-5 h-5 rounded-full cursor-pointer transition-transform ${
+                      className={`w-5 h-5 rounded-full cursor-pointer ${
                         kabelTerpilihObj.warna === w.hex
                           ? "ring-2 ring-white scale-115"
                           : "opacity-75 hover:opacity-100"
@@ -1200,33 +1067,29 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                 width: `${100 / skalaZoom}%`,
                 height: `${100 / skalaZoom}%`,
               }}
-              className="relative w-full h-full min-w-[700px] min-h-[360px]"
+              className="relative w-full h-full min-w-[740px] min-h-[420px]"
             >
-              {/* LAYER SVG GARIS KABEL SIKU ORTHOGONAL ALA WOKWI + HANDLE SIKU DRAGGABLE */}
-              <svg className="absolute inset-0 w-full h-full">
-                {kabelSaatIni.map((kbl, idxKbl) => {
+              {/* LAYER SVG GARIS KABEL SIKU ORTHOGONAL TEPAT DARI TITIK PIN KE TITIK PIN */}
+              <svg className="absolute inset-0 w-full h-full z-20 pointer-events-none">
+                {kabelSaatIni.map((kbl) => {
                   const asal = nodesSaatIni.find((n) => n.id === kbl.dariId);
                   const tujuan = nodesSaatIni.find((n) => n.id === kbl.keId);
                   if (!asal || !tujuan) return null;
 
-                  const offset = (idxKbl % 3) * 8 - 8;
-                  const x1 = asal.x + 70;
-                  const y1 = asal.y + 52 + offset;
-                  const x2 = tujuan.x + 70;
-                  const y2 = tujuan.y + 52 + offset;
+                  const koorAsal = cariKoordinatPinAbsolut(asal, kbl.pinAsal);
+                  const koorTujuan = cariKoordinatPinAbsolut(tujuan, kbl.pinTujuan);
 
-                  const { d, daftarHandle, titikTengah } = bangunJalurSikuWokwi(
-                    x1,
-                    y1,
-                    x2,
-                    y2,
+                  const { d, daftarHandle } = bangunJalurSikuWokwi(
+                    koorAsal.x,
+                    koorAsal.y,
+                    koorTujuan.x,
+                    koorTujuan.y,
                     kbl.titikSiku
                   );
                   const apakahTerpilih = idKabelTerpilih === kbl.id;
 
                   return (
-                    <g key={kbl.id}>
-                      {/* Garis Bayangan Lebar Transparan agar Kabel Mudah Diklik */}
+                    <g key={kbl.id} className="pointer-events-auto">
                       <path
                         d={d}
                         stroke="transparent"
@@ -1238,84 +1101,48 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                           setIdKabelTerpilih(kbl.id);
                         }}
                       />
-
-                      {/* Garis Kabel Siku Utama */}
                       <path
                         d={d}
                         stroke={kbl.warna}
-                        strokeWidth={apakahTerpilih ? "5" : "3.5"}
+                        strokeWidth={apakahTerpilih ? "4.5" : "3"}
                         strokeLinejoin="round"
                         strokeLinecap="round"
                         fill="none"
-                        strokeDasharray={mode === "matlab" ? "6 3" : undefined}
-                        className="cursor-pointer transition-all"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setIdKabelTerpilih(kbl.id);
-                        }}
-                      />
-
-                      <circle cx={x1} cy={y1} r="5" fill={kbl.warna} />
-                      <circle cx={x2} cy={y2} r="5" fill={kbl.warna} />
-
-                      {/* Label Pin pada Tengah Kabel */}
-                      <g
                         className="cursor-pointer"
                         onClick={(e) => {
                           e.stopPropagation();
                           setIdKabelTerpilih(kbl.id);
                         }}
-                      >
-                        <rect
-                          x={titikTengah.x - 58}
-                          y={titikTengah.y - 10}
-                          width="116"
-                          height="16"
-                          rx="4"
-                          fill="#0f172a"
-                          stroke={apakahTerpilih ? "#facc15" : kbl.warna}
-                          strokeWidth={apakahTerpilih ? "2" : "1"}
-                        />
-                        <text
-                          x={titikTengah.x}
-                          y={titikTengah.y + 1}
-                          textAnchor="middle"
-                          fill="#f8fafc"
-                          fontSize="7.5"
-                          fontFamily="monospace"
-                          fontWeight="bold"
-                        >
-                          {kbl.pinAsal.slice(0, 8)} ➔ {kbl.pinTujuan.slice(0, 8)}
-                        </text>
-                      </g>
+                      />
+                      <circle cx={koorAsal.x} cy={koorAsal.y} r="4" fill={kbl.warna} />
+                      <circle cx={koorTujuan.x} cy={koorTujuan.y} r="4" fill={kbl.warna} />
 
-                      {/* TITIK PEGANGAN SIKU (DRAGGABLE WAYPOINT HANDLES) SAAT KABEL DITEKAN */}
+                      {/* TITIK SIKU KUNING YANG BISA DIGESER SAAT KABEL DITEKAN */}
                       {apakahTerpilih &&
                         daftarHandle.map((pt, hIdx) => (
-                          <g key={hIdx}>
-                            <circle
-                              cx={pt.x}
-                              cy={pt.y}
-                              r="8"
-                              fill="#facc15"
-                              stroke="#0f172a"
-                              strokeWidth="2.5"
-                              className="cursor-grab active:cursor-grabbing"
-                              onMouseDown={(e) => {
-                                e.stopPropagation();
-                                setSedangGeserSiku({
-                                  kabelId: kbl.id,
-                                  indeksTitik: hIdx,
-                                });
-                              }}
-                            />
-                          </g>
+                          <circle
+                            key={hIdx}
+                            cx={pt.x}
+                            cy={pt.y}
+                            r="7.5"
+                            fill="#facc15"
+                            stroke="#0f172a"
+                            strokeWidth="2.5"
+                            className="cursor-grab active:cursor-grabbing"
+                            onMouseDown={(e) => {
+                              e.stopPropagation();
+                              setSedangGeserSiku({
+                                kabelId: kbl.id,
+                                indeksTitik: hIdx,
+                              });
+                            }}
+                          />
                         ))}
                     </g>
                   );
                 })}
 
-                {/* GARIS PRATINJAU SIKU REAL-TIME SAAT MENARIK KABEL DARI PIN */}
+                {/* GARIS PRATINJAU SIKU SAAT MENARIK KABEL DARI TITIK PIN */}
                 {sedangTarikKabelDariPin && (
                   <path
                     d={
@@ -1327,110 +1154,137 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                       ).d
                     }
                     stroke={warnaKabelAktif}
-                    strokeWidth="3.5"
+                    strokeWidth="3"
                     strokeDasharray="6 4"
                     fill="none"
-                    className="pointer-events-none"
                   />
                 )}
               </svg>
 
-              {/* DAFTAR KOMPONEN DI ATAS KANVAS BESERTA DERETAN TERMINAL PIN INTERAKTIF */}
+              {/* TOOLTIP MELAYANG SAAT KURSOR MENDEKATI TITIK PIN FISIK */}
+              {hoveredPinInfo && (
+                <div
+                  style={{
+                    left: `${Math.min(520, Math.max(10, hoveredPinInfo.absX - 60))}px`,
+                    top: `${Math.max(8, hoveredPinInfo.absY - 52)}px`,
+                  }}
+                  className="absolute z-50 pointer-events-none bg-slate-950/95 border-2 border-amber-400 text-white px-3 py-1.5 rounded-xl shadow-2xl text-[11px] font-mono whitespace-nowrap"
+                >
+                  <div className="font-black text-amber-300">
+                    ● {hoveredPinInfo.pin.nama} (Pin #{hoveredPinInfo.pin.nomorPin})
+                  </div>
+                  <div className="text-[10px] text-slate-300">
+                    {hoveredPinInfo.pin.keterangan}
+                  </div>
+                </div>
+              )}
+
+              {/* RENDER SETIAP KOMPONEN BESERTA TITIK-TITIK PIN FISIKNYA */}
               {nodesSaatIni.map((node) => {
                 const aktif = komponenTerpilih?.id === node.id;
-                const specPin = ambilInfoPinKomponen(node.tipe);
+                const layout = ambilLayoutFisikKomponen(node.tipe);
+
                 return (
                   <div
                     key={node.id}
-                    style={{ left: `${node.x}px`, top: `${node.y}px` }}
+                    style={{
+                      left: `${node.x}px`,
+                      top: `${node.y}px`,
+                      width: `${layout.lebar}px`,
+                    }}
                     onMouseDown={(e) => {
                       e.stopPropagation();
                       setIdKomponenTerpilih(node.id);
-                      // Jika sedang menarik kabel dan mengklik bodi komponen tujuan
-                      if (
-                        sedangTarikKabelDariPin &&
-                        sedangTarikKabelDariPin.nodeId !== node.id
-                      ) {
-                        const pinTujuanDefault = specPin.daftarPin[0] || "Pin 1";
-                        tambahKabelKoneksi(
-                          sedangTarikKabelDariPin.nodeId,
-                          sedangTarikKabelDariPin.namaPin,
-                          node.id,
-                          pinTujuanDefault,
-                          warnaKabelAktif
-                        );
-                        setSedangTarikKabelDariPin(null);
-                      } else {
-                        setSedangGeserId(node.id);
-                      }
+                      setSedangGeserId(node.id);
                     }}
-                    className={`absolute p-2.5 rounded-2xl cursor-move transition-shadow ${
-                      aktif
-                        ? "bg-slate-900/95 border-2 border-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.35)] z-20"
-                        : "bg-slate-900/85 border border-slate-700 hover:border-indigo-400 z-10"
+                    className={`absolute rounded-2xl cursor-move transition-shadow ${
+                      aktif ? "ring-2 ring-emerald-400/80 z-10" : "z-10"
                     }`}
                   >
-                    <div className="flex justify-between items-center gap-2 mb-1">
-                      <span className="text-[10px] font-black text-amber-300 truncate max-w-[115px]">
-                        {node.label}
-                      </span>
-                      <span className="text-[8px] font-mono bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded">
-                        {specPin.jumlahPin} Pin
+                    {/* Header Label Kecil di Atas Komponen */}
+                    <div className="h-[18px] px-2 flex justify-between items-center bg-slate-900/90 rounded-t-xl border-x border-t border-slate-700 text-[9.5px] font-black text-amber-300 truncate">
+                      <span className="truncate">{node.label}</span>
+                      <span className="text-[8px] font-mono text-slate-400 shrink-0 ml-1">
+                        {layout.pins.length}p
                       </span>
                     </div>
 
-                    <VisualKomponenRealistis
-                      tipe={node.tipe}
-                      nilaiResistor={node.nilaiResistor}
-                      nyala={node.nyala}
-                      nilaiSensor={node.nilaiSensor}
-                      ukuran="kanvas"
-                    />
+                    {/* Area Bodi SVG + Titik-Titik Pin Fisik Presisi */}
+                    <div
+                      style={{
+                        width: `${layout.lebar}px`,
+                        height: `${layout.tinggi}px`,
+                      }}
+                      className="relative bg-slate-950/40 rounded-b-xl"
+                    >
+                      <VisualKomponenRealistis
+                        tipe={node.tipe}
+                        nilaiResistor={node.nilaiResistor}
+                        nyala={node.nyala}
+                        nilaiSensor={node.nilaiSensor}
+                        ukuran="kanvas"
+                      />
 
-                    {/* DERETAN TERMINAL PIN YANG BISA DIKLIK LANGSUNG UNTUK TARIK KABEL */}
-                    <div className="flex flex-wrap gap-1 mt-1.5 pt-1 border-t border-slate-800 max-w-[155px]">
-                      {specPin.daftarPin.slice(0, 6).map((namaPin) => {
-                        const sedangAktifDariPinIni =
+                      {/* RENDER SEMUA TITIK PIN FISIK (30 TITIK ESP32, 28 ARDUINO, 4 BAWAH DHT22, DLL) */}
+                      {layout.pins.map((pin) => {
+                        const sedangAsal =
                           sedangTarikKabelDariPin?.nodeId === node.id &&
-                          sedangTarikKabelDariPin?.namaPin === namaPin;
+                          sedangTarikKabelDariPin?.pin.idPin === pin.idPin;
+                        const warnaDot = warnaTitikPin(pin.kategori);
+
                         return (
                           <button
-                            key={namaPin}
+                            key={pin.idPin}
                             type="button"
+                            style={{
+                              left: `${pin.x - 5}px`,
+                              top: `${pin.y - 5}px`,
+                              backgroundColor: sedangAsal ? "#ffffff" : warnaDot,
+                            }}
                             onMouseDown={(e) => e.stopPropagation()}
+                            onMouseEnter={() =>
+                              setHoveredPinInfo({
+                                nodeLabel: node.label,
+                                pin,
+                                absX: node.x + pin.x,
+                                absY: node.y + pin.y + 18,
+                              })
+                            }
+                            onMouseLeave={() => setHoveredPinInfo(null)}
                             onClick={(e) => {
                               e.stopPropagation();
+                              const absX = node.x + pin.x;
+                              const absY = node.y + pin.y + 18;
+
                               if (!sedangTarikKabelDariPin) {
+                                // Otomatis sesuaikan warna kabel jika klik pin VCC atau GND
+                                if (pin.kategori === "POWER") setWarnaKabelAktif("#ef4444");
+                                else if (pin.kategori === "GND") setWarnaKabelAktif("#94a3b8");
+                                else if (pin.kategori === "UART") setWarnaKabelAktif("#22c55e");
+
                                 setSedangTarikKabelDariPin({
                                   nodeId: node.id,
-                                  namaPin,
-                                  xAsal: node.x + 70,
-                                  yAsal: node.y + 55,
+                                  nodeLabel: node.label,
+                                  pin,
+                                  xAsal: absX,
+                                  yAsal: absY,
                                 });
-                              } else if (sedangTarikKabelDariPin.nodeId !== node.id) {
+                                setPosisiKursorKanvas({ x: absX, y: absY });
+                              } else {
                                 tambahKabelKoneksi(
                                   sedangTarikKabelDariPin.nodeId,
-                                  sedangTarikKabelDariPin.namaPin,
+                                  sedangTarikKabelDariPin.pin.idPin,
                                   node.id,
-                                  namaPin,
+                                  pin.idPin,
                                   warnaKabelAktif
                                 );
                                 setSedangTarikKabelDariPin(null);
-                              } else {
-                                setSedangTarikKabelDariPin(null);
                               }
                             }}
-                            className={`px-1.5 py-0.5 rounded text-[8px] font-mono font-bold cursor-crosshair transition ${
-                              sedangAktifDariPinIni
-                                ? "bg-amber-400 text-slate-950 animate-bounce"
-                                : sedangTarikKabelDariPin
-                                ? "bg-emerald-500/30 text-emerald-200 border border-emerald-400 hover:bg-emerald-400 hover:text-slate-950"
-                                : "bg-slate-800 hover:bg-indigo-600 text-slate-200"
+                            className={`absolute w-[10px] h-[10px] rounded-full border border-slate-950 cursor-crosshair transition-transform hover:scale-175 hover:ring-2 hover:ring-white z-30 ${
+                              sedangAsal ? "scale-175 ring-2 ring-amber-300 animate-ping" : ""
                             }`}
-                            title={`Klik untuk tarik atau sambung kabel ke pin ${namaPin}`}
-                          >
-                            ● {namaPin.split(" ")[0]}
-                          </button>
+                          />
                         );
                       })}
                     </div>
@@ -1438,47 +1292,17 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                 );
               })}
             </div>
-
-            <div className="absolute bottom-3 left-4 right-4 flex flex-wrap justify-between items-center text-[11px] font-mono text-slate-400 pointer-events-none bg-slate-950/90 px-3 py-1.5 rounded-xl border border-slate-800">
-              <span>
-                💡 Klik tombol pin [● TX2 / ● D0] pada komponen untuk menarik kabel, atau klik
-                garis kabel untuk menggeser titik siku kuning!
-              </span>
-              <div className="flex items-center gap-3 pointer-events-auto">
-                <span>
-                  Komponen: <b className="text-emerald-400">{nodesSaatIni.length}</b> | Kabel:{" "}
-                  <b className="text-sky-400">{kabelSaatIni.length}</b>
-                </span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setUkuranKanvas(ukuranKanvas === "penuh" ? "sedang" : "penuh")
-                  }
-                  className="text-amber-300 hover:underline flex items-center gap-1 cursor-pointer"
-                >
-                  {ukuranKanvas === "penuh" ? (
-                    <>
-                      <Minimize2 className="w-3.5 h-3.5" /> Perkecil
-                    </>
-                  ) : (
-                    <>
-                      <Maximize2 className="w-3.5 h-3.5" /> Perluas
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
           </div>
 
-          {/* PANEL KANAN (4 KOLOM): INSPEKTOR, PENJELASAN PINOUT & DAFTAR KABEL AKTIF */}
+          {/* PANEL SAMPING KANAN (4 KOLOM): INSPEKTOR KOMPONEN & TABEL REFERENSI PINOUT TERPISAH */}
           <div
             className={`${
               ukuranKanvas === "penuh" ? "lg:col-span-12" : "lg:col-span-4"
-            } bg-slate-950 p-5 rounded-3xl border border-slate-800 space-y-5 max-h-[640px] overflow-y-auto`}
+            } bg-slate-950 p-5 rounded-3xl border border-slate-800 space-y-5 max-h-[600px] overflow-y-auto`}
           >
             <div className="flex justify-between items-center border-b border-slate-800 pb-3">
               <span className="font-black text-xs uppercase text-emerald-400 flex items-center gap-1.5">
-                <Sliders className="w-4 h-4" /> Inspector, Pinout &amp; Edit Siku Kabel
+                <Sliders className="w-4 h-4" /> Inspector &amp; Tabel Pinout Lengkap
               </span>
               {komponenTerpilih && (
                 <button
@@ -1497,11 +1321,11 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
               )}
             </div>
 
-            {komponenTerpilih && infoPinTerpilih && (
+            {komponenTerpilih && layoutTerpilih && (
               <div className="space-y-4 text-xs">
                 <div>
                   <label className="text-[10px] font-bold text-slate-400 block mb-1">
-                    Nama Label Komponen:
+                    Nama Komponen Terpilih:
                   </label>
                   <input
                     type="text"
@@ -1513,39 +1337,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                     }
                     className="w-full p-2 rounded-xl bg-slate-900 border border-slate-700 font-bold text-white"
                   />
-                </div>
-
-                {/* PENJELASAN DETAIL PINOUT & PANDUAN KONEKSI KOMPONEN */}
-                <div className="p-3.5 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 space-y-2.5">
-                  <div className="flex justify-between items-center">
-                    <span className="font-black text-indigo-300 uppercase text-[11px] flex items-center gap-1">
-                      <Info className="w-3.5 h-3.5" /> Datasheet &amp; Penjelasan Pin
-                    </span>
-                    <span className="px-2 py-0.5 rounded bg-indigo-500/30 text-amber-300 font-mono font-black text-[10px]">
-                      Total: {infoPinTerpilih.jumlahPin} Pin
-                    </span>
-                  </div>
-
-                  <p className="text-[11px] text-slate-300 leading-relaxed">
-                    {infoPinTerpilih.fungsiSingkat}
-                  </p>
-
-                  <div className="space-y-1.5 pt-1">
-                    <div className="text-[10px] font-black uppercase text-emerald-300">
-                      Panduan Pin Ini Disambungkan ke Mana:
-                    </div>
-                    {infoPinTerpilih.panduanKoneksi.map((pk, idx) => (
-                      <div
-                        key={idx}
-                        className="p-2 rounded-xl bg-slate-900/90 border border-slate-800 text-[11px]"
-                      >
-                        <span className="font-mono font-black text-amber-300">
-                          • {pk.namaPin}:
-                        </span>{" "}
-                        <span className="text-slate-300">{pk.fungsiDanTujuan}</span>
-                      </div>
-                    ))}
-                  </div>
                 </div>
 
                 {/* JIKA RESISTOR: EDITOR OHM & GELANG WARNA */}
@@ -1590,9 +1381,9 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                     </div>
                   </div>
                 ) : (
-                  <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2.5">
+                  <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
                     <div className="flex justify-between font-bold">
-                      <span>Nilai Sensor / Tegangan:</span>
+                      <span>Nilai Sensor / Sudut / Tegangan:</span>
                       <span className="text-amber-300 font-mono">
                         {komponenTerpilih.nilaiSensor ?? 28}
                       </span>
@@ -1611,128 +1402,63 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                     />
                   </div>
                 )}
+
+                {/* TABEL REFERENSI PINOUT TERPISAH (SEMUA 30 PIN ESP32 / 28 PIN ARDUINO / 4 PIN SENSOR) */}
+                <div className="p-3.5 rounded-2xl bg-indigo-950/30 border border-indigo-500/30 space-y-2.5">
+                  <div className="flex justify-between items-center">
+                    <span className="font-black text-indigo-300 uppercase text-[11px] flex items-center gap-1">
+                      <Info className="w-3.5 h-3.5" /> Daftar &amp; Keterangan Pin (
+                      {layoutTerpilih.pins.length} Titik)
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-300 leading-relaxed">
+                    {layoutTerpilih.fungsiUtama}
+                  </p>
+
+                  <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1 pt-1">
+                    {layoutTerpilih.pins.map((p) => (
+                      <div
+                        key={p.idPin}
+                        onClick={() => {
+                          const absX = komponenTerpilih.x + p.x;
+                          const absY = komponenTerpilih.y + p.y + 18;
+                          setSedangTarikKabelDariPin({
+                            nodeId: komponenTerpilih.id,
+                            nodeLabel: komponenTerpilih.label,
+                            pin: p,
+                            xAsal: absX,
+                            yAsal: absY,
+                          });
+                        }}
+                        className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 cursor-pointer space-y-0.5"
+                        title="Klik baris ini untuk mulai menarik kabel dari pin ini"
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="font-mono font-black text-amber-300 flex items-center gap-1.5">
+                            <span
+                              style={{ backgroundColor: warnaTitikPin(p.kategori) }}
+                              className="w-2.5 h-2.5 rounded-full inline-block"
+                            />
+                            #{p.nomorPin} {p.nama}
+                          </span>
+                          <span className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded bg-slate-950 text-slate-400">
+                            Sisi {p.sisi}
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-slate-300 pl-4">
+                          {p.keterangan}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
 
-            {/* FORM SAMBUNG PIN MANUAL & DAFTAR KABEL AKTIF */}
-            <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2.5 text-xs">
-              <div className="font-black text-sky-300 uppercase text-[11px] flex items-center justify-between">
-                <span>🔌 Daftar Garis Kabel ({kabelSaatIni.length})</span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-1.5 pb-2 border-b border-slate-800 text-[11px]">
-                <select
-                  value={pinAsalPilih}
-                  onChange={(e) => setPinAsalPilih(e.target.value)}
-                  className="p-1.5 rounded-lg bg-slate-950 border border-slate-700 font-mono text-amber-300"
-                >
-                  {(infoPinTerpilih?.daftarPin || ["Pin 1"]).map((p) => (
-                    <option key={p} value={p}>
-                      Dari: {p}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={nodeTujuanManualObj?.id || ""}
-                  onChange={(e) => setIdTujuanManual(e.target.value)}
-                  className="p-1.5 rounded-lg bg-slate-950 border border-slate-700 font-bold text-emerald-300"
-                >
-                  {nodesSaatIni
-                    .filter((n) => n.id !== komponenTerpilih?.id)
-                    .map((n) => (
-                      <option key={n.id} value={n.id}>
-                        Ke: {n.label}
-                      </option>
-                    ))}
-                </select>
-                <select
-                  value={pinTujuanPilih}
-                  onChange={(e) => setPinTujuanPilih(e.target.value)}
-                  className="p-1.5 rounded-lg bg-slate-950 border border-slate-700 font-mono text-sky-300"
-                >
-                  {(infoPinTujuanObj?.daftarPin || ["Pin 1"]).map((p) => (
-                    <option key={p} value={p}>
-                      Pin: {p}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (komponenTerpilih && nodeTujuanManualObj) {
-                      tambahKabelKoneksi(
-                        komponenTerpilih.id,
-                        pinAsalPilih,
-                        nodeTujuanManualObj.id,
-                        pinTujuanPilih,
-                        warnaKabelAktif
-                      );
-                    }
-                  }}
-                  className="p-1.5 rounded-lg bg-emerald-500 text-slate-950 font-black cursor-pointer"
-                >
-                  + Sambung Pin
-                </button>
-              </div>
-
-              <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
-                {kabelSaatIni.map((kbl) => {
-                  const nAsal = nodesSaatIni.find((n) => n.id === kbl.dariId);
-                  const nTujuan = nodesSaatIni.find((n) => n.id === kbl.keId);
-                  const dipilih = idKabelTerpilih === kbl.id;
-                  return (
-                    <div
-                      key={kbl.id}
-                      onClick={() => setIdKabelTerpilih(kbl.id)}
-                      className={`p-2.5 rounded-xl border space-y-1.5 text-[11px] cursor-pointer ${
-                        dipilih
-                          ? "bg-indigo-950/60 border-amber-400"
-                          : "bg-slate-950 border-slate-800"
-                      }`}
-                    >
-                      <div className="flex justify-between items-center">
-                        <span className="font-bold text-white truncate">
-                          {nAsal?.label || "Node"} ➔ {nTujuan?.label || "Node"}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            hapusKabel(kbl.id);
-                          }}
-                          className="text-rose-400 hover:text-rose-300 font-bold cursor-pointer"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                      <div className="font-mono text-[10px] text-slate-400">
-                        [{kbl.pinAsal}] ➔ [{kbl.pinTujuan}]
-                      </div>
-                      <div className="flex items-center gap-1 pt-0.5">
-                        {PILIHAN_WARNA_KABEL.map((w) => (
-                          <button
-                            key={w.hex}
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              ubahWarnaKabel(kbl.id, w.hex);
-                            }}
-                            style={{ backgroundColor: w.hex }}
-                            className={`w-3.5 h-3.5 rounded-full cursor-pointer ${
-                              kbl.warna === w.hex ? "ring-2 ring-white" : "opacity-60"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
+            {/*Ringkasan Multimeter*/}
             <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1.5 text-xs font-mono">
               <div className="text-[10px] font-black uppercase text-indigo-300 flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Multimeter Otomatis
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Multimeter Rangkaian
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Total Hambatan:</span>
