@@ -13,6 +13,7 @@ export interface PresetTutorialProject {
   nodes: NodeKomponenKanvas[];
   kabel: KabelKoneksiItem[];
   kodePerMcu: { [nodeId: string]: string };
+  kodeMicroPythonPerMcu: { [nodeId: string]: string };
   blynkWidgets: WidgetBlynkItem[];
 }
 
@@ -26,7 +27,7 @@ export const DAFTAR_TUTORIAL_PROJECT_WOKWI: PresetTutorialProject[] = [
     kategoriProyek: "Dasar",
     judul: "Lampu Jalan Pintar (Sensor Cahaya LDR + Relay 1-Ch + LED)",
     deskripsiSingkat:
-      "Membaca nilai Lux dari sensor LDR pada pin ADC GPIO34. Saat kondisi gelap (< 300 Lux), ESP32 mengaktifkan Relay 1-Channel untuk menyalakan lampu jalan.",
+      "Membaca nilai Lux dari sensor LDR pada pin ADC GPIO34. Saat kondisi gelap (di bawah 300 Lux), ESP32 mengaktifkan Relay 1-Channel untuk menyalakan lampu jalan.",
     langkahWiring: [
       "Hubungkan Pin SIG (AO) Sensor LDR ke Pin D34 (ADC) di sisi kiri ESP32.",
       "Hubungkan Pin D32 ESP32 ke Pin IN1 di bagian bawah Modul Relay 1-Channel.",
@@ -44,14 +45,17 @@ export const DAFTAR_TUTORIAL_PROJECT_WOKWI: PresetTutorialProject[] = [
       { id: "k1-3", dariId: "p1-rel", pinAsal: "NO", keId: "p1-led", pinTujuan: "ANODA", warna: "#ef4444", titikSiku: [{ x: 448, y: 35 }, { x: 616, y: 180 }] },
     ],
     kodePerMcu: {
-      "p1-esp": `// [ESP32 UTAMA] - SMART STREET LIGHT LDR + RELAY 1-CHANNEL
+      "p1-esp": `// [C++ ARDUINO] - SMART STREET LIGHT LDR + RELAY 1-CHANNEL
+#include <Arduino.h>
+
 #define PIN_LDR_ADC   34
 #define PIN_RELAY_IN  32
 
 void setup() {
   Serial.begin(115200);
+  pinMode(PIN_LDR_ADC, INPUT);
   pinMode(PIN_RELAY_IN, OUTPUT);
-  Serial.println("=== [ESP32] SMART STREET LIGHT AKTIF ===");
+  Serial.println("=== [ESP32 C++] SMART STREET LIGHT AKTIF ===");
 }
 
 void loop() {
@@ -60,6 +64,22 @@ void loop() {
   Serial.println("[LDR Telemetry]: Intensitas = " + String(lux) + " Lux -> Relay ON");
   delay(1000);
 }`,
+    },
+    kodeMicroPythonPerMcu: {
+      "p1-esp": `# [MICROPYTHON] - SMART STREET LIGHT LDR + RELAY 1-CHANNEL
+from machine import Pin, ADC
+import time
+
+ldr_adc = ADC(Pin(34))
+relay_in = Pin(32, Pin.OUT)
+
+print("=== [ESP32 MicroPython] SMART STREET LIGHT AKTIF ===")
+
+while True:
+    lux = ldr_adc.read()
+    relay_in.value(1 if lux < 300 else 0)
+    print(f"[MicroPython LDR]: {lux} Lux -> Relay {'ON' if lux < 300 else 'OFF'}")
+    time.sleep(1)`,
     },
     blynkWidgets: [
       { id: "w1-1", tipe: "gauge", kategoriWidget: "Monitor & Grafik", judul: "Intensitas Cahaya LDR", virtualPin: "V0", satuan: "Lux", warna: "amber", targetTipeKomponen: "ldr_sensor" },
@@ -77,7 +97,7 @@ void loop() {
     kategoriProyek: "IoT Blynk & Telegram",
     judul: "Smart Door Lock & Telegram Bot (RFID + Relay 1-Ch + Solenoid 12V + Servo 180°)",
     deskripsiSingkat:
-      "Membuka kunci Solenoid 12V (melalui kontak NO Relay 1-Channel) dan memutar palang pintu Servo 180° menggunakan kartu RFID atau perintah /unlock dari Bot Telegram & Blynk.",
+      "Wajib menyertakan library <SPI.h>, <MFRC522.h> untuk pembaca kartu RFID serta <ESP32Servo.h> untuk motor Servo 180°. Jika salah satu library dihapus, compiler akan menampilkan pesan error!",
     langkahWiring: [
       "Hubungkan Pin SDA(SS) RFID RC522 ke Pin GPIO5 di sisi kanan ESP32.",
       "Hubungkan Pin GPIO32 ESP32 ke Pin IN1 di bagian bawah Modul Relay 1-Channel.",
@@ -98,29 +118,54 @@ void loop() {
       { id: "k2-4", dariId: "p2-esp", pinAsal: "GPIO18", keId: "p2-srv", pinTujuan: "SIG", warna: "#facc15", titikSiku: [{ x: 205, y: 162 }, { x: 620, y: 310 }] },
     ],
     kodePerMcu: {
-      "p2-esp": `// [ESP32 DOOR CONTROLLER] - RFID + TELEGRAM BOT + BLYNK + SOLENOID 12V
+      "p2-esp": `// [C++ ARDUINO] - RFID RC522 + TELEGRAM BOT + SOLENOID 12V + SERVO 180
 #include <WiFi.h>
-#include <UniversalTelegramBot.h>
+#include <SPI.h>
+#include <MFRC522.h>
 #include <ESP32Servo.h>
+#include <UniversalTelegramBot.h>
 
+#define PIN_SS_RFID        5
+#define PIN_RST_RFID       22
 #define PIN_RELAY_SOLENOID 32
 #define PIN_SERVO_PINTU    18
 
+MFRC522 rfid(PIN_SS_RFID, PIN_RST_RFID);
 Servo servoPintu;
 
 void setup() {
   Serial.begin(115200);
+  SPI.begin();
+  rfid.PCD_Init();
   pinMode(PIN_RELAY_SOLENOID, OUTPUT);
   servoPintu.attach(PIN_SERVO_PINTU);
-  Serial.println("=== [ESP32] SMART DOOR LOCK & TELEGRAM BOT READY ===");
+  Serial.println("=== [ESP32] SMART DOOR LOCK & RFID SPI READY ===");
 }
 
 void loop() {
   digitalWrite(PIN_RELAY_SOLENOID, HIGH); // Tarik Tuas Solenoid (UNLOCK)
   servoPintu.write(90);                   // Buka Palang Pintu 90 Derajat
-  Serial.println("[ACCESS GRANTED]: E-KTP Valid / Telegram /unlock -> Solenoid OPEN!");
+  Serial.println("[ACCESS GRANTED]: E-KTP Valid -> Solenoid OPEN & Servo 90 deg!");
   delay(2000);
 }`,
+    },
+    kodeMicroPythonPerMcu: {
+      "p2-esp": `# [MICROPYTHON] - RFID RC522 + SOLENOID 12V + SERVO 180
+from machine import Pin, PWM, SPI
+import mfrc522
+import time
+
+relay_solenoid = Pin(32, Pin.OUT)
+servo_pwm = PWM(Pin(18), freq=50)
+spi = SPI(2, baudrate=2500000, polarity=0, phase=0)
+
+print("=== [MicroPython] SMART DOOR LOCK & RFID READY ===")
+
+while True:
+    relay_solenoid.value(1) # Unlock Solenoid
+    servo_pwm.duty(77)      # Sudut 90 derajat
+    print("[MicroPython]: Solenoid UNLOCKED & Servo 90 deg")
+    time.sleep(2)`,
     },
     blynkWidgets: [
       { id: "w2-1", tipe: "telegram_bot", kategoriWidget: "Telegram & Notifikasi", judul: "Telegram Door Bot", virtualPin: "V0", satuan: "@Bot", warna: "sky", targetTipeKomponen: "solenoid_lock" },
@@ -139,7 +184,7 @@ void loop() {
     kategoriProyek: "IoT Blynk & Telegram",
     judul: "Smart Greenhouse & Irigasi (Soil + DHT22 + Relay 2-Ch + Pompa Air Mini & Kipas)",
     deskripsiSingkat:
-      "Menggunakan Modul Relay 2-Channel (10 Pin): Kanal 1 (NO1) menyalakan Pompa Air Mini 2-Kabel saat tanah kering, sedangkan Kanal 2 (NO2) menyalakan Kipas DC saat suhu udara panas.",
+      "Menggunakan Sensor DHT22 (Wajib #include <DHT.h> di C++ atau import dht di MicroPython) serta Modul Relay 2-Channel untuk menyalakan Pompa Air Mini dan Kipas DC.",
     langkahWiring: [
       "Hubungkan Pin AO Sensor Kelembapan Tanah ke GPIO34 & DATA DHT22 ke GPIO15 ESP32.",
       "Hubungkan GPIO32 & GPIO33 ESP32 ke Pin IN1 & IN2 Modul Relay 2-Channel.",
@@ -163,25 +208,53 @@ void loop() {
       { id: "k3-6", dariId: "p3-rel2", pinAsal: "NO2", keId: "p3-fan", pinTujuan: "VCC", warna: "#facc15", titikSiku: [{ x: 473, y: 110 }, { x: 605, y: 310 }] },
     ],
     kodePerMcu: {
-      "p3-esp": `// [ESP32 GREENHOUSE] - SOIL MOISTURE + DHT22 + RELAY 2-CH + POMPA & KIPAS
+      "p3-esp": `// [C++ ARDUINO] - SMART GREENHOUSE (WAJIB #include <DHT.h>)
+#include <WiFi.h>
+#include <DHT.h>
+
 #define PIN_SOIL_ADC  34
 #define PIN_DHT       15
+#define DHTTYPE       DHT22
 #define RELAY_POMPA   32 // IN1 Relay 2-Ch -> Pompa Air Mini
 #define RELAY_KIPAS   33 // IN2 Relay 2-Ch -> Kipas Pendingin
 
+DHT dht(PIN_DHT, DHTTYPE);
+
 void setup() {
   Serial.begin(115200);
+  dht.begin();
   pinMode(RELAY_POMPA, OUTPUT);
   pinMode(RELAY_KIPAS, OUTPUT);
   Serial.println("=== [ESP32] SMART GREENHOUSE IRRIGATION READY ===");
 }
 
 void loop() {
+  float t = dht.readTemperature();
   digitalWrite(RELAY_POMPA, HIGH);
   digitalWrite(RELAY_KIPAS, HIGH);
-  Serial.println("[Blynk V0-V3]: Suhu=35C | Soil=65% | Pompa Air=ON | Kipas=ON");
+  Serial.println("[Blynk V0-V3]: Suhu=" + String(t) + "C | Soil=65% | Pompa=ON");
   delay(2000);
 }`,
+    },
+    kodeMicroPythonPerMcu: {
+      "p3-esp": `# [MICROPYTHON] - SMART GREENHOUSE (WAJIB import dht)
+from machine import Pin, ADC
+import dht
+import time
+
+sensor_dht = dht.DHT22(Pin(15))
+soil_adc = ADC(Pin(34))
+relay_pompa = Pin(32, Pin.OUT)
+relay_kipas = Pin(33, Pin.OUT)
+
+print("=== [MicroPython] SMART GREENHOUSE READY ===")
+
+while True:
+    sensor_dht.measure()
+    relay_pompa.value(1)
+    relay_kipas.value(1)
+    print("[MicroPython]: Suhu DHT22 Terbaca -> Pompa Air & Kipas ON")
+    time.sleep(2)`,
     },
     blynkWidgets: [
       { id: "w3-1", tipe: "gauge", kategoriWidget: "Monitor & Grafik", judul: "Suhu Udara DHT22", virtualPin: "V0", satuan: "°C", warna: "amber", targetTipeKomponen: "dht22" },
@@ -223,7 +296,9 @@ void loop() {
       { id: "kf-5", dariId: "p4f-esp", pinAsal: "GPIO27", keId: "p4f-buz", pinTujuan: "ANODA", warna: "#facc15", titikSiku: [{ x: 12, y: 315 }, { x: 606, y: 315 }] },
     ],
     kodePerMcu: {
-      "p4f-esp": `// [ESP32 FIRE & GAS SAFETY] - FLAME + MQ2 + RELAY POMPA + WA/TELEGRAM ALERT
+      "p4f-esp": `// [C++ ARDUINO] - FIRE & GAS SAFETY + POMPA SPRINKLER + WA ALERT
+#include <WiFi.h>
+
 #define PIN_MQ2_ADC    34
 #define PIN_FLAME      4
 #define PIN_RELAY_PUMP 32
@@ -231,17 +306,34 @@ void loop() {
 
 void setup() {
   Serial.begin(115200);
+  pinMode(PIN_FLAME, INPUT);
   pinMode(PIN_RELAY_PUMP, OUTPUT);
   pinMode(PIN_BUZZER, OUTPUT);
   Serial.println("=== [ESP32] FIRE & GAS SUPPRESSION SYSTEM ACTIVE ===");
 }
 
 void loop() {
-  digitalWrite(PIN_RELAY_PUMP, HIGH); // Nyalakan Pompa Sprinkler Air
-  digitalWrite(PIN_BUZZER, HIGH);     // Bunyikan Alarm Buzzer
+  digitalWrite(PIN_RELAY_PUMP, HIGH);
+  digitalWrite(PIN_BUZZER, HIGH);
   Serial.println("🚨 [ALERT]: Api (85%) & Gas (1450 ppm) Terdeteksi! Pompa Pemadam ON!");
   delay(1500);
 }`,
+    },
+    kodeMicroPythonPerMcu: {
+      "p4f-esp": `# [MICROPYTHON] - FIRE & GAS SAFETY + POMPA SPRINKLER
+from machine import Pin, ADC
+import time
+
+mq2_adc = ADC(Pin(34))
+flame_in = Pin(4, Pin.IN)
+relay_pump = Pin(32, Pin.OUT)
+buzzer = Pin(27, Pin.OUT)
+
+while True:
+    relay_pump.value(1)
+    buzzer.value(1)
+    print("🚨 [MicroPython ALERT]: Api & Gas Terdeteksi -> Sprinkler ON!")
+    time.sleep(1.5)`,
     },
     blynkWidgets: [
       { id: "wf-1", tipe: "whatsapp_bot", kategoriWidget: "Telegram & Notifikasi", judul: "WA Emergency Alert", virtualPin: "V0", satuan: "WA", warna: "emerald", targetTipeKomponen: "flame_sensor" },
@@ -284,8 +376,10 @@ void loop() {
     ],
     kodePerMcu: {
       "p5-esp1": `// ============================================================================
-// TAB 1: KODE PROGRAM ESP32 #1 (SENSOR NODE - PENGIRIM UART TX2)
+// TAB 1 [C++]: KODE PROGRAM ESP32 #1 (SENSOR NODE - PENGIRIM UART TX2)
 // ============================================================================
+#include <Arduino.h>
+
 #define PIN_TRIG 12
 #define PIN_ECHO 13
 #define PIN_PIR  4
@@ -306,9 +400,10 @@ void loop() {
   delay(1500);
 }`,
       "p5-esp2": `// ============================================================================
-// TAB 2: KODE PROGRAM ESP32 #2 (BLYNK GATEWAY & KENDALI RELAY SOLENOID)
+// TAB 2 [C++]: KODE PROGRAM ESP32 #2 (BLYNK GATEWAY & KENDALI RELAY SOLENOID)
 // ============================================================================
 #include <WiFi.h>
+
 #define RXD2          16 // Menerima data dari TX2 (GPIO17) ESP32 #1
 #define PIN_RELAY_SOL 32
 
@@ -329,6 +424,32 @@ void loop() {
   delay(1500);
 }`,
     },
+    kodeMicroPythonPerMcu: {
+      "p5-esp1": `# TAB 1 [MICROPYTHON]: ESP32 #1 SENSOR NODE (UART TX2)
+from machine import Pin, UART
+import time
+
+uart2 = UART(2, baudrate=9600, tx=17, rx=16)
+trig = Pin(12, Pin.OUT)
+pir = Pin(4, Pin.IN)
+
+while True:
+    uart2.write("NODE1:JARAK=28cm;PIR=DETECTED\\n")
+    print("[ESP32 #1 MicroPython]: Paket UART dikirim ke ESP32 #2")
+    time.sleep(1.5)`,
+      "p5-esp2": `# TAB 2 [MICROPYTHON]: ESP32 #2 BLYNK GATEWAY (UART RX2)
+from machine import Pin, UART
+import network
+import time
+
+uart2 = UART(2, baudrate=9600, tx=17, rx=16)
+relay_sol = Pin(32, Pin.OUT)
+
+while True:
+    relay_sol.value(1)
+    print("[ESP32 #2 MicroPython]: Menerima UART -> Solenoid UNLOCKED")
+    time.sleep(1.5)`,
+    },
     blynkWidgets: [
       { id: "w5-1", tipe: "gauge", kategoriWidget: "Monitor & Grafik", judul: "Sonar dari ESP32 #1", virtualPin: "V0", satuan: "cm", warna: "sky", targetTipeKomponen: "ultrasonik" },
       { id: "w5-2", tipe: "led_status", kategoriWidget: "Monitor & Grafik", judul: "Status PIR ESP32 #1", virtualPin: "V1", satuan: "PIR", warna: "rose", targetTipeKomponen: "pir_sensor" },
@@ -346,7 +467,7 @@ void loop() {
     kategoriProyek: "Dual & Triple MCU",
     judul: "Otomasi Pabrik (ESP32 Master ↔ Arduino Uno Slave + Relay 4-Ch + Servo 360°)",
     deskripsiSingkat:
-      "ESP32 Master mengelola Modul Relay 4-Channel (18 Pin) untuk Solenoid & Pompa Air, sekaligus mengirim instruksi kecepatan konveyor ke Arduino Uno Slave yang menggerakkan Motor Servo 360° Continuous.",
+      "ESP32 Master mengelola Modul Relay 4-Channel (18 Pin) untuk Solenoid & Pompa Air, sekaligus mengirim instruksi ke Arduino Uno Slave yang menggerakkan Motor Servo 360° (Wajib #include <Servo.h>).",
     langkahWiring: [
       "Hubungkan GPIO32 & GPIO33 ESP32 ke IN1 & IN2 Modul Relay 4-Channel.",
       "Hubungkan NO1 Relay 4-Ch ke Solenoid 12V (+) dan NO2 Relay 4-Ch ke Pompa Air Mini (+).",
@@ -371,6 +492,8 @@ void loop() {
     ],
     kodePerMcu: {
       "p6-esp": `// [TAB 1: ESP32 MASTER] - KENDALI RELAY 4-CHANNEL & UART COMMANDER
+#include <WiFi.h>
+
 #define RELAY_CH1_SOLENOID 32
 #define RELAY_CH2_POMPA    33
 
@@ -389,8 +512,9 @@ void loop() {
   Serial.println("[ESP32 Master]: Relay CH1 & CH2 ON | Mengirim perintah ke Arduino...");
   delay(2000);
 }`,
-      "p6-uno": `// [TAB 2: ARDUINO UNO SLAVE] - KENDALI MOTOR SERVO 360 CONTINUOUS KONVEYOR
+      "p6-uno": `// [TAB 2: ARDUINO UNO SLAVE] - WAJIB #include <Servo.h> UNTUK SERVO 360
 #include <Servo.h>
+
 Servo servoKonveyor360;
 
 void setup() {
@@ -407,6 +531,29 @@ void loop() {
   servoKonveyor360.write(160); // Putar kanan kontinu (75% RPM)
   delay(1500);
 }`,
+    },
+    kodeMicroPythonPerMcu: {
+      "p6-esp": `# [TAB 1 MICROPYTHON]: ESP32 MASTER RELAY 4-CH
+from machine import Pin, UART
+import time
+
+relay_ch1 = Pin(32, Pin.OUT)
+relay_ch2 = Pin(33, Pin.OUT)
+uart2 = UART(2, baudrate=9600, tx=17, rx=16)
+
+while True:
+    relay_ch1.value(1)
+    relay_ch2.value(1)
+    uart2.write("CONVEYOR_SPEED=75\\n")
+    time.sleep(2)`,
+      "p6-uno": `# [TAB 2 MICROPYTHON]: SERVO 360 CONTROLLER
+from machine import Pin, PWM
+import time
+
+servo360 = PWM(Pin(9), freq=50)
+while True:
+    servo360.duty(110)
+    time.sleep(1.5)`,
     },
     blynkWidgets: [
       { id: "w6-1", tipe: "switch", kategoriWidget: "Kontrol & Input", judul: "Relay Ch1: Solenoid", virtualPin: "V1", satuan: "CH1", warna: "emerald", targetTipeKomponen: "solenoid_lock" },
@@ -427,9 +574,9 @@ void loop() {
     deskripsiSingkat:
       "Demonstrasi 3 Mikrokontroler aktif sekaligus! Anda dapat menjalankan (Run) ketiga board secara bersamaan atau hanya menjalankan 1 board saja untuk menguji bagian rangkaian mana yang menyala.",
     langkahWiring: [
-      "ESP32 #1 (Kiri) terhubung ke Sensor Suhu DHT22 & mengirim UART ke ESP32 #2 (Tengah).",
+      "ESP32 #1 (Kiri) terhubung ke Sensor Suhu DHT22 (Wajib #include <DHT.h>).",
       "ESP32 #2 (Tengah) terhubung ke Modul Relay 1-Ch & Solenoid 12V.",
-      "Arduino Uno #3 (Kanan) terhubung ke Sensor Infrared IR & Motor Servo 360°.",
+      "Arduino Uno #3 (Kanan) terhubung ke Motor Servo 360° (Wajib #include <Servo.h>).",
     ],
     nodes: [
       { id: "p7-mcu1", tipe: "esp32", label: "MCU #1: ESP32 Sensor", x: 15, y: 40, nyala: true },
@@ -449,10 +596,14 @@ void loop() {
       { id: "k7-4", dariId: "p7-mcu3", pinAsal: "D9", keId: "p7-s360", pinTujuan: "SIG", warna: "#f97316", titikSiku: [{ x: 593, y: 30 }, { x: 600, y: 355 }] },
     ],
     kodePerMcu: {
-      "p7-mcu1": `// [TAB 1 - MCU #1: ESP32 SENSOR NODE]
+      "p7-mcu1": `// [TAB 1 - MCU #1: ESP32 SENSOR NODE - WAJIB #include <DHT.h>]
+#include <DHT.h>
 #define PIN_DHT 15
+DHT dht(PIN_DHT, DHT22);
+
 void setup() {
   Serial.begin(115200);
+  dht.begin();
   Serial.println("=== [MCU #1: ESP32 SENSOR] RUNNING ===");
 }
 void loop() {
@@ -460,7 +611,9 @@ void loop() {
   delay(1500);
 }`,
       "p7-mcu2": `// [TAB 2 - MCU #2: ESP32 RELAY & SOLENOID CONTROLLER]
+#include <Arduino.h>
 #define PIN_RELAY 32
+
 void setup() {
   Serial.begin(115200);
   pinMode(PIN_RELAY, OUTPUT);
@@ -471,9 +624,10 @@ void loop() {
   Serial.println("[MCU #2]: Memicu Relay 1-Ch -> Solenoid Door Lock UNLOCKED");
   delay(1500);
 }`,
-      "p7-mcu3": `// [TAB 3 - MCU #3: ARDUINO UNO SERVO 360 CONTROLLER]
+      "p7-mcu3": `// [TAB 3 - MCU #3: ARDUINO UNO SERVO 360 - WAJIB #include <Servo.h>]
 #include <Servo.h>
 Servo myServo360;
+
 void setup() {
   Serial.begin(9600);
   myServo360.attach(9);
@@ -484,6 +638,35 @@ void loop() {
   Serial.println("[MCU #3]: Menggerakkan Motor Servo 360 Continuous (80% RPM)");
   delay(1500);
 }`,
+    },
+    kodeMicroPythonPerMcu: {
+      "p7-mcu1": `# [TAB 1 MICROPYTHON - MCU #1]: WAJIB import dht
+from machine import Pin
+import dht
+import time
+
+sensor = dht.DHT22(Pin(15))
+while True:
+    sensor.measure()
+    print("[MCU #1 MicroPython]: Suhu DHT22 = 34 C")
+    time.sleep(1.5)`,
+      "p7-mcu2": `# [TAB 2 MICROPYTHON - MCU #2]: RELAY & SOLENOID
+from machine import Pin
+import time
+
+relay = Pin(32, Pin.OUT)
+while True:
+    relay.value(1)
+    print("[MCU #2 MicroPython]: Solenoid UNLOCKED")
+    time.sleep(1.5)`,
+      "p7-mcu3": `# [TAB 3 MICROPYTHON - MCU #3]: SERVO 360 PWM
+from machine import Pin, PWM
+import time
+
+servo = PWM(Pin(9), freq=50)
+while True:
+    servo.duty(110)
+    time.sleep(1.5)`,
     },
     blynkWidgets: [
       { id: "w7-1", tipe: "gauge", kategoriWidget: "Monitor & Grafik", judul: "Suhu DHT22 (MCU #1)", virtualPin: "V0", satuan: "°C", warna: "amber", targetTipeKomponen: "dht22" },
