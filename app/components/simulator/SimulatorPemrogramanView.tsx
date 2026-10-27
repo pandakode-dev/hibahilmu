@@ -287,6 +287,7 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
         kategoriAktif === "matlab") && (
         <ElectronicAndIotCanvas
           mode={kategoriAktif}
+          userLogin={userLogin}
           onUpdateKodeDariCloud={(kodeBaru) => setKodeEditor(kodeBaru)}
         />
       )}

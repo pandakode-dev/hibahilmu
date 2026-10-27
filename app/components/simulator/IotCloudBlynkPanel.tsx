@@ -17,6 +17,9 @@ import {
   Move,
   BarChart3,
   Filter,
+  ArrowLeft,
+  ArrowRight,
+  Maximize2,
 } from "lucide-react";
 import { NodeKomponenKanvas } from "./ElectronicAndIotCanvas";
 import {
@@ -25,9 +28,15 @@ import {
   VisualWidgetBlynkMini,
 } from "./BlynkWidgetSvg";
 
+export interface ExtendedWidgetBlynkItem extends WidgetBlynkItem {
+  lebarKolom?: 1 | 2; // 1 = Normal, 2 = Lebar Ganda (Wide Card)
+}
+
 interface IotCloudBlynkProps {
   nodesKanvas: NodeKomponenKanvas[];
   presetWidgets?: WidgetBlynkItem[];
+  customWidgetsState?: ExtendedWidgetBlynkItem[];
+  onChangeWidgetsState?: (widgetsBaru: ExtendedWidgetBlynkItem[]) => void;
   onUpdateNodeDariCloud: (id: string, perubahan: Partial<NodeKomponenKanvas>) => void;
   onGenerateKodeIotKeEditor?: (kodeBaru: string) => void;
 }
@@ -35,6 +44,8 @@ interface IotCloudBlynkProps {
 export const IotCloudBlynkPanel: React.FC<IotCloudBlynkProps> = ({
   nodesKanvas,
   presetWidgets,
+  customWidgetsState,
+  onChangeWidgetsState,
   onUpdateNodeDariCloud,
   onGenerateKodeIotKeEditor,
 }) => {
@@ -73,10 +84,18 @@ export const IotCloudBlynkPanel: React.FC<IotCloudBlynkProps> = ({
     },
   ]);
 
+  // Pengatur Ukuran Kanvas Dashboard Blynk & Jumlah Kolom Grid
+  const [ukuranKanvasBlynk, setUkuranKanvasBlynk] = useState<
+    "kecil" | "sedang" | "besar" | "penuh"
+  >("sedang");
+  const [kolomGridBlynk, setKolomGridBlynk] = useState<2 | 3 | 4>(4);
+
   const [kategoriWidgetAktif, setKategoriWidgetAktif] = useState<string>("Semua");
-  const [daftarWidgetBlynk, setDaftarWidgetBlynk] = useState<WidgetBlynkItem[]>(
+  const [daftarWidgetInternal, setDaftarWidgetInternal] = useState<
+    ExtendedWidgetBlynkItem[]
+  >(
     presetWidgets && presetWidgets.length > 0
-      ? presetWidgets
+      ? presetWidgets.map((w) => ({ ...w, lebarKolom: 1 }))
       : [
           {
             id: "bw-1",
@@ -87,6 +106,7 @@ export const IotCloudBlynkPanel: React.FC<IotCloudBlynkProps> = ({
             satuan: "°C",
             warna: "amber",
             targetTipeKomponen: "dht22",
+            lebarKolom: 1,
           },
           {
             id: "bw-2",
@@ -97,18 +117,28 @@ export const IotCloudBlynkPanel: React.FC<IotCloudBlynkProps> = ({
             satuan: "LOCK",
             warna: "emerald",
             targetTipeKomponen: "solenoid_lock",
+            lebarKolom: 1,
           },
         ]
   );
 
-  // Sinkronkan widget saat pengguna berganti Preset Tutorial Proyek
+  const daftarWidgetBlynk = customWidgetsState || daftarWidgetInternal;
+
+  const updateDaftarWidget = (baru: ExtendedWidgetBlynkItem[]) => {
+    setDaftarWidgetInternal(baru);
+    if (onChangeWidgetsState) {
+      onChangeWidgetsState(baru);
+    }
+  };
+
   useEffect(() => {
-    if (presetWidgets && presetWidgets.length > 0) {
-      setDaftarWidgetBlynk(presetWidgets);
+    if (presetWidgets && presetWidgets.length > 0 && !customWidgetsState) {
+      setDaftarWidgetInternal(presetWidgets.map((w) => ({ ...w, lebarKolom: 1 })));
     }
   }, [presetWidgets]);
 
   const [indeksDragWidget, setIndeksDragWidget] = useState<number | null>(null);
+  const [indeksHoverDrop, setIndeksHoverDrop] = useState<number | null>(null);
   const [idWidgetDiedit, setIdWidgetDiedit] = useState<string | null>(null);
 
   const cariNodeTerkaitWidget = (targetTipe: string) => {
@@ -129,12 +159,31 @@ export const IotCloudBlynkPanel: React.FC<IotCloudBlynkProps> = ({
   };
 
   const tambahWidgetKeBlynk = (item: Omit<WidgetBlynkItem, "id">) => {
-    const baru: WidgetBlynkItem = {
+    const baru: ExtendedWidgetBlynkItem = {
       ...item,
       id: "bw-" + Date.now() + "-" + Math.floor(Math.random() * 100),
       virtualPin: `V${daftarWidgetBlynk.length}`,
+      lebarKolom: item.tipe === "superchart" ? 2 : 1,
     };
-    setDaftarWidgetBlynk([...daftarWidgetBlynk, baru]);
+    updateDaftarWidget([...daftarWidgetBlynk, baru]);
+  };
+
+  const geserUrutanWidget = (indexAsal: number, arah: "kiri" | "kanan") => {
+    const targetIndex = arah === "kiri" ? indexAsal - 1 : indexAsal + 1;
+    if (targetIndex < 0 || targetIndex >= daftarWidgetBlynk.length) return;
+    const salinan = [...daftarWidgetBlynk];
+    const temp = salinan[indexAsal];
+    salinan[indexAsal] = salinan[targetIndex];
+    salinan[targetIndex] = temp;
+    updateDaftarWidget(salinan);
+  };
+
+  const toggleLebarKartuWidget = (id: string) => {
+    updateDaftarWidget(
+      daftarWidgetBlynk.map((w) =>
+        w.id === id ? { ...w, lebarKolom: w.lebarKolom === 2 ? 1 : 2 } : w
+      )
+    );
   };
 
   const handleDropWidgetBaruAtauUrutkan = (
@@ -142,6 +191,7 @@ export const IotCloudBlynkPanel: React.FC<IotCloudBlynkProps> = ({
     targetIndex?: number
   ) => {
     e.preventDefault();
+    setIndeksHoverDrop(null);
     const rawBaru = e.dataTransfer.getData("application/blynk-new-widget");
     if (rawBaru) {
       try {
@@ -159,7 +209,7 @@ export const IotCloudBlynkPanel: React.FC<IotCloudBlynkProps> = ({
       const salinan = [...daftarWidgetBlynk];
       const [dipindah] = salinan.splice(indeksDragWidget, 1);
       salinan.splice(targetIndex, 0, dipindah);
-      setDaftarWidgetBlynk(salinan);
+      updateDaftarWidget(salinan);
       setIndeksDragWidget(null);
     }
   };
@@ -201,6 +251,8 @@ export const IotCloudBlynkPanel: React.FC<IotCloudBlynkProps> = ({
 #define BOT_TELEGRAM_TOKEN  "${telegramBotToken}"
 
 #include <WiFi.h>
+#include <DHT.h>
+#include <ESP32Servo.h>
 #include <UniversalTelegramBot.h>
 #include <PubSubClient.h>
 
@@ -237,6 +289,22 @@ ${daftarPinCode}
     (w) => kategoriWidgetAktif === "Semua" || w.kategoriWidget === kategoriWidgetAktif
   );
 
+  const kelasTinggiKanvasBlynk =
+    ukuranKanvasBlynk === "kecil"
+      ? "min-h-[200px] max-h-[300px]"
+      : ukuranKanvasBlynk === "sedang"
+      ? "min-h-[280px] max-h-[440px]"
+      : ukuranKanvasBlynk === "besar"
+      ? "min-h-[380px] max-h-[600px]"
+      : "min-h-[520px]";
+
+  const kelasGridKolom =
+    kolomGridBlynk === 2
+      ? "grid-cols-1 sm:grid-cols-2"
+      : kolomGridBlynk === 3
+      ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+      : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4";
+
   return (
     <div className="bg-slate-950 text-white p-6 rounded-3xl border-2 border-emerald-500/40 space-y-6 shadow-2xl">
       <div className="flex flex-wrap justify-between items-center gap-3 border-b border-slate-800 pb-4">
@@ -244,10 +312,11 @@ ${daftarPinCode}
           <Cpu className="w-6 h-6 text-emerald-400" />
           <div>
             <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded bg-emerald-400 text-slate-950">
-              16-Widget Blynk Studio • Telegram Bot Bridge • Auto-Synced with Project Tutorials
+              Resizable Blynk Drag &amp; Drop Canvas • Telegram Bot Bridge
             </span>
             <h4 className="font-black text-base sm:text-lg text-white mt-0.5">
-              Pusat Konektivitas IoT, Telegram Bot &amp; Kanvas Drag-and-Drop Dashboard Blynk
+              Pusat Konektivitas IoT &amp; Kanvas Drag-and-Drop Dashboard Blynk (Bisa Atur Ukuran &amp;
+              Pindah Posisi)
             </h4>
           </div>
         </div>
@@ -265,7 +334,9 @@ ${daftarPinCode}
       <div className="bg-slate-900/90 p-5 rounded-3xl border-2 border-emerald-500/30 space-y-4">
         <div className="flex flex-wrap justify-between items-center gap-3">
           <h5 className="font-black text-sm sm:text-base text-amber-300 flex items-center gap-2">
-            <Move className="w-4 h-4 text-emerald-400" /> Gudang Widget Blynk ({katalogWidgetTersaring.length} Jenis): Tarik (Drag &amp; Drop) atau Klik untuk Menambahkan ke Dashboard IoT
+            <Move className="w-4 h-4 text-emerald-400" /> Gudang Widget Blynk (
+            {katalogWidgetTersaring.length} Jenis): Tarik (Drag &amp; Drop) atau Klik untuk
+            Menambahkan
           </h5>
 
           <div className="flex items-center gap-1.5 overflow-x-auto">
@@ -287,7 +358,7 @@ ${daftarPinCode}
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2.5 max-h-52 overflow-y-auto pr-1">
+        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2.5 max-h-48 overflow-y-auto pr-1">
           {katalogWidgetTersaring.map((wItem, idx) => (
             <div
               key={idx}
@@ -317,49 +388,137 @@ ${daftarPinCode}
           ))}
         </div>
 
+        {/* BAR PENGATUR UKURAN KANVAS BLYNK & JUMLAH KOLOM GRID */}
+        <div className="flex flex-wrap justify-between items-center gap-3 bg-slate-950 p-3 rounded-2xl border border-slate-800 text-xs">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-black text-emerald-400 uppercase text-[11px]">
+              📐 Ukuran Kanvas Dashboard Blynk:
+            </span>
+            {(
+              [
+                { id: "kecil", label: "Kecil" },
+                { id: "sedang", label: "Sedang" },
+                { id: "besar", label: "Besar" },
+                { id: "penuh", label: "Layar Penuh" },
+              ] as const
+            ).map((uk) => (
+              <button
+                key={uk.id}
+                type="button"
+                onClick={() => setUkuranKanvasBlynk(uk.id)}
+                className={`px-2.5 py-1 rounded-lg font-black text-[11px] cursor-pointer ${
+                  ukuranKanvasBlynk === uk.id
+                    ? "bg-emerald-500 text-slate-950"
+                    : "bg-slate-900 text-slate-300 border border-slate-800"
+                }`}
+              >
+                {uk.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] font-bold text-slate-400">Layout Grid:</span>
+            {([2, 3, 4] as const).map((kol) => (
+              <button
+                key={kol}
+                type="button"
+                onClick={() => setKolomGridBlynk(kol)}
+                className={`px-2.5 py-1 rounded-lg font-mono font-black text-[11px] cursor-pointer ${
+                  kolomGridBlynk === kol
+                    ? "bg-indigo-600 text-white"
+                    : "bg-slate-900 text-slate-400 border border-slate-800"
+                }`}
+              >
+                {kol} Kolom
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* KANVAS GRID DRAG-AND-DROP WIDGET BLYNK LIVE */}
         <div
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => handleDropWidgetBaruAtauUrutkan(e)}
-          className="p-5 rounded-3xl bg-[#060c17] border-2 border-dashed border-emerald-500/40 min-h-[220px] space-y-4"
+          className={`p-5 rounded-3xl bg-[#060c17] border-2 border-dashed border-emerald-500/40 overflow-y-auto space-y-4 transition-all ${kelasTinggiKanvasBlynk}`}
         >
           <div className="flex flex-wrap justify-between items-center text-[11px] font-mono text-slate-400">
             <span>
-              📱 KANVAS DASHBOARD BLYNK &amp; TELEGRAM LIVE (Otomatis memuat widget sesuai Tutorial
-              Project yang dipilih, atau tarik widget baru dari atas!)
+              💡 Tarik (Drag &amp; Drop) kartu widget untuk menukar posisi, klik [◀ ▶] untuk
+              menggeser, atau klik [⬌ 2x] untuk memperlebar ukuran widget!
             </span>
             <span className="text-emerald-400">● {daftarWidgetBlynk.length} Widget Aktif</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className={`grid ${kelasGridKolom} gap-4`}>
             {daftarWidgetBlynk.map((w, wIdx) => {
               const nodeTerkait = cariNodeTerkaitWidget(w.targetTipeKomponen);
               const nilaiAktual = nodeTerkait?.nilaiSensor ?? 30;
               const statusNyalaAktual = nodeTerkait?.nyala ?? true;
               const sedangEdit = idWidgetDiedit === w.id;
+              const sedangHoverTarget = indeksHoverDrop === wIdx;
 
               return (
                 <div
                   key={w.id}
                   draggable
                   onDragStart={() => setIndeksDragWidget(wIdx)}
+                  onDragEnter={() => setIndeksHoverDrop(wIdx)}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => {
                     e.stopPropagation();
                     handleDropWidgetBaruAtauUrutkan(e, wIdx);
                   }}
-                  className="p-4 rounded-2xl bg-slate-900/95 border-2 border-slate-800 hover:border-emerald-400 transition cursor-move flex flex-col justify-between space-y-3"
+                  className={`${
+                    w.lebarKolom === 2 ? "sm:col-span-2" : "col-span-1"
+                  } p-4 rounded-2xl bg-slate-900/95 border-2 transition cursor-grab active:cursor-grabbing flex flex-col justify-between space-y-3 ${
+                    sedangHoverTarget
+                      ? "border-amber-400 ring-2 ring-amber-400/40 scale-[1.02]"
+                      : "border-slate-800 hover:border-emerald-400"
+                  }`}
                 >
-                  <div className="flex justify-between items-center gap-2 border-b border-slate-800 pb-2">
-                    <div className="flex items-center gap-1.5">
-                      <span className="px-2 py-0.5 rounded bg-emerald-500 text-slate-950 font-mono font-black text-[10px]">
+                  <div className="flex justify-between items-center gap-1.5 border-b border-slate-800 pb-2">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="px-2 py-0.5 rounded bg-emerald-500 text-slate-950 font-mono font-black text-[10px] shrink-0">
                         {w.virtualPin}
                       </span>
-                      <span className="font-black text-xs text-white truncate max-w-[125px]">
+                      <span className="font-black text-xs text-white truncate">
                         {w.judul}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1">
+
+                    {/* Tombol Pindah Posisi Kiri/Kanan, Lebar 1x/2x, Edit & Hapus */}
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => geserUrutanWidget(wIdx, "kiri")}
+                        disabled={wIdx === 0}
+                        className="p-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-slate-300 cursor-pointer"
+                        title="Geser Posisi ke Kiri"
+                      >
+                        <ArrowLeft className="w-3 h-3" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => geserUrutanWidget(wIdx, "kanan")}
+                        disabled={wIdx === daftarWidgetBlynk.length - 1}
+                        className="p-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-slate-300 cursor-pointer"
+                        title="Geser Posisi ke Kanan"
+                      >
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => toggleLebarKartuWidget(w.id)}
+                        className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-black cursor-pointer ${
+                          w.lebarKolom === 2
+                            ? "bg-amber-400 text-slate-950"
+                            : "bg-slate-800 text-slate-300"
+                        }`}
+                        title="Atur Ukuran Lebar Kartu Widget (1x Normal / 2x Lebar)"
+                      >
+                        {w.lebarKolom === 2 ? "2x" : "1x"}
+                      </button>
                       <button
                         type="button"
                         onClick={() => setIdWidgetDiedit(sedangEdit ? null : w.id)}
@@ -370,7 +529,7 @@ ${daftarPinCode}
                       <button
                         type="button"
                         onClick={() =>
-                          setDaftarWidgetBlynk(
+                          updateDaftarWidget(
                             daftarWidgetBlynk.filter((x) => x.id !== w.id)
                           )
                         }
@@ -387,7 +546,7 @@ ${daftarPinCode}
                         type="text"
                         value={w.judul}
                         onChange={(e) =>
-                          setDaftarWidgetBlynk(
+                          updateDaftarWidget(
                             daftarWidgetBlynk.map((item) =>
                               item.id === w.id ? { ...item, judul: e.target.value } : item
                             )
@@ -398,7 +557,7 @@ ${daftarPinCode}
                       <select
                         value={w.targetTipeKomponen}
                         onChange={(e) =>
-                          setDaftarWidgetBlynk(
+                          updateDaftarWidget(
                             daftarWidgetBlynk.map((item) =>
                               item.id === w.id
                                 ? { ...item, targetTipeKomponen: e.target.value }
@@ -527,8 +686,8 @@ ${daftarPinCode}
                         </span>
                         <span>{nilaiAktual}</span>
                       </div>
-                      <div className="h-14 bg-slate-950 rounded-xl p-2 flex items-end gap-1 border border-slate-800">
-                        {[0.6, 0.8, 0.5, 0.9, 0.7, 1.0].map((f, i) => (
+                      <div className="h-16 bg-slate-950 rounded-xl p-2 flex items-end gap-1 border border-slate-800">
+                        {[0.6, 0.8, 0.5, 0.9, 0.7, 1.0, 0.85, 0.95].map((f, i) => (
                           <div
                             key={i}
                             style={{
