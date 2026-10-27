@@ -1,17 +1,22 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Cpu,
   Zap,
   Activity,
   Trash2,
   PlusCircle,
-  Cable,
   RotateCcw,
   Sliders,
   Move,
   CheckCircle2,
+  Maximize2,
+  Minimize2,
+  ZoomIn,
+  ZoomOut,
+  Search,
+  Filter,
 } from "lucide-react";
 import {
   VisualKomponenRealistis,
@@ -41,27 +46,22 @@ interface CanvasProps {
   mode: "wokwi" | "ewb" | "matlab";
 }
 
-// Katalog Gudang Komponen yang Disediakan untuk Drag-and-Drop
+interface ItemPaletGudang {
+  tipe: string;
+  label: string;
+  kategori: string;
+  defaultResistor?: number;
+  defaultSensor?: number;
+}
+
+// Katalog Gudang Komponen Lengkap per Mode dengan Kategori & Preview Gambar Kecil
 const PALET_KOMPONEN: {
-  [key in "wokwi" | "ewb" | "matlab"]: {
-    tipe: string;
-    label: string;
-    kategori: string;
-    defaultResistor?: number;
-    defaultSensor?: number;
-  }[];
+  [key in "wokwi" | "ewb" | "matlab"]: ItemPaletGudang[];
 } = {
   wokwi: [
     { tipe: "esp32", label: "ESP32 DevKit V1", kategori: "Microcontroller" },
     { tipe: "arduino_uno", label: "Arduino Uno R3", kategori: "Microcontroller" },
-    {
-      tipe: "resistor",
-      label: "Resistor Gelang Warna",
-      kategori: "Pasif",
-      defaultResistor: 220,
-    },
-    { tipe: "led_hijau", label: "LED Hijau 5mm", kategori: "Aktuator" },
-    { tipe: "led_merah", label: "LED Merah (Alarm)", kategori: "Aktuator" },
+    { tipe: "breadboard", label: "Breadboard Mini", kategori: "Microcontroller" },
     {
       tipe: "dht22",
       label: "Sensor Suhu DHT22",
@@ -74,23 +74,67 @@ const PALET_KOMPONEN: {
       kategori: "Sensor IoT",
       defaultSensor: 45,
     },
+    { tipe: "pir_sensor", label: "Sensor Gerak PIR", kategori: "Sensor IoT" },
+    {
+      tipe: "ldr_sensor",
+      label: "Sensor Cahaya LDR",
+      kategori: "Sensor IoT",
+      defaultSensor: 500,
+    },
+    {
+      tipe: "oled_display",
+      label: "Layar OLED I2C",
+      kategori: "Aktuator & Layar",
+      defaultSensor: 100,
+    },
+    {
+      tipe: "lcd_16x2",
+      label: "LCD 16x2 I2C",
+      kategori: "Aktuator & Layar",
+      defaultSensor: 25,
+    },
     {
       tipe: "servo",
       label: "Motor Servo SG90",
-      kategori: "Aktuator",
+      kategori: "Aktuator & Layar",
       defaultSensor: 90,
     },
+    { tipe: "buzzer", label: "Buzzer Piezo Alarm", kategori: "Aktuator & Layar" },
+    { tipe: "relay_5v", label: "Modul Relay 5V IoT", kategori: "Aktuator & Layar" },
+    { tipe: "led_hijau", label: "LED Hijau 5mm", kategori: "Pasif & Tombol" },
+    { tipe: "led_merah", label: "LED Merah 5mm", kategori: "Pasif & Tombol" },
+    { tipe: "led_kuning", label: "LED Kuning 5mm", kategori: "Pasif & Tombol" },
+    {
+      tipe: "resistor",
+      label: "Resistor Gelang Warna",
+      kategori: "Pasif & Tombol",
+      defaultResistor: 220,
+    },
+    {
+      tipe: "potensiometer",
+      label: "Potensiometer Analog",
+      kategori: "Pasif & Tombol",
+      defaultSensor: 50,
+    },
+    { tipe: "push_button", label: "Sakelar Push Button", kategori: "Pasif & Tombol" },
   ],
   ewb: [
     {
       tipe: "vcc_dc",
       label: "Sumber Tegangan DC",
-      kategori: "Power Supply",
+      kategori: "Power & Ground",
       defaultSensor: 12,
     },
     {
+      tipe: "ac_source",
+      label: "Generator Sinyal AC",
+      kategori: "Power & Ground",
+      defaultSensor: 50,
+    },
+    { tipe: "gnd", label: "Ground (GND 0V)", kategori: "Power & Ground" },
+    {
       tipe: "resistor",
-      label: "Resistor (4-Band Color)",
+      label: "Resistor 4-Gelang",
       kategori: "Komponen RLC",
       defaultResistor: 1000,
     },
@@ -101,40 +145,80 @@ const PALET_KOMPONEN: {
       defaultSensor: 10,
     },
     {
+      tipe: "induktor",
+      label: "Induktor Kumparan",
+      kategori: "Komponen RLC",
+      defaultSensor: 25,
+    },
+    {
+      tipe: "potensiometer",
+      label: "Resistor Variabel (Pot)",
+      kategori: "Komponen RLC",
+      defaultSensor: 50,
+    },
+    { tipe: "dioda", label: "Dioda Penyearah 1N4007", kategori: "Semikonduktor & IC" },
+    {
+      tipe: "transistor_npn",
+      label: "Transistor NPN 2N2222",
+      kategori: "Semikonduktor & IC",
+    },
+    { tipe: "opamp_741", label: "Op-Amp Analog LM741", kategori: "Semikonduktor & IC" },
+    {
       tipe: "gerbang_logika",
-      label: "IC Gerbang Logika 74LS",
-      kategori: "Digital Logic",
+      label: "Gerbang AND (7408)",
+      kategori: "Gerbang Logika & Alat",
+    },
+    { tipe: "ic_or", label: "Gerbang OR (7432)", kategori: "Gerbang Logika & Alat" },
+    { tipe: "ic_xor", label: "Gerbang XOR (7486)", kategori: "Gerbang Logika & Alat" },
+    {
+      tipe: "multimeter",
+      label: "Multimeter Digital",
+      kategori: "Gerbang Logika & Alat",
+      defaultSensor: 12,
+    },
+    {
+      tipe: "osiloskop",
+      label: "Osiloskop 2-Channel",
+      kategori: "Gerbang Logika & Alat",
     },
     {
       tipe: "led_hijau",
-      label: "Lampu Uji Indikator",
-      kategori: "Indikator",
+      label: "Lampu Indikator Uji",
+      kategori: "Gerbang Logika & Alat",
     },
   ],
   matlab: [
     {
       tipe: "Sine Wave",
-      label: "Sine Wave Source",
+      label: "Sine Wave Generator",
       kategori: "Sources",
       defaultSensor: 50,
     },
     {
+      tipe: "Step Input",
+      label: "Step Reference u(t)",
+      kategori: "Sources",
+      defaultSensor: 1,
+    },
+    {
       tipe: "PID Controller",
-      label: "PID Controller (Kp,Ki,Kd)",
+      label: "PID Controller",
       kategori: "Continuous",
       defaultSensor: 2,
     },
     {
       tipe: "Transfer Fcn",
-      label: "Transfer Function 1/(s+1)",
-      kategori: "Plant Model",
+      label: "Transfer Fcn G(s)",
+      kategori: "Continuous",
       defaultSensor: 1,
     },
-    {
-      tipe: "Scope Plot",
-      label: "Simulink Scope Viewer",
-      kategori: "Sinks",
-    },
+    { tipe: "Integrator", label: "Integrator (1/s)", kategori: "Continuous" },
+    { tipe: "Derivative", label: "Derivative (du/dt)", kategori: "Continuous" },
+    { tipe: "Gain K", label: "Gain Amplifier (K)", kategori: "Math & Logic" },
+    { tipe: "Sum (+ / -)", label: "Sum Junction (+/-)", kategori: "Math & Logic" },
+    { tipe: "Mux Signal", label: "Signal Multiplexer", kategori: "Math & Logic" },
+    { tipe: "Scope Plot", label: "Simulink Scope Viewer", kategori: "Sinks" },
+    { tipe: "To Workspace", label: "Export to Workspace", kategori: "Sinks" },
   ],
 };
 
@@ -142,30 +226,30 @@ const KOMPONEN_AWAL_PER_MODE: {
   [key in "wokwi" | "ewb" | "matlab"]: NodeKomponenKanvas[];
 } = {
   wokwi: [
-    { id: "wk-1", tipe: "esp32", label: "ESP32 Utama", x: 35, y: 55, nyala: true },
+    { id: "wk-1", tipe: "esp32", label: "ESP32 Utama", x: 30, y: 55, nyala: true },
     {
       id: "wk-2",
       tipe: "resistor",
       label: "R1 Pembatas Arus",
-      x: 245,
+      x: 235,
       y: 45,
       nilaiResistor: 330,
     },
-    { id: "wk-3", tipe: "led_hijau", label: "LED Status", x: 435, y: 40, nyala: true },
+    { id: "wk-3", tipe: "led_hijau", label: "LED Status", x: 425, y: 40, nyala: true },
     {
       id: "wk-4",
       tipe: "dht22",
       label: "DHT22 Suhu",
-      x: 255,
-      y: 175,
+      x: 245,
+      y: 185,
       nilaiSensor: 31,
     },
     {
       id: "wk-5",
       tipe: "servo",
       label: "Servo Pintu",
-      x: 430,
-      y: 180,
+      x: 420,
+      y: 190,
       nilaiSensor: 90,
     },
   ],
@@ -174,7 +258,7 @@ const KOMPONEN_AWAL_PER_MODE: {
       id: "ewb-1",
       tipe: "vcc_dc",
       label: "Sumber Vcc 12V",
-      x: 35,
+      x: 30,
       y: 80,
       nilaiSensor: 12,
     },
@@ -182,7 +266,7 @@ const KOMPONEN_AWAL_PER_MODE: {
       id: "ewb-2",
       tipe: "resistor",
       label: "Resistor R1 (Atas)",
-      x: 215,
+      x: 210,
       y: 45,
       nilaiResistor: 1000,
     },
@@ -190,15 +274,15 @@ const KOMPONEN_AWAL_PER_MODE: {
       id: "ewb-3",
       tipe: "resistor",
       label: "Resistor R2 (Beban)",
-      x: 215,
-      y: 175,
+      x: 210,
+      y: 185,
       nilaiResistor: 2200,
     },
     {
       id: "ewb-4",
-      tipe: "gerbang_logika",
-      label: "IC 74LS08 (AND)",
-      x: 430,
+      tipe: "osiloskop",
+      label: "Osiloskop Tektronix",
+      x: 420,
       y: 110,
       nyala: true,
     },
@@ -208,32 +292,32 @@ const KOMPONEN_AWAL_PER_MODE: {
       id: "sim-1",
       tipe: "Sine Wave",
       label: "Input Referensi r(t)",
-      x: 30,
-      y: 105,
+      x: 25,
+      y: 115,
       nilaiSensor: 10,
     },
     {
       id: "sim-2",
       tipe: "PID Controller",
-      label: " Blok Kendali PID",
-      x: 205,
-      y: 105,
+      label: "Blok Kendali PID",
+      x: 200,
+      y: 115,
       nilaiSensor: 5,
     },
     {
       id: "sim-3",
       tipe: "Transfer Fcn",
       label: "Plant Motor DC",
-      x: 380,
-      y: 105,
+      x: 375,
+      y: 115,
       nilaiSensor: 1,
     },
     {
       id: "sim-4",
       tipe: "Scope Plot",
       label: "Output Scope y(t)",
-      x: 540,
-      y: 105,
+      x: 535,
+      y: 115,
     },
   ],
 };
@@ -270,11 +354,43 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({ mode }) => {
     [key in "wokwi" | "ewb" | "matlab"]: KabelKoneksiItem[];
   }>(KABEL_AWAL_PER_MODE);
 
+  // State Filter Kategori & Pencarian di Gudang Komponen
+  const [kategoriPaletAktif, setKategoriPaletAktif] = useState<string>("Semua");
+  const [cariKomponen, setCariKomponen] = useState<string>("");
+
+  // State Pengatur Ukuran Kanvas (Kecil, Sedang, Besar, Layar Lebar) & Zoom Skala
+  const [ukuranKanvas, setUkuranKanvas] = useState<"kecil" | "sedang" | "besar" | "penuh">(
+    "sedang"
+  );
+  const [skalaZoom, setSkalaZoom] = useState<number>(1);
+
   const [idKomponenTerpilih, setIdKomponenTerpilih] = useState<string | null>(
     KOMPONEN_AWAL_PER_MODE[mode][1]?.id || null
   );
   const [sedangGeserId, setSedangGeserId] = useState<string | null>(null);
   const [modePasangKabelDariId, setModePasangKabelDariId] = useState<string | null>(null);
+
+  // Reset filter kategori saat pindah tab mode (Wokwi / EWB / MATLAB)
+  useEffect(() => {
+    setKategoriPaletAktif("Semua");
+    setCariKomponen("");
+    setIdKomponenTerpilih(KOMPONEN_AWAL_PER_MODE[mode][1]?.id || null);
+  }, [mode]);
+
+  const paletModeIni = PALET_KOMPONEN[mode] || [];
+  const daftarKategoriUnik = [
+    "Semua",
+    ...Array.from(new Set(paletModeIni.map((item) => item.kategori))),
+  ];
+
+  const komponenPaletTersaring = paletModeIni.filter((item) => {
+    const cocokKategori =
+      kategoriPaletAktif === "Semua" || item.kategori === kategoriPaletAktif;
+    const cocokKata =
+      item.label.toLowerCase().includes(cariKomponen.toLowerCase()) ||
+      item.kategori.toLowerCase().includes(cariKomponen.toLowerCase());
+    return cocokKategori && cocokKata;
+  });
 
   const nodesSaatIni = daftarNode[mode] || [];
   const kabelSaatIni = daftarKabel[mode] || [];
@@ -284,12 +400,20 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({ mode }) => {
     nodesSaatIni[0] ||
     null;
 
-  // Fungsi Tambah Komponen via Drag-and-Drop dari Palet ke Kanvas
+  const tinggiKanvasPx =
+    ukuranKanvas === "kecil"
+      ? "h-[320px]"
+      : ukuranKanvas === "sedang"
+      ? "h-[460px]"
+      : ukuranKanvas === "besar"
+      ? "h-[620px]"
+      : "h-[780px]";
+
   const tambahKomponenKeKanvas = (
     tipe: string,
     label: string,
-    xPos = 140,
-    yPos = 90,
+    xPos = 150,
+    yPos = 100,
     defaultResistor?: number,
     defaultSensor?: number
   ) => {
@@ -297,8 +421,8 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({ mode }) => {
       id: `${mode}-node-${Date.now()}`,
       tipe,
       label: `${label} #${nodesSaatIni.length + 1}`,
-      x: Math.max(15, Math.min(540, xPos)),
-      y: Math.max(15, Math.min(220, yPos)),
+      x: Math.max(15, Math.min(600, xPos)),
+      y: Math.max(15, Math.min(480, yPos)),
       nilaiResistor: defaultResistor ?? (tipe === "resistor" ? 1000 : undefined),
       nilaiSensor: defaultSensor ?? 25,
       nyala: true,
@@ -317,8 +441,8 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({ mode }) => {
     try {
       const parsed = JSON.parse(raw);
       const rect = containerRef.current.getBoundingClientRect();
-      const xDrop = e.clientX - rect.left - 55;
-      const yDrop = e.clientY - rect.top - 35;
+      const xDrop = (e.clientX - rect.left) / skalaZoom - 55;
+      const yDrop = (e.clientY - rect.top) / skalaZoom - 35;
       tambahKomponenKeKanvas(
         parsed.tipe,
         parsed.label,
@@ -330,12 +454,23 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({ mode }) => {
     } catch {}
   };
 
-  // Fungsi Geser Posisi Komponen di dalam Kanvas
   const handleMouseMoveKanvas = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!sedangGeserId || !containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
-    const xBaru = Math.max(10, Math.min(rect.width - 135, e.clientX - rect.left - 60));
-    const yBaru = Math.max(10, Math.min(rect.height - 95, e.clientY - rect.top - 40));
+    const xBaru = Math.max(
+      10,
+      Math.min(
+        (rect.width / skalaZoom) - 130,
+        (e.clientX - rect.left) / skalaZoom - 60
+      )
+    );
+    const yBaru = Math.max(
+      10,
+      Math.min(
+        (rect.height / skalaZoom) - 90,
+        (e.clientY - rect.top) / skalaZoom - 40
+      )
+    );
 
     setDaftarNode({
       ...daftarNode,
@@ -355,7 +490,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({ mode }) => {
     });
   };
 
-  // Hitung Analisis Rangkaian Otomatis (Hukum Ohm untuk resistor yang ada di kanvas)
   const semuaResistorKanvas = nodesSaatIni.filter((n) => n.tipe === "resistor");
   const totalOhmKanvas = semuaResistorKanvas.reduce(
     (acc, r) => acc + (r.nilaiResistor || 1000),
@@ -368,8 +502,8 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({ mode }) => {
 
   return (
     <div className="bg-slate-900 text-white p-6 rounded-3xl border-2 border-indigo-500/40 space-y-6 shadow-2xl">
-      {/* HEADER BAR MEJA KERJA DRAG & DROP */}
-      <div className="flex flex-wrap justify-between items-center gap-3 border-b border-slate-800 pb-4">
+      {/* HEADER BAR MEJA KERJA & KONTROL UKURAN KANVAS */}
+      <div className="flex flex-wrap justify-between items-center gap-4 border-b border-slate-800 pb-4">
         <div className="flex items-center gap-2.5">
           {mode === "wokwi" ? (
             <Cpu className="w-6 h-6 text-emerald-400" />
@@ -392,7 +526,58 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({ mode }) => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Kontrol Ukuran Kanvas (Kecil / Sedang / Besar / Penuh) & Zoom */}
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+            <span className="text-[10px] font-bold text-slate-400 px-2">
+              Ukuran Kanvas:
+            </span>
+            {(
+              [
+                { id: "kecil", label: "Kecil" },
+                { id: "sedang", label: "Sedang" },
+                { id: "besar", label: "Besar" },
+                { id: "penuh", label: "Layar Penuh" },
+              ] as const
+            ).map((uk) => (
+              <button
+                key={uk.id}
+                type="button"
+                onClick={() => setUkuranKanvas(uk.id)}
+                className={`px-2.5 py-1.5 rounded-lg font-black text-[11px] cursor-pointer transition ${
+                  ukuranKanvas === uk.id
+                    ? "bg-emerald-500 text-slate-950"
+                    : "text-slate-300 hover:bg-slate-800"
+                }`}
+              >
+                {uk.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Kontrol Zoom Skala Kanvas */}
+          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+            <button
+              type="button"
+              onClick={() => setSkalaZoom((z) => Math.max(0.75, +(z - 0.15).toFixed(2)))}
+              className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-300 cursor-pointer"
+              title="Perkecil Tampilan Kanvas (Zoom Out)"
+            >
+              <ZoomOut className="w-3.5 h-3.5" />
+            </button>
+            <span className="font-mono text-[11px] font-bold px-1.5 text-amber-300">
+              {Math.round(skalaZoom * 100)}%
+            </span>
+            <button
+              type="button"
+              onClick={() => setSkalaZoom((z) => Math.min(1.35, +(z + 0.15).toFixed(2)))}
+              className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-300 cursor-pointer"
+              title="Perbesar Tampilan Kanvas (Zoom In)"
+            >
+              <ZoomIn className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
           <button
             type="button"
             onClick={() => {
@@ -404,32 +589,72 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({ mode }) => {
                 ...daftarKabel,
                 [mode]: KABEL_AWAL_PER_MODE[mode],
               });
+              setSkalaZoom(1);
             }}
-            className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+            className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold flex items-center gap-1 cursor-pointer"
           >
-            <RotateCcw className="w-3.5 h-3.5" /> Reset Rangkaian Default
+            <RotateCcw className="w-3.5 h-3.5" /> Reset
           </button>
         </div>
       </div>
 
-      {/* PALET GUDANG KOMPONEN (DRAG & DROP KE KANVAS DI BAWAH) */}
-      <div className="space-y-2">
-        <div className="flex flex-wrap justify-between items-center text-xs">
-          <span className="font-black uppercase text-amber-300 flex items-center gap-1.5">
-            <Move className="w-4 h-4" /> Gudang Komponen: Tarik (Drag &amp; Drop) atau Klik untuk
-            Menaruh ke Meja Rangkaian
-          </span>
-          {modePasangKabelDariId && (
-            <span className="bg-indigo-600 text-white px-3 py-1 rounded-full font-black animate-pulse">
-              🔌 Pilih komponen tujuan di kanvas untuk menyambungkan kabel...
+      {/* ======================================================================
+          GUDANG KOMPONEN BERKATEGORI + PREVIEW GAMBAR MINI SEBELUM MASUK KANVAS
+         ====================================================================== */}
+      <div className="bg-slate-950/90 p-5 rounded-3xl border border-slate-800 space-y-4">
+        <div className="flex flex-wrap justify-between items-center gap-3">
+          <div className="flex items-center gap-2 text-xs">
+            <Move className="w-4 h-4 text-amber-400" />
+            <span className="font-black uppercase text-amber-300">
+              Gudang Komponen ({komponenPaletTersaring.length} Item): Tarik (Drag &amp; Drop) atau
+              Klik untuk Menaruh ke Meja Rangkaian
             </span>
-          )}
+          </div>
+
+          {/* Pencarian Cepat Komponen */}
+          <div className="relative w-full sm:w-64">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={cariKomponen}
+              onChange={(e) => setCariKomponen(e.target.value)}
+              placeholder="Cari nama komponen..."
+              className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-400"
+            />
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
-          {PALET_KOMPONEN[mode].map((item, idx) => (
+        {/* Tab Filter Kategori Gudang Komponen */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+          <Filter className="w-3.5 h-3.5 text-indigo-400 shrink-0 mr-1" />
+          {daftarKategoriUnik.map((kat) => (
+            <button
+              key={kat}
+              type="button"
+              onClick={() => setKategoriPaletAktif(kat)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-black whitespace-nowrap cursor-pointer transition ${
+                kategoriPaletAktif === kat
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "bg-slate-900 text-slate-400 border border-slate-800 hover:text-white"
+              }`}
+            >
+              {kat}
+            </button>
+          ))}
+        </div>
+
+        {modePasangKabelDariId && (
+          <div className="p-2.5 rounded-xl bg-indigo-600/30 border border-indigo-400 text-xs font-black text-indigo-200 text-center animate-pulse">
+            🔌 Mode Sambung Kabel Aktif: Klik komponen tujuan di dalam kanvas untuk menghubungkan
+            pin!
+          </div>
+        )}
+
+        {/* Grid Kartu Komponen dengan Preview Gambar SVG Kecil (Miniature Preview) */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2.5 max-h-60 overflow-y-auto pr-1">
+          {komponenPaletTersaring.map((item, idx) => (
             <div
-              key={idx}
+              key={`${item.tipe}-${idx}`}
               draggable
               onDragStart={(e) => {
                 e.dataTransfer.setData(
@@ -441,32 +666,47 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({ mode }) => {
                 tambahKomponenKeKanvas(
                   item.tipe,
                   item.label,
-                  100 + idx * 45,
-                  80,
+                  80 + (idx % 6) * 65,
+                  70 + Math.floor(idx / 6) * 60,
                   item.defaultResistor,
                   item.defaultSensor
                 )
               }
-              className="p-3 rounded-2xl bg-slate-950 hover:bg-indigo-950/80 border border-slate-800 hover:border-indigo-400 cursor-grab active:cursor-grabbing flex flex-col items-center justify-between text-center gap-1.5 transition group"
-              title="Tarik (Drag) ke kanvas atau Klik langsung untuk menambahkan"
+              className="p-2.5 rounded-2xl bg-slate-900 hover:bg-indigo-950/90 border border-slate-800 hover:border-emerald-400 cursor-grab active:cursor-grabbing flex flex-col items-center justify-between text-center gap-1.5 transition group shadow-xs"
+              title={`Tarik (Drag) atau Klik untuk menambahkan ${item.label} ke kanvas`}
             >
-              <span className="text-[9px] font-black uppercase text-indigo-300">
+              <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-slate-950 text-indigo-300 border border-slate-800">
                 {item.kategori}
               </span>
-              <div className="font-bold text-xs text-white group-hover:text-emerald-300 leading-tight">
+
+              {/* Preview Gambar Kecil (Miniature Visual SVG) */}
+              <div className="h-13 flex items-center justify-center py-1 group-hover:scale-105 transition-transform">
+                <VisualKomponenRealistis
+                  tipe={item.tipe}
+                  nilaiResistor={item.defaultResistor || 220}
+                  nilaiSensor={item.defaultSensor || 25}
+                  nyala={true}
+                  ukuran="ikon"
+                />
+              </div>
+
+              <div className="font-bold text-[11px] text-white group-hover:text-emerald-300 leading-tight line-clamp-2">
                 {item.label}
               </div>
-              <span className="text-[10px] text-emerald-400 flex items-center gap-0.5 font-bold">
-                <PlusCircle className="w-3 h-3" /> Drag / Klik
+
+              <span className="text-[9px] text-emerald-400 flex items-center gap-0.5 font-black">
+                <PlusCircle className="w-2.5 h-2.5" /> Tarik / Klik
               </span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* AREA UTAMA: KANVAS DRAG & DROP (8 KOLOM) + INSPEKTOR RESISTOR & MULTIMETER (4 KOLOM) */}
+      {/* ======================================================================
+          AREA UTAMA: KANVAS DRAG & DROP (8 KOLOM) + INSPEKTOR KOMPONEN (4 KOLOM)
+         ====================================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* KANVAS DRAG-AND-DROP INTERAKTIF */}
+        {/* KANVAS DRAG-AND-DROP INTERAKTIF DENGAN UKURAN DINAMIS */}
         <div
           ref={containerRef}
           onDragOver={(e) => e.preventDefault()}
@@ -474,110 +714,147 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({ mode }) => {
           onMouseMove={handleMouseMoveKanvas}
           onMouseUp={() => setSedangGeserId(null)}
           onMouseLeave={() => setSedangGeserId(null)}
-          className="lg:col-span-8 h-[350px] rounded-3xl bg-[#070d19] border-2 border-dashed border-slate-700 relative overflow-hidden select-none bg-[radial-gradient(#1e293b_1.5px,transparent_1.5px)] [background-size:20px_20px]"
+          className={`${
+            ukuranKanvas === "penuh" ? "lg:col-span-12" : "lg:col-span-8"
+          } ${tinggiKanvasPx} rounded-3xl bg-[#070d19] border-2 border-dashed border-slate-700 relative overflow-auto select-none bg-[radial-gradient(#1e293b_1.5px,transparent_1.5px)] [background-size:20px_20px] transition-all duration-200`}
         >
-          {/* Layer Garis Kabel Penghubung Antar Komponen (SVG Wires) */}
-          <svg className="absolute inset-0 w-full h-full pointer-events-none">
-            {kabelSaatIni.map((kbl) => {
-              const asal = nodesSaatIni.find((n) => n.id === kbl.dariId);
-              const tujuan = nodesSaatIni.find((n) => n.id === kbl.keId);
-              if (!asal || !tujuan) return null;
-              const x1 = asal.x + 65;
-              const y1 = asal.y + 42;
-              const x2 = tujuan.x + 65;
-              const y2 = tujuan.y + 42;
-              const midX = (x1 + x2) / 2;
+          <div
+            style={{
+              transform: `scale(${skalaZoom})`,
+              transformOrigin: "top left",
+              width: `${100 / skalaZoom}%`,
+              height: `${100 / skalaZoom}%`,
+            }}
+            className="relative w-full h-full min-w-[680px] min-h-[320px]"
+          >
+            {/* Layer Garis Kabel Penghubung Antar Komponen (SVG Wires) */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none">
+              {kabelSaatIni.map((kbl) => {
+                const asal = nodesSaatIni.find((n) => n.id === kbl.dariId);
+                const tujuan = nodesSaatIni.find((n) => n.id === kbl.keId);
+                if (!asal || !tujuan) return null;
+                const x1 = asal.x + 65;
+                const y1 = asal.y + 42;
+                const x2 = tujuan.x + 65;
+                const y2 = tujuan.y + 42;
+                const midX = (x1 + x2) / 2;
 
+                return (
+                  <g key={kbl.id}>
+                    <path
+                      d={`M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`}
+                      stroke={kbl.warna}
+                      strokeWidth="3.5"
+                      fill="none"
+                      strokeDasharray={mode === "matlab" ? "6 3" : undefined}
+                    />
+                    <circle cx={x1} cy={y1} r="4.5" fill={kbl.warna} />
+                    <circle cx={x2} cy={y2} r="4.5" fill={kbl.warna} />
+                  </g>
+                );
+              })}
+            </svg>
+
+            {/* Daftar Komponen di Atas Kanvas yang Bisa Digeser (Draggable Nodes) */}
+            {nodesSaatIni.map((node) => {
+              const aktif = komponenTerpilih?.id === node.id;
               return (
-                <g key={kbl.id}>
-                  <path
-                    d={`M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`}
-                    stroke={kbl.warna}
-                    strokeWidth="3.5"
-                    fill="none"
-                    strokeDasharray={mode === "matlab" ? "6 3" : undefined}
+                <div
+                  key={node.id}
+                  style={{ left: `${node.x}px`, top: `${node.y}px` }}
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                    setIdKomponenTerpilih(node.id);
+                    if (modePasangKabelDariId && modePasangKabelDariId !== node.id) {
+                      setDaftarKabel({
+                        ...daftarKabel,
+                        [mode]: [
+                          ...kabelSaatIni,
+                          {
+                            id: "kbl-" + Date.now(),
+                            dariId: modePasangKabelDariId,
+                            keId: node.id,
+                            warna: "#34d399",
+                          },
+                        ],
+                      });
+                      setModePasangKabelDariId(null);
+                    } else {
+                      setSedangGeserId(node.id);
+                    }
+                  }}
+                  className={`absolute p-2.5 rounded-2xl cursor-move transition-shadow ${
+                    aktif
+                      ? "bg-slate-900/95 border-2 border-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.35)] z-20"
+                      : "bg-slate-900/85 border border-slate-700 hover:border-indigo-400 z-10"
+                  }`}
+                >
+                  <div className="flex justify-between items-center gap-2 mb-1">
+                    <span className="text-[10px] font-black text-amber-300 truncate max-w-[115px]">
+                      {node.label}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setModePasangKabelDariId(node.id);
+                      }}
+                      className="px-1.5 py-0.5 rounded bg-indigo-600/40 hover:bg-indigo-600 text-[9px] font-mono font-bold text-indigo-200 cursor-pointer"
+                      title="Sambungkan kabel dari komponen ini"
+                    >
+                      🔌 Pin
+                    </button>
+                  </div>
+
+                  <VisualKomponenRealistis
+                    tipe={node.tipe}
+                    nilaiResistor={node.nilaiResistor}
+                    nyala={node.nyala}
+                    nilaiSensor={node.nilaiSensor}
+                    ukuran="kanvas"
                   />
-                  <circle cx={x1} cy={y1} r="4.5" fill={kbl.warna} />
-                  <circle cx={x2} cy={y2} r="4.5" fill={kbl.warna} />
-                </g>
+                </div>
               );
             })}
-          </svg>
+          </div>
 
-          {/* Daftar Komponen di Atas Kanvas yang Bisa Digeser (Draggable Nodes) */}
-          {nodesSaatIni.map((node) => {
-            const aktif = komponenTerpilih?.id === node.id;
-            return (
-              <div
-                key={node.id}
-                style={{ left: `${node.x}px`, top: `${node.y}px` }}
-                onMouseDown={(e) => {
-                  e.stopPropagation();
-                  setIdKomponenTerpilih(node.id);
-                  if (modePasangKabelDariId && modePasangKabelDariId !== node.id) {
-                    setDaftarKabel({
-                      ...daftarKabel,
-                      [mode]: [
-                        ...kabelSaatIni,
-                        {
-                          id: "kbl-" + Date.now(),
-                          dariId: modePasangKabelDariId,
-                          keId: node.id,
-                          warna: "#34d399",
-                        },
-                      ],
-                    });
-                    setModePasangKabelDariId(null);
-                  } else {
-                    setSedangGeserId(node.id);
-                  }
-                }}
-                className={`absolute p-2.5 rounded-2xl cursor-move transition-shadow ${
-                  aktif
-                    ? "bg-slate-900/95 border-2 border-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.35)] z-20"
-                    : "bg-slate-900/80 border border-slate-700 hover:border-indigo-400 z-10"
-                }`}
+          <div className="absolute bottom-3 left-4 right-4 flex flex-wrap justify-between items-center text-[11px] font-mono text-slate-400 pointer-events-none bg-slate-950/80 px-3 py-1.5 rounded-xl border border-slate-800">
+            <span>
+              💡 Geser komponen secara bebas, klik [🔌 Pin] untuk menyambung kabel, atau ubah
+              ukuran kanvas di kanan atas.
+            </span>
+            <div className="flex items-center gap-3 pointer-events-auto">
+              <span>
+                Komponen: <b className="text-emerald-400">{nodesSaatIni.length}</b> | Kabel:{" "}
+                <b className="text-sky-400">{kabelSaatIni.length}</b>
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  setUkuranKanvas(ukuranKanvas === "penuh" ? "sedang" : "penuh")
+                }
+                className="text-amber-300 hover:underline flex items-center gap-1 cursor-pointer"
               >
-                <div className="flex justify-between items-center gap-2 mb-1">
-                  <span className="text-[10px] font-black text-amber-300 truncate max-w-[110px]">
-                    {node.label}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setModePasangKabelDariId(node.id);
-                    }}
-                    className="px-1.5 py-0.5 rounded bg-indigo-600/40 hover:bg-indigo-600 text-[9px] font-mono font-bold text-indigo-200 cursor-pointer"
-                    title="Sambungkan kabel dari komponen ini"
-                  >
-                    🔌 Pin
-                  </button>
-                </div>
-
-                <VisualKomponenRealistis
-                  tipe={node.tipe}
-                  nilaiResistor={node.nilaiResistor}
-                  nyala={node.nyala}
-                  nilaiSensor={node.nilaiSensor}
-                />
-              </div>
-            );
-          })}
-
-          <div className="absolute bottom-3 left-4 right-4 flex flex-wrap justify-between items-center text-[11px] font-mono text-slate-400 pointer-events-none">
-            <span>
-              💡 Tip: Klik &amp; tahan komponen untuk menggeser posisi, atau klik tombol [🔌 Pin]
-              untuk menarik kabel.
-            </span>
-            <span>
-              Komponen Aktif: {nodesSaatIni.length} | Kabel: {kabelSaatIni.length}
-            </span>
+                {ukuranKanvas === "penuh" ? (
+                  <>
+                    <Minimize2 className="w-3.5 h-3.5" /> Perkecil Kanvas
+                  </>
+                ) : (
+                  <>
+                    <Maximize2 className="w-3.5 h-3.5" /> Perluas Kanvas
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* PANEL KANAN (4 KOLOM): INSPEKTOR PROPERTI & KALKULATOR GELANG WARNA RESISTOR OTOMATIS */}
-        <div className="lg:col-span-4 bg-slate-950 p-5 rounded-3xl border border-slate-800 space-y-5">
+        {/* PANEL KANAN: INSPEKTOR PROPERTI & KALKULATOR GELANG WARNA RESISTOR OTOMATIS */}
+        <div
+          className={`${
+            ukuranKanvas === "penuh" ? "lg:col-span-12" : "lg:col-span-4"
+          } bg-slate-950 p-5 rounded-3xl border border-slate-800 space-y-5`}
+        >
           <div className="flex justify-between items-center border-b border-slate-800 pb-3">
             <span className="font-black text-xs uppercase text-emerald-400 flex items-center gap-1.5">
               <Sliders className="w-4 h-4" /> Inspector &amp; Pengaturan Komponen
@@ -594,7 +871,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({ mode }) => {
                 }}
                 className="px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-300 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
               >
-                <Trash2 className="w-3 h-3" /> Hapus
+                <Trash2 className="w-3 h-3" /> Hapus Komponen
               </button>
             )}
           </div>
@@ -633,7 +910,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({ mode }) => {
 
                   <div>
                     <div className="flex justify-between font-bold mb-1">
-                      <span>Ubah Nilai Hambatan (Ω):</span>
+                      <span>Ketik Nilai Hambatan (Ω):</span>
                       <span className="text-emerald-400 font-mono">
                         {komponenTerpilih.nilaiResistor || 1000} Ω
                       </span>
@@ -652,13 +929,12 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({ mode }) => {
                     />
                   </div>
 
-                  {/* Preset Cepat Nilai Resistor Standar */}
                   <div className="space-y-1">
                     <span className="text-[10px] text-slate-400 font-bold">
                       Klik Nilai Standar (Amati Perubahan Gelang Warna):
                     </span>
                     <div className="grid grid-cols-3 gap-1.5">
-                      {[220, 330, 470, 1000, 2200, 4700, 10000, 47000, 100000].map(
+                      {[100, 220, 330, 470, 1000, 2200, 4700, 10000, 47000].map(
                         (ohm) => (
                           <button
                             key={ohm}
@@ -687,7 +963,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({ mode }) => {
               {komponenTerpilih.tipe !== "resistor" && (
                 <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
                   <div className="flex justify-between items-center font-bold">
-                    <span>Parameter Nilai / Sensor:</span>
+                    <span>Parameter Nilai / Sensor / Tegangan:</span>
                     <span className="text-amber-300 font-mono">
                       {komponenTerpilih.nilaiSensor ?? 28}
                     </span>
@@ -714,7 +990,8 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({ mode }) => {
                     }
                     className="w-full py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black cursor-pointer"
                   >
-                    Status Logika / LED: {komponenTerpilih.nyala ? "HIGH (ON)" : "LOW (OFF)"}
+                    Status Logika / Aktuator:{" "}
+                    {komponenTerpilih.nyala ? "HIGH (AKTIF / NYALA)" : "LOW (MATI)"}
                   </button>
                 </div>
               )}
