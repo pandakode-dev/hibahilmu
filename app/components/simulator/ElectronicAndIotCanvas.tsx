@@ -6,7 +6,6 @@ import {
   Zap,
   Activity,
   Trash2,
-  PlusCircle,
   RotateCcw,
   Sliders,
   Move,
@@ -21,6 +20,8 @@ import {
   Info,
   Wifi,
   CornerDownRight,
+  Footprints,
+  Thermometer,
 } from "lucide-react";
 import {
   VisualKomponenRealistis,
@@ -93,29 +94,29 @@ const PALET_KOMPONEN: {
     { tipe: "stm32_bluepill", label: "STM32 BluePill (32p)", kategori: "Microcontroller" },
     { tipe: "raspberry_pico", label: "Raspberry Pi Pico (32p)", kategori: "Microcontroller" },
     {
-      tipe: "dht22",
-      label: "Sensor Suhu DHT22 (4p)",
-      kategori: "Sensor IoT",
-      defaultSensor: 29,
-    },
-    {
       tipe: "ultrasonik",
       label: "Ultrasonik HC-SR04 (4p)",
       kategori: "Sensor IoT",
       defaultSensor: 45,
     },
+    { tipe: "pir_sensor", label: "Sensor Gerak PIR (3p)", kategori: "Sensor IoT", defaultSensor: 85 },
+    {
+      tipe: "dht22",
+      label: "Sensor Suhu DHT22 (4p)",
+      kategori: "Sensor IoT",
+      defaultSensor: 34,
+    },
     {
       tipe: "mq2_gas",
       label: "Sensor Gas MQ-2 (4p)",
       kategori: "Sensor IoT",
-      defaultSensor: 320,
+      defaultSensor: 95,
     },
-    { tipe: "pir_sensor", label: "Sensor Gerak PIR (3p)", kategori: "Sensor IoT" },
     {
       tipe: "ldr_sensor",
       label: "Sensor Cahaya LDR (3p)",
       kategori: "Sensor IoT",
-      defaultSensor: 500,
+      defaultSensor: 120,
     },
     {
       tipe: "oled_display",
@@ -225,36 +226,56 @@ const PALET_KOMPONEN: {
   ],
 };
 
+// Rangkaian Awal Wokwi Lengkap dengan Ultrasonik (Orang Mendekat), PIR (Orang Melintas), DHT22 & Dual MCU
 const KOMPONEN_AWAL_PER_MODE: {
   [key in "wokwi" | "ewb" | "matlab"]: NodeKomponenKanvas[];
 } = {
   wokwi: [
-    { id: "wk-1", tipe: "esp32", label: "ESP32 Master (30p)", x: 35, y: 35, nyala: true },
+    { id: "wk-1", tipe: "esp32", label: "ESP32 Master (30p)", x: 25, y: 65, nyala: true },
     {
       id: "wk-2",
-      tipe: "arduino_uno",
-      label: "Arduino Uno Slave (28p)",
-      x: 470,
-      y: 35,
+      tipe: "ultrasonik",
+      label: "Ultrasonik HC-SR04",
+      x: 235,
+      y: 95,
+      nilaiSensor: 40,
       nyala: true,
     },
     {
       id: "wk-3",
-      tipe: "dht22",
-      label: "Sensor DHT22 (4p)",
-      x: 265,
-      y: 30,
-      nilaiSensor: 31,
+      tipe: "pir_sensor",
+      label: "Sensor Gerak PIR",
+      x: 410,
+      y: 95,
+      nilaiSensor: 85,
+      nyala: true,
     },
     {
       id: "wk-4",
+      tipe: "dht22",
+      label: "Sensor Suhu DHT22",
+      x: 560,
+      y: 75,
+      nilaiSensor: 35,
+      nyala: true,
+    },
+    {
+      id: "wk-5",
       tipe: "resistor",
       label: "R1 (330 Ω)",
-      x: 255,
-      y: 195,
+      x: 235,
+      y: 250,
       nilaiResistor: 330,
     },
-    { id: "wk-5", tipe: "led_hijau", label: "LED Indikator", x: 435, y: 185, nyala: true },
+    { id: "wk-6", tipe: "led_hijau", label: "LED Alarm", x: 420, y: 230, nyala: true },
+    {
+      id: "wk-7",
+      tipe: "arduino_uno",
+      label: "Arduino Uno Slave",
+      x: 535,
+      y: 230,
+      nyala: true,
+    },
   ],
   ewb: [
     { id: "ewb-1", tipe: "vcc_dc", label: "Sumber DC 12V", x: 35, y: 90, nilaiSensor: 12 },
@@ -284,61 +305,63 @@ const KOMPONEN_AWAL_PER_MODE: {
   ],
 };
 
-// Kabel Default Terhubung Tepat ke ID Pin Fisik (TX2 -> D0_RX, RX2 -> D1_TX, GPIO15 -> DATA, GPIO2 -> PIN_1)
 const KABEL_AWAL_PER_MODE: {
   [key in "wokwi" | "ewb" | "matlab"]: KabelKoneksiItem[];
 } = {
   wokwi: [
     {
-      id: "w-uart-1",
+      id: "w-ultra-trig",
       dariId: "wk-1",
-      pinAsal: "GPIO17", // TX2 di kanan ESP32
+      pinAsal: "GPIO12",
       keId: "wk-2",
-      pinTujuan: "D0_RX", // D0 (RX) di atas Arduino Uno
-      warna: "#22c55e",
-      titikSiku: [
-        { x: 225, y: 165 },
-        { x: 638, y: 15 },
-      ],
+      pinTujuan: "TRIG",
+      warna: "#38bdf8",
+      titikSiku: [{ x: 15, y: 200 }, { x: 296, y: 215 }],
     },
     {
-      id: "w-uart-2",
-      dariId: "wk-2",
-      pinAsal: "D1_TX", // D1 (TX) di atas Arduino Uno
+      id: "w-pir-out",
+      dariId: "wk-3",
+      pinAsal: "SIG",
       keId: "wk-1",
-      pinTujuan: "GPIO16", // RX2 di kanan ESP32
-      warna: "#facc15",
-      titikSiku: [
-        { x: 626, y: 25 },
-        { x: 235, y: 178 },
-      ],
+      pinTujuan: "GPIO4",
+      warna: "#ef4444",
+      titikSiku: [{ x: 467, y: 215 }, { x: 205, y: 198 }],
     },
     {
       id: "w-dht-data",
       dariId: "wk-1",
       pinAsal: "GPIO15",
-      keId: "wk-3",
-      pinTujuan: "DATA", // Kaki ke-2 bawah DHT22
+      keId: "wk-4",
+      pinTujuan: "DATA",
       warna: "#a855f7",
-      titikSiku: [{ x: 306, y: 215 }],
+      titikSiku: [{ x: 215, y: 224 }, { x: 601, y: 215 }],
     },
     {
       id: "w-led-1",
       dariId: "wk-1",
       pinAsal: "GPIO2",
-      keId: "wk-4",
-      pinTujuan: "PIN_1", // Kaki kiri resistor
-      warna: "#38bdf8",
-      titikSiku: [{ x: 225, y: 245 }],
+      keId: "wk-5",
+      pinTujuan: "PIN_1",
+      warna: "#22c55e",
+      titikSiku: [{ x: 205, y: 295 }],
     },
     {
       id: "w-led-2",
-      dariId: "wk-4",
-      pinAsal: "PIN_2", // Kaki kanan resistor
-      keId: "wk-5",
-      pinTujuan: "ANODA", // Kaki positif bawah LED
-      warna: "#ef4444",
-      titikSiku: [{ x: 420, y: 245 }],
+      dariId: "wk-5",
+      pinAsal: "PIN_2",
+      keId: "wk-6",
+      pinTujuan: "ANODA",
+      warna: "#facc15",
+      titikSiku: [{ x: 400, y: 335 }],
+    },
+    {
+      id: "w-uart-txrx",
+      dariId: "wk-1",
+      pinAsal: "GPIO17",
+      keId: "wk-7",
+      pinTujuan: "D0_RX",
+      warna: "#f97316",
+      titikSiku: [{ x: 215, y: 185 }, { x: 713, y: 225 }],
     },
   ],
   ewb: [
@@ -398,7 +421,6 @@ const KABEL_AWAL_PER_MODE: {
   ],
 };
 
-// Hitung koordinat absolut (x, y) suatu titik pin di kanvas
 function cariKoordinatPinAbsolut(
   node: NodeKomponenKanvas,
   idAtauNamaPin: string
@@ -410,7 +432,7 @@ function cariKoordinatPinAbsolut(
     ) || layout.pins[0];
   return {
     x: node.x + found.x,
-    y: node.y + found.y + 18, // +18px offset header label atas komponen
+    y: node.y + found.y + 18,
     pinObj: found,
   };
 }
@@ -485,7 +507,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
   );
   const [sedangGeserId, setSedangGeserId] = useState<string | null>(null);
 
-  // State Hover Titik Pin Fisik (Munculkan Nama & Keterangan saat Didekatkan)
   const [hoveredPinInfo, setHoveredPinInfo] = useState<{
     nodeLabel: string;
     pin: TitikPinFisik;
@@ -548,14 +569,19 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
   const kabelTerpilihObj =
     kabelSaatIni.find((k) => k.id === idKabelTerpilih) || null;
 
+  // Deteksi Sensor Fisik di Kanvas untuk Panel Kontrol Animasi Langsung
+  const nodeUltrasonik = nodesSaatIni.find((n) => n.tipe === "ultrasonik");
+  const nodePir = nodesSaatIni.find((n) => n.tipe === "pir_sensor");
+  const nodeDht = nodesSaatIni.find((n) => n.tipe === "dht22");
+
   const tinggiKanvasPx =
     ukuranKanvas === "kecil"
-      ? "h-[360px]"
+      ? "h-[380px]"
       : ukuranKanvas === "sedang"
-      ? "h-[480px]"
+      ? "h-[500px]"
       : ukuranKanvas === "besar"
-      ? "h-[600px]"
-      : "h-[780px]";
+      ? "h-[620px]"
+      : "h-[800px]";
 
   const tambahKomponenKeKanvas = (
     tipe: string,
@@ -570,9 +596,9 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
       tipe,
       label: `${label.split(" (")[0]} #${nodesSaatIni.length + 1}`,
       x: Math.max(15, Math.min(580, xPos)),
-      y: Math.max(15, Math.min(380, yPos)),
+      y: Math.max(45, Math.min(380, yPos)),
       nilaiResistor: defaultResistor ?? (tipe === "resistor" ? 1000 : undefined),
-      nilaiSensor: defaultSensor ?? 25,
+      nilaiSensor: defaultSensor ?? 35,
       nyala: true,
     };
     setDaftarNode({
@@ -641,7 +667,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
 
     if (sedangGeserId) {
       const xBaru = Math.max(10, mouseX - 65);
-      const yBaru = Math.max(10, mouseY - 40);
+      const yBaru = Math.max(25, mouseY - 40);
       setDaftarNode({
         ...daftarNode,
         [mode]: nodesSaatIni.map((n) =>
@@ -753,11 +779,11 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
             )}
             <div>
               <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded bg-emerald-500 text-slate-950">
-                Exact Pin-Pad Schematic Engine • 30-Pin ESP32 &amp; 28-Pin Arduino
+                Real-Time Sensor Physics &amp; Exact Pin-Pad Engine
               </span>
               <h3 className="font-black text-base sm:text-lg text-white mt-0.5">
                 {mode === "wokwi"
-                  ? "Wokwi IoT Studio — Dekatkan Kursor ke Titik Pin Komponen untuk Melihat Nama Pin & Menarik Kabel"
+                  ? "Wokwi IoT Studio — Animasi Gelombang Ultrasonik, Sensor Gerak PIR, Suhu DHT22 & 30-Pin ESP32"
                   : mode === "ewb"
                   ? "EWB (Electronics Workbench) — Rangkaian RLC, Resistor 4-Gelang & Pin Fisik"
                   : "MATLAB Simulink — Diagram Blok Sistem Kendali PID"}
@@ -870,7 +896,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                 type="text"
                 value={cariKomponen}
                 onChange={(e) => setCariKomponen(e.target.value)}
-                placeholder="Cari ESP32, Arduino, DHT22, Resistor..."
+                placeholder="Cari ESP32, Ultrasonik, PIR, DHT22..."
                 className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-400"
               />
             </div>
@@ -942,6 +968,97 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
             })}
           </div>
         </div>
+
+        {/* ====================================================================
+            PANEL SIMULASI LINGKUNGAN FISIK INTERAKTIF (ORANG MENDEKAT ULTRASONIK, PIR & SUHU)
+           ==================================================================== */}
+        {mode === "wokwi" && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-emerald-950/30 border border-emerald-500/30 p-4 rounded-3xl text-xs">
+            {nodeUltrasonik && (
+              <div className="p-3 rounded-2xl bg-slate-950/90 border border-slate-800 space-y-1.5">
+                <div className="flex justify-between items-center font-black text-sky-300">
+                  <span className="flex items-center gap-1.5">
+                    🚶 Dekatkan Orang ke Ultrasonik:
+                  </span>
+                  <span className="text-amber-300 font-mono">
+                    {nodeUltrasonik.nilaiSensor ?? 40} cm
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={5}
+                  max={180}
+                  value={nodeUltrasonik.nilaiSensor ?? 40}
+                  onChange={(e) =>
+                    updatePropertiKomponen(nodeUltrasonik.id, {
+                      nilaiSensor: Number(e.target.value),
+                    })
+                  }
+                  className="w-full accent-sky-400 cursor-pointer"
+                />
+                <div className="text-[10px] text-slate-400">
+                  Geser ke kiri (&lt;35 cm) untuk melihat objek mendekat &amp; gelombang sonar merah!
+                </div>
+              </div>
+            )}
+
+            {nodePir && (
+              <div className="p-3 rounded-2xl bg-slate-950/90 border border-slate-800 space-y-1.5">
+                <div className="flex justify-between items-center font-black text-emerald-300">
+                  <span className="flex items-center gap-1.5">
+                    <Footprints className="w-3.5 h-3.5" /> Gerakkan Orang di Depan PIR:
+                  </span>
+                  <span className="text-rose-400 font-mono">
+                    {(nodePir.nilaiSensor ?? 85) >= 30 && (nodePir.nilaiSensor ?? 85) <= 150
+                      ? "TERDETEKSI!"
+                      : "AMAN"}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={180}
+                  value={nodePir.nilaiSensor ?? 85}
+                  onChange={(e) =>
+                    updatePropertiKomponen(nodePir.id, {
+                      nilaiSensor: Number(e.target.value),
+                    })
+                  }
+                  className="w-full accent-emerald-400 cursor-pointer"
+                />
+                <div className="text-[10px] text-slate-400">
+                  Geser posisi orang melintasi kerucut inframerah PIR di kanvas!
+                </div>
+              </div>
+            )}
+
+            {nodeDht && (
+              <div className="p-3 rounded-2xl bg-slate-950/90 border border-slate-800 space-y-1.5">
+                <div className="flex justify-between items-center font-black text-amber-300">
+                  <span className="flex items-center gap-1.5">
+                    <Thermometer className="w-3.5 h-3.5" /> Panaskan / Dinginkan Suhu DHT22:
+                  </span>
+                  <span className="font-mono">{nodeDht.nilaiSensor ?? 35}°C</span>
+                </div>
+                <input
+                  type="range"
+                  min={10}
+                  max={50}
+                  value={nodeDht.nilaiSensor ?? 35}
+                  onChange={(e) =>
+                    updatePropertiKomponen(nodeDht.id, {
+                      nilaiSensor: Number(e.target.value),
+                    })
+                  }
+                  className="w-full accent-amber-400 cursor-pointer"
+                />
+                <div className="text-[10px] text-slate-400">
+                  &gt;=33°C memunculkan uap panas 🔥, &lt;=20°C memunculkan kristal es ❄️!
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* BAR PILIH WARNA KABEL & INDIKATOR PIN YANG SEDANG DIDEKATI (HOVER) */}
         <div className="bg-slate-950/95 p-3.5 rounded-3xl border border-indigo-500/30 flex flex-wrap justify-between items-center gap-3 text-xs">
@@ -1067,7 +1184,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                 width: `${100 / skalaZoom}%`,
                 height: `${100 / skalaZoom}%`,
               }}
-              className="relative w-full h-full min-w-[740px] min-h-[420px]"
+              className="relative w-full h-full min-w-[760px] min-h-[440px]"
             >
               {/* LAYER SVG GARIS KABEL SIKU ORTHOGONAL TEPAT DARI TITIK PIN KE TITIK PIN */}
               <svg className="absolute inset-0 w-full h-full z-20 pointer-events-none">
@@ -1201,7 +1318,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                       aktif ? "ring-2 ring-emerald-400/80 z-10" : "z-10"
                     }`}
                   >
-                    {/* Header Label Kecil di Atas Komponen */}
                     <div className="h-[18px] px-2 flex justify-between items-center bg-slate-900/90 rounded-t-xl border-x border-t border-slate-700 text-[9.5px] font-black text-amber-300 truncate">
                       <span className="truncate">{node.label}</span>
                       <span className="text-[8px] font-mono text-slate-400 shrink-0 ml-1">
@@ -1209,7 +1325,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                       </span>
                     </div>
 
-                    {/* Area Bodi SVG + Titik-Titik Pin Fisik Presisi */}
                     <div
                       style={{
                         width: `${layout.lebar}px`,
@@ -1225,7 +1340,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                         ukuran="kanvas"
                       />
 
-                      {/* RENDER SEMUA TITIK PIN FISIK (30 TITIK ESP32, 28 ARDUINO, 4 BAWAH DHT22, DLL) */}
                       {layout.pins.map((pin) => {
                         const sedangAsal =
                           sedangTarikKabelDariPin?.nodeId === node.id &&
@@ -1257,7 +1371,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                               const absY = node.y + pin.y + 18;
 
                               if (!sedangTarikKabelDariPin) {
-                                // Otomatis sesuaikan warna kabel jika klik pin VCC atau GND
                                 if (pin.kategori === "POWER") setWarnaKabelAktif("#ef4444");
                                 else if (pin.kategori === "GND") setWarnaKabelAktif("#94a3b8");
                                 else if (pin.kategori === "UART") setWarnaKabelAktif("#22c55e");
@@ -1298,7 +1411,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
           <div
             className={`${
               ukuranKanvas === "penuh" ? "lg:col-span-12" : "lg:col-span-4"
-            } bg-slate-950 p-5 rounded-3xl border border-slate-800 space-y-5 max-h-[600px] overflow-y-auto`}
+            } bg-slate-950 p-5 rounded-3xl border border-slate-800 space-y-5 max-h-[620px] overflow-y-auto`}
           >
             <div className="flex justify-between items-center border-b border-slate-800 pb-3">
               <span className="font-black text-xs uppercase text-emerald-400 flex items-center gap-1.5">
@@ -1339,7 +1452,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                   />
                 </div>
 
-                {/* JIKA RESISTOR: EDITOR OHM & GELANG WARNA */}
                 {komponenTerpilih.tipe === "resistor" ? (
                   <div className="p-4 rounded-2xl bg-slate-900 border border-amber-500/40 space-y-3">
                     <div className="font-black text-amber-300 uppercase text-[11px]">
@@ -1381,16 +1493,24 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                     </div>
                   </div>
                 ) : (
-                  <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
+                  <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2.5">
                     <div className="flex justify-between font-bold">
-                      <span>Nilai Sensor / Sudut / Tegangan:</span>
+                      <span>
+                        {komponenTerpilih.tipe === "ultrasonik"
+                          ? "Jarak Objek / Orang di Depan Sensor:"
+                          : komponenTerpilih.tipe === "pir_sensor"
+                          ? "Posisi Orang Melintas di Depan PIR:"
+                          : komponenTerpilih.tipe === "dht22"
+                          ? "Suhu Lingkungan Sensor DHT22:"
+                          : "Nilai Sensor / Sudut / Tegangan:"}
+                      </span>
                       <span className="text-amber-300 font-mono">
                         {komponenTerpilih.nilaiSensor ?? 28}
                       </span>
                     </div>
                     <input
                       type="range"
-                      min={0}
+                      min={2}
                       max={180}
                       value={komponenTerpilih.nilaiSensor ?? 28}
                       onChange={(e) =>
@@ -1400,10 +1520,21 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                       }
                       className="w-full accent-emerald-400 cursor-pointer"
                     />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updatePropertiKomponen(komponenTerpilih.id, {
+                          nyala: !komponenTerpilih.nyala,
+                        })
+                      }
+                      className="w-full py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black cursor-pointer"
+                    >
+                      Status Aktif: {komponenTerpilih.nyala ? "HIGH (MENYALA)" : "LOW (MATI)"}
+                    </button>
                   </div>
                 )}
 
-                {/* TABEL REFERENSI PINOUT TERPISAH (SEMUA 30 PIN ESP32 / 28 PIN ARDUINO / 4 PIN SENSOR) */}
+                {/* TABEL REFERENSI PINOUT TERPISAH */}
                 <div className="p-3.5 rounded-2xl bg-indigo-950/30 border border-indigo-500/30 space-y-2.5">
                   <div className="flex justify-between items-center">
                     <span className="font-black text-indigo-300 uppercase text-[11px] flex items-center gap-1">
@@ -1455,7 +1586,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
               </div>
             )}
 
-            {/*Ringkasan Multimeter*/}
             <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1.5 text-xs font-mono">
               <div className="text-[10px] font-black uppercase text-indigo-300 flex items-center gap-1">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Multimeter Rangkaian
@@ -1473,7 +1603,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
         </div>
       </div>
 
-      {/* PANEL DASHBOARD IOT CLOUD: DUAL-MCU UART BRIDGE, BLYNK TOKEN, MQTT & WIFI */}
+      {/* PANEL DASHBOARD IOT CLOUD: DRAG & DROP BLYNK STUDIO, DUAL-MCU UART, MQTT & WIFI */}
       {mode === "wokwi" && bukaDashboardIot && (
         <IotCloudBlynkPanel
           nodesKanvas={nodesSaatIni}

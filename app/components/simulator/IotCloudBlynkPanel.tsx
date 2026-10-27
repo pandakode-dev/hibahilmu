@@ -16,12 +16,15 @@ import {
   Code2,
   Cpu,
   ArrowLeftRight,
+  PlusCircle,
+  Trash2,
+  Move,
+  BarChart3,
+  Terminal,
+  Bell,
 } from "lucide-react";
 import { NodeKomponenKanvas } from "./ElectronicAndIotCanvas";
 
-// ============================================================================
-// DATABASE SPESIFIKASI PINOUT & PENJELASAN KOMPONEN LENGKAP (TERMASUK DUAL MCU TX/RX)
-// ============================================================================
 export interface InfoPinoutKomponen {
   jumlahPin: number;
   daftarPin: string[];
@@ -47,136 +50,17 @@ export const SPESIFIKASI_PIN_KOMPONEN: { [tipe: string]: InfoPinoutKomponen } = 
       "GND",
     ],
     fungsiSingkat:
-      "Mikrokontroler Dual-Core 32-bit WiFi + BLE. Mendukung 3 port Hardware Serial (UART) untuk komunikasi TX/RX dengan Arduino atau STM32.",
+      "Mikrokontroler Dual-Core 32-bit WiFi + BLE (30 Pin: 15 Kiri & 15 Kanan).",
     panduanKoneksi: [
       {
         namaPin: "TX2 (GPIO17) & RX2 (GPIO16)",
         fungsiDanTujuan:
-          "Komunikasi Serial Antar-MCU → Hubungkan silang TX2 ESP32 ke RX (D0) Arduino, dan RX2 ESP32 ke TX (D1) Arduino.",
+          "Komunikasi Serial Antar-MCU → Hubungkan silang TX2 ke D0(RX) Arduino & RX2 ke D1(TX) Arduino.",
       },
       {
-        namaPin: "3V3 / VIN & GND",
-        fungsiDanTujuan:
-          "Wajib satukan jalur GND (Common Ground) saat menghubungkan 2 mikrokontroler berbeda.",
+        namaPin: "GPIO15 & GPIO18",
+        fungsiDanTujuan: "GPIO15 ke DATA DHT22 | GPIO18 ke PWM Motor Servo SG90.",
       },
-      {
-        namaPin: "GPIO21 (SDA) & GPIO22 (SCL)",
-        fungsiDanTujuan: "Bus I2C → Hubungkan ke layar OLED SSD1306 atau LCD 16x2.",
-      },
-    ],
-  },
-  arduino_uno: {
-    jumlahPin: 28,
-    daftarPin: [
-      "D0 (RX)",
-      "D1 (TX)",
-      "D2",
-      "D3 (PWM)",
-      "D8",
-      "D9 (Servo)",
-      "D10 (SS)",
-      "D13 (LED)",
-      "A0 (ADC)",
-      "A4 (SDA)",
-      "A5 (SCL)",
-      "5V",
-      "GND",
-    ],
-    fungsiSingkat:
-      "Board ATmega328P standar. Dapat menjadi Slave/Sensor Node yang mengirim data ke ESP32 melalui jalur UART D1(TX) ↔ RX2 ESP32.",
-    panduanKoneksi: [
-      {
-        namaPin: "D1 (TX) → RX Mikrokontroler Lain",
-        fungsiDanTujuan:
-          "Mengirimkan paket data serial (Serial.println) menuju pin RX pada ESP32/STM32.",
-      },
-      {
-        namaPin: "D0 (RX) ← TX Mikrokontroler Lain",
-        fungsiDanTujuan:
-          "Menerima perintah serial (Serial.readString) dari pin TX pada ESP32/STM32.",
-      },
-      {
-        namaPin: "GND (Common Ground)",
-        fungsiDanTujuan: "Wajib disambungkan ke pin GND mikrokontroler pasangan.",
-      },
-    ],
-  },
-  esp8266_nodemcu: {
-    jumlahPin: 30,
-    daftarPin: ["TX (GPIO1)", "RX (GPIO3)", "D1 (SCL)", "D2 (SDA)", "D4 (LED)", "D5", "D6", "D7", "A0", "3V3", "GND"],
-    fungsiSingkat: "Modul WiFi SoC ESP8266 untuk node telemetri IoT ringan dan komunikasi serial.",
-    panduanKoneksi: [
-      { namaPin: "TX & RX", fungsiDanTujuan: "Hubungkan silang (Cross-over: TX → RX, RX → TX) ke mikrokontroler kedua." },
-      { namaPin: "D1 (SCL) & D2 (SDA)", fungsiDanTujuan: "Jalur komunikasi I2C untuk sensor dan layar OLED." },
-    ],
-  },
-  stm32_bluepill: {
-    jumlahPin: 40,
-    daftarPin: ["PA9 (TX1)", "PA10 (RX1)", "PB6 (SCL)", "PB7 (SDA)", "PA0 (ADC)", "PC13 (LED)", "3.3V", "GND"],
-    fungsiSingkat: "Mikrokontroler ARM Cortex-M3 72MHz berkecepatan tinggi dengan 3 port USART.",
-    panduanKoneksi: [
-      { namaPin: "PA9 (TX1) & PA10 (RX1)", fungsiDanTujuan: "Port UART1 utama untuk komunikasi dengan ESP32 atau PC." },
-      { namaPin: "PB6 & PB7", fungsiDanTujuan: "Port komunikasi I2C1." },
-    ],
-  },
-  raspberry_pico: {
-    jumlahPin: 40,
-    daftarPin: ["GP0 (UART0 TX)", "GP1 (UART0 RX)", "GP4 (SDA)", "GP5 (SCL)", "GP15 (PWM)", "GP25 (LED)", "3V3", "GND"],
-    fungsiSingkat: "Mikrokontroler Dual ARM Cortex-M0+ RP2040 dengan dukungan MicroPython & C/C++.",
-    panduanKoneksi: [
-      { namaPin: "GP0 (TX) & GP1 (RX)", fungsiDanTujuan: "Komunikasi serial UART0 kecepatan tinggi antar board." },
-    ],
-  },
-  resistor: {
-    jumlahPin: 2,
-    daftarPin: ["Pin 1 (Kaki Kiri)", "Pin 2 (Kaki Kanan)"],
-    fungsiSingkat: "Komponen pasif penghambat arus listrik dan pembagi tegangan sesuai 4 gelang warna.",
-    panduanKoneksi: [
-      { namaPin: "Pin 1 (Kaki Kiri)", fungsiDanTujuan: "Hubungkan ke sumber sinyal GPIO atau VCC." },
-      { namaPin: "Pin 2 (Kaki Kanan)", fungsiDanTujuan: "Hubungkan secara seri ke Anoda LED atau beban." },
-    ],
-  },
-  led_hijau: {
-    jumlahPin: 2,
-    daftarPin: ["Anoda (+)", "Katoda (- / GND)"],
-    fungsiSingkat: "Dioda pemancar cahaya indikator status logika HIGH (Nyala).",
-    panduanKoneksi: [
-      { namaPin: "Anoda (+)", fungsiDanTujuan: "Hubungkan ke Pin GPIO melalui Resistor 220Ω - 330Ω." },
-      { namaPin: "Katoda (-)", fungsiDanTujuan: "Hubungkan ke jalur GND (0V)." },
-    ],
-  },
-  led_merah: {
-    jumlahPin: 2,
-    daftarPin: ["Anoda (+)", "Katoda (- / GND)"],
-    fungsiSingkat: "LED indikator peringatan/alarm.",
-    panduanKoneksi: [
-      { namaPin: "Anoda (+)", fungsiDanTujuan: "Hubungkan ke output GPIO melalui resistor." },
-      { namaPin: "Katoda (-)", fungsiDanTujuan: "Hubungkan ke GND." },
-    ],
-  },
-  dht22: {
-    jumlahPin: 4,
-    daftarPin: ["1: VCC (3.3V-5V)", "2: DATA (SDA)", "3: NC", "4: GND"],
-    fungsiSingkat: "Sensor digital presisi tinggi pengukur suhu (°C) dan kelembapan (%RH).",
-    panduanKoneksi: [
-      { namaPin: "Pin 1 (VCC) & Pin 4 (GND)", fungsiDanTujuan: "Catudaya 3.3V/5V dan Ground." },
-      { namaPin: "Pin 2 (DATA)", fungsiDanTujuan: "Hubungkan ke GPIO15 (ESP32) atau D2 (Arduino)." },
-    ],
-  },
-  ultrasonik: {
-    jumlahPin: 4,
-    daftarPin: ["VCC (5V)", "TRIG (Trigger)", "ECHO (Receive)", "GND"],
-    fungsiSingkat: "Sensor pengukur jarak benda (2 cm – 400 cm) berbasis gelombang ultrasonik.",
-    panduanKoneksi: [
-      { namaPin: "TRIG & ECHO", fungsiDanTujuan: "Hubungkan TRIG ke GPIO12/D8 dan ECHO ke GPIO13/D9." },
-    ],
-  },
-  servo: {
-    jumlahPin: 3,
-    daftarPin: ["PWM (Kuning)", "VCC 5V (Merah)", "GND (Cokelat)"],
-    fungsiSingkat: "Motor aktuator presisi sudut 0°–180° dengan kendali pulsa PWM.",
-    panduanKoneksi: [
-      { namaPin: "PWM", fungsiDanTujuan: "Hubungkan ke pin PWM (GPIO18 ESP32 / D9 Arduino)." },
     ],
   },
 };
@@ -188,12 +72,103 @@ export function ambilInfoPinKomponen(tipe: string): InfoPinoutKomponen {
       daftarPin: ["VCC (+)", "IN / DATA", "OUT / PWM", "GND (-)"],
       fungsiSingkat: "Komponen modul fungsional dalam simulasi rangkaian elektronika & IoT.",
       panduanKoneksi: [
-        { namaPin: "VCC & GND", fungsiDanTujuan: "Hubungkan ke sumber tegangan positif dan Ground (0V)." },
-        { namaPin: "IN / OUT", fungsiDanTujuan: "Hubungkan ke pin GPIO mikrokontroler atau instrumen ukur." },
+        {
+          namaPin: "VCC & GND",
+          fungsiDanTujuan: "Hubungkan ke sumber tegangan positif dan Ground (0V).",
+        },
       ],
     }
   );
 }
+
+// ============================================================================
+// TIPE DATA WIDGET BLYNK DRAG-AND-DROP BUILDER
+// ============================================================================
+export type TipeWidgetBlynk =
+  | "gauge"
+  | "switch"
+  | "slider"
+  | "superchart"
+  | "led_status"
+  | "lcd_terminal"
+  | "alarm_notif";
+
+export interface WidgetBlynkItem {
+  id: string;
+  tipe: TipeWidgetBlynk;
+  judul: string;
+  virtualPin: string; // V0, V1, V2, V3, V4, V5, dst.
+  satuan: string;
+  warna: "emerald" | "amber" | "sky" | "indigo" | "rose";
+  targetTipeKomponen: string; // dht22, ultrasonik, led_hijau, servo, pir_sensor, mq2_gas
+}
+
+const KATALOG_GUDANG_WIDGET_BLYNK: Omit<WidgetBlynkItem, "id">[] = [
+  {
+    tipe: "gauge",
+    judul: "Gauge Suhu DHT22",
+    virtualPin: "V0",
+    satuan: "°C",
+    warna: "amber",
+    targetTipeKomponen: "dht22",
+  },
+  {
+    tipe: "gauge",
+    judul: "Radar Jarak Ultrasonik",
+    virtualPin: "V1",
+    satuan: "cm",
+    warna: "sky",
+    targetTipeKomponen: "ultrasonik",
+  },
+  {
+    tipe: "switch",
+    judul: "Sakelar IoT LED / Relay",
+    virtualPin: "V2",
+    satuan: "BOOL",
+    warna: "emerald",
+    targetTipeKomponen: "led_hijau",
+  },
+  {
+    tipe: "slider",
+    judul: "Slider Sudut Servo SG90",
+    virtualPin: "V3",
+    satuan: "°",
+    warna: "indigo",
+    targetTipeKomponen: "servo",
+  },
+  {
+    tipe: "superchart",
+    judul: "SuperChart Live Telemetry",
+    virtualPin: "V4",
+    satuan: "Grafik",
+    warna: "emerald",
+    targetTipeKomponen: "dht22",
+  },
+  {
+    tipe: "led_status",
+    judul: "Indikator Sensor PIR",
+    virtualPin: "V5",
+    satuan: "MOTION",
+    warna: "rose",
+    targetTipeKomponen: "pir_sensor",
+  },
+  {
+    tipe: "lcd_terminal",
+    judul: "Blynk LCD 16x2 Serial",
+    virtualPin: "V6",
+    satuan: "TEXT",
+    warna: "sky",
+    targetTipeKomponen: "oled_display",
+  },
+  {
+    tipe: "alarm_notif",
+    judul: "Detektor Gas & Asap MQ-2",
+    virtualPin: "V7",
+    satuan: "ppm",
+    warna: "rose",
+    targetTipeKomponen: "mq2_gas",
+  },
+];
 
 interface IotCloudBlynkProps {
   nodesKanvas: NodeKomponenKanvas[];
@@ -244,26 +219,116 @@ export const IotCloudBlynkPanel: React.FC<IotCloudBlynkProps> = ({
     },
   ]);
 
-  // Deteksi jumlah mikrokontroler di kanvas untuk fitur Dual-MCU UART Bridge
+  // STATE KANVAS DRAG-AND-DROP DASHBOARD BLYNK
+  const [daftarWidgetBlynk, setDaftarWidgetBlynk] = useState<WidgetBlynkItem[]>([
+    {
+      id: "bw-1",
+      tipe: "gauge",
+      judul: "Gauge Suhu DHT22",
+      virtualPin: "V0",
+      satuan: "°C",
+      warna: "amber",
+      targetTipeKomponen: "dht22",
+    },
+    {
+      id: "bw-2",
+      tipe: "gauge",
+      judul: "Radar Jarak Ultrasonik",
+      virtualPin: "V1",
+      satuan: "cm",
+      warna: "sky",
+      targetTipeKomponen: "ultrasonik",
+    },
+    {
+      id: "bw-3",
+      tipe: "switch",
+      judul: "Sakelar IoT LED / Relay",
+      virtualPin: "V2",
+      satuan: "BOOL",
+      warna: "emerald",
+      targetTipeKomponen: "led_hijau",
+    },
+    {
+      id: "bw-4",
+      tipe: "slider",
+      judul: "Slider Sudut Servo SG90",
+      virtualPin: "V3",
+      satuan: "°",
+      warna: "indigo",
+      targetTipeKomponen: "servo",
+    },
+    {
+      id: "bw-5",
+      tipe: "superchart",
+      judul: "SuperChart Live Telemetry",
+      virtualPin: "V4",
+      satuan: "Grafik",
+      warna: "emerald",
+      targetTipeKomponen: "dht22",
+    },
+  ]);
+  const [indeksDragWidget, setIndeksDragWidget] = useState<number | null>(null);
+  const [idWidgetDiedit, setIdWidgetDiedit] = useState<string | null>(null);
+
   const daftarMcuDiKanvas = nodesKanvas.filter((n) =>
     ["esp32", "arduino_uno", "esp8266_nodemcu", "stm32_bluepill", "raspberry_pico"].includes(
       n.tipe
     )
   );
-  const pesanUartInputDefault = "DATA_SENSOR:SUHU=31.5;JARAK=42;STATUS=OK";
-  const [pesanUartTxRx, setPesanUartTxRx] = useState(pesanUartInputDefault);
-
-  const nodeDht = nodesKanvas.find((n) => n.tipe === "dht22");
-  const nodeUltrasonik = nodesKanvas.find((n) => n.tipe === "ultrasonik");
-  const nodeLedHijau = nodesKanvas.find(
-    (n) => n.tipe === "led_hijau" || n.tipe === "led_merah" || n.tipe === "relay_5v"
+  const [pesanUartTxRx, setPesanUartTxRx] = useState(
+    "DATA_SENSOR:SUHU=31.5;JARAK=42;STATUS=OK"
   );
-  const nodeServo = nodesKanvas.find((n) => n.tipe === "servo");
 
-  const suhuAktual = nodeDht?.nilaiSensor ?? 31;
-  const jarakAktual = nodeUltrasonik?.nilaiSensor ?? 45;
-  const statusAktuatorNyala = nodeLedHijau?.nyala ?? true;
-  const sudutServoAktual = nodeServo?.nilaiSensor ?? 90;
+  const cariNodeTerkaitWidget = (targetTipe: string) => {
+    if (targetTipe === "led_hijau") {
+      return (
+        nodesKanvas.find(
+          (n) =>
+            n.tipe === "led_hijau" ||
+            n.tipe === "led_merah" ||
+            n.tipe === "led_kuning" ||
+            n.tipe === "buzzer"
+        ) || nodesKanvas[0]
+      );
+    }
+    return nodesKanvas.find((n) => n.tipe === targetTipe) || nodesKanvas[0];
+  };
+
+  const tambahWidgetKeBlynk = (item: Omit<WidgetBlynkItem, "id">) => {
+    const baru: WidgetBlynkItem = {
+      ...item,
+      id: "bw-" + Date.now() + "-" + Math.floor(Math.random() * 100),
+      virtualPin: `V${daftarWidgetBlynk.length}`,
+    };
+    setDaftarWidgetBlynk([...daftarWidgetBlynk, baru]);
+  };
+
+  const handleDropWidgetBaruAtauUrutkan = (
+    e: React.DragEvent<HTMLDivElement>,
+    targetIndex?: number
+  ) => {
+    e.preventDefault();
+    const rawBaru = e.dataTransfer.getData("application/blynk-new-widget");
+    if (rawBaru) {
+      try {
+        const item = JSON.parse(rawBaru);
+        tambahWidgetKeBlynk(item);
+      } catch {}
+      return;
+    }
+
+    if (
+      indeksDragWidget !== null &&
+      targetIndex !== undefined &&
+      indeksDragWidget !== targetIndex
+    ) {
+      const salinan = [...daftarWidgetBlynk];
+      const [dipindah] = salinan.splice(indeksDragWidget, 1);
+      salinan.splice(targetIndex, 0, dipindah);
+      setDaftarWidgetBlynk(salinan);
+      setIndeksDragWidget(null);
+    }
+  };
 
   const generateTokenBlynkBaru = () => {
     const acak =
@@ -285,17 +350,18 @@ export const IotCloudBlynkPanel: React.FC<IotCloudBlynkProps> = ({
       },
       ...logMqttMessages,
     ]);
-    if (nodeLedHijau) {
+    const nodeLed = cariNodeTerkaitWidget("led_hijau");
+    if (nodeLed) {
       if (
         payloadMqttInput.toUpperCase().includes("OFF") ||
         payloadMqttInput.includes(":0")
       ) {
-        onUpdateNodeDariCloud(nodeLedHijau.id, { nyala: false });
+        onUpdateNodeDariCloud(nodeLed.id, { nyala: false });
       } else if (
         payloadMqttInput.toUpperCase().includes("ON") ||
         payloadMqttInput.includes(":1")
       ) {
-        onUpdateNodeDariCloud(nodeLedHijau.id, { nyala: true });
+        onUpdateNodeDariCloud(nodeLed.id, { nyala: true });
       }
     }
   };
@@ -316,8 +382,15 @@ export const IotCloudBlynkPanel: React.FC<IotCloudBlynkProps> = ({
   };
 
   const handleGenerateKodeLengkapIot = () => {
+    const daftarPinCode = daftarWidgetBlynk
+      .map(
+        (w) =>
+          `  // Widget ${w.judul} (${w.virtualPin})\n  Blynk.virtualWrite(${w.virtualPin}, analogRead(34));`
+      )
+      .join("\n");
+
     const kodeLengkap = `// ============================================================================
-// KODE DUAL-MCU (UART TX/RX) + WIFI + BLYNK CLOUD TOKEN + MQTT BROKER ESP32
+// KODE OTOMATIS ESP32: DUAL-MCU UART + WIFI + BLYNK DRAG & DROP + MQTT BROKER
 // ============================================================================
 #define BLYNK_TEMPLATE_ID   "${blynkTemplateId}"
 #define BLYNK_TEMPLATE_NAME "${blynkTemplateName}"
@@ -327,8 +400,8 @@ export const IotCloudBlynkPanel: React.FC<IotCloudBlynkProps> = ({
 #include <WebServer.h>
 #include <PubSubClient.h>
 
-#define RXD2 16 // Terhubung ke Pin TX (D1) Mikrokontroler Kedua (Arduino/STM32)
-#define TXD2 17 // Terhubung ke Pin RX (D0) Mikrokontroler Kedua (Arduino/STM32)
+#define RXD2 16 // Terhubung ke Pin D1 (TX) Arduino Uno
+#define TXD2 17 // Terhubung ke Pin D0 (RX) Arduino Uno
 
 const char* WIFI_SSID     = "${wifiSsid}";
 const char* WIFI_PASSWORD = "${wifiPassword}";
@@ -336,24 +409,20 @@ const char* MQTT_BROKER   = "${mqttBrokerUrl}";
 
 void setup() {
   Serial.begin(115200);
-  Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2); // Inisialisasi UART Antar-MCU
+  Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   Serial.println("WiFi Terhubung ke IP: http://${ipLocalWeb}:${portLocalWeb}");
-  Serial.println("UART Bridge Aktif antara: ${daftarMcuDiKanvas.map((m) => m.label).join(" <-> ")}");
 }
 
 void loop() {
-  if (Serial2.available()) {
-    String dataDariArduino = Serial2.readStringUntil('\\n');
-    Serial.println("[UART RX2 Diterima]: " + dataDariArduino);
-  }
+${daftarPinCode}
   Serial2.println("${pesanUartTxRx}");
   delay(2000);
 }`;
     if (onGenerateKodeIotKeEditor) {
       onGenerateKodeIotKeEditor(kodeLengkap);
       alert(
-        "✓ Kode Dual-MCU UART (TX/RX) + WiFi + Blynk Token + MQTT berhasil dimasukkan ke Code Editor!"
+        "✓ Kode C++ ESP32 (Semua Widget Virtual Pin Blynk + Dual-MCU UART + MQTT) berhasil dimasukkan ke Code Editor!"
       );
     } else {
       navigator.clipboard?.writeText(kodeLengkap);
@@ -368,11 +437,10 @@ void loop() {
           <Cpu className="w-6 h-6 text-emerald-400" />
           <div>
             <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded bg-emerald-400 text-slate-950">
-              Dual-MCU UART Bridge, MQTT Broker &amp; Blynk Cloud Studio
+              Drag &amp; Drop Blynk IoT Studio • Dual-MCU UART • MQTT Broker
             </span>
             <h4 className="font-black text-base sm:text-lg text-white mt-0.5">
-              Pusat Konektivitas IoT: Komunikasi 2 Mikrokontroler (TX/RX), WiFi, MQTT &amp; Blynk
-              Token
+              Pusat Konektivitas IoT &amp; Kanvas Drag-and-Drop Dashboard Blynk (Virtual Pins V0–V10)
             </h4>
           </div>
         </div>
@@ -382,8 +450,361 @@ void loop() {
           onClick={handleGenerateKodeLengkapIot}
           className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs flex items-center gap-1.5 cursor-pointer shadow-lg"
         >
-          <Code2 className="w-4 h-4" /> Buat Kode C++ (Dual-MCU TX/RX + Blynk + MQTT)
+          <Code2 className="w-4 h-4" /> Buat Kode C++ (Sesuai Widget Blynk Anda)
         </button>
+      </div>
+
+      {/* ======================================================================
+          BAGIAN BARU: BLYNK IOT DRAG & DROP DASHBOARD STUDIO
+         ====================================================================== */}
+      <div className="bg-slate-900/90 p-5 rounded-3xl border-2 border-emerald-500/30 space-y-5">
+        <div className="flex flex-wrap justify-between items-center gap-3">
+          <div>
+            <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
+              Blynk.Console &amp; Mobile App Widget Builder
+            </span>
+            <h5 className="font-black text-sm sm:text-base text-white mt-1 flex items-center gap-2">
+              <Move className="w-4 h-4 text-emerald-400" /> Gudang Widget Blynk: Tarik (Drag &amp;
+              Drop) atau Klik untuk Menambahkan ke Dashboard IoT
+            </h5>
+          </div>
+          <span className="text-xs font-mono text-slate-400">
+            Widget Aktif: <b className="text-emerald-400">{daftarWidgetBlynk.length} Widget</b>
+          </span>
+        </div>
+
+        {/* PALET GUDANG WIDGET BLYNK (DRAGGABLE) */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
+          {KATALOG_GUDANG_WIDGET_BLYNK.map((wItem, idx) => (
+            <div
+              key={idx}
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData(
+                  "application/blynk-new-widget",
+                  JSON.stringify(wItem)
+                );
+              }}
+              onClick={() => tambahWidgetKeBlynk(wItem)}
+              className="p-3 rounded-2xl bg-slate-950 hover:bg-emerald-950/60 border border-slate-800 hover:border-emerald-400 cursor-grab active:cursor-grabbing flex flex-col items-center justify-between text-center gap-1.5 transition group"
+              title="Tarik (Drag) ke Kanvas Blynk di bawah atau Klik untuk menambahkan"
+            >
+              <span className="text-[9px] font-mono font-black uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
+                + {wItem.tipe.toUpperCase()}
+              </span>
+              <div className="font-bold text-xs text-white group-hover:text-amber-300 leading-snug">
+                {wItem.judul}
+              </div>
+              <span className="text-[10px] text-emerald-400 flex items-center gap-0.5 font-black">
+                <PlusCircle className="w-3 h-3" /> Drag / Klik
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* KANVAS GRID DRAG-AND-DROP WIDGET BLYNK */}
+        <div
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => handleDropWidgetBaruAtauUrutkan(e)}
+          className="p-5 rounded-3xl bg-[#060c17] border-2 border-dashed border-emerald-500/40 min-h-[220px] space-y-4"
+        >
+          <div className="flex flex-wrap justify-between items-center text-[11px] font-mono text-slate-400">
+            <span>
+              📱 KANVAS DASHBOARD BLYNK LIVE (Geser kartu widget untuk mengubah urutan, atau ubah
+              nilai untuk menggerakkan sensor di kanvas Wokwi!)
+            </span>
+            <span className="text-emerald-400">● Sinkronisasi 2-Arah Aktif</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {daftarWidgetBlynk.map((w, wIdx) => {
+              const nodeTerkait = cariNodeTerkaitWidget(w.targetTipeKomponen);
+              const nilaiAktual = nodeTerkait?.nilaiSensor ?? 30;
+              const statusNyalaAktual = nodeTerkait?.nyala ?? true;
+              const sedangEdit = idWidgetDiedit === w.id;
+
+              return (
+                <div
+                  key={w.id}
+                  draggable
+                  onDragStart={() => setIndeksDragWidget(wIdx)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.stopPropagation();
+                    handleDropWidgetBaruAtauUrutkan(e, wIdx);
+                  }}
+                  className={`p-4 rounded-2xl bg-slate-900/95 border-2 transition cursor-move flex flex-col justify-between space-y-3 ${
+                    w.warna === "emerald"
+                      ? "border-emerald-500/40 hover:border-emerald-400"
+                      : w.warna === "amber"
+                      ? "border-amber-500/40 hover:border-amber-400"
+                      : w.warna === "sky"
+                      ? "border-sky-500/40 hover:border-sky-400"
+                      : w.warna === "rose"
+                      ? "border-rose-500/40 hover:border-rose-400"
+                      : "border-indigo-500/40 hover:border-indigo-400"
+                  }`}
+                >
+                  {/* Header Kartu Widget Blynk */}
+                  <div className="flex justify-between items-center gap-2 border-b border-slate-800 pb-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="px-2 py-0.5 rounded bg-emerald-500 text-slate-950 font-mono font-black text-[10px]">
+                        {w.virtualPin}
+                      </span>
+                      <span className="font-black text-xs text-white truncate max-w-[125px]">
+                        {w.judul}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setIdWidgetDiedit(sedangEdit ? null : w.id)
+                        }
+                        className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] cursor-pointer"
+                        title="Konfigurasi Virtual Pin & Target Sensor"
+                      >
+                        ⚙️
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDaftarWidgetBlynk(
+                            daftarWidgetBlynk.filter((x) => x.id !== w.id)
+                          )
+                        }
+                        className="p-1 rounded bg-rose-500/20 hover:bg-rose-500 text-rose-300 hover:text-white cursor-pointer"
+                        title="Hapus Widget"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Panel Edit Cepat Virtual Pin & Target Sensor */}
+                  {sedangEdit && (
+                    <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2 text-[11px]">
+                      <input
+                        type="text"
+                        value={w.judul}
+                        onChange={(e) =>
+                          setDaftarWidgetBlynk(
+                            daftarWidgetBlynk.map((item) =>
+                              item.id === w.id
+                                ? { ...item, judul: e.target.value }
+                                : item
+                            )
+                          )
+                        }
+                        className="w-full p-1.5 rounded bg-slate-900 border border-slate-700 text-white font-bold"
+                      />
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <select
+                          value={w.virtualPin}
+                          onChange={(e) =>
+                            setDaftarWidgetBlynk(
+                              daftarWidgetBlynk.map((item) =>
+                                item.id === w.id
+                                  ? { ...item, virtualPin: e.target.value }
+                                  : item
+                              )
+                            )
+                          }
+                          className="p-1.5 rounded bg-slate-900 border border-slate-700 font-mono text-amber-300"
+                        >
+                          {["V0", "V1", "V2", "V3", "V4", "V5", "V6", "V7", "V8"].map(
+                            (vp) => (
+                              <option key={vp} value={vp}>
+                                Pin {vp}
+                              </option>
+                            )
+                          )}
+                        </select>
+                        <select
+                          value={w.targetTipeKomponen}
+                          onChange={(e) =>
+                            setDaftarWidgetBlynk(
+                              daftarWidgetBlynk.map((item) =>
+                                item.id === w.id
+                                  ? {
+                                      ...item,
+                                      targetTipeKomponen: e.target.value,
+                                    }
+                                  : item
+                              )
+                            )
+                          }
+                          className="p-1.5 rounded bg-slate-900 border border-slate-700 text-emerald-300"
+                        >
+                          <option value="dht22">Sensor Suhu DHT22</option>
+                          <option value="ultrasonik">Ultrasonik HC-SR04</option>
+                          <option value="pir_sensor">Sensor Gerak PIR</option>
+                          <option value="ldr_sensor">Sensor Cahaya LDR</option>
+                          <option value="mq2_gas">Sensor Gas MQ-2</option>
+                          <option value="servo">Motor Servo SG90</option>
+                          <option value="led_hijau">LED / Buzzer / Relay</option>
+                        </select>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ISI VISUAL WIDGET BERDASARKAN TIPENYA */}
+                  {w.tipe === "gauge" && (
+                    <div className="text-center space-y-2 py-1">
+                      <div className="relative w-28 h-16 mx-auto overflow-hidden">
+                        <svg viewBox="0 0 100 55" className="w-full h-full">
+                          <path
+                            d="M 10 50 A 40 40 0 0 1 90 50"
+                            stroke="#1e293b"
+                            strokeWidth="10"
+                            fill="none"
+                            strokeLinecap="round"
+                          />
+                          <path
+                            d="M 10 50 A 40 40 0 0 1 90 50"
+                            stroke={w.warna === "amber" ? "#facc15" : "#38bdf8"}
+                            strokeWidth="10"
+                            fill="none"
+                            strokeDasharray="126"
+                            strokeDashoffset={
+                              126 - Math.min(1, nilaiAktual / 150) * 126
+                            }
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        <div className="absolute inset-x-0 bottom-0 text-lg font-black text-white">
+                          {nilaiAktual} {w.satuan}
+                        </div>
+                      </div>
+                      {nodeTerkait && (
+                        <input
+                          type="range"
+                          min={2}
+                          max={150}
+                          value={nilaiAktual}
+                          onChange={(e) =>
+                            onUpdateNodeDariCloud(nodeTerkait.id, {
+                              nilaiSensor: Number(e.target.value),
+                            })
+                          }
+                          className="w-full accent-amber-400 cursor-pointer"
+                        />
+                      )}
+                    </div>
+                  )}
+
+                  {w.tipe === "switch" && (
+                    <div className="space-y-2 text-center py-2">
+                      <div className="text-[11px] text-slate-400">
+                        Target: <b className="text-white">{nodeTerkait?.label}</b>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (nodeTerkait) {
+                            onUpdateNodeDariCloud(nodeTerkait.id, {
+                              nyala: !statusNyalaAktual,
+                            });
+                          }
+                        }}
+                        className={`w-full py-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer transition ${
+                          statusNyalaAktual
+                            ? "bg-emerald-500 text-slate-950 shadow-[0_0_20px_rgba(16,185,129,0.5)]"
+                            : "bg-slate-800 text-slate-400"
+                        }`}
+                      >
+                        <Power className="w-4 h-4" />
+                        {statusNyalaAktual ? "STATE: HIGH (ON)" : "STATE: LOW (OFF)"}
+                      </button>
+                    </div>
+                  )}
+
+                  {w.tipe === "slider" && (
+                    <div className="space-y-2 py-1 text-center">
+                      <div className="text-2xl font-black text-indigo-300">
+                        {nilaiAktual}
+                        {w.satuan}
+                      </div>
+                      {nodeTerkait && (
+                        <input
+                          type="range"
+                          min={0}
+                          max={180}
+                          value={nilaiAktual}
+                          onChange={(e) =>
+                            onUpdateNodeDariCloud(nodeTerkait.id, {
+                              nilaiSensor: Number(e.target.value),
+                            })
+                          }
+                          className="w-full accent-indigo-400 cursor-pointer"
+                        />
+                      )}
+                      <div className="text-[10px] font-mono text-slate-400">
+                        Geser untuk memutar {nodeTerkait?.label}
+                      </div>
+                    </div>
+                  )}
+
+                  {w.tipe === "superchart" && (
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center text-[10px] font-mono text-emerald-300">
+                        <span className="flex items-center gap-1">
+                          <BarChart3 className="w-3.5 h-3.5" /> Live Stream
+                        </span>
+                        <span>Val: {nilaiAktual}</span>
+                      </div>
+                      <div className="h-16 bg-slate-950 rounded-xl p-2 flex items-end gap-1 border border-slate-800">
+                        {[0.6, 0.75, 0.5, 0.85, 0.7, 0.9, 1.0].map((faktor, i) => {
+                          const tinggi = Math.min(
+                            100,
+                            Math.max(15, Math.round((nilaiAktual / 100) * faktor * 100))
+                          );
+                          return (
+                            <div
+                              key={i}
+                              style={{ height: `${tinggi}%` }}
+                              className="flex-1 rounded-t bg-gradient-to-t from-emerald-600 to-sky-400 transition-all"
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {(w.tipe === "led_status" || w.tipe === "alarm_notif") && (
+                    <div className="flex flex-col items-center justify-center py-2 gap-2">
+                      <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          statusNyalaAktual
+                            ? "bg-rose-500 shadow-[0_0_20px_#f43f5e] animate-pulse"
+                            : "bg-slate-800"
+                        }`}
+                      >
+                        <Bell className="w-5 h-5 text-white" />
+                      </div>
+                      <span className="text-[11px] font-black text-amber-300">
+                        {statusNyalaAktual
+                          ? `⚡ TERDETEKSI (${nilaiAktual})`
+                          : "STANDBY AMAN"}
+                      </span>
+                    </div>
+                  )}
+
+                  {w.tipe === "lcd_terminal" && (
+                    <div className="p-2.5 rounded-xl bg-[#84cc16] text-slate-950 font-mono text-[11px] font-black space-y-0.5 shadow-inner">
+                      <div className="flex items-center gap-1">
+                        <Terminal className="w-3 h-3" /> BLYNK LCD 16x2
+                      </div>
+                      <div>
+                        {nodeTerkait?.label.slice(0, 10)}: {nilaiAktual}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {/* PANEL SIMULASI KOMUNIKASI SERIAL 2 MIKROKONTROLER (UART TX <-> RX BRIDGE) */}
@@ -394,13 +815,10 @@ void loop() {
             Mikrokontroler (UART Cross-Over: TX ➔ RX &amp; RX ⬅ TX)
           </div>
           <p className="text-slate-300">
-            Mikrokontroler terdeteksi di kanvas:{" "}
+            Mikrokontroler aktif:{" "}
             <b className="text-emerald-300">
-              {daftarMcuDiKanvas.length > 0
-                ? daftarMcuDiKanvas.map((m) => m.label).join(" ↔ ")
-                : "Tambahkan ESP32 & Arduino Uno dari Gudang Komponen"}
+              {daftarMcuDiKanvas.map((m) => m.label).join(" ↔ ")}
             </b>
-            {" "}({daftarMcuDiKanvas.length} MCU Aktif).
           </p>
         </div>
 
@@ -409,7 +827,6 @@ void loop() {
             type="text"
             value={pesanUartTxRx}
             onChange={(e) => setPesanUartTxRx(e.target.value)}
-            placeholder="Ketik paket serial UART (TX -> RX)..."
             className="flex-1 p-2.5 rounded-xl bg-slate-900 border border-slate-700 font-mono text-amber-300 text-xs"
           />
           <button
@@ -422,97 +839,49 @@ void loop() {
         </div>
       </div>
 
-      {/* BARIS 1: WIFI & LOCAL WEB SERVER | BLYNK CLOUD AUTH TOKEN | MQTT BROKER */}
+      {/* BARIS KONFIGURASI: WIFI & LOCAL WEB SERVER | BLYNK TOKEN | MQTT BROKER */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 text-xs">
-        {/* Panel 1: WiFi Station & Local Web Server ESP32 */}
         <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
           <div className="flex justify-between items-center">
             <span className="font-black text-sky-400 uppercase flex items-center gap-1.5">
               <Wifi className="w-4 h-4" /> 1. WiFi SSID &amp; Local Web Server
             </span>
-            <span
-              className={`px-2 py-0.5 rounded text-[10px] font-black ${
-                statusWifiConnected
-                  ? "bg-emerald-500/20 text-emerald-300"
-                  : "bg-rose-500/20 text-rose-300"
-              }`}
-            >
-              {statusWifiConnected ? "● CONNECTED" : "● DISCONNECTED"}
+            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-500/20 text-emerald-300">
+              ● {statusWifiConnected ? "CONNECTED" : "OFFLINE"}
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            <div>
-              <label className="text-[10px] text-slate-400 font-bold block mb-1">
-                WiFi SSID (Jaringan):
-              </label>
-              <input
-                type="text"
-                value={wifiSsid}
-                onChange={(e) => setWifiSsid(e.target.value)}
-                className="w-full p-2 rounded-xl bg-slate-950 border border-slate-700 font-mono text-white"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] text-slate-400 font-bold block mb-1">
-                WiFi Password (WPA2):
-              </label>
-              <input
-                type="text"
-                value={wifiPassword}
-                onChange={(e) => setWifiPassword(e.target.value)}
-                className="w-full p-2 rounded-xl bg-slate-950 border border-slate-700 font-mono text-amber-300"
-              />
-            </div>
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              type="text"
+              value={wifiSsid}
+              onChange={(e) => setWifiSsid(e.target.value)}
+              placeholder="WiFi SSID"
+              className="p-2 rounded-xl bg-slate-950 border border-slate-700 font-mono text-white"
+            />
+            <input
+              type="text"
+              value={wifiPassword}
+              onChange={(e) => setWifiPassword(e.target.value)}
+              placeholder="Password"
+              className="p-2 rounded-xl bg-slate-950 border border-slate-700 font-mono text-amber-300"
+            />
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
-            <div className="col-span-2">
-              <label className="text-[10px] text-slate-400 font-bold block mb-1">
-                IP Local Web Server ESP32:
-              </label>
-              <input
-                type="text"
-                value={ipLocalWeb}
-                onChange={(e) => setIpLocalWeb(e.target.value)}
-                className="w-full p-2 rounded-xl bg-slate-950 border border-slate-700 font-mono text-emerald-400"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] text-slate-400 font-bold block mb-1">
-                Port HTTP:
-              </label>
-              <input
-                type="text"
-                value={portLocalWeb}
-                onChange={(e) => setPortLocalWeb(e.target.value)}
-                className="w-full p-2 rounded-xl bg-slate-950 border border-slate-700 font-mono text-white"
-              />
-            </div>
-          </div>
-
-          <div className="p-3 rounded-xl bg-slate-950 border border-sky-500/30 space-y-1.5">
-            <div className="flex justify-between items-center text-[11px] font-mono">
-              <span className="text-sky-300 flex items-center gap-1">
-                <Globe className="w-3.5 h-3.5" /> http://{ipLocalWeb}:{portLocalWeb}/status
-              </span>
-              <button
-                type="button"
-                onClick={() => setStatusWifiConnected(!statusWifiConnected)}
-                className="text-[10px] underline text-slate-400 hover:text-white cursor-pointer"
-              >
-                Reconnect
-              </button>
-            </div>
-            <div className="text-[10px] font-mono text-slate-300 bg-slate-900 p-2 rounded-lg">
-              {`{"mcu_count":${daftarMcuDiKanvas.length},"ip":"${ipLocalWeb}","suhu":${suhuAktual},"led":${
-                statusAktuatorNyala ? '"ON"' : '"OFF"'
-              }}`}
-            </div>
+          <div className="p-2.5 rounded-xl bg-slate-950 border border-sky-500/30 font-mono text-[11px] text-sky-300 flex justify-between items-center">
+            <span className="flex items-center gap-1">
+              <Globe className="w-3.5 h-3.5" /> http://{ipLocalWeb}:{portLocalWeb}/status
+            </span>
+            <button
+              type="button"
+              onClick={() => setStatusWifiConnected(!statusWifiConnected)}
+              className="text-[10px] underline text-slate-400 cursor-pointer"
+            >
+              Toggle
+            </button>
           </div>
         </div>
 
-        {/* Panel 2: Blynk Cloud Auth Token & Template Configuration */}
         <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
           <div className="flex justify-between items-center">
             <span className="font-black text-emerald-400 uppercase flex items-center gap-1.5">
@@ -521,131 +890,54 @@ void loop() {
             <button
               type="button"
               onClick={generateTokenBlynkBaru}
-              className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+              className="px-2 py-0.5 rounded bg-slate-800 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
             >
-              <RefreshCw className="w-3 h-3" /> Regenerate
+              <RefreshCw className="w-3 h-3" /> Token Baru
             </button>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-[10px] text-slate-400 font-bold block mb-1">
-                BLYNK_TEMPLATE_ID:
-              </label>
-              <input
-                type="text"
-                value={blynkTemplateId}
-                onChange={(e) => setBlynkTemplateId(e.target.value)}
-                className="w-full p-2 rounded-xl bg-slate-950 border border-slate-700 font-mono text-white"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] text-slate-400 font-bold block mb-1">
-                BLYNK_TEMPLATE_NAME:
-              </label>
-              <input
-                type="text"
-                value={blynkTemplateName}
-                onChange={(e) => setBlynkTemplateName(e.target.value)}
-                className="w-full p-2 rounded-xl bg-slate-950 border border-slate-700 font-mono text-white"
-              />
-            </div>
+            <input
+              type="text"
+              value={blynkTemplateId}
+              onChange={(e) => setBlynkTemplateId(e.target.value)}
+              className="p-2 rounded-xl bg-slate-950 border border-slate-700 font-mono text-white"
+            />
+            <input
+              type="text"
+              value={blynkTemplateName}
+              onChange={(e) => setBlynkTemplateName(e.target.value)}
+              className="p-2 rounded-xl bg-slate-950 border border-slate-700 font-mono text-white"
+            />
           </div>
 
-          <div>
-            <label className="text-[10px] text-slate-400 font-bold block mb-1">
-              BLYNK_AUTH_TOKEN:
-            </label>
-            <div className="flex gap-1.5">
-              <input
-                type="text"
-                value={blynkAuthToken}
-                onChange={(e) => setBlynkAuthToken(e.target.value)}
-                className="flex-1 p-2 rounded-xl bg-slate-950 border border-emerald-500/40 font-mono text-emerald-300 text-[11px]"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  navigator.clipboard?.writeText(blynkAuthToken);
-                  setTokenDisalin(true);
-                  setTimeout(() => setTokenDisalin(false), 2000);
-                }}
-                className="px-3 rounded-xl bg-emerald-500 text-slate-950 font-black flex items-center gap-1 cursor-pointer shrink-0"
-              >
-                {tokenDisalin ? (
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                ) : (
-                  <Copy className="w-3.5 h-3.5" />
-                )}
-              </button>
-            </div>
-          </div>
-
-          <div className="p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-[11px] text-emerald-200">
-            ✓ Token aktif! Widget Virtual Pin (V0–V4) terhubung langsung ke sensor &amp; aktuator di
-            meja rangkaian.
+          <div className="flex gap-1.5">
+            <input
+              type="text"
+              value={blynkAuthToken}
+              onChange={(e) => setBlynkAuthToken(e.target.value)}
+              className="flex-1 p-2 rounded-xl bg-slate-950 border border-emerald-500/40 font-mono text-emerald-300 text-[11px]"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                navigator.clipboard?.writeText(blynkAuthToken);
+                setTokenDisalin(true);
+                setTimeout(() => setTokenDisalin(false), 2000);
+              }}
+              className="px-3 rounded-xl bg-emerald-500 text-slate-950 font-black cursor-pointer"
+            >
+              {tokenDisalin ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+            </button>
           </div>
         </div>
 
-        {/* Panel 3: MQTT Broker & Live Topic Publish/Subscribe */}
         <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
           <div className="flex justify-between items-center">
             <span className="font-black text-amber-400 uppercase flex items-center gap-1.5">
-              <Radio className="w-4 h-4" /> 3. MQTT Broker &amp; Pub/Sub Topic
+              <Radio className="w-4 h-4" /> 3. MQTT Broker &amp; Pub/Sub Log
             </span>
-            <span className="text-[10px] font-mono bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded">
-              Port {mqttPort}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
-            <div className="col-span-2">
-              <label className="text-[10px] text-slate-400 font-bold block mb-1">
-                Host MQTT Broker:
-              </label>
-              <input
-                type="text"
-                value={mqttBrokerUrl}
-                onChange={(e) => setMqttBrokerUrl(e.target.value)}
-                className="w-full p-2 rounded-xl bg-slate-950 border border-slate-700 font-mono text-white"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] text-slate-400 font-bold block mb-1">
-                Username:
-              </label>
-              <input
-                type="text"
-                value={mqttUser}
-                onChange={(e) => setMqttUser(e.target.value)}
-                className="w-full p-2 rounded-xl bg-slate-950 border border-slate-700 font-mono text-white"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-[10px] text-slate-400 font-bold block mb-1">
-                Topic Publish:
-              </label>
-              <input
-                type="text"
-                value={mqttTopicPub}
-                onChange={(e) => setMqttTopicPub(e.target.value)}
-                className="w-full p-1.5 rounded-lg bg-slate-950 border border-slate-700 font-mono text-[10px] text-emerald-300"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] text-slate-400 font-bold block mb-1">
-                Topic Subscribe:
-              </label>
-              <input
-                type="text"
-                value={mqttTopicSub}
-                onChange={(e) => setMqttTopicSub(e.target.value)}
-                className="w-full p-1.5 rounded-lg bg-slate-950 border border-slate-700 font-mono text-[10px] text-amber-300"
-              />
-            </div>
+            <span className="text-[10px] font-mono text-amber-300">{mqttBrokerUrl}</span>
           </div>
 
           <form onSubmit={handleKirimPaketMqtt} className="flex gap-1.5">
@@ -653,7 +945,6 @@ void loop() {
               type="text"
               value={payloadMqttInput}
               onChange={(e) => setPayloadMqttInput(e.target.value)}
-              placeholder="JSON Payload..."
               className="flex-1 p-2 rounded-xl bg-slate-950 border border-slate-700 font-mono text-[11px] text-white"
             />
             <button
@@ -663,131 +954,14 @@ void loop() {
               <Send className="w-3 h-3" /> Pub
             </button>
           </form>
-        </div>
-      </div>
 
-      {/* BARIS 2: BLYNK IOT VIRTUAL PIN DASHBOARD & LIVE LOG */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
-        <div className="lg:col-span-8 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-          <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2 text-center">
-            <div className="flex justify-between items-center text-[10px] font-mono text-slate-400">
-              <span>VIRTUAL PIN V0</span>
-              <Gauge className="w-3.5 h-3.5 text-amber-400" />
-            </div>
-            <div className="text-2xl font-black text-amber-300">{suhuAktual}°C</div>
-            <div className="text-[11px] font-bold text-slate-300">Suhu DHT22</div>
-            {nodeDht && (
-              <input
-                type="range"
-                min={15}
-                max={50}
-                value={suhuAktual}
-                onChange={(e) =>
-                  onUpdateNodeDariCloud(nodeDht.id, {
-                    nilaiSensor: Number(e.target.value),
-                  })
-                }
-                className="w-full accent-amber-400 cursor-pointer"
-              />
-            )}
+          <div className="p-2.5 rounded-xl bg-black/60 border border-slate-800 font-mono text-[10px] max-h-20 overflow-y-auto space-y-1">
+            {logMqttMessages.map((m, idx) => (
+              <div key={idx} className="truncate">
+                <span className="text-emerald-400">[{m.arah}]</span> {m.topik}: {m.payload}
+              </div>
+            ))}
           </div>
-
-          <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2 text-center">
-            <div className="flex justify-between items-center text-[10px] font-mono text-slate-400">
-              <span>VIRTUAL PIN V1</span>
-              <Gauge className="w-3.5 h-3.5 text-sky-400" />
-            </div>
-            <div className="text-2xl font-black text-sky-300">{jarakAktual} cm</div>
-            <div className="text-[11px] font-bold text-slate-300">Jarak Ultrasonik</div>
-            {nodeUltrasonik && (
-              <input
-                type="range"
-                min={2}
-                max={400}
-                value={jarakAktual}
-                onChange={(e) =>
-                  onUpdateNodeDariCloud(nodeUltrasonik.id, {
-                    nilaiSensor: Number(e.target.value),
-                  })
-                }
-                className="w-full accent-sky-400 cursor-pointer"
-              />
-            )}
-          </div>
-
-          <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2 text-center flex flex-col justify-between">
-            <div className="flex justify-between items-center text-[10px] font-mono text-slate-400">
-              <span>VIRTUAL PIN V2</span>
-              <Power className="w-3.5 h-3.5 text-emerald-400" />
-            </div>
-            <div className="text-xs font-bold text-slate-200">
-              {nodeLedHijau?.label || "Sakelar LED / Relay"}
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                if (nodeLedHijau) {
-                  onUpdateNodeDariCloud(nodeLedHijau.id, {
-                    nyala: !statusAktuatorNyala,
-                  });
-                }
-              }}
-              className={`w-full py-2.5 rounded-xl font-black text-xs cursor-pointer transition ${
-                statusAktuatorNyala
-                  ? "bg-emerald-500 text-slate-950 shadow-[0_0_15px_rgba(16,185,129,0.5)]"
-                  : "bg-slate-800 text-slate-400"
-              }`}
-            >
-              {statusAktuatorNyala ? "ON (HIGH = 1)" : "OFF (LOW = 0)"}
-            </button>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2 text-center">
-            <div className="flex justify-between items-center text-[10px] font-mono text-slate-400">
-              <span>VIRTUAL PIN V4</span>
-              <Sliders className="w-3.5 h-3.5 text-indigo-400" />
-            </div>
-            <div className="text-2xl font-black text-indigo-300">{sudutServoAktual}°</div>
-            <div className="text-[11px] font-bold text-slate-300">Sudut Servo SG90</div>
-            {nodeServo && (
-              <input
-                type="range"
-                min={0}
-                max={180}
-                value={sudutServoAktual}
-                onChange={(e) =>
-                  onUpdateNodeDariCloud(nodeServo.id, {
-                    nilaiSensor: Number(e.target.value),
-                  })
-                }
-                className="w-full accent-indigo-400 cursor-pointer"
-              />
-            )}
-          </div>
-        </div>
-
-        {/* Log Lalu Lintas Paket MQTT & UART TX/RX Real-time (4 Kolom) */}
-        <div className="lg:col-span-4 p-4 rounded-2xl bg-black/70 border border-slate-800 space-y-1.5 font-mono text-[11px] max-h-36 overflow-y-auto">
-          <div className="text-[10px] font-black text-amber-400 uppercase">
-            📡 Live UART (TX/RX) &amp; MQTT Traffic Log:
-          </div>
-          {logMqttMessages.map((m, idx) => (
-            <div key={idx} className="text-slate-300 leading-snug">
-              <span className="text-slate-500">[{m.waktu}]</span>{" "}
-              <span
-                className={
-                  m.arah === "UART"
-                    ? "text-purple-400 font-bold"
-                    : m.arah === "PUB"
-                    ? "text-emerald-400 font-bold"
-                    : "text-amber-300 font-bold"
-                }
-              >
-                {m.arah}
-              </span>{" "}
-              <span className="text-sky-300">{m.topik}:</span> {m.payload}
-            </div>
-          ))}
         </div>
       </div>
     </div>

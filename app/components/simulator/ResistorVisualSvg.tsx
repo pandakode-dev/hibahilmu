@@ -88,8 +88,24 @@ export const ResistorVisualSvg: React.FC<ResistorSvgProps> = ({
   return (
     <div className="inline-flex flex-col items-center justify-center w-full h-full select-none">
       <svg viewBox="0 0 140 64" className={kelasUkuran}>
-        <line x1="6" y1="32" x2="32" y2="32" stroke="#94a3b8" strokeWidth="5" strokeLinecap="round" />
-        <line x1="108" y1="32" x2="134" y2="32" stroke="#94a3b8" strokeWidth="5" strokeLinecap="round" />
+        <line
+          x1="6"
+          y1="32"
+          x2="32"
+          y2="32"
+          stroke="#94a3b8"
+          strokeWidth="5"
+          strokeLinecap="round"
+        />
+        <line
+          x1="108"
+          y1="32"
+          x2="134"
+          y2="32"
+          stroke="#94a3b8"
+          strokeWidth="5"
+          strokeLinecap="round"
+        />
         <rect
           x="30"
           y="16"
@@ -144,7 +160,9 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // ESP32 DevKit V1 & NodeMCU (Orientasi Vertikal: 15 Pin di Kiri, 15 Pin di Kanan)
+  // ============================================================================
+  // 1. ESP32 DevKit V1 & NodeMCU (Orientasi Vertikal: 15 Pin Kiri, 15 Pin Kanan)
+  // ============================================================================
   if (tipe === "esp32" || tipe === "esp8266_nodemcu") {
     const isEsp32 = tipe === "esp32";
     return (
@@ -152,7 +170,6 @@ export const VisualKomponenRealistis: React.FC<{
         viewBox="0 0 160 225"
         className={isIkon ? "w-14 h-14" : "w-full h-full"}
       >
-        {/* Papan PCB Vertikal */}
         <rect
           x="16"
           y="8"
@@ -163,10 +180,43 @@ export const VisualKomponenRealistis: React.FC<{
           stroke="#475569"
           strokeWidth="2.5"
         />
-        {/* Antena PCB Atas */}
-        <rect x="44" y="12" width="72" height="18" rx="3" fill="#1e293b" stroke="#eab308" strokeWidth="1.5" />
-        {/* Kaleng Pelindung RF ESP-WROOM-32 */}
-        <rect x="38" y="34" width="84" height="72" rx="4" fill="#cbd5e1" stroke="#64748b" strokeWidth="2" />
+        {/* Gelombang Sinyal WiFi Aktif di Atas Antena */}
+        {!isIkon && nyala && (
+          <g className="animate-pulse">
+            <path
+              d="M 65 6 Q 80 -2, 95 6"
+              stroke="#38bdf8"
+              strokeWidth="1.5"
+              fill="none"
+            />
+            <path
+              d="M 58 3 Q 80 -7, 102 3"
+              stroke="#34d399"
+              strokeWidth="1.2"
+              fill="none"
+            />
+          </g>
+        )}
+        <rect
+          x="44"
+          y="12"
+          width="72"
+          height="18"
+          rx="3"
+          fill="#1e293b"
+          stroke="#eab308"
+          strokeWidth="1.5"
+        />
+        <rect
+          x="38"
+          y="34"
+          width="84"
+          height="72"
+          rx="4"
+          fill="#cbd5e1"
+          stroke="#64748b"
+          strokeWidth="2"
+        />
         <text x="80" y="66" textAnchor="middle" fill="#0f172a" fontSize="9.5" fontWeight="900">
           {isEsp32 ? "ESP-WROOM-32" : "ESP8266EX MOD"}
         </text>
@@ -177,13 +227,11 @@ export const VisualKomponenRealistis: React.FC<{
           Wi-Fi + Dual UART
         </text>
 
-        {/* Chip Silikon CP2102 USB-to-UART */}
         <rect x="64" y="132" width="32" height="28" rx="3" fill="#020617" stroke="#475569" />
         <text x="80" y="149" textAnchor="middle" fill="#94a3b8" fontSize="6" fontFamily="monospace">
           CP2102
         </text>
 
-        {/* Tombol EN & BOOT + Port Micro USB di Bawah */}
         <rect x="38" y="182" width="18" height="12" rx="2" fill="#cbd5e1" />
         <text x="47" y="179" textAnchor="middle" fill="#94a3b8" fontSize="6" fontWeight="bold">
           EN
@@ -192,15 +240,24 @@ export const VisualKomponenRealistis: React.FC<{
         <text x="113" y="179" textAnchor="middle" fill="#94a3b8" fontSize="6" fontWeight="bold">
           BOOT
         </text>
-        <rect x="62" y="202" width="36" height="15" rx="3" fill="#94a3b8" stroke="#475569" strokeWidth="1.5" />
+        <rect
+          x="62"
+          y="202"
+          width="36"
+          height="15"
+          rx="3"
+          fill="#94a3b8"
+          stroke="#475569"
+          strokeWidth="1.5"
+        />
 
-        {/* LED Power Merah & LED GPIO2 Biru */}
+        {/* LED Power Merah & LED GPIO2 Biru Menyala */}
         <circle cx="52" cy="122" r="4" fill="#ef4444" />
+        {nyala && <circle cx="108" cy="122" r="9" fill="#38bdf8" opacity="0.35" className="animate-ping" />}
         <circle cx="108" cy="122" r="4" fill={nyala ? "#38bdf8" : "#334155"} />
 
-        {/* Label Ringkas Pin Kiri & Kanan pada Silksreen PCB */}
         {[
-          "EN", "VP", "VN", "34", "35", "32", "33", "25", "26", "27", "14", "12", "13", "GND", "VIN"
+          "EN", "VP", "VN", "34", "35", "32", "33", "25", "26", "27", "14", "12", "13", "GND", "VIN",
         ].map((lbl, idx) => (
           <text
             key={`l-${idx}`}
@@ -215,7 +272,7 @@ export const VisualKomponenRealistis: React.FC<{
           </text>
         ))}
         {[
-          "23", "22", "TX0", "RX0", "21", "19", "18", "D5", "TX2", "RX2", "D4", "D2", "15", "GND", "3V3"
+          "23", "22", "TX0", "RX0", "21", "19", "18", "D5", "TX2", "RX2", "D4", "D2", "15", "GND", "3V3",
         ].map((lbl, idx) => (
           <text
             key={`r-${idx}`}
@@ -234,7 +291,9 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // STM32 BluePill & Raspberry Pi Pico (Vertikal: 16 Pin Kiri, 16 Pin Kanan)
+  // ============================================================================
+  // 2. STM32 BluePill & Raspberry Pi Pico
+  // ============================================================================
   if (tipe === "stm32_bluepill" || tipe === "raspberry_pico") {
     const isPico = tipe === "raspberry_pico";
     return (
@@ -260,11 +319,14 @@ export const VisualKomponenRealistis: React.FC<{
           ARM CORTEX
         </text>
         <rect x="57" y="6" width="36" height="14" rx="2" fill="#cbd5e1" />
+        {nyala && <circle cx="75" cy="42" r="5" fill="#4ade80" className="animate-pulse" />}
       </svg>
     );
   }
 
-  // Arduino Uno R3 (14 Pin di Header Atas, 14 Pin di Header Bawah)
+  // ============================================================================
+  // 3. Arduino Uno R3 (14 Pin Atas, 14 Pin Bawah + Animasi LED TX/RX/L)
+  // ============================================================================
   if (tipe === "arduino_uno") {
     return (
       <svg
@@ -281,40 +343,90 @@ export const VisualKomponenRealistis: React.FC<{
           stroke="#38bdf8"
           strokeWidth="2.5"
         />
-        {/* Port USB & Jack DC */}
         <rect x="2" y="30" width="20" height="28" rx="3" fill="#cbd5e1" stroke="#475569" />
         <rect x="2" y="82" width="22" height="24" rx="3" fill="#0f172a" />
-        {/* IC ATmega328P DIP */}
         <rect x="68" y="72" width="92" height="26" rx="3" fill="#0f172a" stroke="#475569" />
         <text x="114" y="88" textAnchor="middle" fill="#f8fafc" fontSize="8" fontFamily="monospace" fontWeight="bold">
           ATMEGA328P-PU
         </text>
-        <text x="105" y="48" textAnchor="middle" fill="#ffffff" fontSize="12" fontWeight="900">
+        <text x="105" y="45" textAnchor="middle" fill="#ffffff" fontSize="11.5" fontWeight="900">
           ARDUINO UNO R3
         </text>
-        <text x="105" y="62" textAnchor="middle" fill="#fde047" fontSize="7.5" fontWeight="bold">
-          ATas: D13..D0(RX/TX) | Bawah: 5V, GND, A0..A5
+        <text x="105" y="58" textAnchor="middle" fill="#fde047" fontSize="7" fontWeight="bold">
+          Atas: D13..D0(RX/TX) | Bawah: 5V, GND, A0..A5
         </text>
+        {/* Indikator LED ON, TX, RX Berkedip */}
+        <circle cx="42" cy="45" r="3" fill="#22c55e" />
+        <circle cx="42" cy="56" r="3" fill={nyala ? "#facc15" : "#334155"} className={nyala ? "animate-ping" : ""} />
+        <circle cx="52" cy="56" r="3" fill={nyala ? "#f97316" : "#334155"} className={nyala ? "animate-pulse" : ""} />
       </svg>
     );
   }
 
-  // Sensor DHT22 (4 Kaki Menghadap ke Bawah)
+  // ============================================================================
+  // 4. SENSOR SUHU & KELEMBAPAN DHT22 (DENGAN ANIMASI TERMOMETER, UAP PANAS / ES)
+  // ============================================================================
   if (tipe === "dht22") {
+    const suhu = nilaiSensor ?? 29;
+    const isPanas = suhu >= 33;
+    const isDingin = suhu <= 20;
+    const tinggiAirRaksa = Math.max(6, Math.min(44, ((suhu - 10) / 45) * 44));
+
     return (
-      <svg viewBox="0 0 100 115" className={isIkon ? "w-14 h-12" : "w-full h-full"}>
-        <rect x="14" y="6" width="72" height="72" rx="6" fill="#f8fafc" stroke="#94a3b8" strokeWidth="2.5" />
-        {[20, 32, 44, 56].map((y) => (
-          <line key={y} x1="24" y1={y} x2="76" y2={y} stroke="#cbd5e1" strokeWidth="3.5" />
+      <svg viewBox="0 0 100 115" className={isIkon ? "w-14 h-12" : "w-full h-full overflow-visible"}>
+        {/* Efek Visual Partikel Uap Panas atau Kristal Dingin di Atas Sensor */}
+        {!isIkon && isPanas && (
+          <g className="animate-bounce">
+            <path d="M 28 -4 Q 24 -12, 30 -18" stroke="#ef4444" strokeWidth="2.5" fill="none" />
+            <path d="M 50 -6 Q 46 -14, 52 -20" stroke="#f97316" strokeWidth="2.5" fill="none" />
+            <path d="M 70 -4 Q 66 -12, 72 -18" stroke="#ef4444" strokeWidth="2.5" fill="none" />
+            <text x="50" y="-22" textAnchor="middle" fill="#f87171" fontSize="7.5" fontWeight="900">
+              🔥 PANAS ({suhu}°C)
+            </text>
+          </g>
+        )}
+        {!isIkon && isDingin && (
+          <g className="animate-pulse">
+            <text x="50" y="-10" textAnchor="middle" fill="#38bdf8" fontSize="8" fontWeight="900">
+              ❄️ DINGIN ({suhu}°C)
+            </text>
+          </g>
+        )}
+
+        <rect
+          x="12"
+          y="6"
+          width="62"
+          height="72"
+          rx="6"
+          fill="#f8fafc"
+          stroke={isPanas ? "#ef4444" : isDingin ? "#38bdf8" : "#94a3b8"}
+          strokeWidth="2.5"
+        />
+        {[18, 29, 40, 51].map((y) => (
+          <line key={y} x1="20" y1={y} x2="66" y2={y} stroke="#cbd5e1" strokeWidth="3" />
         ))}
-        <text x="50" y="70" textAnchor="middle" fill="#0284c7" fontSize="9.5" fontWeight="900">
-          DHT22 ({nilaiSensor}°C)
+
+        {/* Tabung Termometer Live di Sisi Kanan Sensor */}
+        <rect x="78" y="12" width="10" height="52" rx="5" fill="#1e293b" stroke="#475569" strokeWidth="1.5" />
+        <rect
+          x="80"
+          y={60 - tinggiAirRaksa}
+          width="6"
+          height={tinggiAirRaksa}
+          rx="3"
+          fill={isPanas ? "#ef4444" : isDingin ? "#38bdf8" : "#22c55e"}
+        />
+        <circle cx="83" cy="64" r="6" fill={isPanas ? "#ef4444" : isDingin ? "#38bdf8" : "#22c55e"} />
+
+        <text x="43" y="70" textAnchor="middle" fill="#0284c7" fontSize="8.5" fontWeight="900">
+          {suhu}°C | 65%
         </text>
-        {/* 4 Kaki Pin Lurus ke Titik Bawah (x = 23, 41, 59, 77) */}
+
         {[23, 41, 59, 77].map((x, idx) => (
           <g key={idx}>
             <line x1={x} y1="78" x2={x} y2="108" stroke="#eab308" strokeWidth="3.5" />
-            <text x={x} y="92" textAnchor="middle" fill="#94a3b8" fontSize="6.5" fontFamily="monospace">
+            <text x={x} y="92" textAnchor="middle" fill="#94a3b8" fontSize="6" fontFamily="monospace">
               {idx === 0 ? "VCC" : idx === 1 ? "DAT" : idx === 2 ? "NC" : "GND"}
             </text>
           </g>
@@ -323,34 +435,295 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // Sensor Ultrasonik HC-SR04 (4 Kaki Menghadap ke Bawah)
+  // ============================================================================
+  // 5. SENSOR ULTRASONIK HC-SR04 (ANIMASI GELOMBANG SONAR & ORANG MENDEKAT/MENJAUH)
+  // ============================================================================
   if (tipe === "ultrasonik") {
+    const jarakCm = Math.max(2, Math.min(200, nilaiSensor ?? 45));
+    // Posisi Y orang bergerak mendekat/menjauh di depan (atas) sensor sesuai nilai jarakCm
+    const offsetOrangY = -18 - (jarakCm / 200) * 65;
+    const dekatSekali = jarakCm <= 35;
+
     return (
-      <svg viewBox="0 0 140 95" className={isIkon ? "w-20 h-12" : "w-full h-full"}>
-        <rect x="8" y="6" width="124" height="58" rx="6" fill="#1d4ed8" stroke="#60a5fa" strokeWidth="2" />
+      <svg
+        viewBox="0 0 140 95"
+        className={isIkon ? "w-20 h-12" : "w-full h-full overflow-visible"}
+      >
+        {/* ANIMASI GELOMBANG SONAR & SILUET ORANG DI DEPAN SENSOR (HANYA DI KANVAS) */}
+        {!isIkon && (
+          <g>
+            {/* Kerucut Area Pancaran Ultrasonik */}
+            <polygon
+              points={`38,10 102,10 ${118},${offsetOrangY} ${22},${offsetOrangY}`}
+              fill={dekatSekali ? "rgba(239,68,68,0.16)" : "rgba(56,189,248,0.14)"}
+            />
+
+            {/* Busur Gelombang Akustik Sonar Berdenyut */}
+            <path
+              d="M 45 -4 Q 70 -16, 95 -4"
+              stroke={dekatSekali ? "#ef4444" : "#38bdf8"}
+              strokeWidth="2"
+              fill="none"
+              className="animate-ping"
+            />
+            <path
+              d="M 35 -16 Q 70 -32, 105 -16"
+              stroke={dekatSekali ? "#f97316" : "#34d399"}
+              strokeWidth="2"
+              strokeDasharray="4 2"
+              fill="none"
+              className="animate-pulse"
+            />
+            {jarakCm > 45 && (
+              <path
+                d="M 28 -32 Q 70 -50, 112 -32"
+                stroke="#38bdf8"
+                strokeWidth="1.8"
+                strokeDasharray="3 3"
+                fill="none"
+              />
+            )}
+
+            {/* Garis Ukur Jarak Putus-putus */}
+            <line
+              x1="70"
+              y1="6"
+              x2="70"
+              y2={offsetOrangY + 12}
+              stroke="#facc15"
+              strokeWidth="1.5"
+              strokeDasharray="3 2"
+            />
+
+            {/* Siluet Orang / Target Objek yang Mendekat atau Menjauh */}
+            <g transform={`translate(70, ${offsetOrangY})`}>
+              <rect
+                x="-36"
+                y="-22"
+                width="72"
+                height="15"
+                rx="4"
+                fill="#0f172a"
+                stroke={dekatSekali ? "#ef4444" : "#38bdf8"}
+                strokeWidth="1.5"
+              />
+              <text
+                x="0"
+                y="-12"
+                textAnchor="middle"
+                fill="#fde047"
+                fontSize="7.5"
+                fontFamily="monospace"
+                fontWeight="bold"
+              >
+                🚶 Objek: {jarakCm} cm
+              </text>
+              {/* Kepala & Badan Orang */}
+              <circle cx="0" cy="-2" r="5.5" fill={dekatSekali ? "#f87171" : "#38bdf8"} />
+              <path
+                d="M -8 12 C -8 5, 8 5, 8 12 Z"
+                fill={dekatSekali ? "#ef4444" : "#0284c7"}
+              />
+            </g>
+          </g>
+        )}
+
+        {/* Bodi Utama HC-SR04 */}
+        <rect
+          x="8"
+          y="6"
+          width="124"
+          height="58"
+          rx="6"
+          fill="#1d4ed8"
+          stroke={dekatSekali && !isIkon ? "#ef4444" : "#60a5fa"}
+          strokeWidth="2.5"
+        />
         <circle cx="38" cy="35" r="20" fill="#e2e8f0" stroke="#64748b" strokeWidth="3" />
         <circle cx="38" cy="35" r="11" fill="#334155" />
         <circle cx="102" cy="35" r="20" fill="#e2e8f0" stroke="#64748b" strokeWidth="3" />
         <circle cx="102" cy="35" r="11" fill="#334155" />
-        <text x="70" y="22" textAnchor="middle" fill="#ffffff" fontSize="8" fontWeight="900">
-          HC-SR04
+        <text x="70" y="21" textAnchor="middle" fill="#ffffff" fontSize="7.5" fontWeight="900">
+          HC-SR04 SONAR
         </text>
-        <text x="70" y="55" textAnchor="middle" fill="#fde047" fontSize="8.5" fontWeight="bold">
-          {nilaiSensor} cm
+        <text x="70" y="56" textAnchor="middle" fill="#fde047" fontSize="9" fontWeight="900">
+          {jarakCm} cm
         </text>
         {[43, 61, 79, 97].map((x, idx) => (
-          <line key={idx} x1={x} y1="64" x2={x} y2="88" stroke="#eab308" strokeWidth="3" />
+          <line key={idx} x1={x} y1="64" x2={x} y2="88" stroke="#eab308" strokeWidth="3.5" />
         ))}
       </svg>
     );
   }
 
-  // Layar OLED / LCD 16x2 / MQ-2 Gas (4 Pin di Bawah)
+  // ============================================================================
+  // 6. SENSOR GERAK PIR (DENGAN KERUCUT INFRAMERAH & ORANG MELINTAS TERDETEKSI)
+  // ============================================================================
+  if (tipe === "pir_sensor") {
+    const posOrang = nilaiSensor ?? 60; // 0 - 180 menggeser posisi orang di depan sensor
+    const terdeteksi = nyala && posOrang >= 30 && posOrang <= 150;
+    const offsetXOrang = ((posOrang - 90) / 90) * 42;
+
+    return (
+      <svg
+        viewBox="0 0 115 95"
+        className={isIkon ? "w-16 h-12" : "w-full h-full overflow-visible"}
+      >
+        {!isIkon && (
+          <g>
+            {/* Kerucut Area Deteksi Inframerah (FOV) */}
+            <polygon
+              points="57,18 5,-48 109,-48"
+              fill={terdeteksi ? "rgba(239,68,68,0.22)" : "rgba(34,197,94,0.12)"}
+              stroke={terdeteksi ? "#ef4444" : "#22c55e"}
+              strokeWidth="1.5"
+              strokeDasharray="4 2"
+            />
+            {/* Siluet Orang Melintas di Depan Sensor PIR */}
+            <g transform={`translate(${57 + offsetXOrang}, -34)`}>
+              {terdeteksi && (
+                <circle cx="0" cy="0" r="14" fill="#ef4444" opacity="0.3" className="animate-ping" />
+              )}
+              <circle cx="0" cy="-6" r="5.5" fill={terdeteksi ? "#ef4444" : "#94a3b8"} />
+              <path
+                d="M -7 8 C -7 1, 7 1, 7 8 Z"
+                fill={terdeteksi ? "#dc2626" : "#64748b"}
+              />
+              <rect
+                x="-38"
+                y="-24"
+                width="76"
+                height="13"
+                rx="3"
+                fill="#0f172a"
+                stroke={terdeteksi ? "#ef4444" : "#475569"}
+              />
+              <text
+                x="0"
+                y="-15"
+                textAnchor="middle"
+                fill={terdeteksi ? "#fde047" : "#cbd5e1"}
+                fontSize="7"
+                fontWeight="bold"
+              >
+                {terdeteksi ? "🏃 GERAKAN TERDETEKSI!" : "🚶 Aman (Diluar Zona)"}
+              </text>
+            </g>
+          </g>
+        )}
+
+        <rect
+          x="16"
+          y="28"
+          width="83"
+          height="36"
+          rx="5"
+          fill="#15803d"
+          stroke={terdeteksi ? "#ef4444" : "#4ade80"}
+          strokeWidth="2.5"
+        />
+        {/* Kubah Lensa Fresnel PIR Menyala Merah saat Ada Orang */}
+        <path
+          d="M 32 28 A 25 22 0 0 1 82 28 Z"
+          fill={terdeteksi ? "#ef4444" : "#f8fafc"}
+          stroke="#cbd5e1"
+          strokeWidth="2"
+        />
+        <text x="57" y="50" textAnchor="middle" fill="#ffffff" fontSize="8" fontWeight="900">
+          PIR HC-SR501
+        </text>
+        {[30, 57, 84].map((x, idx) => (
+          <line key={idx} x1={x} y1="64" x2={x} y2="88" stroke="#eab308" strokeWidth="3.5" />
+        ))}
+      </svg>
+    );
+  }
+
+  // ============================================================================
+  // 7. SENSOR CAHAYA LDR (DENGAN ANIMASI MATAHARI / SINAR LUX DINAMIS)
+  // ============================================================================
+  if (tipe === "ldr_sensor") {
+    const lux = nilaiSensor ?? 80;
+    const terang = lux >= 60;
+    return (
+      <svg
+        viewBox="0 0 115 95"
+        className={isIkon ? "w-16 h-12" : "w-full h-full overflow-visible"}
+      >
+        {!isIkon && (
+          <g transform="translate(57, -18)">
+            <circle
+              cx="0"
+              cy="0"
+              r={8 + (lux / 180) * 10}
+              fill="#facc15"
+              opacity={0.25 + (lux / 180) * 0.5}
+              className={terang ? "animate-pulse" : ""}
+            />
+            <circle cx="0" cy="0" r="6" fill={terang ? "#fde047" : "#64748b"} />
+            <text x="0" y="-12" textAnchor="middle" fill="#fde047" fontSize="7.5" fontWeight="bold">
+              ☀️ Cahaya: {lux} Lux
+            </text>
+          </g>
+        )}
+        <rect x="16" y="10" width="83" height="54" rx="6" fill="#1e293b" stroke="#facc15" strokeWidth="2" />
+        <circle cx="57" cy="37" r="18" fill="#fef3c7" stroke="#dc2626" strokeWidth="3" />
+        <path
+          d="M 45 31 L 69 31 L 45 37 L 69 37 L 45 43 L 69 43"
+          stroke="#dc2626"
+          strokeWidth="2.5"
+          fill="none"
+        />
+        {[30, 57, 84].map((x, idx) => (
+          <line key={idx} x1={x} y1="64" x2={x} y2="88" stroke="#eab308" strokeWidth="3.5" />
+        ))}
+      </svg>
+    );
+  }
+
+  // ============================================================================
+  // 8. LAYAR OLED / LCD 16x2 / SENSOR GAS MQ-2 (DENGAN ANIMASI KEPULAN ASAP GAS)
+  // ============================================================================
   if (tipe === "oled_display" || tipe === "lcd_16x2" || tipe === "mq2_gas") {
     const isLcd = tipe === "lcd_16x2";
     const isGas = tipe === "mq2_gas";
+    const bahayaGas = isGas && (nilaiSensor ?? 50) >= 70;
+
     return (
-      <svg viewBox="0 0 140 95" className={isIkon ? "w-20 h-12" : "w-full h-full"}>
+      <svg
+        viewBox="0 0 140 95"
+        className={isIkon ? "w-20 h-12" : "w-full h-full overflow-visible"}
+      >
+        {/* Kepulan Asap Dinamis di Atas Sensor Gas MQ-2 */}
+        {!isIkon && isGas && (
+          <g className="animate-bounce">
+            <circle
+              cx="45"
+              cy="-10"
+              r={6 + ((nilaiSensor || 40) / 180) * 8}
+              fill={bahayaGas ? "#ef4444" : "#94a3b8"}
+              opacity="0.45"
+            />
+            <circle
+              cx="70"
+              cy="-16"
+              r={8 + ((nilaiSensor || 40) / 180) * 10}
+              fill={bahayaGas ? "#f97316" : "#cbd5e1"}
+              opacity="0.5"
+            />
+            <circle
+              cx="92"
+              cy="-8"
+              r={5 + ((nilaiSensor || 40) / 180) * 7}
+              fill={bahayaGas ? "#ef4444" : "#94a3b8"}
+              opacity="0.45"
+            />
+            <text x="70" y="-28" textAnchor="middle" fill="#fde047" fontSize="7.5" fontWeight="900">
+              💨 Konsentrasi Gas: {nilaiSensor} ppm
+            </text>
+          </g>
+        )}
+
         <rect
           x="10"
           y="6"
@@ -358,7 +731,7 @@ export const VisualKomponenRealistis: React.FC<{
           height="62"
           rx="6"
           fill={isGas ? "#991b1b" : isLcd ? "#15803d" : "#1e3a8a"}
-          stroke="#93c5fd"
+          stroke={bahayaGas ? "#ef4444" : "#93c5fd"}
           strokeWidth="2"
         />
         <rect
@@ -378,7 +751,7 @@ export const VisualKomponenRealistis: React.FC<{
           fontFamily="monospace"
           fontWeight="bold"
         >
-          {isGas ? "MQ-2 GAS SENSOR" : isLcd ? "LCD 16x2 I2C" : "OLED 128x64 I2C"}
+          {isGas ? "MQ-2 SMOKE/LPG" : isLcd ? "LCD 16x2 I2C" : "OLED 128x64 I2C"}
         </text>
         <text
           x="70"
@@ -389,7 +762,7 @@ export const VisualKomponenRealistis: React.FC<{
           fontFamily="monospace"
           fontWeight="bold"
         >
-          VAL: {nilaiSensor}
+          {isGas ? `${nilaiSensor} PPM` : `DATA: ${nilaiSensor}`}
         </text>
         {[40, 60, 80, 100].map((x, idx) => (
           <line key={idx} x1={x} y1="68" x2={x} y2="88" stroke="#eab308" strokeWidth="3" />
@@ -398,13 +771,45 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // LED Merah / Hijau / Kuning & Buzzer (2 Kaki di Bawah: x=31 & x=55)
+  // ============================================================================
+  // 9. LED MERAH / HIJAU / KUNING & BUZZER (DENGAN ANIMASI GELOMBANG BUNYI)
+  // ============================================================================
   if (
     tipe === "led_hijau" ||
     tipe === "led_merah" ||
     tipe === "led_kuning" ||
     tipe === "buzzer"
   ) {
+    if (tipe === "buzzer") {
+      return (
+        <svg
+          viewBox="0 0 86 96"
+          className={isIkon ? "w-12 h-12" : "w-full h-full overflow-visible"}
+        >
+          {!isIkon && nyala && (
+            <g className="animate-ping">
+              <circle cx="43" cy="34" r="34" stroke="#f43f5e" strokeWidth="2" fill="none" />
+              <circle cx="43" cy="34" r="44" stroke="#facc15" strokeWidth="1.5" fill="none" />
+            </g>
+          )}
+          <circle
+            cx="43"
+            cy="34"
+            r="24"
+            fill="#0f172a"
+            stroke={nyala ? "#f43f5e" : "#64748b"}
+            strokeWidth="3"
+          />
+          <circle cx="43" cy="34" r="8" fill="#cbd5e1" />
+          <text x="43" y="10" textAnchor="middle" fill="#fda4af" fontSize="7.5" fontWeight="900">
+            {nyala ? "🔊 BEEP!" : "BUZZER"}
+          </text>
+          <line x1="31" y1="58" x2="31" y2="88" stroke="#94a3b8" strokeWidth="3.5" />
+          <line x1="55" y1="58" x2="55" y2="88" stroke="#94a3b8" strokeWidth="3.5" />
+        </svg>
+      );
+    }
+
     const warna =
       tipe === "led_hijau"
         ? "#22c55e"
@@ -412,8 +817,13 @@ export const VisualKomponenRealistis: React.FC<{
         ? "#eab308"
         : "#ef4444";
     return (
-      <svg viewBox="0 0 86 96" className={isIkon ? "w-12 h-12" : "w-full h-full"}>
-        {nyala && <circle cx="43" cy="34" r="26" fill={warna} opacity="0.35" />}
+      <svg viewBox="0 0 86 96" className={isIkon ? "w-12 h-12" : "w-full h-full overflow-visible"}>
+        {nyala && (
+          <>
+            <circle cx="43" cy="32" r="30" fill={warna} opacity="0.28" className="animate-pulse" />
+            <circle cx="43" cy="32" r="20" fill={warna} opacity="0.45" />
+          </>
+        )}
         <path
           d="M 26 52 L 26 32 A 17 17 0 0 1 60 32 L 60 52 Z"
           fill={nyala ? warna : "#475569"}
@@ -432,27 +842,43 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // Servo, PIR, LDR, Potensiometer, Transistor (3 Kaki di Bawah: x=30, 57, 84)
+  // ============================================================================
+  // 10. MOTOR SERVO SG90, POTENSIOMETER, TRANSISTOR (3 KAKI DI BAWAH)
+  // ============================================================================
   if (
     tipe === "servo" ||
-    tipe === "pir_sensor" ||
-    tipe === "ldr_sensor" ||
     tipe === "potensiometer" ||
     tipe === "transistor_npn"
   ) {
     return (
-      <svg viewBox="0 0 115 95" className={isIkon ? "w-16 h-12" : "w-full h-full"}>
+      <svg viewBox="0 0 115 95" className={isIkon ? "w-16 h-12" : "w-full h-full overflow-visible"}>
         <rect x="16" y="10" width="83" height="54" rx="6" fill="#1e293b" stroke="#38bdf8" strokeWidth="2" />
         {tipe === "servo" ? (
-          <g transform={`rotate(${nilaiSensor - 90}, 45, 37)`}>
+          <g
+            style={{
+              transform: `rotate(${(nilaiSensor ?? 90) - 90}deg)`,
+              transformOrigin: "45px 37px",
+              transition: "transform 0.25s ease-out",
+            }}
+          >
             <circle cx="45" cy="37" r="13" fill="#0284c7" />
-            <rect x="41" y="10" width="8" height="32" rx="4" fill="#f8fafc" />
+            <rect x="41" y="6" width="8" height="34" rx="4" fill="#f8fafc" stroke="#0284c7" />
           </g>
         ) : (
-          <circle cx="57" cy="34" r="16" fill="#0f172a" stroke="#facc15" strokeWidth="2.5" />
+          <g
+            style={{
+              transform: `rotate(${((nilaiSensor ?? 50) - 50) * 1.5}deg)`,
+              transformOrigin: "57px 34px",
+              transition: "transform 0.2s ease-out",
+            }}
+          >
+            <circle cx="57" cy="34" r="16" fill="#0f172a" stroke="#facc15" strokeWidth="2.5" />
+            <line x1="57" y1="34" x2="57" y2="20" stroke="#38bdf8" strokeWidth="3" />
+          </g>
         )}
-        <text x="72" y="42" textAnchor="middle" fill="#fde047" fontSize="9" fontWeight="900">
+        <text x="76" y="42" textAnchor="middle" fill="#fde047" fontSize="9" fontWeight="900">
           {nilaiSensor}
+          {tipe === "servo" ? "°" : ""}
         </text>
         {[30, 57, 84].map((x, idx) => (
           <line key={idx} x1={x} y1="64" x2={x} y2="88" stroke="#eab308" strokeWidth="3.5" />
@@ -461,7 +887,7 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // Kapasitor, Induktor, Dioda (2 Kaki Kiri & Kanan: x=6 & x=134, y=32)
+  // Kapasitor, Induktor, Dioda
   if (tipe === "kapasitor" || tipe === "induktor" || tipe === "dioda") {
     return (
       <svg viewBox="0 0 140 64" className={isIkon ? "w-16 h-10" : "w-full h-full"}>
@@ -494,29 +920,39 @@ export const VisualKomponenRealistis: React.FC<{
     return (
       <svg viewBox="0 0 115 110" className={isIkon ? "w-16 h-12" : "w-full h-full"}>
         <rect x="12" y="6" width="91" height="78" rx="6" fill="#1e293b" stroke="#64748b" strokeWidth="2" />
-        {["1", "2", "3", "A", "4", "5", "6", "B", "7", "8", "9", "C", "*", "0", "#", "D"].map((k, idx) => {
-          const r = Math.floor(idx / 4);
-          const c = idx % 4;
-          return (
-            <rect
-              key={k}
-              x={22 + c * 19}
-              y={13 + r * 17}
-              width="14"
-              height="13"
-              rx="2"
-              fill={c === 3 ? "#dc2626" : "#2563eb"}
-            />
-          );
-        })}
+        {["1", "2", "3", "A", "4", "5", "6", "B", "7", "8", "9", "C", "*", "0", "#", "D"].map(
+          (k, idx) => {
+            const r = Math.floor(idx / 4);
+            const c = idx % 4;
+            return (
+              <rect
+                key={k}
+                x={22 + c * 19}
+                y={13 + r * 17}
+                width="14"
+                height="13"
+                rx="2"
+                fill={c === 3 ? "#dc2626" : "#2563eb"}
+              />
+            );
+          }
+        )}
         {Array.from({ length: 8 }).map((_, i) => (
-          <line key={i} x1={16 + i * 12} y1="84" x2={16 + i * 12} y2="103" stroke="#eab308" strokeWidth="2.5" />
+          <line
+            key={i}
+            x1={16 + i * 12}
+            y1="84"
+            x2={16 + i * 12}
+            y2="103"
+            stroke="#eab308"
+            strokeWidth="2.5"
+          />
         ))}
       </svg>
     );
   }
 
-  // Default Komponen EWB / Gerbang Logika / Blok Simulink (Input Kiri & Output Kanan)
+  // Default Komponen EWB / Gerbang Logika / Blok Simulink
   return (
     <svg viewBox="0 0 135 82" className={isIkon ? "w-18 h-12" : "w-full h-full"}>
       <rect
@@ -532,7 +968,15 @@ export const VisualKomponenRealistis: React.FC<{
       <text x="67" y="36" textAnchor="middle" fill="#a5b4fc" fontSize="8" fontWeight="bold">
         {tipe.toUpperCase()}
       </text>
-      <text x="67" y="54" textAnchor="middle" fill="#fde047" fontSize="10" fontFamily="monospace" fontWeight="900">
+      <text
+        x="67"
+        y="54"
+        textAnchor="middle"
+        fill="#fde047"
+        fontSize="10"
+        fontFamily="monospace"
+        fontWeight="900"
+      >
         {nilaiSensor}
       </text>
     </svg>
