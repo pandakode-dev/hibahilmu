@@ -1,17 +1,14 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
   Cpu,
   Zap,
   Activity,
   Trash2,
-  RotateCcw,
   Sliders,
   Move,
   CheckCircle2,
-  Maximize2,
-  Minimize2,
   ZoomIn,
   ZoomOut,
   Search,
@@ -23,6 +20,11 @@ import {
   BookOpen,
   Power,
   Sparkles,
+  Play,
+  Square,
+  Code2,
+  Terminal,
+  Copy,
 } from "lucide-react";
 import {
   VisualKomponenRealistis,
@@ -35,6 +37,10 @@ import {
   warnaTitikPin,
   TitikPinFisik,
 } from "./pinoutDefinitions";
+import {
+  DAFTAR_TUTORIAL_PROJECT_WOKWI,
+  PresetTutorialProject,
+} from "./tutorialProjectsData";
 import { IotCloudBlynkPanel } from "./IotCloudBlynkPanel";
 
 export interface TitikSikuKabel {
@@ -76,6 +82,14 @@ interface ItemPaletGudang {
   defaultSensor?: number;
 }
 
+const TIPE_MCU_LIST = [
+  "esp32",
+  "arduino_uno",
+  "esp8266_nodemcu",
+  "stm32_bluepill",
+  "raspberry_pico",
+];
+
 const PILIHAN_WARNA_KABEL = [
   { nama: "Merah (VCC/+)", hex: "#ef4444" },
   { nama: "Hitam/Abu (GND/-)", hex: "#94a3b8" },
@@ -86,9 +100,6 @@ const PILIHAN_WARNA_KABEL = [
   { nama: "Oranye (Relay OUT)", hex: "#f97316" },
 ];
 
-// ============================================================================
-// KATALOG GUDANG KOMPONEN LENGKAP (DENGAN RELAY 1CH, 2CH, 4CH & SERVO 180/360)
-// ============================================================================
 const PALET_KOMPONEN: {
   [key in "wokwi" | "ewb" | "matlab"]: ItemPaletGudang[];
 } = {
@@ -98,11 +109,9 @@ const PALET_KOMPONEN: {
     { tipe: "esp8266_nodemcu", label: "NodeMCU ESP8266 (30p)", kategori: "Microcontroller" },
     { tipe: "stm32_bluepill", label: "STM32 BluePill (32p)", kategori: "Microcontroller" },
     { tipe: "raspberry_pico", label: "Raspberry Pi Pico (32p)", kategori: "Microcontroller" },
-    // Kategori Modul Relay 1CH, 2CH, 4CH
     { tipe: "relay_1ch", label: "Relay 1-Channel (6p)", kategori: "Modul Relay" },
     { tipe: "relay_2ch", label: "Relay 2-Channel (10p)", kategori: "Modul Relay" },
     { tipe: "relay_4ch", label: "Relay 4-Channel (18p)", kategori: "Modul Relay" },
-    // Kategori Sensor IoT Realistis
     {
       tipe: "ultrasonik",
       label: "Ultrasonik HC-SR04 (2-400cm)",
@@ -158,7 +167,6 @@ const PALET_KOMPONEN: {
       defaultSensor: 350,
     },
     { tipe: "rfid_rc522", label: "RFID Card Reader (6p)", kategori: "Sensor IoT" },
-    // Kategori Aktuator & Motor (Solenoid 2-Pin, Pompa 2-Pin, Servo 180 & Servo 360)
     {
       tipe: "solenoid_lock",
       label: "Solenoid Lock 12V (2p ON/OFF)",
@@ -288,231 +296,31 @@ const PALET_KOMPONEN: {
   ],
 };
 
-// ============================================================================
-// 4 PRESET TUTORIAL & CONTOH PROJECT BERTINGKAT (SEDERHANA S/D KOMPLEKS)
-// ============================================================================
-export interface PresetTutorialProject {
-  id: string;
-  level: string;
-  judul: string;
-  deskripsiSingkat: string;
-  langkahWiring: string[];
-  kodeProgram: string;
-  nodes: NodeKomponenKanvas[];
-  kabel: KabelKoneksiItem[];
-}
-
-export const DAFTAR_TUTORIAL_PROJECT_WOKWI: PresetTutorialProject[] = [
-  {
-    id: "proj-1",
-    level: "Level 1: Dasar",
-    judul: "Lampu Taman Otomatis (Sensor Cahaya LDR + Relay 1-Ch + LED)",
-    deskripsiSingkat:
-      "Membaca intensitas cahaya matahari (0–1000 Lux) dari sensor LDR pada pin ADC GPIO34. Saat gelap (< 300 Lux), ESP32 memicu pin IN Modul Relay 1-Channel untuk menyalakan lampu.",
-    langkahWiring: [
-      "Hubungkan Pin AO (Analog Out) Sensor LDR ke Pin D34 (ADC) di sisi kiri ESP32.",
-      "Hubungkan Pin GPIO32 ESP32 ke Pin IN (Input Pemicu) di bagian bawah Modul Relay 1-Channel.",
-      "Hubungkan Terminal NO (Normally Open) di atas Modul Relay ke Anoda (+) Lampu LED.",
-    ],
-    kodeProgram: `// PROJECT LEVEL 1: LAMPU OTOMATIS SENSOR CAHAYA LDR + RELAY 1-CHANNEL
-#define PIN_LDR_ADC   34
-#define PIN_RELAY_IN  32
-
-void setup() {
-  Serial.begin(115200);
-  pinMode(PIN_RELAY_IN, OUTPUT);
-}
-
-void loop() {
-  int nilaiLux = analogRead(PIN_LDR_ADC); // 0 - 1000 Lux
-  if (nilaiLux < 300) {
-    digitalWrite(PIN_RELAY_IN, HIGH); // Malam Hari -> Relay ON -> Lampu Menyala
-    Serial.println("Kondisi Gelap (" + String(nilaiLux) + " Lux) -> Relay ON");
-  } else {
-    digitalWrite(PIN_RELAY_IN, LOW);  // Siang Hari -> Relay OFF
-  }
-  delay(1000);
-}`,
-    nodes: [
-      { id: "p1-esp", tipe: "esp32", label: "ESP32 Controller", x: 30, y: 50, nyala: true },
-      { id: "p1-ldr", tipe: "ldr_sensor", label: "Sensor LDR (Lux)", x: 245, y: 60, nilaiSensor: 180, nyala: true },
-      { id: "p1-rel", tipe: "relay_1ch", label: "Relay 1-Channel", x: 420, y: 120, nyala: true },
-      { id: "p1-led", tipe: "led_hijau", label: "Lampu Taman", x: 585, y: 65, nyala: true },
-    ],
-    kabel: [
-      { id: "k1-1", dariId: "p1-ldr", pinAsal: "SIG", keId: "p1-esp", pinTujuan: "GPIO34", warna: "#f97316", titikSiku: [{ x: 305, y: 195 }, { x: 15, y: 195 }] },
-      { id: "k1-2", dariId: "p1-esp", pinAsal: "GPIO32", keId: "p1-rel", pinTujuan: "IN1", warna: "#38bdf8", titikSiku: [{ x: 15, y: 270 }, { x: 502, y: 270 }] },
-      { id: "k1-3", dariId: "p1-rel", pinAsal: "NO", keId: "p1-led", pinTujuan: "ANODA", warna: "#ef4444", titikSiku: [{ x: 448, y: 35 }, { x: 616, y: 185 }] },
-    ],
-  },
-  {
-    id: "proj-2",
-    level: "Level 2: Menengah",
-    judul: "Smart Door Lock (RFID RC522 + Relay 1-Ch + Solenoid 12V + Servo 180°)",
-    deskripsiSingkat:
-      "Karena Solenoid Door Lock membutuhkan tegangan 12V DC dan hanya bekerja ON/OFF, mikrokontroler tidak boleh mencatunya langsung melainkan wajib melalui kontak sakelar NO & COM pada Modul Relay 1-Channel!",
-    langkahWiring: [
-      "Hubungkan RFID RC522 (SDA/SS) ke Pin GPIO5 di sisi kanan ESP32.",
-      "Hubungkan Pin GPIO32 ESP32 ke Pin IN (bawah) Modul Relay 1-Channel.",
-      "Hubungkan Terminal NO (atas) Modul Relay 1-Channel ke Kabel Merah (+12V) Solenoid Door Lock.",
-      "Hubungkan Pin GPIO18 (PWM) ESP32 ke Pin Sinyal Motor Servo SG90 (0°–180°) sebagai palang pintu.",
-    ],
-    kodeProgram: `// PROJECT LEVEL 2: SMART DOOR LOCK RFID + RELAY 1-CH + SOLENOID 12V + SERVO 180
-#include <SPI.h>
-#include <MFRC522.h>
-#include <ESP32Servo.h>
-
-#define PIN_RELAY_SOLENOID 32
-#define PIN_SERVO_180      18
-
-Servo palangPintu;
-
-void setup() {
-  Serial.begin(115200);
-  pinMode(PIN_RELAY_SOLENOID, OUTPUT);
-  palangPintu.attach(PIN_SERVO_180);
-}
-
-void loop() {
-  // Saat E-KTP Terverifikasi: Aktifkan Relay -> Solenoid Menarik Tuas (UNLOCK) & Buka Servo 90 derajat
-  digitalWrite(PIN_RELAY_SOLENOID, HIGH);
-  palangPintu.write(90);
-  Serial.println("Akses Diterima -> Relay ON -> Solenoid UNLOCKED & Servo 90 deg");
-  delay(3000);
-}`,
-    nodes: [
-      { id: "p2-esp", tipe: "esp32", label: "ESP32 Master", x: 25, y: 55, nyala: true },
-      { id: "p2-rfid", tipe: "rfid_rc522", label: "RFID RC522 Tap", x: 230, y: 45, nyala: true },
-      { id: "p2-rel1", tipe: "relay_1ch", label: "Relay 1-Ch Pengaman", x: 395, y: 145, nyala: true },
-      { id: "p2-sol", tipe: "solenoid_lock", label: "Solenoid Lock 12V", x: 560, y: 45, nyala: true },
-      { id: "p2-srv", tipe: "servo", label: "Servo SG90 (0-180°)", x: 560, y: 195, nilaiSensor: 90, nyala: true },
-    ],
-    kabel: [
-      { id: "k2-1", dariId: "p2-rfid", pinAsal: "SDA(SS)", keId: "p2-esp", pinTujuan: "GPIO5", warna: "#06b6d4", titikSiku: [{ x: 250, y: 175 }, { x: 200, y: 175 }] },
-      { id: "k2-2", dariId: "p2-esp", pinAsal: "GPIO32", keId: "p2-rel1", pinTujuan: "IN1", warna: "#22c55e", titikSiku: [{ x: 15, y: 295 }, { x: 477, y: 295 }] },
-      { id: "k2-3", dariId: "p2-rel1", pinAsal: "NO", keId: "p2-sol", pinTujuan: "VCC_POS", warna: "#ef4444", titikSiku: [{ x: 423, y: 125 }, { x: 598, y: 175 }] },
-      { id: "k2-4", dariId: "p2-esp", pinAsal: "GPIO18", keId: "p2-srv", pinTujuan: "SIG", warna: "#facc15", titikSiku: [{ x: 205, y: 162 }, { x: 620, y: 315 }] },
-    ],
-  },
-  {
-    id: "proj-3",
-    level: "Level 3: Lanjutan",
-    judul: "Smart Greenhouse (Soil Moisture + DHT22 + Relay 2-Channel + Pompa Air Mini & Kipas)",
-    deskripsiSingkat:
-      "Menggunakan Modul Relay 2-Channel (10 Pin): Kanal 1 (NO1) menyalakan Pompa Air Mini 2-Kabel saat tanah kering (< 40%), sedangkan Kanal 2 (NO2) menyalakan Kipas Pendingin saat suhu DHT22 panas (> 33°C).",
-    langkahWiring: [
-      "Hubungkan Pin AO Sensor Kelembapan Tanah ke GPIO34 ESP32 & DATA DHT22 ke GPIO15 ESP32.",
-      "Hubungkan GPIO32 & GPIO33 ESP32 ke Pin IN1 & IN2 di bagian bawah Modul Relay 2-Channel.",
-      "Hubungkan Terminal NO1 (atas Relay 2-Ch) ke Kabel Merah (+) Pompa Air Mini 2-Pin.",
-      "Hubungkan Terminal NO2 (atas Relay 2-Ch) ke Pin VCC Kipas Pendingin DC.",
-    ],
-    kodeProgram: `// PROJECT LEVEL 3: SMART GREENHOUSE (SOIL + DHT22 + RELAY 2-CH + POMPA AIR & KIPAS)
-#define PIN_SOIL_ADC  34
-#define PIN_DHT       15
-#define RELAY_POMPA   32 // IN1 Relay 2-Channel -> Pompa Air Mini
-#define RELAY_KIPAS   33 // IN2 Relay 2-Channel -> Kipas Pendingin
-
-void setup() {
-  Serial.begin(115200);
-  pinMode(RELAY_POMPA, OUTPUT);
-  pinMode(RELAY_KIPAS, OUTPUT);
-}
-
-void loop() {
-  digitalWrite(RELAY_POMPA, HIGH); // Tanah kering -> Nyalakan Pompa Air via NO1
-  digitalWrite(RELAY_KIPAS, HIGH); // Suhu > 33 C  -> Nyalakan Kipas via NO2
-  Serial.println("[Greenhouse]: Pompa Air = ON | Kipas Pendingin = ON");
-  delay(2000);
-}`,
-    nodes: [
-      { id: "p3-esp", tipe: "esp32", label: "ESP32 Greenhouse", x: 20, y: 55, nyala: true },
-      { id: "p3-soil", tipe: "soil_moisture", label: "Kelembapan Tanah", x: 215, y: 40, nilaiSensor: 65, nyala: true },
-      { id: "p3-dht", tipe: "dht22", label: "Suhu DHT22 (°C)", x: 225, y: 185, nilaiSensor: 35, nyala: true },
-      { id: "p3-rel2", tipe: "relay_2ch", label: "Relay 2-Channel", x: 385, y: 135, nyala: true },
-      { id: "p3-pump", tipe: "water_pump", label: "Pompa Air Mini (2p)", x: 575, y: 40, nyala: true },
-      { id: "p3-fan", tipe: "kipas_dc", label: "Kipas DC Greenhouse", x: 575, y: 195, nilaiSensor: 220, nyala: true },
-    ],
-    kabel: [
-      { id: "k3-1", dariId: "p3-soil", pinAsal: "AO", keId: "p3-esp", pinTujuan: "GPIO34", warna: "#f97316", titikSiku: [{ x: 315, y: 160 }, { x: 12, y: 160 }] },
-      { id: "k3-2", dariId: "p3-dht", pinAsal: "DATA", keId: "p3-esp", pinTujuan: "GPIO15", warna: "#a855f7", titikSiku: [{ x: 266, y: 320 }, { x: 190, y: 224 }] },
-      { id: "k3-3", dariId: "p3-esp", pinAsal: "GPIO32", keId: "p3-rel2", pinTujuan: "IN1", warna: "#22c55e", titikSiku: [{ x: 12, y: 290 }, { x: 447, y: 290 }] },
-      { id: "k3-4", dariId: "p3-esp", pinAsal: "GPIO33", keId: "p3-rel2", pinTujuan: "IN2", warna: "#38bdf8", titikSiku: [{ x: 12, y: 305 }, { x: 474, y: 305 }] },
-      { id: "k3-5", dariId: "p3-rel2", pinAsal: "NO1", keId: "p3-pump", pinTujuan: "VCC_POS", warna: "#ef4444", titikSiku: [{ x: 405, y: 115 }, { x: 613, y: 165 }] },
-      { id: "k3-6", dariId: "p3-rel2", pinAsal: "NO2", keId: "p3-fan", pinTujuan: "VCC", warna: "#facc15", titikSiku: [{ x: 473, y: 115 }, { x: 605, y: 315 }] },
-    ],
-  },
-  {
-    id: "proj-4",
-    level: "Level 4: Kompleks (Dual-MCU + Relay 4-Ch)",
-    judul: "Otomasi Industri (ESP32 ↔ Arduino UART + Relay 4-Ch + Solenoid + Pompa + Servo 360°)",
-    deskripsiSingkat:
-      "Arsitektur lengkap menggunakan 2 Mikrokontroler (ESP32 Master & Arduino Uno Slave via TX/RX), Modul Relay 4-Channel (18 Pin) untuk mengendalikan Solenoid 12V & Pompa Air, serta Motor Servo 360° Continuous sebagai penggerak konveyor.",
-    langkahWiring: [
-      "Hubungkan silang TX2 (GPIO17) ESP32 ke D0 (RX) Arduino Uno untuk komunikasi Dual-MCU.",
-      "Hubungkan GPIO32, GPIO33, GPIO25, GPIO26 ESP32 ke IN1, IN2, IN3, IN4 pada Modul Relay 4-Channel.",
-      "Hubungkan NO1 Relay 4-Ch ke Solenoid 12V (+) dan NO2 Relay 4-Ch ke Pompa Air Mini (+).",
-      "Hubungkan D9 (PWM) Arduino Uno ke Pin Sinyal Motor Servo 360° Continuous Rotation.",
-    ],
-    kodeProgram: `// PROJECT LEVEL 4: DUAL-MCU INDUSTRI (ESP32 + ARDUINO + RELAY 4-CH + SERVO 360)
-#define RELAY_CH1_SOLENOID 32
-#define RELAY_CH2_POMPA    33
-#define RELAY_CH3_ALARM    25
-#define RELAY_CH4_CADANGAN 26
-
-void setup() {
-  Serial.begin(115200);
-  Serial2.begin(9600, SERIAL_8N1, 16, 17); // UART Bridge ke Arduino Uno
-  pinMode(RELAY_CH1_SOLENOID, OUTPUT);
-  pinMode(RELAY_CH2_POMPA, OUTPUT);
-}
-
-void loop() {
-  digitalWrite(RELAY_CH1_SOLENOID, HIGH);
-  digitalWrite(RELAY_CH2_POMPA, HIGH);
-  Serial2.println("CMD:SERVO_360_SPEED=80;SONAR=CHECK");
-  delay(2000);
-}`,
-    nodes: [
-      { id: "p4-esp", tipe: "esp32", label: "ESP32 Master (WiFi)", x: 15, y: 45, nyala: true },
-      { id: "p4-rel4", tipe: "relay_4ch", label: "Modul Relay 4-Channel (18p)", x: 205, y: 150, nyala: true },
-      { id: "p4-sol", tipe: "solenoid_lock", label: "Solenoid Lock 12V", x: 205, y: 20, nyala: true },
-      { id: "p4-pump", tipe: "water_pump", label: "Pompa Air Mini (2p)", x: 355, y: 20, nyala: true },
-      { id: "p4-uno", tipe: "arduino_uno", label: "Arduino Slave (UART)", x: 475, y: 185, nyala: true },
-      { id: "p4-s360", tipe: "servo_360", label: "Servo 360° Konveyor", x: 530, y: 25, nilaiSensor: 75, nyala: true },
-    ],
-    kabel: [
-      { id: "k4-1", dariId: "p4-esp", pinAsal: "GPIO32", keId: "p4-rel4", pinTujuan: "IN1", warna: "#22c55e", titikSiku: [{ x: 10, y: 300 }, { x: 276, y: 300 }] },
-      { id: "k4-2", dariId: "p4-esp", pinAsal: "GPIO33", keId: "p4-rel4", pinTujuan: "IN2", warna: "#38bdf8", titikSiku: [{ x: 10, y: 312 }, { x: 302, y: 312 }] },
-      { id: "k4-3", dariId: "p4-rel4", pinAsal: "NO1", keId: "p4-sol", pinTujuan: "VCC_POS", warna: "#ef4444", titikSiku: [{ x: 221, y: 135 }] },
-      { id: "k4-4", dariId: "p4-rel4", pinAsal: "NO2", keId: "p4-pump", pinTujuan: "VCC_POS", warna: "#f97316", titikSiku: [{ x: 272, y: 135 }, { x: 393, y: 135 }] },
-      { id: "k4-5", dariId: "p4-esp", pinAsal: "GPIO17", keId: "p4-uno", pinTujuan: "D0_RX", warna: "#facc15", titikSiku: [{ x: 190, y: 325 }, { x: 653, y: 175 }] },
-      { id: "k4-6", dariId: "p4-uno", pinAsal: "D9", keId: "p4-s360", pinTujuan: "SIG", warna: "#a855f7", titikSiku: [{ x: 593, y: 155 }] },
-    ],
-  },
-];
+// Default memakai Proyek 5 (Dual-ESP32 Telemetry Bridge dengan 2 Tab Kode!)
+const DEFAULT_PROJECT = DAFTAR_TUTORIAL_PROJECT_WOKWI[4];
 
 const KOMPONEN_AWAL_PER_MODE: {
   [key in "wokwi" | "ewb" | "matlab"]: NodeKomponenKanvas[];
 } = {
-  wokwi: DAFTAR_TUTORIAL_PROJECT_WOKWI[1].nodes, // Default membuka Project Level 2 (RFID + Relay 1Ch + Solenoid 12V + Servo 180)
+  wokwi: DEFAULT_PROJECT.nodes,
   ewb: [
-    { id: "ewb-1", tipe: "vcc_dc", label: "Sumber DC 12V", x: 35, y: 90, nilaiSensor: 12 },
-    { id: "ewb-2", tipe: "resistor", label: "Resistor R1", x: 230, y: 55, nilaiResistor: 1000 },
-    { id: "ewb-3", tipe: "resistor", label: "Resistor R2", x: 230, y: 175, nilaiResistor: 2200 },
+    { id: "ewb-1", tipe: "vcc_dc", label: "Sumber DC 12V", x: 35, y: 90, nilaiSensor: 12, nyala: true },
+    { id: "ewb-2", tipe: "resistor", label: "Resistor R1", x: 230, y: 55, nilaiResistor: 1000, nyala: true },
+    { id: "ewb-3", tipe: "resistor", label: "Resistor R2", x: 230, y: 175, nilaiResistor: 2200, nyala: true },
     { id: "ewb-4", tipe: "osiloskop", label: "Osiloskop CH1", x: 450, y: 100, nyala: true },
   ],
   matlab: [
-    { id: "sim-1", tipe: "Sine Wave", label: "Input r(t)", x: 30, y: 110, nilaiSensor: 10 },
-    { id: "sim-2", tipe: "PID Controller", label: "PID", x: 215, y: 110, nilaiSensor: 5 },
-    { id: "sim-3", tipe: "Transfer Fcn", label: "Plant G(s)", x: 400, y: 110, nilaiSensor: 1 },
-    { id: "sim-4", tipe: "Scope Plot", label: "Scope y(t)", x: 575, y: 110 },
+    { id: "sim-1", tipe: "Sine Wave", label: "Input r(t)", x: 30, y: 110, nilaiSensor: 10, nyala: true },
+    { id: "sim-2", tipe: "PID Controller", label: "PID", x: 215, y: 110, nilaiSensor: 5, nyala: true },
+    { id: "sim-3", tipe: "Transfer Fcn", label: "Plant G(s)", x: 400, y: 110, nilaiSensor: 1, nyala: true },
+    { id: "sim-4", tipe: "Scope Plot", label: "Scope y(t)", x: 575, y: 110, nyala: true },
   ],
 };
 
 const KABEL_AWAL_PER_MODE: {
   [key in "wokwi" | "ewb" | "matlab"]: KabelKoneksiItem[];
 } = {
-  wokwi: DAFTAR_TUTORIAL_PROJECT_WOKWI[1].kabel,
+  wokwi: DEFAULT_PROJECT.kabel,
   ewb: [
     { id: "e-1", dariId: "ewb-1", pinAsal: "OUT_1", keId: "ewb-2", pinTujuan: "PIN_1", warna: "#ef4444", titikSiku: [{ x: 195, y: 105 }] },
     { id: "e-2", dariId: "ewb-2", pinAsal: "PIN_2", keId: "ewb-3", pinTujuan: "PIN_1", warna: "#38bdf8", titikSiku: [{ x: 395, y: 105 }, { x: 395, y: 225 }] },
@@ -598,10 +406,28 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     [key in "wokwi" | "ewb" | "matlab"]: KabelKoneksiItem[];
   }>(KABEL_AWAL_PER_MODE);
 
-  // State Pilihan Tutorial Project Bertingkat
   const [projectAktif, setProjectAktif] = useState<PresetTutorialProject>(
-    DAFTAR_TUTORIAL_PROJECT_WOKWI[1]
+    DEFAULT_PROJECT
   );
+
+  // ============================================================================
+  // STATE MULTI-MCU IDE: KODE PER MIKROKONTROLER & STATUS RUNNING PER BOARD
+  // ============================================================================
+  const [kodePerMcuMap, setKodePerMcuMap] = useState<{ [mcuId: string]: string }>(
+    DEFAULT_PROJECT.kodePerMcu
+  );
+  const [statusRunPerMcu, setStatusRunPerMcu] = useState<{
+    [mcuId: string]: boolean;
+  }>({
+    "p5-esp1": true,
+    "p5-esp2": true,
+  });
+  const [idTabMcuAktif, setIdTabMcuAktif] = useState<string>("p5-esp1");
+  const [logSerialMultiMcu, setLogSerialMultiMcu] = useState<string[]>([
+    "[10:30:01] 🚀 Semua Mikrokontroler (ESP32 #1 & ESP32 #2) Berjalan (RUNNING)...",
+    "[10:30:02] [ESP32 #1 -> UART TX2]: Mengirim paket 'NODE1:JARAK=28cm;PIR=DETECTED'",
+    "[10:30:02] [ESP32 #2 <- UART RX2]: Diterima -> Memicu Relay & Buka Solenoid 12V!",
+  ]);
 
   const [kategoriPaletAktif, setKategoriPaletAktif] = useState<string>("Semua");
   const [cariKomponen, setCariKomponen] = useState<string>("");
@@ -644,14 +470,79 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
 
   const [bukaDashboardIot, setBukaDashboardIot] = useState<boolean>(true);
 
+  const nodesSaatIni = daftarNode[mode] || [];
+  const kabelSaatIni = daftarKabel[mode] || [];
+
+  // Daftar semua Mikrokontroler yang ada di Kanvas saat ini
+  const daftarMcuDiKanvas = useMemo(
+    () => nodesSaatIni.filter((n) => TIPE_MCU_LIST.includes(n.tipe)),
+    [nodesSaatIni]
+  );
+
+  // Pastikan tab MCU aktif selalu valid
   useEffect(() => {
-    setKategoriPaletAktif("Semua");
-    setCariKomponen("");
-    const listAwal = daftarNode[mode];
-    setIdKomponenTerpilih(listAwal[0]?.id || null);
-    setIdKabelTerpilih(null);
-    setSedangTarikKabelDariPin(null);
-  }, [mode]);
+    if (
+      daftarMcuDiKanvas.length > 0 &&
+      !daftarMcuDiKanvas.some((m) => m.id === idTabMcuAktif)
+    ) {
+      setIdTabMcuAktif(daftarMcuDiKanvas[0].id);
+    }
+  }, [daftarMcuDiKanvas, idTabMcuAktif]);
+
+  // ============================================================================
+  // MESIN VALIDASI TOPOLOGI RANGKAIAN AKTIF (BFS GRAPH TRAVERSAL)
+  // Komponen HANYA aktif/menyala jika terhubung melalui kabel ke MCU yang sedang RUNNING!
+  // ============================================================================
+  const setIdKomponenTerhubungKeMcuRunning = useMemo(() => {
+    if (mode !== "wokwi") {
+      // Pada mode EWB / MATLAB, komponen yang punya setidaknya 1 kabel dianggap terhubung
+      const terhubung = new Set<string>();
+      kabelSaatIni.forEach((k) => {
+        terhubung.add(k.dariId);
+        terhubung.add(k.keId);
+      });
+      return terhubung;
+    }
+
+    const aktifSet = new Set<string>();
+    const antrean: string[] = [];
+
+    // Masukkan semua MCU yang sedang berstatus RUNNING sebagai sumber daya/sinyal awal
+    daftarMcuDiKanvas.forEach((mcu) => {
+      if (statusRunPerMcu[mcu.id]) {
+        aktifSet.add(mcu.id);
+        antrean.push(mcu.id);
+      }
+    });
+
+    // Telusuri seluruh jalur kabel (termasuk melewati Resistor atau Modul Relay menuju Solenoid/Pompa)
+    while (antrean.length > 0) {
+      const currId = antrean.shift()!;
+      const currNode = nodesSaatIni.find((n) => n.id === currId);
+
+      // Jika komponen perantara adalah Relay yang dimatikan manual (nyala === false), jangan teruskan arus ke beban!
+      if (
+        currNode &&
+        currNode.tipe.startsWith("relay_") &&
+        currNode.nyala === false
+      ) {
+        continue;
+      }
+
+      kabelSaatIni.forEach((kbl) => {
+        let tetanggaId: string | null = null;
+        if (kbl.dariId === currId) tetanggaId = kbl.keId;
+        else if (kbl.keId === currId) tetanggaId = kbl.dariId;
+
+        if (tetanggaId && !aktifSet.has(tetanggaId)) {
+          aktifSet.add(tetanggaId);
+          antrean.push(tetanggaId);
+        }
+      });
+    }
+
+    return aktifSet;
+  }, [mode, nodesSaatIni, kabelSaatIni, daftarMcuDiKanvas, statusRunPerMcu]);
 
   const muatPresetTutorialProject = (proj: PresetTutorialProject) => {
     setProjectAktif(proj);
@@ -663,10 +554,60 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
       ...daftarKabel,
       wokwi: proj.kabel,
     });
-    setIdKomponenTerpilih(proj.nodes[0]?.id || null);
-    if (onUpdateKodeDariCloud) {
-      onUpdateKodeDariCloud(proj.kodeProgram);
+    setKodePerMcuMap(proj.kodePerMcu);
+
+    const runMapBaru: { [id: string]: boolean } = {};
+    const mcuNodes = proj.nodes.filter((n) => TIPE_MCU_LIST.includes(n.tipe));
+    mcuNodes.forEach((m) => {
+      runMapBaru[m.id] = true;
+    });
+    setStatusRunPerMcu(runMapBaru);
+    if (mcuNodes[0]) {
+      setIdTabMcuAktif(mcuNodes[0].id);
+      if (onUpdateKodeDariCloud && proj.kodePerMcu[mcuNodes[0].id]) {
+        onUpdateKodeDariCloud(proj.kodePerMcu[mcuNodes[0].id]);
+      }
     }
+    setIdKomponenTerpilih(proj.nodes[0]?.id || null);
+
+    const jam = new Date().toLocaleTimeString("id-ID");
+    setLogSerialMultiMcu([
+      `[${jam}] 📂 Memuat "${proj.judul}" (${mcuNodes.length} Mikrokontroler & ${proj.kabel.length} Kabel Aktif).`,
+      `[${jam}] ✅ Semua Mikrokontroler dijalankan otomatis!`,
+    ]);
+  };
+
+  const jalankanSatuMcu = (mcuId: string, jalan: boolean) => {
+    const mcuObj = daftarMcuDiKanvas.find((m) => m.id === mcuId);
+    setStatusRunPerMcu((prev) => ({ ...prev, [mcuId]: jalan }));
+    const jam = new Date().toLocaleTimeString("id-ID");
+    setLogSerialMultiMcu((prev) => [
+      `[${jam}] ${jalan ? "▶️ RUNNING" : "⏹️ STOPPED"}: ${
+        mcuObj?.label || mcuId
+      } ${
+        jalan
+          ? "mengeksekusi firmware & mengaktifkan komponen yang terhubung."
+          : "dihentikan (komponen pada board ini menjadi OFF)."
+      }`,
+      ...prev,
+    ]);
+  };
+
+  const jalankanSemuaMcuSerentak = (jalanSemua: boolean) => {
+    const mapBaru: { [id: string]: boolean } = {};
+    daftarMcuDiKanvas.forEach((m) => {
+      mapBaru[m.id] = jalanSemua;
+    });
+    setStatusRunPerMcu(mapBaru);
+    const jam = new Date().toLocaleTimeString("id-ID");
+    setLogSerialMultiMcu((prev) => [
+      `[${jam}] ${
+        jalanSemua
+          ? `🚀 RUN ALL (${daftarMcuDiKanvas.length} Mikrokontroler berjalan serentak!)`
+          : "⏹️ STOP ALL (Seluruh mikrokontroler dihentikan)."
+      }`,
+      ...prev,
+    ]);
   };
 
   const paletModeIni = PALET_KOMPONEN[mode] || [];
@@ -684,8 +625,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     return cocokKategori && cocokKata;
   });
 
-  const nodesSaatIni = daftarNode[mode] || [];
-  const kabelSaatIni = daftarKabel[mode] || [];
   const komponenTerpilih =
     nodesSaatIni.find((n) => n.id === idKomponenTerpilih) || nodesSaatIni[0] || null;
   const layoutTerpilih = komponenTerpilih
@@ -715,21 +654,45 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     defaultSensor?: number
   ) => {
     const specRentang = ambilKonfigurasiRentangKomponen(tipe);
+    const urutan = nodesSaatIni.filter((n) => n.tipe === tipe).length + 1;
+    const idBaru = `${mode}-node-${Date.now()}`;
+    const namaLabel = `${label.split(" (")[0]} #${urutan}`;
+
     const baru: NodeKomponenKanvas = {
-      id: `${mode}-node-${Date.now()}`,
+      id: idBaru,
       tipe,
-      label: `${label.split(" (")[0]} #${nodesSaatIni.length + 1}`,
+      label: namaLabel,
       x: Math.max(15, Math.min(580, xPos)),
       y: Math.max(35, Math.min(380, yPos)),
       nilaiResistor: defaultResistor ?? (tipe === "resistor" ? 1000 : undefined),
       nilaiSensor: defaultSensor ?? specRentang.defaultVal,
       nyala: true,
     };
+
     setDaftarNode({
       ...daftarNode,
       [mode]: [...nodesSaatIni, baru],
     });
     setIdKomponenTerpilih(baru.id);
+
+    // Jika yang ditambahkan adalah Mikrokontroler baru (ESP32 ke-2, ke-3, atau Arduino), otomatis buatkan Tab Kode Baru!
+    if (TIPE_MCU_LIST.includes(tipe)) {
+      const templateKodeMcuBaru = `// ============================================================================
+// KODE PROGRAM UNTUK ${namaLabel.toUpperCase()}
+// ============================================================================
+void setup() {
+  Serial.begin(115200);
+  Serial.println("=== [${namaLabel}] READY & RUNNING ===");
+}
+
+void loop() {
+  // Hubungkan sensor/aktuator ke pin board ini lalu klik Run!
+  delay(1000);
+}`;
+      setKodePerMcuMap((prev) => ({ ...prev, [idBaru]: templateKodeMcuBaru }));
+      setStatusRunPerMcu((prev) => ({ ...prev, [idBaru]: true }));
+      setIdTabMcuAktif(idBaru);
+    }
   };
 
   const handleDropDariPalet = (e: React.DragEvent<HTMLDivElement>) => {
@@ -888,6 +851,9 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
   const arusRangkaianMa =
     totalOhmKanvas > 0 ? (sumberVcc / totalOhmKanvas) * 1000 : 0;
 
+  const mcuTabAktifObj =
+    daftarMcuDiKanvas.find((m) => m.id === idTabMcuAktif) || daftarMcuDiKanvas[0];
+
   return (
     <div className="space-y-6">
       <div className="bg-slate-900 text-white p-6 rounded-3xl border-2 border-indigo-500/40 space-y-6 shadow-2xl">
@@ -903,11 +869,11 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
             )}
             <div>
               <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded bg-emerald-500 text-slate-950">
-                Real-World Sensor Ranges • Relay 1CH/2CH/4CH • Servo 180° &amp; 360°
+                Multi-MCU IDE ({daftarMcuDiKanvas.length} Board Aktif) • Active Circuit Validation
               </span>
               <h3 className="font-black text-base sm:text-lg text-white mt-0.5">
                 {mode === "wokwi"
-                  ? "Wokwi IoT Studio — Parameter Sensor Asli, Relay Multi-Channel, Solenoid/Pompa & Tutorial Proyek"
+                  ? "Wokwi IoT Studio — Multi-Tab ESP32/Arduino, Validasi Kabel Aktif & 7 Tutorial Proyek Lengkap"
                   : mode === "ewb"
                   ? "EWB (Electronics Workbench) — Rangkaian RLC, Resistor 4-Gelang & Pin Fisik"
                   : "MATLAB Simulink — Diagram Blok Sistem Kendali PID"}
@@ -985,7 +951,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
         </div>
 
         {/* ====================================================================
-            PANEL TUTORIAL & CONTOH PROJECT JADI (SEDERHANA S/D KOMPLEKS)
+            PANEL 7 TUTORIAL & CONTOH RANGKAIAN PROJECT JADI + SYNC BLYNK WIDGETS
            ==================================================================== */}
         {mode === "wokwi" && (
           <div className="bg-gradient-to-r from-indigo-950/90 via-slate-950 to-emerald-950/90 p-5 rounded-3xl border border-indigo-500/40 space-y-4">
@@ -993,8 +959,8 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
               <div className="flex items-center gap-2">
                 <BookOpen className="w-5 h-5 text-amber-400" />
                 <span className="font-black text-xs sm:text-sm uppercase text-amber-300">
-                  Tutorial &amp; Contoh Rangkaian Project Jadi (Klik untuk Memuat Rangkaian +
-                  Kabel + Kode C++ Otomatis):
+                  7 Tutorial &amp; Contoh Rangkaian Project Jadi (Otomatis Memuat Rangkaian +
+                  Multi-Tab Kode MCU + Widget Dashboard Blynk):
                 </span>
               </div>
               <span className="text-[11px] font-mono text-emerald-300">
@@ -1002,37 +968,44 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
               {DAFTAR_TUTORIAL_PROJECT_WOKWI.map((proj) => {
                 const dipilih = projectAktif.id === proj.id;
+                const jmlMcuProj = proj.nodes.filter((n) =>
+                  TIPE_MCU_LIST.includes(n.tipe)
+                ).length;
                 return (
                   <button
                     key={proj.id}
                     type="button"
                     onClick={() => muatPresetTutorialProject(proj)}
-                    className={`p-3.5 rounded-2xl border-2 text-left transition cursor-pointer flex flex-col justify-between gap-2 ${
+                    className={`p-3 rounded-2xl border-2 text-left transition cursor-pointer flex flex-col justify-between gap-1.5 ${
                       dipilih
-                        ? "bg-indigo-600/30 border-amber-400 text-white shadow-lg"
+                        ? "bg-indigo-600/35 border-amber-400 text-white shadow-lg"
                         : "bg-slate-900/90 border-slate-800 text-slate-300 hover:border-indigo-400"
                     }`}
                   >
                     <div>
-                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-amber-400 text-slate-950">
-                        {proj.level}
-                      </span>
+                      <div className="flex justify-between items-center gap-1">
+                        <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-amber-400 text-slate-950">
+                          {proj.level}
+                        </span>
+                        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
+                          {jmlMcuProj} Tab MCU
+                        </span>
+                      </div>
                       <div className="font-black text-xs text-white mt-1.5 leading-snug">
                         {proj.judul}
                       </div>
                     </div>
                     <span className="text-[10px] font-bold text-emerald-300 flex items-center gap-1">
-                      <Sparkles className="w-3 h-3" /> Muat Rangkaian &amp; Kode
+                      <Sparkles className="w-3 h-3" /> Muat Project &amp; Blynk ({proj.blynkWidgets.length} Widget)
                     </span>
                   </button>
                 );
               })}
             </div>
 
-            {/* Detail Panduan Langkah Wiring Proyek Aktif */}
             <div className="p-4 rounded-2xl bg-slate-950/90 border border-slate-800 grid grid-cols-1 lg:grid-cols-12 gap-4 text-xs">
               <div className="lg:col-span-5 space-y-1">
                 <div className="font-black text-amber-300">{projectAktif.judul}</div>
@@ -1042,7 +1015,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
               </div>
               <div className="lg:col-span-7 space-y-1">
                 <div className="font-black text-emerald-300 uppercase text-[10px]">
-                  📋 Panduan Langkah Penyambungan Pin (Wiring Tutorial):
+                  📋 Langkah Penyambungan Pin (Komponen yang Tidak Terhubung Kabel Tidak Akan Aktif!):
                 </div>
                 <ol className="list-decimal pl-4 space-y-0.5 text-[11px] text-slate-200 font-medium">
                   {projectAktif.langkahWiring.map((lw, i) => (
@@ -1060,8 +1033,8 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
             <div className="flex items-center gap-2 text-xs">
               <Move className="w-4 h-4 text-amber-400" />
               <span className="font-black uppercase text-amber-300">
-                Gudang Komponen ({komponenPaletTersaring.length} Item): Tarik (Drag &amp; Drop) atau
-                Klik untuk Menaruh ke Meja Rangkaian
+                Gudang Komponen ({komponenPaletTersaring.length} Item — Tambah ESP32/Arduino Baru
+                Otomatis Membuka Tab Program Baru!):
               </span>
             </div>
 
@@ -1071,7 +1044,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                 type="text"
                 value={cariKomponen}
                 onChange={(e) => setCariKomponen(e.target.value)}
-                placeholder="Cari Relay 4CH, Solenoid, Servo 360..."
+                placeholder="Cari ESP32, Relay 4CH, Solenoid..."
                 className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-400"
               />
             </div>
@@ -1144,24 +1117,48 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
           </div>
         </div>
 
-        {/* BAR PILIH WARNA KABEL & INDIKATOR PIN YANG SEDANG DIDEKATI (HOVER) */}
+        {/* BAR PILIH WARNA KABEL & KONTROL RUN SEMUA / RUN PER MIKROKONTROLER */}
         <div className="bg-slate-950/95 p-3.5 rounded-3xl border border-indigo-500/30 flex flex-wrap justify-between items-center gap-3 text-xs">
-          <div className="flex items-center gap-2">
-            <Cable className="w-4 h-4 text-emerald-400 shrink-0" />
-            {hoveredPinInfo ? (
-              <div className="font-mono text-xs bg-slate-900 border border-amber-400/60 px-3 py-1 rounded-xl text-white">
-                📍 <b>{hoveredPinInfo.nodeLabel}</b> ➔{" "}
-                <span className="text-amber-300 font-black">
-                  Pin #{hoveredPinInfo.pin.nomorPin}: {hoveredPinInfo.pin.nama}
-                </span>{" "}
-                <span className="text-slate-300">({hoveredPinInfo.pin.keterangan})</span>
-              </div>
-            ) : (
-              <span className="font-bold text-slate-300">
-                Dekatkan kursor ke titik pin pada komponen (Relay NO/COM/NC, ESP32, Solenoid, Pompa)
-                untuk melihat fungsi pin, lalu klik titik tersebut untuk menarik kabel!
-              </span>
-            )}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => jalankanSemuaMcuSerentak(true)}
+              className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black flex items-center gap-1.5 cursor-pointer shadow-lg"
+            >
+              <Play className="w-3.5 h-3.5 fill-slate-950" /> Run Semua ({daftarMcuDiKanvas.length} MCU)
+            </button>
+            <button
+              type="button"
+              onClick={() => jalankanSemuaMcuSerentak(false)}
+              className="px-3 py-2 rounded-xl bg-rose-600/30 hover:bg-rose-600 text-rose-200 hover:text-white border border-rose-500/40 font-black flex items-center gap-1.5 cursor-pointer"
+            >
+              <Square className="w-3.5 h-3.5" /> Stop Semua
+            </button>
+
+            {/* Tombol Run/Stop Individual per Mikrokontroler */}
+            {daftarMcuDiKanvas.map((mcu) => {
+              const sedangRun = !!statusRunPerMcu[mcu.id];
+              return (
+                <button
+                  key={mcu.id}
+                  type="button"
+                  onClick={() => jalankanSatuMcu(mcu.id, !sedangRun)}
+                  className={`px-3 py-1.5 rounded-xl font-mono text-[11px] font-black flex items-center gap-1.5 border cursor-pointer transition ${
+                    sedangRun
+                      ? "bg-emerald-950/90 border-emerald-400 text-emerald-300"
+                      : "bg-slate-900 border-slate-700 text-slate-400"
+                  }`}
+                  title="Klik untuk Run atau Stop mikrokontroler ini saja"
+                >
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      sedangRun ? "bg-emerald-400 animate-ping" : "bg-slate-600"
+                    }`}
+                  />
+                  <span>{mcu.label}: {sedangRun ? "RUNNING" : "STOPPED"}</span>
+                </button>
+              );
+            })}
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5">
@@ -1218,7 +1215,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
               ukuranKanvas === "penuh" ? "lg:col-span-12" : "lg:col-span-8"
             } ${tinggiKanvasPx} rounded-3xl bg-[#070d19] border-2 border-dashed border-slate-700 relative overflow-auto select-none bg-[radial-gradient(#1e293b_1.5px,transparent_1.5px)] [background-size:20px_20px]`}
           >
-            {/* FLOATING POP-UP TOOLBAR SAAT KABEL DIKLIK */}
             {kabelTerpilihObj && (
               <div
                 onClick={(e) => e.stopPropagation()}
@@ -1267,7 +1263,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                 width: `${100 / skalaZoom}%`,
                 height: `${100 / skalaZoom}%`,
               }}
-              className="relative w-full h-full min-w-[760px] min-h-[440px]"
+              className="relative w-full h-full min-w-[760px] min-h-[460px]"
             >
               {/* LAYER SVG GARIS KABEL SIKU ORTHOGONAL */}
               <svg className="absolute inset-0 w-full h-full z-20 pointer-events-none">
@@ -1287,6 +1283,9 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                     kbl.titikSiku
                   );
                   const apakahTerpilih = idKabelTerpilih === kbl.id;
+                  const kabelDialiriArus =
+                    setIdKomponenTerhubungKeMcuRunning.has(asal.id) &&
+                    setIdKomponenTerhubungKeMcuRunning.has(tujuan.id);
 
                   return (
                     <g key={kbl.id} className="pointer-events-auto">
@@ -1308,6 +1307,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                         strokeLinejoin="round"
                         strokeLinecap="round"
                         fill="none"
+                        opacity={kabelDialiriArus ? 1 : 0.35}
                         className="cursor-pointer"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1359,7 +1359,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                 )}
               </svg>
 
-              {/* TOOLTIP MELAYANG SAAT KURSOR MENDEKATI TITIK PIN FISIK */}
               {hoveredPinInfo && (
                 <div
                   style={{
@@ -1377,10 +1376,17 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                 </div>
               )}
 
-              {/* RENDER SETIAP KOMPONEN BESERTA TITIK-TITIK PIN FISIKNYA */}
+              {/* RENDER SETIAP KOMPONEN (DENGAN STATUS VALIDASI TERHUBUNG KE RANGKAIAN AKTIF) */}
               {nodesSaatIni.map((node) => {
-                const aktif = komponenTerpilih?.id === node.id;
+                const aktifDipilih = komponenTerpilih?.id === node.id;
                 const layout = ambilLayoutFisikKomponen(node.tipe);
+                const adalahMcu = TIPE_MCU_LIST.includes(node.tipe);
+
+                // Komponen dinyatakan menyala/aktif HANYA jika terhubung ke MCU yang sedang RUNNING
+                const terhubungKeRangkaianAktif =
+                  setIdKomponenTerhubungKeMcuRunning.has(node.id);
+                const statusNyalaEfektif =
+                  Boolean(node.nyala) && terhubungKeRangkaianAktif;
 
                 return (
                   <div
@@ -1393,16 +1399,29 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                     onMouseDown={(e) => {
                       e.stopPropagation();
                       setIdKomponenTerpilih(node.id);
+                      if (adalahMcu) setIdTabMcuAktif(node.id);
                       setSedangGeserId(node.id);
                     }}
-                    className={`absolute rounded-2xl cursor-move transition-shadow ${
-                      aktif ? "ring-2 ring-emerald-400/80 z-10" : "z-10"
-                    }`}
+                    className={`absolute rounded-2xl cursor-move transition-all ${
+                      aktifDipilih ? "ring-2 ring-emerald-400 z-10" : "z-10"
+                    } ${!terhubungKeRangkaianAktif ? "opacity-60 grayscale-[40%]" : ""}`}
                   >
-                    <div className="h-[18px] px-2 flex justify-between items-center bg-slate-900/90 rounded-t-xl border-x border-t border-slate-700 text-[9.5px] font-black text-amber-300 truncate">
-                      <span className="truncate">{node.label}</span>
-                      <span className="text-[8px] font-mono text-slate-400 shrink-0 ml-1">
-                        {layout.pins.length}p
+                    <div className="h-[18px] px-2 flex justify-between items-center bg-slate-900/95 rounded-t-xl border-x border-t border-slate-700 text-[9px] font-black truncate">
+                      <span className="truncate text-amber-300">{node.label}</span>
+                      <span
+                        className={`text-[7.5px] font-mono px-1 rounded shrink-0 ml-1 ${
+                          terhubungKeRangkaianAktif
+                            ? "bg-emerald-500/20 text-emerald-300"
+                            : "bg-rose-500/30 text-rose-300"
+                        }`}
+                      >
+                        {adalahMcu
+                          ? statusRunPerMcu[node.id]
+                            ? "● RUN"
+                            : "⏹ STOP"
+                          : terhubungKeRangkaianAktif
+                          ? "⚡ WIRED"
+                          : "⚠️ UNWIRED"}
                       </span>
                     </div>
 
@@ -1416,7 +1435,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                       <VisualKomponenRealistis
                         tipe={node.tipe}
                         nilaiResistor={node.nilaiResistor}
-                        nyala={node.nyala}
+                        nyala={statusNyalaEfektif}
                         nilaiSensor={node.nilaiSensor}
                         ukuran="kanvas"
                       />
@@ -1517,6 +1536,21 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
 
             {komponenTerpilih && layoutTerpilih && rentangTerpilih && (
               <div className="space-y-4 text-xs">
+                {/* Status Validasi Rangkaian Komponen Terpilih */}
+                <div
+                  className={`p-2.5 rounded-xl border text-[11px] font-bold flex items-center justify-between ${
+                    setIdKomponenTerhubungKeMcuRunning.has(komponenTerpilih.id)
+                      ? "bg-emerald-950/50 border-emerald-500/40 text-emerald-300"
+                      : "bg-rose-950/60 border-rose-500/50 text-rose-300"
+                  }`}
+                >
+                  <span>
+                    {setIdKomponenTerhubungKeMcuRunning.has(komponenTerpilih.id)
+                      ? "⚡ Terhubung ke Mikrokontroler RUNNING (Aktif)"
+                      : "⚠️ Tidak Terhubung Kabel / MCU Sedang STOP (Komponen Padam)"}
+                  </span>
+                </div>
+
                 <div>
                   <label className="text-[10px] font-bold text-slate-400 block mb-1">
                     Nama Komponen Terpilih:
@@ -1533,7 +1567,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                   />
                 </div>
 
-                {/* JIKA RESISTOR: EDITOR OHM & GELANG WARNA */}
                 {komponenTerpilih.tipe === "resistor" ? (
                   <div className="p-4 rounded-2xl bg-slate-900 border border-amber-500/40 space-y-3">
                     <div className="font-black text-amber-300 uppercase text-[11px]">
@@ -1557,22 +1590,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                       }
                       className="w-full p-2 rounded-xl bg-slate-950 border border-slate-700 font-mono font-black text-amber-300"
                     />
-                    <div className="grid grid-cols-3 gap-1">
-                      {[220, 330, 1000, 2200, 4700, 10000].map((ohm) => (
-                        <button
-                          key={ohm}
-                          type="button"
-                          onClick={() =>
-                            updatePropertiKomponen(komponenTerpilih.id, {
-                              nilaiResistor: ohm,
-                            })
-                          }
-                          className="py-1 px-2 rounded bg-slate-950 border border-slate-800 hover:border-amber-400 font-mono text-[10px] font-bold text-slate-300 cursor-pointer"
-                        >
-                          {hitungGelangWarnaResistor(ohm).labelSingkat}
-                        </button>
-                      ))}
-                    </div>
                   </div>
                 ) : (
                   <div className="p-4 rounded-2xl bg-slate-900 border border-emerald-500/30 space-y-3">
@@ -1580,7 +1597,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                       ⚙️ {rentangTerpilih.labelParameter}
                     </div>
 
-                    {/* HANYA TAMPILKAN SLIDER JIKA KOMPONEN MEMILIKI RENTANG FISIK (BUKAN ON/OFF MURNI) */}
                     {rentangTerpilih.punyaSlider ? (
                       <>
                         <div className="flex justify-between items-center font-mono text-xs">
@@ -1612,9 +1628,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                       </>
                     ) : (
                       <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-200 font-semibold">
-                        ⚡ Komponen ini bekerja secara Digital Sakelar <b>ON / OFF</b> (Tidak
-                        menggunakan rentang sudut 0–180). Gunakan tombol sakelar di bawah atau
-                        hubungkan ke Modul Relay!
+                        ⚡ Komponen Digital Sakelar <b>ON / OFF</b>.
                       </div>
                     )}
 
@@ -1629,31 +1643,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                         updatePropertiKomponen(komponenTerpilih.id, {
                           nyala: statusBaru,
                         });
-                        // Jika yang di-toggle adalah Modul Relay, otomatis sinkronkan Solenoid/Pompa yang terhubung ke Relay tersebut!
-                        if (komponenTerpilih.tipe.startsWith("relay_")) {
-                          const idTerhubung = kabelSaatIni
-                            .filter(
-                              (k) =>
-                                k.dariId === komponenTerpilih.id ||
-                                k.keId === komponenTerpilih.id
-                            )
-                            .map((k) =>
-                              k.dariId === komponenTerpilih.id ? k.keId : k.dariId
-                            );
-                          setDaftarNode({
-                            ...daftarNode,
-                            [mode]: nodesSaatIni.map((nd) =>
-                              nd.id === komponenTerpilih.id ||
-                              (idTerhubung.includes(nd.id) &&
-                                (nd.tipe === "solenoid_lock" ||
-                                  nd.tipe === "water_pump" ||
-                                  nd.tipe === "kipas_dc" ||
-                                  nd.tipe.startsWith("led_")))
-                                ? { ...nd, nyala: statusBaru }
-                                : nd
-                            ),
-                          });
-                        }
                       }}
                       className={`w-full py-2.5 rounded-xl font-black flex items-center justify-center gap-1.5 cursor-pointer transition ${
                         komponenTerpilih.nyala
@@ -1669,19 +1658,12 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                   </div>
                 )}
 
-                {/* TABEL REFERENSI PINOUT TERPISAH */}
                 <div className="p-3.5 rounded-2xl bg-indigo-950/30 border border-indigo-500/30 space-y-2.5">
-                  <div className="flex justify-between items-center">
-                    <span className="font-black text-indigo-300 uppercase text-[11px] flex items-center gap-1">
-                      <Info className="w-3.5 h-3.5" /> Daftar &amp; Keterangan Pin (
-                      {layoutTerpilih.pins.length} Titik)
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-300 leading-relaxed">
-                    {layoutTerpilih.fungsiUtama}
-                  </p>
-
-                  <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1 pt-1">
+                  <span className="font-black text-indigo-300 uppercase text-[11px] flex items-center gap-1">
+                    <Info className="w-3.5 h-3.5" /> Daftar &amp; Keterangan Pin (
+                    {layoutTerpilih.pins.length} Titik)
+                  </span>
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
                     {layoutTerpilih.pins.map((p) => (
                       <div
                         key={p.idPin}
@@ -1719,32 +1701,166 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
                 </div>
               </div>
             )}
-
-            <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1.5 text-xs font-mono">
-              <div className="text-[10px] font-black uppercase text-indigo-300 flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Multimeter Rangkaian
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Total Hambatan:</span>
-                <b className="text-amber-300">{totalOhmKanvas} Ω</b>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Arus Mengalir:</span>
-                <b className="text-sky-300">{arusRangkaianMa.toFixed(2)} mA</b>
-              </div>
-            </div>
           </div>
         </div>
+
+        {/* ====================================================================
+            STUDIO PEMROGRAMAN MULTI-MIKROKONTROLER (1 TAB PER ESP32/ARDUINO!)
+           ==================================================================== */}
+        {mode === "wokwi" && daftarMcuDiKanvas.length > 0 && (
+          <div className="bg-slate-950 rounded-3xl border-2 border-emerald-500/40 overflow-hidden shadow-2xl">
+            {/* Bar Tab untuk Setiap Mikrokontroler di Kanvas (2 ESP32 = 2 Tab, 3 MCU = 3 Tab) */}
+            <div className="bg-slate-900 px-5 py-3 border-b border-slate-800 flex flex-wrap justify-between items-center gap-3">
+              <div className="flex items-center gap-2 overflow-x-auto">
+                <Code2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                <span className="text-xs font-black uppercase text-slate-400 mr-1">
+                  Tab Program MCU ({daftarMcuDiKanvas.length} Board):
+                </span>
+                {daftarMcuDiKanvas.map((mcu, idx) => {
+                  const tabDipilih = mcuTabAktifObj?.id === mcu.id;
+                  const sedangRun = !!statusRunPerMcu[mcu.id];
+                  return (
+                    <button
+                      key={mcu.id}
+                      type="button"
+                      onClick={() => setIdTabMcuAktif(mcu.id)}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2 cursor-pointer transition ${
+                        tabDipilih
+                          ? "bg-indigo-600 text-white shadow-md"
+                          : "bg-slate-950 text-slate-300 border border-slate-800 hover:border-indigo-400"
+                      }`}
+                    >
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          sedangRun ? "bg-emerald-400 animate-ping" : "bg-rose-500"
+                        }`}
+                      />
+                      <span>
+                        Tab #{idx + 1}: {mcu.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Tombol Run Board Ini Saja vs Run Semua Board */}
+              {mcuTabAktifObj && (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      navigator.clipboard?.writeText(
+                        kodePerMcuMap[mcuTabAktifObj.id] || ""
+                      )
+                    }
+                    className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <Copy className="w-3.5 h-3.5" /> Salin
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      jalankanSatuMcu(
+                        mcuTabAktifObj.id,
+                        !statusRunPerMcu[mcuTabAktifObj.id]
+                      )
+                    }
+                    className={`px-4 py-2 rounded-xl font-black text-xs flex items-center gap-1.5 cursor-pointer ${
+                      statusRunPerMcu[mcuTabAktifObj.id]
+                        ? "bg-amber-400 text-slate-950"
+                        : "bg-emerald-500 text-slate-950"
+                    }`}
+                  >
+                    {statusRunPerMcu[mcuTabAktifObj.id] ? (
+                      <>
+                        <Square className="w-3.5 h-3.5 fill-slate-950" /> Stop{" "}
+                        {mcuTabAktifObj.label} Saja
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-3.5 h-3.5 fill-slate-950" /> Run{" "}
+                        {mcuTabAktifObj.label} Saja
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => jalankanSemuaMcuSerentak(true)}
+                    className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center gap-1.5 cursor-pointer shadow-lg"
+                  >
+                    <Play className="w-3.5 h-3.5 fill-slate-950" /> Run Semua (
+                    {daftarMcuDiKanvas.length} MCU)
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Editor Kode per Tab MCU & Serial Monitor Gabungan */}
+            {mcuTabAktifObj && (
+              <div className="grid grid-cols-1 lg:grid-cols-12">
+                <div className="lg:col-span-8 border-r border-slate-800">
+                  <textarea
+                    rows={11}
+                    value={
+                      kodePerMcuMap[mcuTabAktifObj.id] ||
+                      `// Program C++ untuk ${mcuTabAktifObj.label}\nvoid setup() {\n  Serial.begin(115200);\n}\nvoid loop() {\n}`
+                    }
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setKodePerMcuMap({
+                        ...kodePerMcuMap,
+                        [mcuTabAktifObj.id]: val,
+                      });
+                      if (onUpdateKodeDariCloud) onUpdateKodeDariCloud(val);
+                    }}
+                    spellCheck={false}
+                    className="w-full p-5 bg-slate-950 text-emerald-300 font-mono text-xs leading-relaxed focus:outline-none resize-y"
+                  />
+                </div>
+                <div className="lg:col-span-4 p-4 bg-black/70 flex flex-col justify-between space-y-3 font-mono text-xs">
+                  <div className="space-y-2">
+                    <div className="text-[11px] font-black text-amber-300 uppercase flex items-center gap-1.5">
+                      <Terminal className="w-4 h-4 text-emerald-400" /> Multi-MCU Serial Monitor &amp;
+                      Active Bus Log
+                    </div>
+                    <div className="space-y-1.5 max-h-52 overflow-y-auto text-[11px] text-slate-300">
+                      {logSerialMultiMcu.map((lg, i) => (
+                        <div key={i} className="leading-snug border-b border-slate-900 pb-1">
+                          {lg}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="text-[10px] text-slate-400">
+                    Komponen Aktif Terhubung:{" "}
+                    <b className="text-emerald-400">
+                      {setIdKomponenTerhubungKeMcuRunning.size} dari {nodesSaatIni.length} Komponen
+                    </b>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* PANEL DASHBOARD IOT CLOUD: DRAG & DROP BLYNK STUDIO, DUAL-MCU UART, MQTT & WIFI */}
+      {/* PANEL DASHBOARD IOT CLOUD: DRAG & DROP BLYNK STUDIO (OTOMATIS MEMUAT WIDGET DARI TUTORIAL PROJECT!) */}
       {mode === "wokwi" && bukaDashboardIot && (
         <IotCloudBlynkPanel
           nodesKanvas={nodesSaatIni}
+          presetWidgets={projectAktif.blynkWidgets}
           onUpdateNodeDariCloud={(id, perubahan) =>
             updatePropertiKomponen(id, perubahan)
           }
-          onGenerateKodeIotKeEditor={onUpdateKodeDariCloud}
+          onGenerateKodeIotKeEditor={(kodeBaru) => {
+            if (mcuTabAktifObj) {
+              setKodePerMcuMap((prev) => ({
+                ...prev,
+                [mcuTabAktifObj.id]: kodeBaru,
+              }));
+            }
+            if (onUpdateKodeDariCloud) onUpdateKodeDariCloud(kodeBaru);
+          }}
         />
       )}
     </div>
