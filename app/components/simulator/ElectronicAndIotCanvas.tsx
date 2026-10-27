@@ -62,6 +62,13 @@ import {
   AccountProjectRepositoryDrawer,
   MultiMcuIdeSection,
 } from "./MultiMcuIdeAndProjectModal";
+import {
+  ZonaRuanganFisik,
+  DAFTAR_RUANGAN_FISIK_AWAL,
+  cariRuanganTempatKomponen,
+  PhysicalRoomsToolbar,
+  PhysicalRoomsCanvasOverlay,
+} from "./PhysicalRoomsLayer";
 
 export type { TitikSikuKabel };
 
@@ -98,6 +105,7 @@ export interface ProjectTersimpanAkun {
   kodePerMcu: { [mcuId: string]: string };
   kodeMicroPythonPerMcu: { [mcuId: string]: string };
   blynkWidgets: ExtendedWidgetBlynkItem[];
+  ruanganFisik?: ZonaRuanganFisik[];
 }
 
 interface SnapshotUndoKanvas {
@@ -161,6 +169,26 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
   const [daftarKabel, setDaftarKabel] = useState<{
     [key in "wokwi" | "ewb" | "matlab"]: KabelKoneksiItem[];
   }>(KABEL_AWAL_PER_MODE);
+
+  // ============================================================================
+  // STATE DENAH RUANGAN FISIK ALA PACKET TRACER (RUANG A SERVER, RUANG B RUMAH, DLL)
+  // ============================================================================
+  const [tampilkanRuangan, setTampilkanRuangan] = useState<boolean>(true);
+  const [daftarRuanganFisik, setDaftarRuanganFisik] = useState<ZonaRuanganFisik[]>(
+    DAFTAR_RUANGAN_FISIK_AWAL
+  );
+  const [sedangGeserRuangan, setSedangGeserRuangan] = useState<{
+    id: string;
+    offsetX: number;
+    offsetY: number;
+  } | null>(null);
+  const [sedangResizeRuangan, setSedangResizeRuangan] = useState<{
+    id: string;
+    startX: number;
+    startY: number;
+    startW: number;
+    startH: number;
+  } | null>(null);
 
   const [riwayatUndo, setRiwayatUndo] = useState<SnapshotUndoKanvas[]>([]);
   const [riwayatRedo, setRiwayatRedo] = useState<SnapshotUndoKanvas[]>([]);
@@ -268,7 +296,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
   const [idTabMcuAktif, setIdTabMcuAktif] = useState<string>("p5-esp1");
   const [logSerialMultiMcu, setLogSerialMultiMcu] = useState<string[]>([
     "[10:30:01] 🚀 Semua Mikrokontroler lolos pemeriksaan Library & sedang RUNNING...",
-    "[10:30:02] [ESP32 #1 -> UART TX2]: Mengirim paket 'NODE1:JARAK=28cm;PIR=DETECTED'",
+    "[10:30:02] [Ruang A -> Ruang B]: Komunikasi lintas ruangan aktif!",
   ]);
 
   const [kategoriPaletAktif, setKategoriPaletAktif] = useState<string>("Semua");
@@ -344,6 +372,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
       kodePerMcu: JSON.parse(JSON.stringify(kodePerMcuMap)),
       kodeMicroPythonPerMcu: JSON.parse(JSON.stringify(kodeMicroPythonMap)),
       blynkWidgets: JSON.parse(JSON.stringify(widgetsBlynkSaatIni)),
+      ruanganFisik: JSON.parse(JSON.stringify(daftarRuanganFisik)),
     };
 
     const listBaru = [baru, ...daftarProjectTersimpan];
@@ -352,9 +381,8 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
       localStorage.setItem(storageKeyUser, JSON.stringify(listBaru));
     } catch {}
 
-    // Tampilkan Pop-up Modal Modern!
     setInfoPopupNotifProject({
-      judul: "Project Berhasil Disimpan!",
+      judul: "Project & Denah Ruangan Disimpan!",
       namaProject: judul,
       namaAkun: namaPemilikAktif,
       jumlahKomponen: nodesSaatIni.length,
@@ -371,6 +399,9 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     setKodeMicroPythonMap(prj.kodeMicroPythonPerMcu || {});
     if (prj.blynkWidgets) {
       setWidgetsBlynkSaatIni(prj.blynkWidgets);
+    }
+    if (prj.ruanganFisik && prj.ruanganFisik.length > 0) {
+      setDaftarRuanganFisik(prj.ruanganFisik);
     }
 
     const runMap: { [id: string]: boolean } = {};
@@ -627,17 +658,25 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
   const rentangTerpilih = komponenTerpilih
     ? ambilKonfigurasiRentangKomponen(komponenTerpilih.tipe)
     : null;
+  const ruanganKomponenTerpilih = komponenTerpilih
+    ? cariRuanganTempatKomponen(
+        komponenTerpilih.x,
+        komponenTerpilih.y,
+        daftarRuanganFisik,
+        tampilkanRuangan
+      )
+    : null;
   const kabelTerpilihObj =
     kabelSaatIni.find((k) => k.id === idKabelTerpilih) || null;
 
   const tinggiKanvasPx =
     ukuranKanvas === "kecil"
-      ? "h-[380px]"
+      ? "h-[400px]"
       : ukuranKanvas === "sedang"
-      ? "h-[500px]"
+      ? "h-[520px]"
       : ukuranKanvas === "besar"
-      ? "h-[620px]"
-      : "h-[800px]";
+      ? "h-[640px]"
+      : "h-[820px]";
 
   const tambahKomponenKeKanvas = (
     tipe: string,
@@ -720,6 +759,40 @@ void loop() {
 
     if (sedangTarikKabelDariPin) {
       setPosisiKursorKanvas({ x: mouseX, y: mouseY });
+    }
+
+    // Geser Posisi Ruangan Fisik
+    if (sedangGeserRuangan) {
+      setDaftarRuanganFisik((prev) =>
+        prev.map((r) =>
+          r.id === sedangGeserRuangan.id
+            ? {
+                ...r,
+                x: Math.max(5, mouseX - sedangGeserRuangan.offsetX),
+                y: Math.max(5, mouseY - sedangGeserRuangan.offsetY),
+              }
+            : r
+        )
+      );
+      return;
+    }
+
+    // Resize Ukuran Ruangan Fisik
+    if (sedangResizeRuangan) {
+      const dX = mouseX - sedangResizeRuangan.startX;
+      const dY = mouseY - sedangResizeRuangan.startY;
+      setDaftarRuanganFisik((prev) =>
+        prev.map((r) =>
+          r.id === sedangResizeRuangan.id
+            ? {
+                ...r,
+                w: Math.max(180, sedangResizeRuangan.startW + dX),
+                h: Math.max(150, sedangResizeRuangan.startH + dY),
+              }
+            : r
+        )
+      );
+      return;
     }
 
     if (sedangGeserSiku) {
@@ -890,7 +963,6 @@ void loop() {
 
   return (
     <div className="space-y-6">
-      {/* POP-UP MODAL ELEGAN SAAT PROJECT BERHASIL DISIMPAN */}
       <ProjectSavedPopupModal
         info={infoPopupNotifProject}
         onClose={() => setInfoPopupNotifProject(null)}
@@ -910,11 +982,11 @@ void loop() {
             )}
             <div>
               <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded bg-emerald-500 text-slate-950">
-                C++ ⇄ MicroPython Auto-Transpiler • Undo/Redo • Cloud Project per Account
+                Packet Tracer Physical Room Mode • C++ ⇄ MicroPython • Cloud Project
               </span>
               <h3 className="font-black text-base sm:text-lg text-white mt-0.5">
                 {mode === "wokwi"
-                  ? `Wokwi IoT Studio — Akun: ${namaPemilikAktif}`
+                  ? `Wokwi IoT & Physical Room Studio — Akun: ${namaPemilikAktif}`
                   : mode === "ewb"
                   ? "EWB (Electronics Workbench) — Rangkaian RLC & Resistor 4-Gelang"
                   : "MATLAB Simulink — Diagram Blok Sistem Kendali PID"}
@@ -1023,7 +1095,6 @@ void loop() {
           </div>
         </div>
 
-        {/* DRAWER REPOSITORI PROJECT TERSIMPAN PER AKUN */}
         <AccountProjectRepositoryDrawer
           buka={bukaPanelProjectAkun}
           namaPemilikAktif={namaPemilikAktif}
@@ -1091,13 +1162,22 @@ void loop() {
           </div>
         )}
 
+        {/* TOOLBAR PENGATUR DENAH RUANGAN FISIK ALA PACKET TRACER */}
+        <PhysicalRoomsToolbar
+          tampilkanRuangan={tampilkanRuangan}
+          setTampilkanRuangan={setTampilkanRuangan}
+          daftarRuangan={daftarRuanganFisik}
+          setDaftarRuangan={setDaftarRuanganFisik}
+        />
+
         {/* GUDANG KOMPONEN BERKATEGORI */}
         <div className="bg-slate-950/90 p-5 rounded-3xl border border-slate-800 space-y-4">
           <div className="flex flex-wrap justify-between items-center gap-3">
             <div className="flex items-center gap-2 text-xs">
               <Move className="w-4 h-4 text-amber-400" />
               <span className="font-black uppercase text-amber-300">
-                Gudang Komponen ({komponenPaletTersaring.length} Item):
+                Gudang Komponen ({komponenPaletTersaring.length} Item — Tarik ke Dalam Ruangan A /
+                Ruangan B di Kanvas!):
               </span>
             </div>
 
@@ -1238,7 +1318,7 @@ void loop() {
           </div>
         </div>
 
-        {/* AREA UTAMA: KANVAS DRAG & DROP (8 KOLOM) + INSPEKTOR (4 KOLOM) */}
+        {/* AREA UTAMA: KANVAS DRAG & DROP DENGAN DENAH RUANGAN FISIK (8 KOLOM) + INSPEKTOR (4 KOLOM) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           <div
             ref={containerRef}
@@ -1248,10 +1328,14 @@ void loop() {
             onMouseUp={() => {
               setSedangGeserId(null);
               setSedangGeserSiku(null);
+              setSedangGeserRuangan(null);
+              setSedangResizeRuangan(null);
             }}
             onMouseLeave={() => {
               setSedangGeserId(null);
               setSedangGeserSiku(null);
+              setSedangGeserRuangan(null);
+              setSedangResizeRuangan(null);
             }}
             onClick={() => {
               setIdKabelTerpilih(null);
@@ -1309,8 +1393,51 @@ void loop() {
                 width: `${100 / skalaZoom}%`,
                 height: `${100 / skalaZoom}%`,
               }}
-              className="relative w-full h-full min-w-[760px] min-h-[460px]"
+              className="relative w-full h-full min-w-[780px] min-h-[480px]"
             >
+              {/* LAYER BAWAH: DENAH RUANGAN FISIK ALA CISCO PACKET TRACER */}
+              <PhysicalRoomsCanvasOverlay
+                tampilkanRuangan={tampilkanRuangan}
+                daftarRuangan={daftarRuanganFisik}
+                onMulaiGeserRuangan={(id, e) => {
+                  if (!containerRef.current) return;
+                  const rect = containerRef.current.getBoundingClientRect();
+                  const rm = daftarRuanganFisik.find((x) => x.id === id);
+                  if (!rm) return;
+                  const mX = Math.round((e.clientX - rect.left) / skalaZoom);
+                  const mY = Math.round((e.clientY - rect.top) / skalaZoom);
+                  setSedangGeserRuangan({
+                    id,
+                    offsetX: mX - rm.x,
+                    offsetY: mY - rm.y,
+                  });
+                }}
+                onMulaiResizeRuangan={(id, e) => {
+                  if (!containerRef.current) return;
+                  const rect = containerRef.current.getBoundingClientRect();
+                  const rm = daftarRuanganFisik.find((x) => x.id === id);
+                  if (!rm) return;
+                  setSedangResizeRuangan({
+                    id,
+                    startX: Math.round((e.clientX - rect.left) / skalaZoom),
+                    startY: Math.round((e.clientY - rect.top) / skalaZoom),
+                    startW: rm.w,
+                    startH: rm.h,
+                  });
+                }}
+                onHapusRuangan={(id) =>
+                  setDaftarRuanganFisik((prev) => prev.filter((x) => x.id !== id))
+                }
+                onUbahNamaRuangan={(id, namaBaru) =>
+                  setDaftarRuanganFisik((prev) =>
+                    prev.map((x) =>
+                      x.id === id ? { ...x, namaRuangan: namaBaru } : x
+                    )
+                  )
+                }
+              />
+
+              {/* LAYER TENGAH: GARIS KABEL SIKU LINTAS RUANGAN */}
               <svg className="absolute inset-0 w-full h-full z-20 pointer-events-none">
                 {kabelSaatIni.map((kbl) => {
                   const asal = nodesSaatIni.find((n) => n.id === kbl.dariId);
@@ -1422,10 +1549,17 @@ void loop() {
                 </div>
               )}
 
+              {/* LAYER ATAS: KOMPONEN IOT BESERTA DETEKSI RUANGAN FISIKNYA */}
               {nodesSaatIni.map((node) => {
                 const aktifDipilih = komponenTerpilih?.id === node.id;
                 const layout = ambilLayoutFisikKomponen(node.tipe);
                 const adalahMcu = TIPE_MCU_LIST.includes(node.tipe);
+                const ruanganNodeIni = cariRuanganTempatKomponen(
+                  node.x,
+                  node.y,
+                  daftarRuanganFisik,
+                  tampilkanRuangan
+                );
 
                 const terhubungKeRangkaianAktif =
                   setIdKomponenTerhubungKeMcuRunning.has(node.id);
@@ -1451,7 +1585,10 @@ void loop() {
                     } ${!terhubungKeRangkaianAktif ? "opacity-60 grayscale-[40%]" : ""}`}
                   >
                     <div className="h-[18px] px-2 flex justify-between items-center bg-slate-900/95 rounded-t-xl border-x border-t border-slate-700 text-[9px] font-black truncate">
-                      <span className="truncate text-amber-300">{node.label}</span>
+                      <span className="truncate text-amber-300">
+                        {ruanganNodeIni ? `${ruanganNodeIni.ikon} ` : ""}
+                        {node.label}
+                      </span>
                       <span
                         className={`text-[7.5px] font-mono px-1 rounded shrink-0 ml-1 ${
                           terhubungKeRangkaianAktif
@@ -1553,15 +1690,15 @@ void loop() {
             </div>
           </div>
 
-          {/* PANEL SAMPING KANAN (4 KOLOM): INSPEKTOR & DUPLIKAT ITEM */}
+          {/* PANEL SAMPING KANAN (4 KOLOM): INSPEKTOR, LOKASI RUANGAN & DUPLIKAT ITEM */}
           <div
             className={`${
               ukuranKanvas === "penuh" ? "lg:col-span-12" : "lg:col-span-4"
-            } bg-slate-950 p-5 rounded-3xl border border-slate-800 space-y-5 max-h-[620px] overflow-y-auto`}
+            } bg-slate-950 p-5 rounded-3xl border border-slate-800 space-y-5 max-h-[640px] overflow-y-auto`}
           >
             <div className="flex justify-between items-center border-b border-slate-800 pb-3">
               <span className="font-black text-xs uppercase text-emerald-400 flex items-center gap-1.5">
-                <Sliders className="w-4 h-4" /> Inspector &amp; Duplikat Item
+                <Sliders className="w-4 h-4" /> Inspector &amp; Lokasi Ruangan
               </span>
               {komponenTerpilih && (
                 <div className="flex items-center gap-1.5">
@@ -1592,6 +1729,16 @@ void loop() {
 
             {komponenTerpilih && layoutTerpilih && rentangTerpilih && (
               <div className="space-y-4 text-xs">
+                {/* Badge Lokasi Ruangan Fisik Komponen Saat Ini */}
+                <div className="p-2.5 rounded-xl bg-indigo-950/60 border border-indigo-500/40 text-[11px] font-bold flex items-center justify-between">
+                  <span className="text-slate-300">Lokasi Fisik:</span>
+                  <span className="text-amber-300 font-black">
+                    {ruanganKomponenTerpilih
+                      ? `${ruanganKomponenTerpilih.ikon} ${ruanganKomponenTerpilih.namaRuangan}`
+                      : "📍 Area Terbuka (Diluar Ruangan)"}
+                  </span>
+                </div>
+
                 <div>
                   <label className="text-[10px] font-bold text-slate-400 block mb-1">
                     Nama Komponen Terpilih:
@@ -1778,6 +1925,9 @@ void loop() {
       {mode === "wokwi" && bukaDashboardIot && (
         <IotCloudBlynkPanel
           nodesKanvas={nodesSaatIni}
+          userLogin={userLogin}
+          idProjectAktif={projectAktif.id}
+          namaProjectAktif={namaProjectInput || projectAktif.judul}
           presetWidgets={projectAktif.blynkWidgets}
           customWidgetsState={widgetsBlynkSaatIni}
           onChangeWidgetsState={(wBaru) => setWidgetsBlynkSaatIni(wBaru)}
