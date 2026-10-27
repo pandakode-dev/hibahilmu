@@ -106,19 +106,16 @@ export const ResistorVisualSvg: React.FC<ResistorSvgProps> = ({
           strokeWidth="6"
           strokeLinecap="round"
         />
-
         <path
           d="M 45 18 Q 55 12, 70 18 L 150 18 Q 165 12, 175 18 L 175 52 Q 165 58, 150 52 L 70 52 Q 55 58, 45 52 Z"
           fill="#f3e5ab"
           stroke="#b45309"
           strokeWidth="2.5"
         />
-
         <rect x="65" y="16" width="12" height="38" fill={info.gelang1.hex} rx="2" />
         <rect x="88" y="18" width="11" height="34" fill={info.gelang2.hex} rx="2" />
         <rect x="112" y="18" width="11" height="34" fill={info.gelangPengali.hex} rx="2" />
         <rect x="145" y="16" width="10" height="38" fill={info.gelangToleransi.hex} rx="2" />
-
         <line
           x1="55"
           y1="23"
@@ -148,7 +145,6 @@ export const ResistorVisualSvg: React.FC<ResistorSvgProps> = ({
 
 // ============================================================================
 // VISUALISASI SVG REALISTIS SELURUH KOMPONEN WOKWI, EWB, DAN SIMULINK
-// Mendukung prop `ukuran="ikon"` (untuk Gudang Komponen) & `ukuran="kanvas"`
 // ============================================================================
 export const VisualKomponenRealistis: React.FC<{
   tipe: string;
@@ -176,10 +172,7 @@ export const VisualKomponenRealistis: React.FC<{
 
   if (tipe === "esp32") {
     return (
-      <svg
-        viewBox="0 0 150 96"
-        className={isIkon ? "w-20 h-12" : "w-36 h-24"}
-      >
+      <svg viewBox="0 0 150 96" className={isIkon ? "w-20 h-12" : "w-36 h-24"}>
         <rect
           x="8"
           y="6"
@@ -200,11 +193,11 @@ export const VisualKomponenRealistis: React.FC<{
           stroke="#64748b"
           strokeWidth="2"
         />
-        <text x="75" y="38" textAnchor="middle" fill="#0f172a" fontSize="8" fontWeight="bold">
+        <text x="75" y="36" textAnchor="middle" fill="#0f172a" fontSize="8" fontWeight="bold">
           ESP-WROOM-32
         </text>
-        <text x="75" y="50" textAnchor="middle" fill="#334155" fontSize="6" fontWeight="bold">
-          Wi-Fi + BLE SoC
+        <text x="75" y="48" textAnchor="middle" fill="#0284c7" fontSize="6.5" fontWeight="bold">
+          TX0(1) • RX0(3) • WiFi
         </text>
         <path
           d="M 108 22 L 130 22 L 130 32 L 116 32 L 116 42 L 130 42 L 130 52 L 108 52"
@@ -236,10 +229,7 @@ export const VisualKomponenRealistis: React.FC<{
 
   if (tipe === "arduino_uno") {
     return (
-      <svg
-        viewBox="0 0 150 96"
-        className={isIkon ? "w-20 h-12" : "w-36 h-24"}
-      >
+      <svg viewBox="0 0 150 96" className={isIkon ? "w-20 h-12" : "w-36 h-24"}>
         <rect
           x="8"
           y="6"
@@ -256,8 +246,11 @@ export const VisualKomponenRealistis: React.FC<{
         <text x="84" y="61" textAnchor="middle" fill="#e2e8f0" fontSize="7" fontWeight="bold">
           ATMEGA328P
         </text>
-        <text x="80" y="30" textAnchor="middle" fill="#ffffff" fontSize="10" fontWeight="900">
-          ARDUINO UNO
+        <text x="80" y="28" textAnchor="middle" fill="#ffffff" fontSize="9.5" fontWeight="900">
+          ARDUINO UNO R3
+        </text>
+        <text x="80" y="40" textAnchor="middle" fill="#fde047" fontSize="6.5" fontWeight="bold">
+          D0(RX) • D1(TX) • PWM
         </text>
         {Array.from({ length: 10 }).map((_, i) => (
           <rect key={i} x={36 + i * 9} y="8" width="5" height="6" fill="#0f172a" />
@@ -266,12 +259,51 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
+  if (tipe === "esp8266_nodemcu" || tipe === "stm32_bluepill" || tipe === "raspberry_pico") {
+    const warnaPcb =
+      tipe === "raspberry_pico"
+        ? "#15803d"
+        : tipe === "stm32_bluepill"
+        ? "#1d4ed8"
+        : "#1e293b";
+    const labelBoard =
+      tipe === "raspberry_pico"
+        ? "RPi PICO RP2040"
+        : tipe === "stm32_bluepill"
+        ? "STM32F103C8T6"
+        : "NODEMCU ESP8266";
+    return (
+      <svg viewBox="0 0 145 90" className={isIkon ? "w-20 h-12" : "w-36 h-22"}>
+        <rect
+          x="8"
+          y="8"
+          width="129"
+          height="74"
+          rx="7"
+          fill={warnaPcb}
+          stroke="#94a3b8"
+          strokeWidth="2"
+        />
+        <rect x="48" y="24" width="48" height="36" rx="4" fill="#0f172a" stroke="#475569" />
+        <text x="72" y="42" textAnchor="middle" fill="#ffffff" fontSize="7.5" fontWeight="900">
+          {labelBoard}
+        </text>
+        <text x="72" y="53" textAnchor="middle" fill="#fde047" fontSize="6.5" fontWeight="bold">
+          UART TX/RX • I2C • SPI
+        </text>
+        {Array.from({ length: 11 }).map((_, i) => (
+          <g key={i}>
+            <circle cx={20 + i * 10} cy="13" r="2" fill="#facc15" />
+            <circle cx={20 + i * 10} cy="77" r="2" fill="#facc15" />
+          </g>
+        ))}
+      </svg>
+    );
+  }
+
   if (tipe === "breadboard") {
     return (
-      <svg
-        viewBox="0 0 150 86"
-        className={isIkon ? "w-20 h-12" : "w-36 h-22"}
-      >
+      <svg viewBox="0 0 150 86" className={isIkon ? "w-20 h-12" : "w-36 h-22"}>
         <rect
           x="6"
           y="6"
@@ -352,45 +384,137 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  if (tipe === "pir_sensor") {
+  if (tipe === "mq2_gas" || tipe === "pir_sensor" || tipe === "ldr_sensor") {
+    if (tipe === "mq2_gas") {
+      return (
+        <svg viewBox="0 0 95 80" className={isIkon ? "w-16 h-12" : "w-24 h-20"}>
+          <rect x="16" y="14" width="62" height="50" rx="6" fill="#991b1b" stroke="#f87171" strokeWidth="2" />
+          <circle cx="47" cy="36" r="16" fill="#cbd5e1" stroke="#475569" strokeWidth="2.5" />
+          <text x="47" y="39" textAnchor="middle" fill="#0f172a" fontSize="7.5" fontWeight="900">
+            MQ-2 GAS
+          </text>
+          <text x="47" y="61" textAnchor="middle" fill="#fde047" fontSize="7.5" fontWeight="bold">
+            {nilaiSensor} ppm
+          </text>
+        </svg>
+      );
+    }
+    if (tipe === "pir_sensor") {
+      return (
+        <svg viewBox="0 0 100 80" className={isIkon ? "w-16 h-12" : "w-26 h-20"}>
+          <rect x="15" y="36" width="70" height="32" rx="4" fill="#15803d" stroke="#4ade80" strokeWidth="2" />
+          <path d="M 25 36 A 25 24 0 0 1 75 36 Z" fill={nyala ? "#fef08a" : "#e2e8f0"} stroke="#94a3b8" strokeWidth="2" />
+          <text x="50" y="56" textAnchor="middle" fill="#ffffff" fontSize="8" fontWeight="bold">
+            PIR MOTION
+          </text>
+        </svg>
+      );
+    }
     return (
-      <svg viewBox="0 0 100 80" className={isIkon ? "w-16 h-12" : "w-26 h-20"}>
-        <rect
-          x="15"
-          y="36"
-          width="70"
-          height="32"
-          rx="4"
-          fill="#15803d"
-          stroke="#4ade80"
-          strokeWidth="2"
-        />
-        <path
-          d="M 25 36 A 25 24 0 0 1 75 36 Z"
-          fill={nyala ? "#fef08a" : "#e2e8f0"}
-          stroke="#94a3b8"
-          strokeWidth="2"
-        />
-        <text x="50" y="56" textAnchor="middle" fill="#ffffff" fontSize="8" fontWeight="bold">
-          PIR MOTION
+      <svg viewBox="0 0 90 75" className={isIkon ? "w-16 h-12" : "w-24 h-18"}>
+        <circle cx="45" cy="34" r="20" fill="#fef3c7" stroke="#dc2626" strokeWidth="3" />
+        <path d="M 32 28 L 58 28 L 32 34 L 58 34 L 32 40 L 58 40" stroke="#dc2626" strokeWidth="2.5" fill="none" />
+        <text x="45" y="66" textAnchor="middle" fill="#fde047" fontSize="8" fontWeight="bold">
+          LDR {nilaiSensor} lx
         </text>
       </svg>
     );
   }
 
-  if (tipe === "ldr_sensor") {
+  if (tipe === "keypad_4x4" || tipe === "neopixel_ring" || tipe === "seven_segment") {
+    if (tipe === "keypad_4x4") {
+      return (
+        <svg viewBox="0 0 100 95" className={isIkon ? "w-16 h-12" : "w-26 h-24"}>
+          <rect x="14" y="8" width="72" height="76" rx="6" fill="#1e293b" stroke="#64748b" strokeWidth="2" />
+          {["1", "2", "3", "A", "4", "5", "6", "B", "7", "8", "9", "C", "*", "0", "#", "D"].map((k, idx) => {
+            const r = Math.floor(idx / 4);
+            const c = idx % 4;
+            return (
+              <g key={k}>
+                <rect
+                  x={20 + c * 15}
+                  y={14 + r * 16}
+                  width="12"
+                  height="12"
+                  rx="2"
+                  fill={c === 3 ? "#dc2626" : "#2563eb"}
+                />
+                <text
+                  x={26 + c * 15}
+                  y={23 + r * 16}
+                  textAnchor="middle"
+                  fill="#ffffff"
+                  fontSize="7"
+                  fontWeight="bold"
+                >
+                  {k}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+      );
+    }
+    if (tipe === "neopixel_ring") {
+      return (
+        <svg viewBox="0 0 95 85" className={isIkon ? "w-16 h-12" : "w-24 h-22"}>
+          <circle cx="47" cy="42" r="32" fill="#0f172a" stroke="#334155" strokeWidth="6" />
+          {[0, 45, 90, 135, 180, 225, 270, 315].map((deg, i) => {
+            const rad = (deg * Math.PI) / 180;
+            const cx = 47 + Math.cos(rad) * 24;
+            const cy = 42 + Math.sin(rad) * 24;
+            const colors = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#06b6d4", "#3b82f6", "#a855f7", "#ec4899"];
+            return <circle key={deg} cx={cx} cy={cy} r="4.5" fill={nyala ? colors[i] : "#475569"} />;
+          })}
+          <text x="47" y="45" textAnchor="middle" fill="#f8fafc" fontSize="7" fontWeight="bold">
+            WS2812
+          </text>
+        </svg>
+      );
+    }
     return (
-      <svg viewBox="0 0 90 75" className={isIkon ? "w-16 h-12" : "w-24 h-18"}>
-        <circle cx="45" cy="34" r="20" fill="#fef3c7" stroke="#dc2626" strokeWidth="3" />
-        <path
-          d="M 32 28 L 58 28 L 32 34 L 58 34 L 32 40 L 58 40"
-          stroke="#dc2626"
-          strokeWidth="2.5"
-          fill="none"
-        />
-        <text x="45" y="66" textAnchor="middle" fill="#fde047" fontSize="8" fontWeight="bold">
-          LDR {nilaiSensor} lx
+      <svg viewBox="0 0 85 85" className={isIkon ? "w-14 h-12" : "w-22 h-22"}>
+        <rect x="16" y="8" width="52" height="68" rx="5" fill="#0f172a" stroke="#64748b" strokeWidth="2" />
+        <text x="42" y="56" textAnchor="middle" fill={nyala ? "#ef4444" : "#334155"} fontSize="42" fontFamily="monospace" fontWeight="900">
+          {nilaiSensor % 10}
         </text>
+      </svg>
+    );
+  }
+
+  if (tipe === "stepper_motor" || tipe === "l298n_driver") {
+    const isDriver = tipe === "l298n_driver";
+    return (
+      <svg viewBox="0 0 110 80" className={isIkon ? "w-18 h-12" : "w-28 h-20"}>
+        {isDriver ? (
+          <>
+            <rect x="12" y="10" width="86" height="60" rx="6" fill="#b91c1c" stroke="#fca5a5" strokeWidth="2" />
+            <rect x="38" y="18" width="34" height="24" fill="#0f172a" />
+            <text x="55" y="34" textAnchor="middle" fill="#ffffff" fontSize="8" fontWeight="900">
+              L298N
+            </text>
+            <text x="55" y="58" textAnchor="middle" fill="#fde047" fontSize="7.5" fontWeight="bold">
+              DUAL H-BRIDGE
+            </text>
+          </>
+        ) : (
+          <>
+            <rect x="22" y="12" width="66" height="56" rx="8" fill="#334155" stroke="#94a3b8" strokeWidth="2.5" />
+            <circle cx="55" cy="40" r="18" fill="#0f172a" stroke="#cbd5e1" strokeWidth="2" />
+            <line
+              x1="55"
+              y1="40"
+              x2="55"
+              y2="24"
+              stroke="#38bdf8"
+              strokeWidth="4"
+              transform={`rotate(${nilaiSensor * 2}, 55, 40)`}
+            />
+            <text x="55" y="64" textAnchor="middle" fill="#fde047" fontSize="7.5" fontWeight="bold">
+              NEMA17 ({nilaiSensor}°)
+            </text>
+          </>
+        )}
       </svg>
     );
   }
@@ -633,7 +757,20 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  if (tipe === "kapasitor" || tipe === "induktor" || tipe === "dioda") {
+  if (tipe === "kapasitor" || tipe === "induktor" || tipe === "dioda" || tipe === "trafo_stepdown") {
+    if (tipe === "trafo_stepdown") {
+      return (
+        <svg viewBox="0 0 110 75" className={isIkon ? "w-18 h-12" : "w-26 h-18"}>
+          <path d="M 30 14 Q 42 20, 30 28 Q 42 35, 30 42 Q 42 50, 30 58" stroke="#f59e0b" strokeWidth="3" fill="none" />
+          <line x1="52" y1="12" x2="52" y2="60" stroke="#94a3b8" strokeWidth="2.5" />
+          <line x1="58" y1="12" x2="58" y2="60" stroke="#94a3b8" strokeWidth="2.5" />
+          <path d="M 80 14 Q 68 20, 80 28 Q 68 35, 80 42 Q 68 50, 80 58" stroke="#38bdf8" strokeWidth="3" fill="none" />
+          <text x="55" y="70" textAnchor="middle" fill="#fde047" fontSize="7.5" fontWeight="bold">
+            TRAFO CT 12V
+          </text>
+        </svg>
+      );
+    }
     if (tipe === "induktor") {
       return (
         <svg viewBox="0 0 110 70" className={isIkon ? "w-18 h-12" : "w-26 h-18"}>
@@ -674,7 +811,20 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  if (tipe === "transistor_npn" || tipe === "opamp_741") {
+  if (tipe === "transistor_npn" || tipe === "opamp_741" || tipe === "ic_ne555") {
+    if (tipe === "ic_ne555") {
+      return (
+        <svg viewBox="0 0 105 75" className={isIkon ? "w-18 h-12" : "w-26 h-18"}>
+          <rect x="22" y="12" width="60" height="50" rx="4" fill="#0f172a" stroke="#94a3b8" strokeWidth="2" />
+          <text x="52" y="36" textAnchor="middle" fill="#facc15" fontSize="9" fontWeight="900">
+            NE555P
+          </text>
+          <text x="52" y="48" textAnchor="middle" fill="#cbd5e1" fontSize="6.5" fontWeight="bold">
+            TIMER PWM IC
+          </text>
+        </svg>
+      );
+    }
     const isOpamp = tipe === "opamp_741";
     return (
       <svg viewBox="0 0 105 75" className={isIkon ? "w-18 h-12" : "w-26 h-18"}>
@@ -711,10 +861,12 @@ export const VisualKomponenRealistis: React.FC<{
     tipe === "ic_or" ||
     tipe === "ic_xor" ||
     tipe === "multimeter" ||
-    tipe === "osiloskop"
+    tipe === "osiloskop" ||
+    tipe === "func_generator"
   ) {
-    if (tipe === "multimeter" || tipe === "osiloskop") {
+    if (tipe === "multimeter" || tipe === "osiloskop" || tipe === "func_generator") {
       const isOsc = tipe === "osiloskop";
+      const isFgen = tipe === "func_generator";
       return (
         <svg viewBox="0 0 115 75" className={isIkon ? "w-18 h-12" : "w-28 h-18"}>
           <rect
@@ -724,13 +876,13 @@ export const VisualKomponenRealistis: React.FC<{
             height="58"
             rx="7"
             fill="#0f172a"
-            stroke={isOsc ? "#22c55e" : "#eab308"}
+            stroke={isOsc ? "#22c55e" : isFgen ? "#38bdf8" : "#eab308"}
             strokeWidth="2.5"
           />
-          {isOsc ? (
+          {isOsc || isFgen ? (
             <path
               d="M 20 38 Q 34 15, 48 38 T 76 38 T 96 38"
-              stroke="#4ade80"
+              stroke={isOsc ? "#4ade80" : "#38bdf8"}
               strokeWidth="2.5"
               fill="none"
             />
@@ -748,7 +900,7 @@ export const VisualKomponenRealistis: React.FC<{
             </text>
           )}
           <text x="57" y="21" textAnchor="middle" fill="#94a3b8" fontSize="7" fontWeight="bold">
-            {isOsc ? "OSCILLOSCOPE" : "MULTIMETER"}
+            {isOsc ? "OSCILLOSCOPE" : isFgen ? "FUNC GEN (Hz)" : "MULTIMETER"}
           </text>
         </svg>
       );
@@ -779,7 +931,6 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // Default untuk Blok MATLAB Simulink
   return (
     <svg viewBox="0 0 130 68" className={isIkon ? "w-20 h-12" : "w-32 h-16"}>
       <rect
