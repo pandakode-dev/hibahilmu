@@ -267,7 +267,10 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
       {(kategoriAktif === "wokwi" ||
         kategoriAktif === "ewb" ||
         kategoriAktif === "matlab") && (
-        <ElectronicAndIotCanvas mode={kategoriAktif} />
+        <ElectronicAndIotCanvas
+          mode={kategoriAktif}
+          onUpdateKodeDariCloud={(kodeBaru) => setKodeEditor(kodeBaru)}
+        />
       )}
 
       {/* WORKSPACE UTAMA: KIRI (MODUL & LIBRARY) | KANAN (CODE EDITOR & TERMINAL OUTPUT) */}
