@@ -10,6 +10,7 @@ import {
   CheckCheck,
   Accessibility,
   Volume2,
+  Lock,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 
@@ -275,7 +276,6 @@ export default function AplikasiHibahIlmu() {
       "tugas_deadline"
     );
     tambahXP(40);
-    alert("✓ Jawaban tugas modul berhasil dikirim dan notifikasi telah diteruskan ke Pengajar!");
   };
 
   const handleSetDaftarTugasDenganNotif = (listBaru: TugasItem[]) => {
@@ -361,7 +361,7 @@ export default function AplikasiHibahIlmu() {
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(
-        `Selamat datang di Hibah Ilmu Indonesia. Anda sedang berada di menu ${menuAktif}. Gunakan navigasi atas untuk berpindah ke Ruang Belajar, Simulator Coding dan IoT, Hub Inovasi, Webinar, Tryout CBT, atau Donasi Wakaf.`
+        `Selamat datang di Hibah Ilmu Indonesia. Anda sedang berada di menu ${menuAktif}.`
       );
       u.lang = "id-ID";
       window.speechSynthesis.speak(u);
@@ -372,6 +372,14 @@ export default function AplikasiHibahIlmu() {
     userLogin ? n.targetUserId === userLogin.id || n.targetUserId === "ALL" : n.targetUserId === "ALL"
   );
   const jumlahBelumDibaca = notifikasiUserAktif.filter((n) => !n.dibaca).length;
+
+  // ==========================================================================
+  // PROTEKSI LOGIN WAJIB (AUTH GUARD):
+  // Pengunjung belum login HANYA bisa melihat halaman utama Beranda.
+  // Jika memilih menu selain beranda ATAU membuka jenjang/modul kelas, wajib login!
+  // ==========================================================================
+  const butuhLoginSekarang =
+    !userLogin && (menuAktif !== "beranda" || jenjangAktif !== null || kelasAktif !== null);
 
   return (
     <div
@@ -438,7 +446,7 @@ export default function AplikasiHibahIlmu() {
                   setJenjangAktif(null);
                   setKelasAktif(null);
                 }}
-                className={`px-3 py-2.5 rounded-xl text-xs font-extrabold transition whitespace-nowrap cursor-pointer ${
+                className={`px-3 py-2.5 rounded-xl text-xs font-extrabold transition whitespace-nowrap cursor-pointer flex items-center gap-1 ${
                   menuAktif === tab.id
                     ? "bg-emerald-600 text-white shadow-sm"
                     : darkMode || kontrasTinggi
@@ -446,7 +454,10 @@ export default function AplikasiHibahIlmu() {
                     : "text-slate-700 hover:bg-slate-100"
                 }`}
               >
-                {tab.label}
+                {!userLogin && tab.id !== "beranda" && (
+                  <Lock className="w-3 h-3 opacity-70" />
+                )}
+                <span>{tab.label}</span>
               </button>
             ))}
           </nav>
@@ -612,120 +623,40 @@ export default function AplikasiHibahIlmu() {
 
       {/* MAIN CONTENT */}
       <main className="max-w-7xl mx-auto px-4 py-8">
-        {menuAktif === "beranda" && (
-          <RuangBelajarView
-            daftarJenjang={daftarJenjang}
-            jenjangAktif={jenjangAktif}
-            setJenjangAktif={setJenjangAktif}
-            subJenjangAktif={subJenjangAktif}
-            setSubJenjangAktif={setSubJenjangAktif}
-            kelasAktif={kelasAktif}
-            setKelasAktif={setKelasAktif}
-            userLogin={userLogin}
-            hanyaMateriDiikuti={hanyaMateriDiikuti}
-            setHanyaMateriDiikuti={setHanyaMateriDiikuti}
-            materiSelesai={materiSelesai}
-            toggleSelesaiMateri={toggleSelesaiMateri}
-            skorKuisPerModul={skorKuisPerModul}
-            simpanSkorModul={simpanSkorModul}
-            daftarTugas={daftarTugas}
-            daftarPengumpulan={daftarPengumpulan}
-            onKumpulTugasModul={handleKumpulTugasModul}
-            tambahXP={tambahXP}
-            chatPerMateri={chatPerMateri}
-            onKirimChatMateri={(pesan) => {
-              if (!kelasAktif || !userLogin) return;
-              const list = chatPerMateri[kelasAktif.id] || [];
-              setChatPerMateri({
-                ...chatPerMateri,
-                [kelasAktif.id]: [
-                  ...list,
-                  {
-                    id: "ch-" + Date.now(),
-                    pengirimNama: userLogin.nama,
-                    pengirimRole: userLogin.role,
-                    pesan,
-                    waktu: "Baru saja",
-                  },
-                ],
-              });
-            }}
-            onKirimUlasanMateri={(bintang, komentar) => {
-              if (!kelasAktif || !userLogin) return;
-              const updated: KelasItem = {
-                ...kelasAktif,
-                ulasan: [
-                  {
-                    id: "ul-" + Date.now(),
-                    siswaNama: userLogin.nama,
-                    bintang,
-                    komentar,
-                    waktu: "Baru saja",
-                  },
-                  ...(kelasAktif.ulasan || []),
-                ],
-              };
-              setKelasAktif(updated);
-              tambahXP(15);
-            }}
-            onBukaAuthAtauDashboard={(rolePilih) => {
-              if (rolePilih) setModeRoleAuth(rolePilih);
-              setMenuAktif("dashboard");
-            }}
-            konfigurasiWeb={konfigurasiWeb}
-            onBukaMenuLain={(menuTujuan: string) => setMenuAktif(menuTujuan)}
-          />
-        )}
+        {butuhLoginSekarang ? (
+          <div className="space-y-6">
+            <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 text-white p-6 rounded-3xl shadow-xl flex flex-wrap justify-between items-center gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className="p-3 rounded-2xl bg-black/25">
+                  <Lock className="w-7 h-7 text-amber-200" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-black/25">
+                    Akses Terproteksi • Wajib Login Akun
+                  </span>
+                  <h2 className="text-xl sm:text-2xl font-black mt-0.5">
+                    Silakan Masuk (Login) sebagai Siswa atau Pengajar Terlebih Dahulu
+                  </h2>
+                  <p className="text-xs text-white/90">
+                    Untuk mengakses Kelas, Simulator Coding &amp; IoT, Hub Inovasi, Webinar,
+                    Tryout CBT, maupun Forum, Anda wajib masuk ke akun Anda agar progres &amp;
+                    project tersimpan aman.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuAktif("beranda");
+                  setJenjangAktif(null);
+                  setKelasAktif(null);
+                }}
+                className="px-4 py-2.5 rounded-xl bg-white text-slate-900 font-black text-xs cursor-pointer shrink-0"
+              >
+                ← Kembali ke Beranda
+              </button>
+            </div>
 
-        {/* MENU BARU: SIMULATOR PROGRAMMING, NEXT.JS, MATLAB, WOKWI IOT & EWB */}
-        {menuAktif === "simulator" && (
-          <SimulatorPemrogramanView userLogin={userLogin} tambahXP={tambahXP} />
-        )}
-
-        {menuAktif === "inovasi" && (
-          <FiturInovasiHubView
-            userLogin={userLogin}
-            poinXP={poinXP}
-            materiSelesai={materiSelesai}
-            rppList={rppList}
-            setRppList={setRppList}
-            daftarPresensi={daftarPresensi}
-            setDaftarPresensi={setDaftarPresensi}
-            daftarPaketTryout={daftarPaketTryout}
-            tambahXP={tambahXP}
-            daftarJenjang={daftarJenjang}
-            kirimBroadcastNotif={kirimBroadcastNotif}
-          />
-        )}
-
-        {menuAktif === "webinar" && (
-          <AgendaWebinarView
-            userLogin={userLogin}
-            agendaList={agendaList}
-            setAgendaList={setAgendaList}
-            daftarTugas={daftarTugas}
-            semuaModul={semuaModulFlat}
-            onKirimBroadcastNotif={kirimBroadcastNotif}
-            tambahXP={tambahXP}
-          />
-        )}
-
-        {(menuAktif === "donasi" || menuAktif === "lapor_bug") && (
-          <DonasiDanBugView
-            modeHalaman={menuAktif as "donasi" | "lapor_bug"}
-            userLogin={userLogin}
-            konfigurasiWeb={konfigurasiWeb}
-            dataDonasi={dataDonasi}
-            setDataDonasi={setDataDonasi}
-            daftarLaporanBug={daftarLaporanBug}
-            onKirimLaporanBug={handleKirimLaporanBugKeAdmin}
-            onKirimNotifDonasiKeAdmin={handleKirimNotifDonasiKeAdmin}
-            tambahXP={tambahXP}
-          />
-        )}
-
-        {(menuAktif === "tryout" || menuAktif === "forum" || menuAktif === "leaderboard") &&
-          (!userLogin ? (
             <DashboardPanelView
               userLogin={userLogin}
               setUserLogin={setUserLogin}
@@ -765,80 +696,199 @@ export default function AplikasiHibahIlmu() {
               setDaftarLaporanBug={setDaftarLaporanBug}
               modeRoleAwalAuth={modeRoleAuth}
             />
-          ) : (
-            <TryoutDanForumView
-              modeMenu={menuAktif as "tryout" | "forum" | "leaderboard"}
-              userLogin={userLogin}
-              daftarAkun={daftarAkun}
-              poinXP={poinXP}
-              daftarPaketTryout={daftarPaketTryout}
-              riwayatTryout={riwayatTryout}
-              sedangUjian={sedangUjian}
-              ujianSelesai={ujianSelesai}
-              paketTryoutAktif={paketTryoutAktif}
-              sisaWaktu={sisaWaktu}
-              indeksSoalTryoutAktif={indeksSoalTryoutAktif}
-              setIndeksSoalTryoutAktif={setIndeksSoalTryoutAktif}
-              jawabanUserTryout={jawabanUserTryout}
-              setJawabanUserTryout={setJawabanUserTryout}
-              jumlahPelanggaranUjian={jumlahPelanggaranUjian}
-              pesanPeringatanCheat={pesanPeringatanCheat}
-              skorTryout={skorTryout}
-              onMulaiUjianTryout={mulaiUjianTryout}
-              onSelesaikanTryout={selesaikanTryout}
-              onResetTryout={() => {
-                setUjianSelesai(false);
-                setSedangUjian(false);
-                setPaketTryoutAktif(null);
-              }}
-              daftarDiskusi={daftarDiskusi}
-              setDaftarDiskusi={setDaftarDiskusi}
-              officeHours={officeHours}
-              setOfficeHours={setOfficeHours}
-              tambahXP={tambahXP}
-            />
-          ))}
+          </div>
+        ) : (
+          <>
+            {menuAktif === "beranda" && (
+              <RuangBelajarView
+                daftarJenjang={daftarJenjang}
+                jenjangAktif={jenjangAktif}
+                setJenjangAktif={setJenjangAktif}
+                subJenjangAktif={subJenjangAktif}
+                setSubJenjangAktif={setSubJenjangAktif}
+                kelasAktif={kelasAktif}
+                setKelasAktif={setKelasAktif}
+                userLogin={userLogin}
+                hanyaMateriDiikuti={hanyaMateriDiikuti}
+                setHanyaMateriDiikuti={setHanyaMateriDiikuti}
+                materiSelesai={materiSelesai}
+                toggleSelesaiMateri={toggleSelesaiMateri}
+                skorKuisPerModul={skorKuisPerModul}
+                simpanSkorModul={simpanSkorModul}
+                daftarTugas={daftarTugas}
+                daftarPengumpulan={daftarPengumpulan}
+                onKumpulTugasModul={handleKumpulTugasModul}
+                tambahXP={tambahXP}
+                chatPerMateri={chatPerMateri}
+                onKirimChatMateri={(pesan) => {
+                  if (!kelasAktif || !userLogin) return;
+                  const list = chatPerMateri[kelasAktif.id] || [];
+                  setChatPerMateri({
+                    ...chatPerMateri,
+                    [kelasAktif.id]: [
+                      ...list,
+                      {
+                        id: "ch-" + Date.now(),
+                        pengirimNama: userLogin.nama,
+                        pengirimRole: userLogin.role,
+                        pesan,
+                        waktu: "Baru saja",
+                      },
+                    ],
+                  });
+                }}
+                onKirimUlasanMateri={(bintang, komentar) => {
+                  if (!kelasAktif || !userLogin) return;
+                  const updated: KelasItem = {
+                    ...kelasAktif,
+                    ulasan: [
+                      {
+                        id: "ul-" + Date.now(),
+                        siswaNama: userLogin.nama,
+                        bintang,
+                        komentar,
+                        waktu: "Baru saja",
+                      },
+                      ...(kelasAktif.ulasan || []),
+                    ],
+                  };
+                  setKelasAktif(updated);
+                  tambahXP(15);
+                }}
+                onBukaAuthAtauDashboard={(rolePilih) => {
+                  if (rolePilih) setModeRoleAuth(rolePilih);
+                  setMenuAktif("dashboard");
+                }}
+                konfigurasiWeb={konfigurasiWeb}
+                onBukaMenuLain={(menuTujuan: string) => setMenuAktif(menuTujuan)}
+              />
+            )}
 
-        {menuAktif === "dashboard" && (
-          <DashboardPanelView
-            userLogin={userLogin}
-            setUserLogin={setUserLogin}
-            daftarAkun={daftarAkun}
-            setDaftarAkun={setDaftarAkun}
-            daftarJenjang={daftarJenjang}
-            setDaftarJenjang={setDaftarJenjang}
-            daftarPaketTryout={daftarPaketTryout}
-            setDaftarPaketTryout={setDaftarPaketTryout}
-            riwayatTryout={riwayatTryout}
-            daftarTugas={daftarTugas}
-            setDaftarTugas={handleSetDaftarTugasDenganNotif}
-            daftarPengumpulan={daftarPengumpulan}
-            setDaftarPengumpulan={setDaftarPengumpulan}
-            daftarPresensi={daftarPresensi}
-            setDaftarPresensi={setDaftarPresensi}
-            rppList={rppList}
-            setRppList={setRppList}
-            bankSoalKolektif={bankSoalKolektif}
-            setBankSoalKolektif={setBankSoalKolektif}
-            daftarKelompok={daftarKelompok}
-            setDaftarKelompok={setDaftarKelompok}
-            jadwalLive={jadwalLive}
-            setJadwalLive={setJadwalLive}
-            studyRooms={studyRooms}
-            setStudyRooms={setStudyRooms}
-            daftarBeasiswa={daftarBeasiswa}
-            setDaftarBeasiswa={setDaftarBeasiswa}
-            logAktivitas={logAktivitas}
-            poinXP={poinXP}
-            materiSelesai={materiSelesai}
-            tambahXP={tambahXP}
-            kirimNotifikasiKeUser={kirimNotifikasiKeUser}
-            konfigurasiWeb={konfigurasiWeb}
-            setKonfigurasiWeb={setKonfigurasiWeb}
-            daftarLaporanBug={daftarLaporanBug}
-            setDaftarLaporanBug={setDaftarLaporanBug}
-            modeRoleAwalAuth={modeRoleAuth}
-          />
+            {menuAktif === "simulator" && (
+              <SimulatorPemrogramanView userLogin={userLogin} tambahXP={tambahXP} />
+            )}
+
+            {menuAktif === "inovasi" && (
+              <FiturInovasiHubView
+                userLogin={userLogin}
+                poinXP={poinXP}
+                materiSelesai={materiSelesai}
+                rppList={rppList}
+                setRppList={setRppList}
+                daftarPresensi={daftarPresensi}
+                setDaftarPresensi={setDaftarPresensi}
+                daftarPaketTryout={daftarPaketTryout}
+                tambahXP={tambahXP}
+                daftarJenjang={daftarJenjang}
+                kirimBroadcastNotif={kirimBroadcastNotif}
+              />
+            )}
+
+            {menuAktif === "webinar" && (
+              <AgendaWebinarView
+                userLogin={userLogin}
+                agendaList={agendaList}
+                setAgendaList={setAgendaList}
+                daftarTugas={daftarTugas}
+                semuaModul={semuaModulFlat}
+                onKirimBroadcastNotif={kirimBroadcastNotif}
+                tambahXP={tambahXP}
+              />
+            )}
+
+            {(menuAktif === "donasi" || menuAktif === "lapor_bug") && (
+              <DonasiDanBugView
+                modeHalaman={menuAktif as "donasi" | "lapor_bug"}
+                userLogin={userLogin}
+                konfigurasiWeb={konfigurasiWeb}
+                dataDonasi={dataDonasi}
+                setDataDonasi={setDataDonasi}
+                daftarLaporanBug={daftarLaporanBug}
+                onKirimLaporanBug={handleKirimLaporanBugKeAdmin}
+                onKirimNotifDonasiKeAdmin={handleKirimNotifDonasiKeAdmin}
+                tambahXP={tambahXP}
+              />
+            )}
+
+            {(menuAktif === "tryout" ||
+              menuAktif === "forum" ||
+              menuAktif === "leaderboard") &&
+              userLogin && (
+                <TryoutDanForumView
+                  modeMenu={menuAktif as "tryout" | "forum" | "leaderboard"}
+                  userLogin={userLogin}
+                  daftarAkun={daftarAkun}
+                  poinXP={poinXP}
+                  daftarPaketTryout={daftarPaketTryout}
+                  riwayatTryout={riwayatTryout}
+                  sedangUjian={sedangUjian}
+                  ujianSelesai={ujianSelesai}
+                  paketTryoutAktif={paketTryoutAktif}
+                  sisaWaktu={sisaWaktu}
+                  indeksSoalTryoutAktif={indeksSoalTryoutAktif}
+                  setIndeksSoalTryoutAktif={setIndeksSoalTryoutAktif}
+                  jawabanUserTryout={jawabanUserTryout}
+                  setJawabanUserTryout={setJawabanUserTryout}
+                  jumlahPelanggaranUjian={jumlahPelanggaranUjian}
+                  pesanPeringatanCheat={pesanPeringatanCheat}
+                  skorTryout={skorTryout}
+                  onMulaiUjianTryout={mulaiUjianTryout}
+                  onSelesaikanTryout={selesaikanTryout}
+                  onResetTryout={() => {
+                    setUjianSelesai(false);
+                    setSedangUjian(false);
+                    setPaketTryoutAktif(null);
+                  }}
+                  daftarDiskusi={daftarDiskusi}
+                  setDaftarDiskusi={setDaftarDiskusi}
+                  officeHours={officeHours}
+                  setOfficeHours={setOfficeHours}
+                  tambahXP={tambahXP}
+                />
+              )}
+
+            {menuAktif === "dashboard" && (
+              <DashboardPanelView
+                userLogin={userLogin}
+                setUserLogin={setUserLogin}
+                daftarAkun={daftarAkun}
+                setDaftarAkun={setDaftarAkun}
+                daftarJenjang={daftarJenjang}
+                setDaftarJenjang={setDaftarJenjang}
+                daftarPaketTryout={daftarPaketTryout}
+                setDaftarPaketTryout={setDaftarPaketTryout}
+                riwayatTryout={riwayatTryout}
+                daftarTugas={daftarTugas}
+                setDaftarTugas={handleSetDaftarTugasDenganNotif}
+                daftarPengumpulan={daftarPengumpulan}
+                setDaftarPengumpulan={setDaftarPengumpulan}
+                daftarPresensi={daftarPresensi}
+                setDaftarPresensi={setDaftarPresensi}
+                rppList={rppList}
+                setRppList={setRppList}
+                bankSoalKolektif={bankSoalKolektif}
+                setBankSoalKolektif={setBankSoalKolektif}
+                daftarKelompok={daftarKelompok}
+                setDaftarKelompok={setDaftarKelompok}
+                jadwalLive={jadwalLive}
+                setJadwalLive={setJadwalLive}
+                studyRooms={studyRooms}
+                setStudyRooms={setStudyRooms}
+                daftarBeasiswa={daftarBeasiswa}
+                setDaftarBeasiswa={setDaftarBeasiswa}
+                logAktivitas={logAktivitas}
+                poinXP={poinXP}
+                materiSelesai={materiSelesai}
+                tambahXP={tambahXP}
+                kirimNotifikasiKeUser={kirimNotifikasiKeUser}
+                konfigurasiWeb={konfigurasiWeb}
+                setKonfigurasiWeb={setKonfigurasiWeb}
+                daftarLaporanBug={daftarLaporanBug}
+                setDaftarLaporanBug={setDaftarLaporanBug}
+                modeRoleAwalAuth={modeRoleAuth}
+              />
+            )}
+          </>
         )}
       </main>
 

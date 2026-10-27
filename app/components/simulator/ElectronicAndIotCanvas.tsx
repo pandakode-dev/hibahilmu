@@ -20,17 +20,10 @@ import {
   Sparkles,
   Play,
   Square,
-  Code2,
-  Terminal,
-  Copy,
-  AlertTriangle,
-  PackagePlus,
   Undo2,
   Redo2,
   CopyPlus,
-  Save,
   FolderOpen,
-  ArrowLeftRight,
 } from "lucide-react";
 import { AkunPengguna } from "../../types";
 import {
@@ -52,11 +45,25 @@ import {
   IotCloudBlynkPanel,
   ExtendedWidgetBlynkItem,
 } from "./IotCloudBlynkPanel";
+import {
+  TIPE_MCU_LIST,
+  PILIHAN_WARNA_KABEL,
+  PALET_KOMPONEN,
+  TitikSikuKabel,
+  konversiCppKeMicroPython,
+  konversiMicroPythonKeCpp,
+  validasiLibraryMcuKetat,
+  cariKoordinatPinAbsolut,
+  bangunJalurSikuWokwi,
+} from "./codeTranspilerAndValidator";
+import {
+  ProjectSavedPopupModal,
+  InfoPopupNotifProject,
+  AccountProjectRepositoryDrawer,
+  MultiMcuIdeSection,
+} from "./MultiMcuIdeAndProjectModal";
 
-export interface TitikSikuKabel {
-  x: number;
-  y: number;
-}
+export type { TitikSikuKabel };
 
 export interface NodeKomponenKanvas {
   id: string;
@@ -104,445 +111,6 @@ interface CanvasProps {
   onUpdateKodeDariCloud?: (kodeBaru: string) => void;
 }
 
-interface ItemPaletGudang {
-  tipe: string;
-  label: string;
-  kategori: string;
-  defaultResistor?: number;
-  defaultSensor?: number;
-}
-
-const TIPE_MCU_LIST = [
-  "esp32",
-  "arduino_uno",
-  "esp8266_nodemcu",
-  "stm32_bluepill",
-  "raspberry_pico",
-];
-
-// ============================================================================
-// MESIN TRANSPILER / KONVERSI OTOMATIS 2 ARAH: C++ ARDUINO <-> MICROPYTHON
-// ============================================================================
-export function konversiCppKeMicroPython(kodeCpp: string, labelBoard: string): string {
-  const imports = new Set<string>(["from machine import Pin"]);
-  const inisialisasi: string[] = [];
-  const barisLoop: string[] = [];
-
-  if (kodeCpp.includes("analogRead")) imports.add("from machine import ADC");
-  if (kodeCpp.includes("Servo") || kodeCpp.includes("analogWrite"))
-    imports.add("from machine import PWM");
-  if (kodeCpp.includes("Serial2")) imports.add("from machine import UART");
-  if (kodeCpp.includes("DHT.h") || kodeCpp.includes("dht.")) imports.add("import dht");
-  if (kodeCpp.includes("MFRC522") || kodeCpp.includes("SPI.h")) {
-    imports.add("from machine import SPI");
-    imports.add("import mfrc522");
-  }
-  if (kodeCpp.includes("Wire.h") || kodeCpp.includes("LiquidCrystal_I2C")) {
-    imports.add("from machine import I2C");
-    imports.add("import ssd1306");
-  }
-  if (kodeCpp.includes("WiFi.h")) imports.add("import network");
-  imports.add("import time");
-
-  // Ekstrak #define konstanta pin
-  const defineMap: { [nama: string]: string } = {};
-  const barisList = kodeCpp.split("\n");
-  for (const brs of barisList) {
-    const mDef = brs.match(/#define\s+([A-Za-z0-9_]+)\s+([0-9]+)/);
-    if (mDef) {
-      defineMap[mDef[1]] = mDef[2];
-      inisialisasi.push(`${mDef[1]} = ${mDef[2]}`);
-    }
-    const mPinMode = brs.match(/pinMode\(\s*([A-Za-z0-9_]+)\s*,\s*(OUTPUT|INPUT)/);
-    if (mPinMode) {
-      const namaPin = mPinMode[1];
-      const arah = mPinMode[2] === "OUTPUT" ? "Pin.OUT" : "Pin.IN";
-      inisialisasi.push(`pin_${namaPin.toLowerCase()} = Pin(${namaPin}, ${arah})`);
-    }
-    if (brs.includes("Serial2.begin")) {
-      inisialisasi.push("uart2 = UART(2, baudrate=9600, tx=17, rx=16)");
-    }
-    if (brs.includes("dht.begin")) {
-      const pinDht = defineMap["PIN_DHT"] || "15";
-      inisialisasi.push(`sensor_dht = dht.DHT22(Pin(${pinDht}))`);
-    }
-    const mServoAttach = brs.match(/([A-Za-z0-9_]+)\.attach\(\s*([A-Za-z0-9_]+)\s*\)/);
-    if (mServoAttach) {
-      inisialisasi.push(`servo_pwm = PWM(Pin(${mServoAttach[2]}), freq=50)`);
-    }
-
-    // Konversi isi void loop()
-    const mDigWrite = brs.match(/digitalWrite\(\s*([A-Za-z0-9_]+)\s*,\s*([^)]+)\)/);
-    if (mDigWrite) {
-      const valPy = mDigWrite[2].includes("HIGH") || mDigWrite[2].trim() === "1" ? "1" : "0";
-      barisLoop.push(`    pin_${mDigWrite[1].toLowerCase()}.value(${valPy})`);
-    }
-    const mServoWrite = brs.match(/\.write\(\s*([0-9]+)\s*\)/);
-    if (mServoWrite && !brs.includes("Serial")) {
-      const sudut = Number(mServoWrite[1]);
-      const duty = Math.round(40 + (sudut / 180) * 75);
-      barisLoop.push(`    servo_pwm.duty(${duty}) # Sudut ${sudut} derajat`);
-    }
-    const mSerialPrint = brs.match(/Serial\.println\((.+)\);/);
-    if (mSerialPrint && !brs.includes("setup")) {
-      const bersih = mSerialPrint[1].replace(/String\(([^)]+)\)/g, "str($1)");
-      barisLoop.push(`    print(${bersih})`);
-    }
-    const mSerial2Print = brs.match(/Serial2\.println\((.+)\);/);
-    if (mSerial2Print) {
-      barisLoop.push(`    uart2.write(str(${mSerial2Print[1]}) + "\\n")`);
-    }
-    const mDelay = brs.match(/delay\(\s*([0-9]+)\s*\)/);
-    if (mDelay) {
-      const detik = (Number(mDelay[1]) / 1000).toFixed(1).replace(".0", "");
-      barisLoop.push(`    time.sleep(${detik})`);
-    }
-  }
-
-  if (barisLoop.length === 0) {
-    barisLoop.push(`    print("[${labelBoard} MicroPython]: Loop aktif...")`);
-    barisLoop.push("    time.sleep(1)");
-  }
-
-  return `# ============================================================================
-# [MICROPYTHON AUTO-CONVERTED DARI C++] - ${labelBoard.toUpperCase()}
-# ============================================================================
-${Array.from(imports).join("\n")}
-
-${inisialisasi.length > 0 ? inisialisasi.join("\n") : "led_builtin = Pin(2, Pin.OUT)"}
-
-print("=== [${labelBoard} MicroPython] READY & RUNNING ===")
-
-while True:
-${barisLoop.join("\n")}`;
-}
-
-export function konversiMicroPythonKeCpp(kodePy: string, labelBoard: string): string {
-  const headers = new Set<string>(["#include <Arduino.h>"]);
-  const deklarasiGlobal: string[] = [];
-  const isiSetup: string[] = ["  Serial.begin(115200);"];
-  const isiLoop: string[] = [];
-
-  if (kodePy.includes("import network")) headers.add("#include <WiFi.h>");
-  if (kodePy.includes("import dht")) {
-    headers.add("#include <DHT.h>");
-    deklarasiGlobal.push("#define PIN_DHT 15\nDHT dht(PIN_DHT, DHT22);");
-    isiSetup.push("  dht.begin();");
-  }
-  if (kodePy.includes("PWM")) {
-    headers.add("#include <ESP32Servo.h>");
-    deklarasiGlobal.push("Servo myServo;");
-    isiSetup.push("  myServo.attach(18);");
-  }
-  if (kodePy.includes("SPI") || kodePy.includes("mfrc522")) {
-    headers.add("#include <SPI.h>");
-    headers.add("#include <MFRC522.h>");
-  }
-  if (kodePy.includes("I2C") || kodePy.includes("ssd1306")) {
-    headers.add("#include <Wire.h>");
-  }
-
-  const baris = kodePy.split("\n");
-  for (const b of baris) {
-    const mPinOut = b.match(/([A-Za-z0-9_]+)\s*=\s*Pin\(\s*([0-9]+)\s*,\s*Pin\.(OUT|IN)\s*\)/);
-    if (mPinOut) {
-      const nomor = mPinOut[2];
-      const modePin = mPinOut[3] === "OUT" ? "OUTPUT" : "INPUT";
-      deklarasiGlobal.push(`#define PIN_${mPinOut[1].toUpperCase()} ${nomor}`);
-      isiSetup.push(`  pinMode(PIN_${mPinOut[1].toUpperCase()}, ${modePin});`);
-    }
-    const mVal = b.match(/([A-Za-z0-9_]+)\.value\(\s*([01])\s*\)/);
-    if (mVal) {
-      const hl = mVal[2] === "1" ? "HIGH" : "LOW";
-      isiLoop.push(`  digitalWrite(PIN_${mVal[1].toUpperCase()}, ${hl});`);
-    }
-    const mDuty = b.match(/\.duty\(\s*([0-9]+)\s*\)/);
-    if (mDuty) {
-      isiLoop.push(`  myServo.write(90);`);
-    }
-    const mPrint = b.match(/^\s+print\((.+)\)/);
-    if (mPrint) {
-      const teksBersih = mPrint[1].replace(/^f"/, '"').replace(/\{([^}]+)\}/g, '" + String($1) + "');
-      isiLoop.push(`  Serial.println(${teksBersih});`);
-    }
-    const mSleep = b.match(/time\.sleep\(\s*([0-9.]+)\s*\)/);
-    if (mSleep) {
-      const ms = Math.round(Number(mSleep[1]) * 1000);
-      isiLoop.push(`  delay(${ms});`);
-    }
-  }
-
-  isiSetup.push(`  Serial.println("=== [${labelBoard} C++] READY & RUNNING ===");`);
-  if (isiLoop.length === 0) {
-    isiLoop.push("  delay(1000);");
-  }
-
-  return `// ============================================================================
-// [C++ ARDUINO AUTO-CONVERTED DARI MICROPYTHON] - ${labelBoard.toUpperCase()}
-// ============================================================================
-${Array.from(headers).join("\n")}
-
-${deklarasiGlobal.join("\n")}
-
-void setup() {
-${isiSetup.join("\n")}
-}
-
-void loop() {
-${isiLoop.join("\n")}
-}`;
-}
-
-const PUSTAKA_RESMI_IOT: {
-  label: string;
-  cppHeader: string;
-  microPythonImport: string;
-  wajibUntukTipe: string[];
-}[] = [
-  {
-    label: "DHT Sensor Library (DHT22/11)",
-    cppHeader: "#include <DHT.h>",
-    microPythonImport: "import dht",
-    wajibUntukTipe: ["dht22"],
-  },
-  {
-    label: "ESP32Servo / Servo PWM",
-    cppHeader: "#include <ESP32Servo.h>",
-    microPythonImport: "from machine import PWM",
-    wajibUntukTipe: ["servo", "servo_360"],
-  },
-  {
-    label: "SPI & MFRC522 RFID Reader",
-    cppHeader: "#include <SPI.h>\n#include <MFRC522.h>",
-    microPythonImport: "from machine import SPI\nimport mfrc522",
-    wajibUntukTipe: ["rfid_rc522"],
-  },
-  {
-    label: "Wire & OLED/LCD I2C Display",
-    cppHeader: "#include <Wire.h>\n#include <LiquidCrystal_I2C.h>",
-    microPythonImport: "from machine import I2C\nimport ssd1306",
-    wajibUntukTipe: ["oled_display", "lcd_16x2"],
-  },
-  {
-    label: "WiFi & Blynk / Telegram IoT",
-    cppHeader: "#include <WiFi.h>\n#include <UniversalTelegramBot.h>",
-    microPythonImport: "import network\nimport urequests",
-    wajibUntukTipe: [],
-  },
-  {
-    label: "Machine GPIO, ADC & UART",
-    cppHeader: "#include <Arduino.h>",
-    microPythonImport: "from machine import Pin, ADC, UART\nimport time",
-    wajibUntukTipe: [],
-  },
-];
-
-const PILIHAN_WARNA_KABEL = [
-  { nama: "Merah (VCC/+)", hex: "#ef4444" },
-  { nama: "Hitam/Abu (GND/-)", hex: "#94a3b8" },
-  { nama: "Biru (Data/GPIO)", hex: "#38bdf8" },
-  { nama: "Hijau (TX/SDA)", hex: "#22c55e" },
-  { nama: "Kuning (RX/PWM)", hex: "#facc15" },
-  { nama: "Ungu (SCL/Trig)", hex: "#a855f7" },
-  { nama: "Oranye (Relay OUT)", hex: "#f97316" },
-];
-
-const PALET_KOMPONEN: {
-  [key in "wokwi" | "ewb" | "matlab"]: ItemPaletGudang[];
-} = {
-  wokwi: [
-    { tipe: "esp32", label: "ESP32 DevKit (30 Pin)", kategori: "Microcontroller" },
-    { tipe: "arduino_uno", label: "Arduino Uno (28 Pin)", kategori: "Microcontroller" },
-    { tipe: "esp8266_nodemcu", label: "NodeMCU ESP8266 (30p)", kategori: "Microcontroller" },
-    { tipe: "stm32_bluepill", label: "STM32 BluePill (32p)", kategori: "Microcontroller" },
-    { tipe: "raspberry_pico", label: "Raspberry Pi Pico (32p)", kategori: "Microcontroller" },
-    { tipe: "relay_1ch", label: "Relay 1-Channel (6p)", kategori: "Modul Relay" },
-    { tipe: "relay_2ch", label: "Relay 2-Channel (10p)", kategori: "Modul Relay" },
-    { tipe: "relay_4ch", label: "Relay 4-Channel (18p)", kategori: "Modul Relay" },
-    {
-      tipe: "ultrasonik",
-      label: "Ultrasonik HC-SR04 (2-400cm)",
-      kategori: "Sensor IoT",
-      defaultSensor: 45,
-    },
-    {
-      tipe: "pir_sensor",
-      label: "Sensor Gerak PIR (-60..60°)",
-      kategori: "Sensor IoT",
-      defaultSensor: 0,
-    },
-    {
-      tipe: "ir_obstacle",
-      label: "Sensor Infrared IR (2-30cm)",
-      kategori: "Sensor IoT",
-      defaultSensor: 8,
-    },
-    {
-      tipe: "ldr_sensor",
-      label: "Sensor Cahaya LDR (0-1000Lx)",
-      kategori: "Sensor IoT",
-      defaultSensor: 450,
-    },
-    {
-      tipe: "flame_sensor",
-      label: "Sensor Api Flame (0-100%)",
-      kategori: "Sensor IoT",
-      defaultSensor: 80,
-    },
-    {
-      tipe: "dht22",
-      label: "Sensor Suhu DHT22 (-40..80°C)",
-      kategori: "Sensor IoT",
-      defaultSensor: 28.5,
-    },
-    {
-      tipe: "soil_moisture",
-      label: "Kelembapan Tanah (0-100%)",
-      kategori: "Sensor IoT",
-      defaultSensor: 65,
-    },
-    {
-      tipe: "rain_sensor",
-      label: "Sensor Hujan Rain (0-100%)",
-      kategori: "Sensor IoT",
-      defaultSensor: 70,
-    },
-    {
-      tipe: "mq2_gas",
-      label: "Sensor Gas MQ-2 (100-10000ppm)",
-      kategori: "Sensor IoT",
-      defaultSensor: 350,
-    },
-    { tipe: "rfid_rc522", label: "RFID Card Reader (6p)", kategori: "Sensor IoT" },
-    {
-      tipe: "solenoid_lock",
-      label: "Solenoid Lock 12V (2p ON/OFF)",
-      kategori: "Aktuator & Motor",
-    },
-    {
-      tipe: "water_pump",
-      label: "Pompa Air Mini (2p ke Relay)",
-      kategori: "Aktuator & Motor",
-    },
-    {
-      tipe: "servo",
-      label: "Servo SG90 180° (Positional)",
-      kategori: "Aktuator & Motor",
-      defaultSensor: 90,
-    },
-    {
-      tipe: "servo_360",
-      label: "Servo MG996R 360° (Continuous)",
-      kategori: "Aktuator & Motor",
-      defaultSensor: 60,
-    },
-    {
-      tipe: "kipas_dc",
-      label: "Kipas DC (PWM 0-255)",
-      kategori: "Aktuator & Motor",
-      defaultSensor: 200,
-    },
-    {
-      tipe: "oled_display",
-      label: "Layar OLED I2C (4p)",
-      kategori: "Aktuator & Motor",
-      defaultSensor: 100,
-    },
-    {
-      tipe: "lcd_16x2",
-      label: "LCD 16x2 I2C (4p)",
-      kategori: "Aktuator & Motor",
-      defaultSensor: 25,
-    },
-    { tipe: "buzzer", label: "Buzzer Piezo (ON/OFF)", kategori: "Aktuator & Motor" },
-    { tipe: "keypad_4x4", label: "Keypad Matriks 4x4 (8p)", kategori: "Pasif & Input" },
-    { tipe: "led_hijau", label: "LED Hijau 5mm (2p)", kategori: "Pasif & Input" },
-    { tipe: "led_merah", label: "LED Merah 5mm (2p)", kategori: "Pasif & Input" },
-    {
-      tipe: "resistor",
-      label: "Resistor Gelang Warna",
-      kategori: "Pasif & Input",
-      defaultResistor: 220,
-    },
-    {
-      tipe: "potensiometer",
-      label: "Potensiometer (ADC 0-4095)",
-      kategori: "Pasif & Input",
-      defaultSensor: 2048,
-    },
-  ],
-  ewb: [
-    {
-      tipe: "vcc_dc",
-      label: "Sumber Tegangan DC",
-      kategori: "Power & Ground",
-      defaultSensor: 12,
-    },
-    {
-      tipe: "ac_source",
-      label: "Generator Sinyal AC",
-      kategori: "Power & Ground",
-      defaultSensor: 50,
-    },
-    { tipe: "gnd", label: "Ground (GND 0V)", kategori: "Power & Ground" },
-    {
-      tipe: "resistor",
-      label: "Resistor 4-Gelang",
-      kategori: "Komponen RLC",
-      defaultResistor: 1000,
-    },
-    {
-      tipe: "kapasitor",
-      label: "Kapasitor Elektrolit",
-      kategori: "Komponen RLC",
-      defaultSensor: 100,
-    },
-    {
-      tipe: "induktor",
-      label: "Induktor Kumparan",
-      kategori: "Komponen RLC",
-      defaultSensor: 25,
-    },
-    { tipe: "dioda", label: "Dioda Penyearah 1N4007", kategori: "Semikonduktor & IC" },
-    {
-      tipe: "transistor_npn",
-      label: "Transistor NPN 2N2222",
-      kategori: "Semikonduktor & IC",
-    },
-    {
-      tipe: "gerbang_logika",
-      label: "Gerbang AND (7408)",
-      kategori: "Gerbang Logika & Alat",
-    },
-    {
-      tipe: "osiloskop",
-      label: "Osiloskop 2-Channel",
-      kategori: "Gerbang Logika & Alat",
-    },
-  ],
-  matlab: [
-    {
-      tipe: "Sine Wave",
-      label: "Sine Wave Generator",
-      kategori: "Sources",
-      defaultSensor: 50,
-    },
-    {
-      tipe: "PID Controller",
-      label: "PID Controller",
-      kategori: "Continuous",
-      defaultSensor: 2,
-    },
-    {
-      tipe: "Transfer Fcn",
-      label: "Transfer Fcn G(s)",
-      kategori: "Continuous",
-      defaultSensor: 1,
-    },
-    { tipe: "Scope Plot", label: "Simulink Scope Viewer", kategori: "Sinks" },
-  ],
-};
-
 const DEFAULT_PROJECT = DAFTAR_TUTORIAL_PROJECT_WOKWI[4];
 
 const KOMPONEN_AWAL_PER_MODE: {
@@ -579,65 +147,6 @@ const KABEL_AWAL_PER_MODE: {
   ],
 };
 
-function cariKoordinatPinAbsolut(
-  node: NodeKomponenKanvas,
-  idAtauNamaPin: string
-): { x: number; y: number; pinObj: TitikPinFisik } {
-  const layout = ambilLayoutFisikKomponen(node.tipe);
-  const found =
-    layout.pins.find(
-      (p) => p.idPin === idAtauNamaPin || p.nama === idAtauNamaPin
-    ) || layout.pins[0];
-  return {
-    x: node.x + found.x,
-    y: node.y + found.y + 18,
-    pinObj: found,
-  };
-}
-
-function bangunJalurSikuWokwi(
-  x1: number,
-  y1: number,
-  x2: number,
-  y2: number,
-  titikSiku?: TitikSikuKabel[]
-): { d: string; daftarHandle: TitikSikuKabel[]; titikTengah: TitikSikuKabel } {
-  const handles: TitikSikuKabel[] =
-    titikSiku && titikSiku.length > 0
-      ? titikSiku
-      : [
-          { x: Math.round((x1 + x2) / 2), y: y1 },
-          { x: Math.round((x1 + x2) / 2), y: y2 },
-        ];
-
-  const semuaTitik: TitikSikuKabel[] = [{ x: x1, y: y1 }];
-  for (let i = 0; i < handles.length; i++) {
-    const prev = semuaTitik[semuaTitik.length - 1];
-    const curr = handles[i];
-    if (prev.x !== curr.x && prev.y !== curr.y) {
-      semuaTitik.push({ x: curr.x, y: prev.y });
-    }
-    semuaTitik.push({ x: curr.x, y: curr.y });
-  }
-  const last = semuaTitik[semuaTitik.length - 1];
-  if (last.x !== x2 && last.y !== y2) {
-    semuaTitik.push({ x: x2, y: last.y });
-  }
-  semuaTitik.push({ x: x2, y: y2 });
-
-  const d = semuaTitik
-    .map((pt, idx) => `${idx === 0 ? "M" : "L"} ${pt.x} ${pt.y}`)
-    .join(" ");
-
-  const tengah =
-    handles[Math.floor(handles.length / 2)] || {
-      x: Math.round((x1 + x2) / 2),
-      y: Math.round((y1 + y2) / 2),
-    };
-
-  return { d, daftarHandle: handles, titikTengah: tengah };
-}
-
 export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
   mode,
   userLogin,
@@ -653,9 +162,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     [key in "wokwi" | "ewb" | "matlab"]: KabelKoneksiItem[];
   }>(KABEL_AWAL_PER_MODE);
 
-  // ============================================================================
-  // STATE RIWAYAT UNDO & REDO KANVAS
-  // ============================================================================
   const [riwayatUndo, setRiwayatUndo] = useState<SnapshotUndoKanvas[]>([]);
   const [riwayatRedo, setRiwayatRedo] = useState<SnapshotUndoKanvas[]>([]);
 
@@ -704,14 +210,18 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     DEFAULT_PROJECT
   );
 
-  // State Widgets Blynk yang terhubung dengan fitur Simpan Project per Akun
   const [widgetsBlynkSaatIni, setWidgetsBlynkSaatIni] = useState<
     ExtendedWidgetBlynkItem[]
-  >(DEFAULT_PROJECT.blynkWidgets.map((w) => ({ ...w, lebarKolom: 1 })));
+  >(
+    DEFAULT_PROJECT.blynkWidgets.map((w, idx) => ({
+      ...w,
+      x: 20 + (idx % 3) * 245,
+      y: 20 + Math.floor(idx / 3) * 175,
+      w: 230,
+      h: 155,
+    }))
+  );
 
-  // ============================================================================
-  // STATE PENYIMPANAN PROJECT PER AKUN PENGGUNA (LOCALSTORAGE PER USER ID)
-  // ============================================================================
   const idPemilikAktif = userLogin?.id || "guest_user";
   const namaPemilikAktif = userLogin?.nama || "Tamu (Guest)";
   const storageKeyUser = `hibahilmu_iot_projects_${idPemilikAktif}`;
@@ -720,26 +230,21 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     ProjectTersimpanAkun[]
   >([]);
   const [namaProjectInput, setNamaProjectInput] = useState(
-    "Project IoT Smart Lab Saya"
+    DEFAULT_PROJECT.judul
   );
   const [bukaPanelProjectAkun, setBukaPanelProjectAkun] = useState(false);
+  const [infoPopupNotifProject, setInfoPopupNotifProject] =
+    useState<InfoPopupNotifProject | null>(null);
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem(storageKeyUser);
-      if (raw) {
-        setDaftarProjectTersimpan(JSON.parse(raw));
-      } else {
-        setDaftarProjectTersimpan([]);
-      }
+      setDaftarProjectTersimpan(raw ? JSON.parse(raw) : []);
     } catch {
       setDaftarProjectTersimpan([]);
     }
   }, [storageKeyUser]);
 
-  // ============================================================================
-  // STATE MULTI-MCU IDE: KODE C++, KODE MICROPYTHON, BAHASA AKTIF & ERROR COMPILER
-  // ============================================================================
   const [bahasaPerMcu, setBahasaPerMcu] = useState<{
     [mcuId: string]: "cpp" | "micropython";
   }>({});
@@ -762,9 +267,8 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
 
   const [idTabMcuAktif, setIdTabMcuAktif] = useState<string>("p5-esp1");
   const [logSerialMultiMcu, setLogSerialMultiMcu] = useState<string[]>([
-    "[10:30:01] 🚀 Semua Mikrokontroler (ESP32 #1 & ESP32 #2) lolos pemeriksaan Library & sedang RUNNING...",
+    "[10:30:01] 🚀 Semua Mikrokontroler lolos pemeriksaan Library & sedang RUNNING...",
     "[10:30:02] [ESP32 #1 -> UART TX2]: Mengirim paket 'NODE1:JARAK=28cm;PIR=DETECTED'",
-    "[10:30:02] [ESP32 #2 <- UART RX2]: Diterima -> Memicu Relay & Buka Solenoid 12V!",
   ]);
 
   const [kategoriPaletAktif, setKategoriPaletAktif] = useState<string>("Semua");
@@ -825,10 +329,9 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     }
   }, [daftarMcuDiKanvas, idTabMcuAktif]);
 
-  // Fungsi Simpan Project ke Akun Saat Ini
-  const handleSimpanProjectKeAkun = (e: React.FormEvent) => {
-    e.preventDefault();
-    const judul = namaProjectInput.trim() || "Project IoT Tanpa Judul";
+  const handleSimpanProjectKeAkun = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const judul = namaProjectInput.trim() || projectAktif.judul || "Project IoT Saya";
     const baru: ProjectTersimpanAkun = {
       idProject: "prj-" + Date.now(),
       namaProject: judul,
@@ -848,12 +351,18 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     try {
       localStorage.setItem(storageKeyUser, JSON.stringify(listBaru));
     } catch {}
-    alert(
-      `✓ Project "${judul}" berhasil disimpan ke akun ${namaPemilikAktif}! Anda dapat membukanya kembali kapan saja.`
-    );
+
+    // Tampilkan Pop-up Modal Modern!
+    setInfoPopupNotifProject({
+      judul: "Project Berhasil Disimpan!",
+      namaProject: judul,
+      namaAkun: namaPemilikAktif,
+      jumlahKomponen: nodesSaatIni.length,
+      jumlahKabel: kabelSaatIni.length,
+      jumlahWidgetBlynk: widgetsBlynkSaatIni.length,
+    });
   };
 
-  // Fungsi Buka Kembali Project dari Akun Saat Ini
   const handleMuatProjectDariAkun = (prj: ProjectTersimpanAkun) => {
     simpanSnapshotUndo();
     setDaftarNode((prev) => ({ ...prev, [prj.mode]: prj.nodes }));
@@ -874,6 +383,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     if (mcuNodes[0]) setIdTabMcuAktif(mcuNodes[0].id);
     setIdKomponenTerpilih(prj.nodes[0]?.id || null);
     setNamaProjectInput(prj.namaProject);
+    setBukaPanelProjectAkun(false);
   };
 
   const handleHapusProjectAkun = (idPrj: string) => {
@@ -884,9 +394,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     } catch {}
   };
 
-  // ============================================================================
-  // FUNGSI DUPLIKASI KOMPONEN (COPY ITEM DENGAN PENOMORAN NAMA BERBEDA)
-  // ============================================================================
   const handleDuplikatKomponen = (nodeAsal: NodeKomponenKanvas) => {
     simpanSnapshotUndo();
     const namaDasar = nodeAsal.label.replace(/\s*#\d+$/, "").trim();
@@ -914,7 +421,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     }));
     setIdKomponenTerpilih(idBaru);
 
-    // Jika yang diduplikasi adalah Mikrokontroler, salin juga kode C++ & MicroPython-nya ke tab baru!
     if (TIPE_MCU_LIST.includes(nodeAsal.tipe)) {
       const cppAsal =
         kodePerMcuMap[nodeAsal.id] ||
@@ -928,82 +434,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
       setStatusRunPerMcu((prev) => ({ ...prev, [idBaru]: true }));
       setIdTabMcuAktif(idBaru);
     }
-  };
-
-  // ============================================================================
-  // FUNGSI VALIDASI COMPILER & LIBRARY KETAT
-  // ============================================================================
-  const validasiKodeDanLibraryMcu = (mcuId: string): string | null => {
-    const mcuNode = nodesSaatIni.find((n) => n.id === mcuId);
-    if (!mcuNode) return null;
-
-    const bahasa = bahasaPerMcu[mcuId] || "cpp";
-    const kode =
-      bahasa === "micropython"
-        ? kodeMicroPythonMap[mcuId] || ""
-        : kodePerMcuMap[mcuId] || "";
-
-    const idTetangga = kabelSaatIni
-      .filter((k) => k.dariId === mcuId || k.keId === mcuId)
-      .map((k) => (k.dariId === mcuId ? k.keId : k.dariId));
-    const komponenTerhubung = nodesSaatIni.filter((n) =>
-      idTetangga.includes(n.id)
-    );
-
-    if (bahasa === "cpp") {
-      if (!kode.includes("setup(") || !kode.includes("loop(")) {
-        return `Compile Error pada ${mcuNode.label} (C++): Fungsi wajib 'void setup()' atau 'void loop()' tidak ditemukan!`;
-      }
-      for (const comp of komponenTerhubung) {
-        if (
-          comp.tipe === "dht22" &&
-          !kode.includes("#include <DHT.h>") &&
-          !kode.includes('#include "DHT.h"')
-        ) {
-          return `Compile Error pada ${mcuNode.label}: Sensor '${comp.label}' terhubung, tetapi '#include <DHT.h>' belum ditulis!`;
-        }
-        if (
-          (comp.tipe === "servo" || comp.tipe === "servo_360") &&
-          !kode.includes("#include <ESP32Servo.h>") &&
-          !kode.includes("#include <Servo.h>")
-        ) {
-          return `Compile Error pada ${mcuNode.label}: Motor '${comp.label}' membutuhkan '#include <ESP32Servo.h>' atau '#include <Servo.h>'!`;
-        }
-        if (
-          comp.tipe === "rfid_rc522" &&
-          (!kode.includes("#include <SPI.h>") ||
-            !kode.includes("#include <MFRC522.h>"))
-        ) {
-          return `Compile Error pada ${mcuNode.label}: Modul '${comp.label}' membutuhkan '#include <SPI.h>' dan '#include <MFRC522.h>'!`;
-        }
-        if (
-          (comp.tipe === "oled_display" || comp.tipe === "lcd_16x2") &&
-          !kode.includes("#include <Wire.h>")
-        ) {
-          return `Compile Error pada ${mcuNode.label}: Layar I2C '${comp.label}' membutuhkan '#include <Wire.h>'!`;
-        }
-      }
-    } else {
-      if (!kode.includes("import machine") && !kode.includes("from machine import")) {
-        return `MicroPython ImportError pada ${mcuNode.label}: Modul wajib 'from machine import Pin' belum ditulis!`;
-      }
-      for (const comp of komponenTerhubung) {
-        if (comp.tipe === "dht22" && !kode.includes("import dht")) {
-          return `MicroPython ImportError pada ${mcuNode.label}: Sensor '${comp.label}' terhubung, tetapi 'import dht' belum ditulis!`;
-        }
-        if (
-          (comp.tipe === "servo" || comp.tipe === "servo_360") &&
-          !kode.includes("PWM")
-        ) {
-          return `MicroPython NameError pada ${mcuNode.label}: Motor '${comp.label}' membutuhkan 'from machine import PWM'!`;
-        }
-        if (comp.tipe === "rfid_rc522" && !kode.includes("SPI")) {
-          return `MicroPython ImportError pada ${mcuNode.label}: Modul RFID '${comp.label}' membutuhkan 'from machine import SPI'!`;
-        }
-      }
-    }
-
-    return null;
   };
 
   const setIdKomponenTerhubungKeMcuRunning = useMemo(() => {
@@ -1074,7 +504,13 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     setKodePerMcuMap(proj.kodePerMcu);
     setKodeMicroPythonMap(proj.kodeMicroPythonPerMcu);
     setWidgetsBlynkSaatIni(
-      proj.blynkWidgets.map((w) => ({ ...w, lebarKolom: 1 }))
+      proj.blynkWidgets.map((w, idx) => ({
+        ...w,
+        x: 20 + (idx % 3) * 245,
+        y: 20 + Math.floor(idx / 3) * 175,
+        w: 230,
+        h: 155,
+      }))
     );
     setErrorCompilerPerMcu({});
 
@@ -1089,12 +525,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     }
     setIdKomponenTerpilih(proj.nodes[0]?.id || null);
     setNamaProjectInput(proj.judul);
-
-    const jam = new Date().toLocaleTimeString("id-ID");
-    setLogSerialMultiMcu([
-      `[${jam}] 📂 Memuat "${proj.judul}" (${mcuNodes.length} Mikrokontroler & ${proj.kabel.length} Kabel Aktif).`,
-      `[${jam}] ✅ Kode C++ & MicroPython siap dijalankan!`,
-    ]);
   };
 
   const jalankanSatuMcu = (mcuId: string, jalan: boolean) => {
@@ -1102,7 +532,18 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     const jam = new Date().toLocaleTimeString("id-ID");
 
     if (jalan) {
-      const pesanError = validasiKodeDanLibraryMcu(mcuId);
+      const bhs = bahasaPerMcu[mcuId] || "cpp";
+      const kd =
+        bhs === "micropython"
+          ? kodeMicroPythonMap[mcuId] || ""
+          : kodePerMcuMap[mcuId] || "";
+      const pesanError = validasiLibraryMcuKetat(
+        mcuObj,
+        bhs,
+        kd,
+        nodesSaatIni,
+        kabelSaatIni
+      );
       if (pesanError) {
         setErrorCompilerPerMcu((prev) => ({ ...prev, [mcuId]: pesanError }));
         setStatusRunPerMcu((prev) => ({ ...prev, [mcuId]: false }));
@@ -1116,7 +557,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     setLogSerialMultiMcu((prev) => [
       `[${jam}] ${jalan ? "▶️ COMPILED & RUNNING" : "⏹️ STOPPED"}: ${
         mcuObj?.label || mcuId
-      } (${(bahasaPerMcu[mcuId] || "cpp").toUpperCase()})`,
+      }`,
       ...prev,
     ]);
   };
@@ -1141,7 +582,12 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     const logBaru: string[] = [];
 
     daftarMcuDiKanvas.forEach((m) => {
-      const err = validasiKodeDanLibraryMcu(m.id);
+      const bhs = bahasaPerMcu[m.id] || "cpp";
+      const kd =
+        bhs === "micropython"
+          ? kodeMicroPythonMap[m.id] || ""
+          : kodePerMcuMap[m.id] || "";
+      const err = validasiLibraryMcuKetat(m, bhs, kd, nodesSaatIni, kabelSaatIni);
       if (err) {
         errMapBaru[m.id] = err;
         mapBaru[m.id] = false;
@@ -1149,11 +595,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
       } else {
         errMapBaru[m.id] = null;
         mapBaru[m.id] = true;
-        logBaru.push(
-          `[${jam}] ✅ ${m.label} (${(
-            bahasaPerMcu[m.id] || "cpp"
-          ).toUpperCase()}): Kompilasi & Library Valid -> RUNNING!`
-        );
+        logBaru.push(`[${jam}] ✅ ${m.label}: Library Valid -> RUNNING!`);
       }
     });
 
@@ -1231,15 +673,12 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     if (TIPE_MCU_LIST.includes(tipe)) {
       const templateCpp = `// [C++ ARDUINO] - ${namaLabel.toUpperCase()}
 #include <Arduino.h>
-
 #define PIN_LED 2
 
 void setup() {
   Serial.begin(115200);
   pinMode(PIN_LED, OUTPUT);
-  Serial.println("=== [${namaLabel}] READY & RUNNING ===");
 }
-
 void loop() {
   digitalWrite(PIN_LED, HIGH);
   delay(1000);
@@ -1414,7 +853,6 @@ void loop() {
       : kodePerMcuMap[mcuTabAktifObj.id] || ""
     : "";
 
-  // Fungsi Transpile / Konversi Langsung C++ <-> MicroPython saat klik tombol
   const handleKonversiBahasaOtomatis = (
     targetBahasa: "cpp" | "micropython"
   ) => {
@@ -1452,8 +890,15 @@ void loop() {
 
   return (
     <div className="space-y-6">
+      {/* POP-UP MODAL ELEGAN SAAT PROJECT BERHASIL DISIMPAN */}
+      <ProjectSavedPopupModal
+        info={infoPopupNotifProject}
+        onClose={() => setInfoPopupNotifProject(null)}
+        onBukaRepositori={() => setBukaPanelProjectAkun(true)}
+      />
+
       <div className="bg-slate-900 text-white p-6 rounded-3xl border-2 border-indigo-500/40 space-y-6 shadow-2xl">
-        {/* HEADER BAR MEJA KERJA + TOMBOL UNDO/REDO + SIMPAN PROJECT PER AKUN */}
+        {/* HEADER BAR MEJA KERJA */}
         <div className="flex flex-wrap justify-between items-center gap-4 border-b border-slate-800 pb-4">
           <div className="flex items-center gap-2.5">
             {mode === "wokwi" ? (
@@ -1478,14 +923,12 @@ void loop() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            {/* Tombol Undo & Redo Kanvas */}
             <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
               <button
                 type="button"
                 onClick={handleUndoKanvas}
                 disabled={riwayatUndo.length === 0}
                 className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-35 text-amber-300 font-black flex items-center gap-1 cursor-pointer"
-                title="Undo langkah terakhir di kanvas"
               >
                 <Undo2 className="w-3.5 h-3.5" /> Undo ({riwayatUndo.length})
               </button>
@@ -1494,20 +937,25 @@ void loop() {
                 onClick={handleRedoKanvas}
                 disabled={riwayatRedo.length === 0}
                 className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-35 text-sky-300 font-black flex items-center gap-1 cursor-pointer"
-                title="Redo langkah kanvas"
               >
                 <Redo2 className="w-3.5 h-3.5" /> Redo
               </button>
             </div>
 
-            {/* Tombol Buka/Simpan Project Sesuai Akun Masing-Masing */}
+            <button
+              type="button"
+              onClick={() => handleSimpanProjectKeAkun()}
+              className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black flex items-center gap-1.5 cursor-pointer shadow-md"
+            >
+              💾 Simpan Cepat ke Akun
+            </button>
+
             <button
               type="button"
               onClick={() => setBukaPanelProjectAkun(!bukaPanelProjectAkun)}
               className="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black flex items-center gap-1.5 cursor-pointer shadow-md"
             >
-              <FolderOpen className="w-4 h-4" /> Simpan / Buka Project Akun (
-              {daftarProjectTersimpan.length})
+              <FolderOpen className="w-4 h-4" /> Buka Project ({daftarProjectTersimpan.length})
             </button>
 
             {mode === "wokwi" && (
@@ -1516,7 +964,7 @@ void loop() {
                 onClick={() => setBukaDashboardIot(!bukaDashboardIot)}
                 className={`px-3 py-2 rounded-xl font-black flex items-center gap-1.5 cursor-pointer ${
                   bukaDashboardIot
-                    ? "bg-emerald-500 text-slate-950"
+                    ? "bg-indigo-600 text-white"
                     : "bg-slate-800 text-emerald-300"
                 }`}
               >
@@ -1575,95 +1023,18 @@ void loop() {
           </div>
         </div>
 
-        {/* ====================================================================
-            PANEL SIMPAN & BUKA PROJECT PER AKUN PENGGUNA (LOCALSTORAGE PER USER)
-           ==================================================================== */}
-        {bukaPanelProjectAkun && (
-          <div className="bg-slate-950 p-5 rounded-3xl border-2 border-amber-400 space-y-4 text-xs shadow-2xl">
-            <div className="flex flex-wrap justify-between items-center gap-2 border-b border-slate-800 pb-3">
-              <div>
-                <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded bg-amber-400 text-slate-950">
-                  Private Account Cloud Storage
-                </span>
-                <h4 className="font-black text-base text-white mt-1">
-                  Repositori Project Tersimpan Milik Akun: {namaPemilikAktif} (ID:{" "}
-                  {idPemilikAktif})
-                </h4>
-              </div>
-              <span className="text-slate-400">
-                Menyimpan komponen, kabel siku, kode C++ &amp; MicroPython, serta susunan widget
-                Blynk.
-              </span>
-            </div>
-
-            <form
-              onSubmit={handleSimpanProjectKeAkun}
-              className="flex flex-col sm:flex-row gap-2"
-            >
-              <input
-                type="text"
-                required
-                value={namaProjectInput}
-                onChange={(e) => setNamaProjectInput(e.target.value)}
-                placeholder="Ketik nama project yang ingin disimpan..."
-                className="flex-1 p-3 rounded-xl bg-slate-900 border border-slate-700 font-bold text-white"
-              />
-              <button
-                type="submit"
-                className="px-5 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black flex items-center justify-center gap-2 cursor-pointer shrink-0"
-              >
-                <Save className="w-4 h-4" /> Simpan Project ke Akun {namaPemilikAktif}
-              </button>
-            </form>
-
-            {daftarProjectTersimpan.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
-                {daftarProjectTersimpan.map((prj) => (
-                  <div
-                    key={prj.idProject}
-                    className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col justify-between gap-3"
-                  >
-                    <div>
-                      <div className="flex justify-between items-start gap-2">
-                        <span className="font-black text-sm text-amber-300">
-                          {prj.namaProject}
-                        </span>
-                        <span className="text-[9px] font-mono bg-slate-950 px-2 py-0.5 rounded text-emerald-400">
-                          {prj.nodes.length} Item • {prj.kabel.length} Kabel
-                        </span>
-                      </div>
-                      <div className="text-[10px] text-slate-400 mt-1">
-                        Disimpan: {prj.waktuSimpan} oleh <b>{prj.pemilikNama}</b>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleMuatProjectDariAkun(prj)}
-                        className="flex-1 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-[11px] cursor-pointer"
-                      >
-                        📂 Buka Project Ini
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleHapusProjectAkun(prj.idProject)}
-                        className="p-2 rounded-xl bg-rose-500/20 hover:bg-rose-600 text-rose-300 hover:text-white cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 text-center text-slate-400">
-                Belum ada project yang disimpan pada akun <b>{namaPemilikAktif}</b>. Klik tombol{" "}
-                <b>Simpan Project</b> di atas untuk menyimpan rangkaian Anda saat ini!
-              </div>
-            )}
-          </div>
-        )}
+        {/* DRAWER REPOSITORI PROJECT TERSIMPAN PER AKUN */}
+        <AccountProjectRepositoryDrawer
+          buka={bukaPanelProjectAkun}
+          namaPemilikAktif={namaPemilikAktif}
+          idPemilikAktif={idPemilikAktif}
+          namaProjectInput={namaProjectInput}
+          setNamaProjectInput={setNamaProjectInput}
+          daftarProjectTersimpan={daftarProjectTersimpan}
+          onSimpanProject={handleSimpanProjectKeAkun}
+          onMuatProject={handleMuatProjectDariAkun}
+          onHapusProject={handleHapusProjectAkun}
+        />
 
         {/* PANEL 7 TUTORIAL & CONTOH RANGKAIAN PROJECT JADI */}
         {mode === "wokwi" && (
@@ -1672,8 +1043,7 @@ void loop() {
               <div className="flex items-center gap-2">
                 <BookOpen className="w-5 h-5 text-amber-400" />
                 <span className="font-black text-xs sm:text-sm uppercase text-amber-300">
-                  7 Tutorial &amp; Contoh Rangkaian Project Jadi (Lengkap Kode C++ &amp;
-                  MicroPython + Widget Blynk):
+                  7 Tutorial &amp; Contoh Rangkaian Project Jadi:
                 </span>
               </div>
               <span className="text-[11px] font-mono text-emerald-300">
@@ -1721,7 +1091,7 @@ void loop() {
           </div>
         )}
 
-        {/* GUDANG KOMPONEN BERKATEGORI + PREVIEW GAMBAR MINI */}
+        {/* GUDANG KOMPONEN BERKATEGORI */}
         <div className="bg-slate-950/90 p-5 rounded-3xl border border-slate-800 space-y-4">
           <div className="flex flex-wrap justify-between items-center gap-3">
             <div className="flex items-center gap-2 text-xs">
@@ -1810,7 +1180,7 @@ void loop() {
           </div>
         </div>
 
-        {/* BAR PILIH WARNA KABEL, DUPLIKAT ITEM & KONTROL RUN SEMUA / RUN PER MIKROKONTROLER */}
+        {/* BAR PILIH WARNA KABEL, DUPLIKAT ITEM & KONTROL RUN */}
         <div className="bg-slate-950/95 p-3.5 rounded-3xl border border-indigo-500/30 flex flex-wrap justify-between items-center gap-3 text-xs">
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -1829,49 +1199,15 @@ void loop() {
               <Square className="w-3.5 h-3.5" /> Stop Semua
             </button>
 
-            {/* Tombol Cepat Duplikat (Copy) Komponen Terpilih */}
             {komponenTerpilih && (
               <button
                 type="button"
                 onClick={() => handleDuplikatKomponen(komponenTerpilih)}
                 className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black flex items-center gap-1.5 cursor-pointer shadow-md"
-                title={`Duplikat ${komponenTerpilih.label} dengan nama baru`}
               >
                 <CopyPlus className="w-3.5 h-3.5" /> Duplikat &ldquo;{komponenTerpilih.label}&rdquo;
               </button>
             )}
-
-            {daftarMcuDiKanvas.map((mcu) => {
-              const sedangRun = !!statusRunPerMcu[mcu.id] && !errorCompilerPerMcu[mcu.id];
-              const adaError = !!errorCompilerPerMcu[mcu.id];
-              return (
-                <button
-                  key={mcu.id}
-                  type="button"
-                  onClick={() => jalankanSatuMcu(mcu.id, !sedangRun)}
-                  className={`px-3 py-1.5 rounded-xl font-mono text-[11px] font-black flex items-center gap-1.5 border cursor-pointer transition ${
-                    adaError
-                      ? "bg-rose-950 border-rose-500 text-rose-300"
-                      : sedangRun
-                      ? "bg-emerald-950/90 border-emerald-400 text-emerald-300"
-                      : "bg-slate-900 border-slate-700 text-slate-400"
-                  }`}
-                >
-                  <span
-                    className={`w-2 h-2 rounded-full ${
-                      adaError
-                        ? "bg-rose-500 animate-ping"
-                        : sedangRun
-                        ? "bg-emerald-400 animate-ping"
-                        : "bg-slate-600"
-                    }`}
-                  />
-                  <span>
-                    {mcu.label}: {adaError ? "ERROR!" : sedangRun ? "RUNNING" : "STOPPED"}
-                  </span>
-                </button>
-              );
-            })}
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5">
@@ -1902,9 +1238,7 @@ void loop() {
           </div>
         </div>
 
-        {/* ====================================================================
-            AREA UTAMA: KANVAS DRAG & DROP (8 KOLOM) + INSPEKTOR REALISTIS (4 KOLOM)
-           ==================================================================== */}
+        {/* AREA UTAMA: KANVAS DRAG & DROP (8 KOLOM) + INSPEKTOR (4 KOLOM) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           <div
             ref={containerRef}
@@ -2219,7 +1553,7 @@ void loop() {
             </div>
           </div>
 
-          {/* PANEL SAMPING KANAN (4 KOLOM): INSPEKTOR REALISTIS, DUPLIKAT & TABEL PINOUT */}
+          {/* PANEL SAMPING KANAN (4 KOLOM): INSPEKTOR & DUPLIKAT ITEM */}
           <div
             className={`${
               ukuranKanvas === "penuh" ? "lg:col-span-12" : "lg:col-span-4"
@@ -2235,7 +1569,6 @@ void loop() {
                     type="button"
                     onClick={() => handleDuplikatKomponen(komponenTerpilih)}
                     className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-black flex items-center gap-1 cursor-pointer"
-                    title="Gandakan komponen ini dengan nomor baru"
                   >
                     <CopyPlus className="w-3 h-3" /> Duplikat
                   </button>
@@ -2259,20 +1592,6 @@ void loop() {
 
             {komponenTerpilih && layoutTerpilih && rentangTerpilih && (
               <div className="space-y-4 text-xs">
-                <div
-                  className={`p-2.5 rounded-xl border text-[11px] font-bold flex items-center justify-between ${
-                    setIdKomponenTerhubungKeMcuRunning.has(komponenTerpilih.id)
-                      ? "bg-emerald-950/50 border-emerald-500/40 text-emerald-300"
-                      : "bg-rose-950/60 border-rose-500/50 text-rose-300"
-                  }`}
-                >
-                  <span>
-                    {setIdKomponenTerhubungKeMcuRunning.has(komponenTerpilih.id)
-                      ? "⚡ Terhubung ke Mikrokontroler RUNNING (Aktif)"
-                      : "⚠️ Tidak Terhubung Kabel / MCU Error / STOP (Padam)"}
-                  </span>
-                </div>
-
                 <div>
                   <label className="text-[10px] font-bold text-slate-400 block mb-1">
                     Nama Komponen Terpilih:
@@ -2354,18 +1673,13 @@ void loop() {
                       </div>
                     )}
 
-                    <p className="text-[10px] text-slate-400 leading-relaxed">
-                      {rentangTerpilih.catatanFisik}
-                    </p>
-
                     <button
                       type="button"
-                      onClick={() => {
-                        const statusBaru = !komponenTerpilih.nyala;
+                      onClick={() =>
                         updatePropertiKomponen(komponenTerpilih.id, {
-                          nyala: statusBaru,
-                        });
-                      }}
+                          nyala: !komponenTerpilih.nyala,
+                        })
+                      }
                       className={`w-full py-2.5 rounded-xl font-black flex items-center justify-center gap-1.5 cursor-pointer transition ${
                         komponenTerpilih.nyala
                           ? "bg-emerald-500 text-slate-950 shadow-lg"
@@ -2426,227 +1740,41 @@ void loop() {
           </div>
         </div>
 
-        {/* ====================================================================
-            STUDIO PEMROGRAMAN MULTI-MIKROKONTROLER (C++ ⇄ MICROPYTHON AUTO-CONVERTER!)
-           ==================================================================== */}
-        {mode === "wokwi" && daftarMcuDiKanvas.length > 0 && (
-          <div className="bg-slate-950 rounded-3xl border-2 border-emerald-500/40 overflow-hidden shadow-2xl">
-            <div className="bg-slate-900 px-5 py-3 border-b border-slate-800 flex flex-wrap justify-between items-center gap-3">
-              <div className="flex items-center gap-2 overflow-x-auto">
-                <Code2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                <span className="text-xs font-black uppercase text-slate-400 mr-1">
-                  Tab Program MCU ({daftarMcuDiKanvas.length} Board):
-                </span>
-                {daftarMcuDiKanvas.map((mcu, idx) => {
-                  const tabDipilih = mcuTabAktifObj?.id === mcu.id;
-                  const sedangRun = !!statusRunPerMcu[mcu.id] && !errorCompilerPerMcu[mcu.id];
-                  const adaErr = !!errorCompilerPerMcu[mcu.id];
-                  return (
-                    <button
-                      key={mcu.id}
-                      type="button"
-                      onClick={() => setIdTabMcuAktif(mcu.id)}
-                      className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2 cursor-pointer transition ${
-                        tabDipilih
-                          ? "bg-indigo-600 text-white shadow-md"
-                          : "bg-slate-950 text-slate-300 border border-slate-800 hover:border-indigo-400"
-                      }`}
-                    >
-                      <span
-                        className={`w-2 h-2 rounded-full ${
-                          adaErr
-                            ? "bg-rose-500 animate-ping"
-                            : sedangRun
-                            ? "bg-emerald-400 animate-ping"
-                            : "bg-slate-600"
-                        }`}
-                      />
-                      <span>
-                        Tab #{idx + 1}: {mcu.label}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Pilihan Bahasa & Tombol Konversi Otomatis 2 Arah C++ <-> MicroPython */}
-              {mcuTabAktifObj && (
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
-                    <button
-                      type="button"
-                      onClick={() => handleKonversiBahasaOtomatis("cpp")}
-                      className={`px-3 py-1 rounded-lg font-black cursor-pointer transition ${
-                        bahasaTabAktif === "cpp"
-                          ? "bg-sky-500 text-slate-950"
-                          : "text-slate-400 hover:text-white"
-                      }`}
-                    >
-                      C++ Arduino (.ino)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleKonversiBahasaOtomatis("micropython")}
-                      className={`px-3 py-1 rounded-lg font-black cursor-pointer transition ${
-                        bahasaTabAktif === "micropython"
-                          ? "bg-amber-400 text-slate-950"
-                          : "text-slate-400 hover:text-white"
-                      }`}
-                    >
-                      🐍 MicroPython (main.py)
-                    </button>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleKonversiBahasaOtomatis(
-                        bahasaTabAktif === "cpp" ? "micropython" : "cpp"
-                      )
-                    }
-                    className="px-3 py-1.5 rounded-xl bg-amber-400/20 hover:bg-amber-400 text-amber-300 hover:text-slate-950 border border-amber-400/40 text-xs font-black flex items-center gap-1.5 cursor-pointer transition"
-                    title="Terjemahkan kode C++ saat ini ke MicroPython atau sebaliknya secara otomatis"
-                  >
-                    <ArrowLeftRight className="w-3.5 h-3.5" /> Konversi ke{" "}
-                    {bahasaTabAktif === "cpp" ? "MicroPython" : "C++"}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => navigator.clipboard?.writeText(kodeTabAktif)}
-                    className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold flex items-center gap-1 cursor-pointer"
-                  >
-                    <Copy className="w-3.5 h-3.5" /> Salin
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      jalankanSatuMcu(
-                        mcuTabAktifObj.id,
-                        !(statusRunPerMcu[mcuTabAktifObj.id] && !errorCompilerPerMcu[mcuTabAktifObj.id])
-                      )
-                    }
-                    className={`px-4 py-2 rounded-xl font-black text-xs flex items-center gap-1.5 cursor-pointer ${
-                      statusRunPerMcu[mcuTabAktifObj.id] &&
-                      !errorCompilerPerMcu[mcuTabAktifObj.id]
-                        ? "bg-amber-400 text-slate-950"
-                        : "bg-emerald-500 text-slate-950"
-                    }`}
-                  >
-                    {statusRunPerMcu[mcuTabAktifObj.id] &&
-                    !errorCompilerPerMcu[mcuTabAktifObj.id] ? (
-                      <>
-                        <Square className="w-3.5 h-3.5 fill-slate-950" /> Stop{" "}
-                        {mcuTabAktifObj.label}
-                      </>
-                    ) : (
-                      <>
-                        <Play className="w-3.5 h-3.5 fill-slate-950" /> Compile &amp; Run{" "}
-                        {mcuTabAktifObj.label}
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* BAR SISIPKAN LIBRARY RESMI */}
-            <div className="bg-slate-900/60 px-5 py-2.5 border-b border-slate-800 flex flex-wrap items-center gap-2 text-[11px]">
-              <span className="font-black text-amber-300 flex items-center gap-1">
-                <PackagePlus className="w-3.5 h-3.5" /> Klik untuk Sisipkan Library Resmi (
-                {bahasaTabAktif === "micropython" ? "MicroPython import" : "C++ #include"}):
-              </span>
-              {PUSTAKA_RESMI_IOT.map((lib, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() =>
-                    sisipkanLibraryKeTabAktif(
-                      bahasaTabAktif === "micropython"
-                        ? lib.microPythonImport
-                        : lib.cppHeader
-                    )
-                  }
-                  className="px-2.5 py-1 rounded-lg bg-slate-950 hover:bg-indigo-950 border border-slate-700 hover:border-indigo-400 font-mono text-emerald-300 cursor-pointer"
-                >
-                  +{" "}
-                  {bahasaTabAktif === "micropython"
-                    ? lib.microPythonImport.split("\n")[0]
-                    : lib.cppHeader.split("\n")[0]}
-                </button>
-              ))}
-            </div>
-
-            {mcuTabAktifObj && errorCompilerPerMcu[mcuTabAktifObj.id] && (
-              <div className="bg-rose-950/90 border-b border-rose-500 px-5 py-3 flex items-center justify-between gap-3 text-xs text-rose-200">
-                <div className="flex items-center gap-2 font-mono font-bold">
-                  <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
-                  <span>{errorCompilerPerMcu[mcuTabAktifObj.id]}</span>
-                </div>
-                <span className="text-[10px] uppercase font-black px-2.5 py-1 rounded bg-rose-600 text-white shrink-0">
-                  Board Dihentikan (Tambahkan Library lalu Klik Run!)
-                </span>
-              </div>
-            )}
-
-            {mcuTabAktifObj && (
-              <div className="grid grid-cols-1 lg:grid-cols-12">
-                <div className="lg:col-span-8 border-r border-slate-800">
-                  <textarea
-                    rows={12}
-                    value={kodeTabAktif}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (bahasaTabAktif === "micropython") {
-                        setKodeMicroPythonMap({
-                          ...kodeMicroPythonMap,
-                          [mcuTabAktifObj.id]: val,
-                        });
-                      } else {
-                        setKodePerMcuMap({
-                          ...kodePerMcuMap,
-                          [mcuTabAktifObj.id]: val,
-                        });
-                      }
-                    }}
-                    spellCheck={false}
-                    className="w-full p-5 bg-slate-950 text-emerald-300 font-mono text-xs leading-relaxed focus:outline-none resize-y"
-                  />
-                </div>
-                <div className="lg:col-span-4 p-4 bg-black/70 flex flex-col justify-between space-y-3 font-mono text-xs">
-                  <div className="space-y-2">
-                    <div className="text-[11px] font-black text-amber-300 uppercase flex items-center gap-1.5">
-                      <Terminal className="w-4 h-4 text-emerald-400" /> Compiler &amp; Multi-MCU
-                      Serial Monitor
-                    </div>
-                    <div className="space-y-1.5 max-h-56 overflow-y-auto text-[11px] text-slate-300">
-                      {logSerialMultiMcu.map((lg, i) => (
-                        <div
-                          key={i}
-                          className={`leading-snug border-b border-slate-900 pb-1 ${
-                            lg.includes("❌") ? "text-rose-400 font-bold" : ""
-                          }`}
-                        >
-                          {lg}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="text-[10px] text-slate-400">
-                    Komponen Aktif Terhubung:{" "}
-                    <b className="text-emerald-400">
-                      {setIdKomponenTerhubungKeMcuRunning.size} dari {nodesSaatIni.length} Komponen
-                    </b>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+        {/* STUDIO PEMROGRAMAN MULTI-MIKROKONTROLER */}
+        {mode === "wokwi" && (
+          <MultiMcuIdeSection
+            daftarMcuDiKanvas={daftarMcuDiKanvas}
+            mcuTabAktifObj={mcuTabAktifObj}
+            setIdTabMcuAktif={setIdTabMcuAktif}
+            statusRunPerMcu={statusRunPerMcu}
+            errorCompilerPerMcu={errorCompilerPerMcu}
+            bahasaTabAktif={bahasaTabAktif}
+            kodeTabAktif={kodeTabAktif}
+            onUbahKodeTabAktif={(val) => {
+              if (!mcuTabAktifObj) return;
+              if (bahasaTabAktif === "micropython") {
+                setKodeMicroPythonMap({
+                  ...kodeMicroPythonMap,
+                  [mcuTabAktifObj.id]: val,
+                });
+              } else {
+                setKodePerMcuMap({
+                  ...kodePerMcuMap,
+                  [mcuTabAktifObj.id]: val,
+                });
+              }
+            }}
+            onKonversiBahasaOtomatis={handleKonversiBahasaOtomatis}
+            onSisipkanLibrary={sisipkanLibraryKeTabAktif}
+            onJalankanSatuMcu={jalankanSatuMcu}
+            logSerialMultiMcu={logSerialMultiMcu}
+            jumlahKomponenAktif={setIdKomponenTerhubungKeMcuRunning.size}
+            totalKomponen={nodesSaatIni.length}
+          />
         )}
       </div>
 
-      {/* PANEL DASHBOARD IOT CLOUD: DRAG & DROP BLYNK STUDIO */}
+      {/* PANEL DASHBOARD IOT CLOUD: KANVAS BEBAS 2D BLYNK STUDIO */}
       {mode === "wokwi" && bukaDashboardIot && (
         <IotCloudBlynkPanel
           nodesKanvas={nodesSaatIni}
@@ -2671,6 +1799,7 @@ void loop() {
                 ),
               }));
             }
+            if (onUpdateKodeDariCloud) onUpdateKodeDariCloud(kodeBaru);
           }}
         />
       )}
