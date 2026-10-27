@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   Wifi,
   Radio,
@@ -37,7 +37,7 @@ export interface ExtendedWidgetBlynkItem extends WidgetBlynkItem {
 function beriKoordinatDefaultWidget(
   list: WidgetBlynkItem[]
 ): ExtendedWidgetBlynkItem[] {
-  return list.map((w, idx) => {
+  return list.map((w: WidgetBlynkItem, idx: number) => {
     const ext = w as ExtendedWidgetBlynkItem;
     const col = idx % 3;
     const row = Math.floor(idx / 3);
@@ -123,7 +123,7 @@ export const IotCloudBlynkPanel: React.FC<IotCloudBlynkProps> = ({
     )
   );
 
-  const daftarWidgetBlynk = useMemo(
+  const daftarWidgetBlynk = useMemo<ExtendedWidgetBlynkItem[]>(
     () => beriKoordinatDefaultWidget(customWidgetsState || daftarWidgetInternal),
     [customWidgetsState, daftarWidgetInternal]
   );
@@ -139,7 +139,7 @@ export const IotCloudBlynkPanel: React.FC<IotCloudBlynkProps> = ({
     if (presetWidgets && presetWidgets.length > 0 && !customWidgetsState) {
       setDaftarWidgetInternal(beriKoordinatDefaultWidget(presetWidgets));
     }
-  }, [presetWidgets]);
+  }, [presetWidgets, customWidgetsState]);
 
   // State Drag Bebas 2D (X, Y) & Resize Bebas (W, H) di dalam Kanvas Blynk
   const [draggingWidgetState, setDraggingWidgetState] = useState<{
@@ -196,13 +196,15 @@ export const IotCloudBlynkPanel: React.FC<IotCloudBlynkProps> = ({
   };
 
   const rapikanPosisiGridOtomatis = () => {
-    const rapi = daftarWidgetBlynk.map((w, idx) => ({
-      ...w,
-      x: 20 + (idx % 3) * 245,
-      y: 20 + Math.floor(idx / 3) * 175,
-      w: 230,
-      h: 155,
-    }));
+    const rapi = daftarWidgetBlynk.map(
+      (w: ExtendedWidgetBlynkItem, idx: number) => ({
+        ...w,
+        x: 20 + (idx % 3) * 245,
+        y: 20 + Math.floor(idx / 3) * 175,
+        w: 230,
+        h: 155,
+      })
+    );
     updateDaftarWidget(rapi);
   };
 
@@ -215,15 +217,21 @@ export const IotCloudBlynkPanel: React.FC<IotCloudBlynkProps> = ({
         8,
         Math.min(
           rect.width - 180,
-          e.clientX - rect.left - draggingWidgetState.offsetX + blynkCanvasRef.current.scrollLeft
+          e.clientX -
+            rect.left -
+            draggingWidgetState.offsetX +
+            blynkCanvasRef.current.scrollLeft
         )
       );
       const yBaru = Math.max(
         8,
-        e.clientY - rect.top - draggingWidgetState.offsetY + blynkCanvasRef.current.scrollTop
+        e.clientY -
+          rect.top -
+          draggingWidgetState.offsetY +
+          blynkCanvasRef.current.scrollTop
       );
       updateDaftarWidget(
-        daftarWidgetBlynk.map((w) =>
+        daftarWidgetBlynk.map((w: ExtendedWidgetBlynkItem) =>
           w.id === draggingWidgetState.id
             ? { ...w, x: Math.round(xBaru), y: Math.round(yBaru) }
             : w
@@ -238,7 +246,7 @@ export const IotCloudBlynkPanel: React.FC<IotCloudBlynkProps> = ({
       const wBaru = Math.max(185, Math.min(520, resizingWidgetState.startW + deltaX));
       const hBaru = Math.max(135, Math.min(360, resizingWidgetState.startH + deltaY));
       updateDaftarWidget(
-        daftarWidgetBlynk.map((w) =>
+        daftarWidgetBlynk.map((w: ExtendedWidgetBlynkItem) =>
           w.id === resizingWidgetState.id
             ? { ...w, w: Math.round(wBaru), h: Math.round(hBaru) }
             : w
@@ -285,7 +293,7 @@ export const IotCloudBlynkPanel: React.FC<IotCloudBlynkProps> = ({
   const handleGenerateKodeLengkapIot = () => {
     const daftarPinCode = daftarWidgetBlynk
       .map(
-        (w) =>
+        (w: ExtendedWidgetBlynkItem) =>
           `  // Widget ${w.judul} (${w.virtualPin} - ${w.tipe})\n  Blynk.virtualWrite(${w.virtualPin}, ${
             cariNodeTerkaitWidget(w.targetTipeKomponen)?.nilaiSensor ?? 1
           });`
@@ -485,7 +493,7 @@ ${daftarPinCode}
           className={`rounded-3xl bg-[#060c17] border-2 border-dashed border-emerald-500/40 relative overflow-auto select-none bg-[radial-gradient(#1e293b_1.5px,transparent_1.5px)] [background-size:20px_20px] transition-all ${kelasTinggiKanvasBlynk}`}
         >
           <div className="relative w-full h-full min-w-[760px] min-h-[420px]">
-            {daftarWidgetBlynk.map((w) => {
+            {daftarWidgetBlynk.map((w: ExtendedWidgetBlynkItem) => {
               const nodeTerkait = cariNodeTerkaitWidget(w.targetTipeKomponen);
               const nilaiAktual = nodeTerkait?.nilaiSensor ?? 30;
               const statusNyalaAktual = nodeTerkait?.nyala ?? true;
@@ -555,7 +563,9 @@ ${daftarPinCode}
                         type="button"
                         onClick={() =>
                           updateDaftarWidget(
-                            daftarWidgetBlynk.filter((x) => x.id !== w.id)
+                            daftarWidgetBlynk.filter(
+                              (x: ExtendedWidgetBlynkItem) => x.id !== w.id
+                            )
                           )
                         }
                         className="p-1 rounded bg-rose-500/20 hover:bg-rose-500 text-rose-300 hover:text-white cursor-pointer"
@@ -572,7 +582,7 @@ ${daftarPinCode}
                         value={w.judul}
                         onChange={(e) =>
                           updateDaftarWidget(
-                            daftarWidgetBlynk.map((item) =>
+                            daftarWidgetBlynk.map((item: ExtendedWidgetBlynkItem) =>
                               item.id === w.id ? { ...item, judul: e.target.value } : item
                             )
                           )
@@ -583,7 +593,7 @@ ${daftarPinCode}
                         value={w.targetTipeKomponen}
                         onChange={(e) =>
                           updateDaftarWidget(
-                            daftarWidgetBlynk.map((item) =>
+                            daftarWidgetBlynk.map((item: ExtendedWidgetBlynkItem) =>
                               item.id === w.id
                                 ? { ...item, targetTipeKomponen: e.target.value }
                                 : item
