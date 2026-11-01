@@ -24,12 +24,15 @@ import {
   Redo2,
   CopyPlus,
   FolderOpen,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { AkunPengguna } from "../../types";
 import {
   VisualKomponenRealistis,
   ResistorVisualSvg,
   hitungGelangWarnaResistor,
+  ambilTeksTelemetriKomponen,
 } from "./ResistorVisualSvg";
 import {
   ambilLayoutFisikKomponen,
@@ -170,9 +173,9 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     [key in "wokwi" | "ewb" | "matlab"]: KabelKoneksiItem[];
   }>(KABEL_AWAL_PER_MODE);
 
-  // ============================================================================
-  // STATE DENAH RUANGAN FISIK ALA PACKET TRACER (RUANG A SERVER, RUANG B RUMAH, DLL)
-  // ============================================================================
+  // State Tema Warna Latar Kanvas: Gelap (Dark Blueprint) vs Putih Terang (Light Clean)
+  const [latarKanvasTerang, setLatarKanvasTerang] = useState<boolean>(false);
+
   const [tampilkanRuangan, setTampilkanRuangan] = useState<boolean>(true);
   const [daftarRuanganFisik, setDaftarRuanganFisik] = useState<ZonaRuanganFisik[]>(
     DAFTAR_RUANGAN_FISIK_AWAL
@@ -696,8 +699,8 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
       id: idBaru,
       tipe,
       label: namaLabel,
-      x: Math.max(15, Math.min(580, xPos)),
-      y: Math.max(35, Math.min(380, yPos)),
+      x: Math.max(20, Math.min(580, xPos)),
+      y: Math.max(45, Math.min(380, yPos)),
       nilaiResistor: defaultResistor ?? (tipe === "resistor" ? 1000 : undefined),
       nilaiSensor: defaultSensor ?? specRentang.defaultVal,
       nyala: true,
@@ -761,7 +764,6 @@ void loop() {
       setPosisiKursorKanvas({ x: mouseX, y: mouseY });
     }
 
-    // Geser Posisi Ruangan Fisik
     if (sedangGeserRuangan) {
       setDaftarRuanganFisik((prev) =>
         prev.map((r) =>
@@ -777,7 +779,6 @@ void loop() {
       return;
     }
 
-    // Resize Ukuran Ruangan Fisik
     if (sedangResizeRuangan) {
       const dX = mouseX - sedangResizeRuangan.startX;
       const dY = mouseY - sedangResizeRuangan.startY;
@@ -823,8 +824,8 @@ void loop() {
     }
 
     if (sedangGeserId) {
-      const xBaru = Math.max(10, mouseX - 65);
-      const yBaru = Math.max(20, mouseY - 40);
+      const xBaru = Math.max(15, mouseX - 65);
+      const yBaru = Math.max(38, mouseY - 40);
       setDaftarNode({
         ...daftarNode,
         [mode]: nodesSaatIni.map((n) =>
@@ -995,6 +996,28 @@ void loop() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2 text-xs">
+            {/* Tombol Ganti Tema Latar Kanvas: Putih Terang vs Gelap */}
+            <button
+              type="button"
+              onClick={() => setLatarKanvasTerang(!latarKanvasTerang)}
+              className={`px-3.5 py-2 rounded-xl font-black flex items-center gap-1.5 cursor-pointer border transition shadow-md ${
+                latarKanvasTerang
+                  ? "bg-white text-slate-900 border-amber-400"
+                  : "bg-slate-950 text-amber-300 border-slate-700 hover:border-amber-400"
+              }`}
+              title="Ubah warna latar kanvas menjadi Putih Terang atau Gelap"
+            >
+              {latarKanvasTerang ? (
+                <>
+                  <Moon className="w-3.5 h-3.5 text-indigo-600" /> Latar: Putih (Klik ke Gelap)
+                </>
+              ) : (
+                <>
+                  <Sun className="w-3.5 h-3.5 text-amber-400" /> Latar: Gelap (Klik ke Putih)
+                </>
+              )}
+            </button>
+
             <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
               <button
                 type="button"
@@ -1019,7 +1042,7 @@ void loop() {
               onClick={() => handleSimpanProjectKeAkun()}
               className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black flex items-center gap-1.5 cursor-pointer shadow-md"
             >
-              💾 Simpan Cepat ke Akun
+              💾 Simpan Cepat
             </button>
 
             <button
@@ -1027,7 +1050,7 @@ void loop() {
               onClick={() => setBukaPanelProjectAkun(!bukaPanelProjectAkun)}
               className="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black flex items-center gap-1.5 cursor-pointer shadow-md"
             >
-              <FolderOpen className="w-4 h-4" /> Buka Project ({daftarProjectTersimpan.length})
+              <FolderOpen className="w-4 h-4" /> Buka ({daftarProjectTersimpan.length})
             </button>
 
             {mode === "wokwi" && (
@@ -1176,8 +1199,8 @@ void loop() {
             <div className="flex items-center gap-2 text-xs">
               <Move className="w-4 h-4 text-amber-400" />
               <span className="font-black uppercase text-amber-300">
-                Gudang Komponen ({komponenPaletTersaring.length} Item — Tarik ke Dalam Ruangan A /
-                Ruangan B di Kanvas!):
+                Gudang Komponen ({komponenPaletTersaring.length} Item — Termasuk ESP32-C6, GPS
+                NEO-6M, Socket Baterai 18650, Sensor Tegangan &amp; DHT22):
               </span>
             </div>
 
@@ -1187,7 +1210,7 @@ void loop() {
                 type="text"
                 value={cariKomponen}
                 onChange={(e) => setCariKomponen(e.target.value)}
-                placeholder="Cari ESP32, Relay 4CH, Solenoid..."
+                placeholder="Cari ESP32-C6, GPS, Baterai, DHT22..."
                 className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-400"
               />
             </div>
@@ -1318,7 +1341,7 @@ void loop() {
           </div>
         </div>
 
-        {/* AREA UTAMA: KANVAS DRAG & DROP DENGAN DENAH RUANGAN FISIK (8 KOLOM) + INSPEKTOR (4 KOLOM) */}
+        {/* AREA UTAMA: KANVAS DRAG & DROP (8 KOLOM) + INSPEKTOR (4 KOLOM) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           <div
             ref={containerRef}
@@ -1343,7 +1366,11 @@ void loop() {
             }}
             className={`${
               ukuranKanvas === "penuh" ? "lg:col-span-12" : "lg:col-span-8"
-            } ${tinggiKanvasPx} rounded-3xl bg-[#070d19] border-2 border-dashed border-slate-700 relative overflow-auto select-none bg-[radial-gradient(#1e293b_1.5px,transparent_1.5px)] [background-size:20px_20px]`}
+            } ${tinggiKanvasPx} rounded-3xl border-2 border-dashed relative overflow-auto select-none transition-colors duration-200 ${
+              latarKanvasTerang
+                ? "bg-[#f8fafc] border-slate-300 bg-[radial-gradient(#cbd5e1_1.5px,transparent_1.5px)] [background-size:20px_20px]"
+                : "bg-[#070d19] border-slate-700 bg-[radial-gradient(#1e293b_1.5px,transparent_1.5px)] [background-size:20px_20px]"
+            }`}
           >
             {kabelTerpilihObj && (
               <div
@@ -1395,7 +1422,6 @@ void loop() {
               }}
               className="relative w-full h-full min-w-[780px] min-h-[480px]"
             >
-              {/* LAYER BAWAH: DENAH RUANGAN FISIK ALA CISCO PACKET TRACER */}
               <PhysicalRoomsCanvasOverlay
                 tampilkanRuangan={tampilkanRuangan}
                 daftarRuangan={daftarRuanganFisik}
@@ -1437,7 +1463,7 @@ void loop() {
                 }
               />
 
-              {/* LAYER TENGAH: GARIS KABEL SIKU LINTAS RUANGAN */}
+              {/* LAYER TENGAH: GARIS KABEL SIKU */}
               <svg className="absolute inset-0 w-full h-full z-20 pointer-events-none">
                 {kabelSaatIni.map((kbl) => {
                   const asal = nodesSaatIni.find((n) => n.id === kbl.dariId);
@@ -1475,11 +1501,11 @@ void loop() {
                       <path
                         d={d}
                         stroke={kbl.warna}
-                        strokeWidth={apakahTerpilih ? "4.5" : "3"}
+                        strokeWidth={apakahTerpilih ? "4.5" : "3.2"}
                         strokeLinejoin="round"
                         strokeLinecap="round"
                         fill="none"
-                        opacity={kabelDialiriArus ? 1 : 0.35}
+                        opacity={kabelDialiriArus ? 1 : 0.4}
                         className="cursor-pointer"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1525,7 +1551,7 @@ void loop() {
                       ).d
                     }
                     stroke={warnaKabelAktif}
-                    strokeWidth="3"
+                    strokeWidth="3.2"
                     strokeDasharray="6 4"
                     fill="none"
                   />
@@ -1549,7 +1575,7 @@ void loop() {
                 </div>
               )}
 
-              {/* LAYER ATAS: KOMPONEN IOT BESERTA DETEKSI RUANGAN FISIKNYA */}
+              {/* LAYER ATAS: KOMPONEN IOT DENGAN HEADER LEBAR UTUH (TIDAK TERPOTONG/TERTIMPA!) */}
               {nodesSaatIni.map((node) => {
                 const aktifDipilih = komponenTerpilih?.id === node.id;
                 const layout = ambilLayoutFisikKomponen(node.tipe);
@@ -1565,6 +1591,11 @@ void loop() {
                   setIdKomponenTerhubungKeMcuRunning.has(node.id);
                 const statusNyalaEfektif =
                   Boolean(node.nyala) && terhubungKeRangkaianAktif;
+                const teksTelemetriAtas = ambilTeksTelemetriKomponen(
+                  node.tipe,
+                  node.nilaiSensor,
+                  statusNyalaEfektif
+                );
 
                 return (
                   <div
@@ -1581,39 +1612,60 @@ void loop() {
                       setSedangGeserId(node.id);
                     }}
                     className={`absolute rounded-2xl cursor-move transition-all ${
-                      aktifDipilih ? "ring-2 ring-emerald-400 z-10" : "z-10"
-                    } ${!terhubungKeRangkaianAktif ? "opacity-60 grayscale-[40%]" : ""}`}
+                      aktifDipilih ? "ring-2 ring-emerald-400 z-20" : "z-10"
+                    } ${!terhubungKeRangkaianAktif ? "opacity-65 grayscale-[30%]" : ""}`}
                   >
-                    <div className="h-[18px] px-2 flex justify-between items-center bg-slate-900/95 rounded-t-xl border-x border-t border-slate-700 text-[9px] font-black truncate">
-                      <span className="truncate text-amber-300">
-                        {ruanganNodeIni ? `${ruanganNodeIni.ikon} ` : ""}
-                        {node.label}
-                      </span>
-                      <span
-                        className={`text-[7.5px] font-mono px-1 rounded shrink-0 ml-1 ${
-                          terhubungKeRangkaianAktif
-                            ? "bg-emerald-500/20 text-emerald-300"
-                            : "bg-rose-500/30 text-rose-300"
+                    {/* PITA TELEMETRI LIVE DI ATAS HEADER (TIDAK MENIMPA HEADER!) */}
+                    {teksTelemetriAtas && (
+                      <div className="absolute -top-[22px] left-1/2 -translate-x-1/2 w-max px-2.5 py-0.5 rounded-full bg-slate-950/95 border border-sky-400/70 text-[9px] font-mono font-black text-amber-300 shadow-md pointer-events-none z-30">
+                        {teksTelemetriAtas}
+                      </div>
+                    )}
+
+                    {/* HEADER NAMA KOMPONEN UTUH (LEBAR OTOMATIS w-max TANPA TRUNCATE!) */}
+                    <div className="h-[18px] flex justify-center items-center relative z-20">
+                      <div
+                        className={`w-max min-w-full px-2.5 h-[18px] flex justify-between items-center gap-2 rounded-t-xl border-x border-t text-[9.5px] font-black shadow-xs whitespace-nowrap ${
+                          latarKanvasTerang
+                            ? "bg-slate-900 text-amber-300 border-slate-700"
+                            : "bg-slate-900/95 text-amber-300 border-slate-700"
                         }`}
                       >
-                        {adalahMcu
-                          ? errorCompilerPerMcu[node.id]
-                            ? "❌ ERR"
-                            : statusRunPerMcu[node.id]
-                            ? "● RUN"
-                            : "⏹ STOP"
-                          : terhubungKeRangkaianAktif
-                          ? "⚡ WIRED"
-                          : "⚠️ UNWIRED"}
-                      </span>
+                        <span>
+                          {ruanganNodeIni ? `${ruanganNodeIni.ikon} ` : ""}
+                          {node.label}
+                        </span>
+                        <span
+                          className={`text-[7.5px] font-mono px-1.5 py-0.2 rounded shrink-0 ${
+                            terhubungKeRangkaianAktif
+                              ? "bg-emerald-500/25 text-emerald-300"
+                              : "bg-rose-500/30 text-rose-300"
+                          }`}
+                        >
+                          {adalahMcu
+                            ? errorCompilerPerMcu[node.id]
+                              ? "❌ ERR"
+                              : statusRunPerMcu[node.id]
+                              ? "● RUN"
+                              : "⏹ STOP"
+                            : terhubungKeRangkaianAktif
+                            ? "⚡ WIRED"
+                            : "⚠️ UNWIRED"}
+                        </span>
+                      </div>
                     </div>
 
+                    {/* BODI UTAMA SVG KOMPONEN + TITIK PIN FISIK */}
                     <div
                       style={{
                         width: `${layout.lebar}px`,
                         height: `${layout.tinggi}px`,
                       }}
-                      className="relative bg-slate-950/40 rounded-b-xl"
+                      className={`relative rounded-b-xl ${
+                        latarKanvasTerang
+                          ? "bg-white/90 shadow-md border border-slate-300"
+                          : "bg-slate-950/40"
+                      }`}
                     >
                       <VisualKomponenRealistis
                         tipe={node.tipe}
@@ -1677,7 +1729,7 @@ void loop() {
                                 setSedangTarikKabelDariPin(null);
                               }
                             }}
-                            className={`absolute w-[10px] h-[10px] rounded-full border border-slate-950 cursor-crosshair transition-transform hover:scale-175 hover:ring-2 hover:ring-white z-30 ${
+                            className={`absolute w-[10px] h-[10px] rounded-full border border-slate-950 cursor-crosshair transition-transform hover:scale-175 hover:ring-2 hover:ring-amber-400 z-30 ${
                               sedangAsal ? "scale-175 ring-2 ring-amber-300 animate-ping" : ""
                             }`}
                           />
@@ -1729,7 +1781,6 @@ void loop() {
 
             {komponenTerpilih && layoutTerpilih && rentangTerpilih && (
               <div className="space-y-4 text-xs">
-                {/* Badge Lokasi Ruangan Fisik Komponen Saat Ini */}
                 <div className="p-2.5 rounded-xl bg-indigo-950/60 border border-indigo-500/40 text-[11px] font-bold flex items-center justify-between">
                   <span className="text-slate-300">Lokasi Fisik:</span>
                   <span className="text-amber-300 font-black">
