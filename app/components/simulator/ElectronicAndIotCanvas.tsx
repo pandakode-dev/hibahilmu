@@ -5,33 +5,26 @@ import {
   Cpu,
   Zap,
   Activity,
-  Trash2,
-  Sliders,
   Move,
   ZoomIn,
   ZoomOut,
   Search,
   Filter,
-  Info,
   Wifi,
   CornerDownRight,
   BookOpen,
-  Power,
   Sparkles,
   Play,
   Square,
   Undo2,
   Redo2,
   CopyPlus,
-  FolderOpen,
   Sun,
   Moon,
 } from "lucide-react";
 import { AkunPengguna } from "../../types";
 import {
   VisualKomponenRealistis,
-  ResistorVisualSvg,
-  hitungGelangWarnaResistor,
   ambilTeksTelemetriKomponen,
 } from "./ResistorVisualSvg";
 import {
@@ -72,6 +65,8 @@ import {
   PhysicalRoomsToolbar,
   PhysicalRoomsCanvasOverlay,
 } from "./PhysicalRoomsLayer";
+import { ProjectFileManagerToolbar } from "./ProjectFileManagerToolbar";
+import { ComponentInspectorSidebar } from "./ComponentInspectorSidebar";
 
 export type { TitikSikuKabel };
 
@@ -165,6 +160,11 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
+  const idPemilikAktif = userLogin?.id || "guest_user";
+  const namaPemilikAktif = userLogin?.nama || "Tamu (Guest)";
+  const storageKeyUser = `hibahilmu_iot_projects_${idPemilikAktif}`;
+  const draftKeyUser = `hibahilmu_autodraft_v2_${idPemilikAktif}`;
+
   const [daftarNode, setDaftarNode] = useState<{
     [key in "wokwi" | "ewb" | "matlab"]: NodeKomponenKanvas[];
   }>(KOMPONEN_AWAL_PER_MODE);
@@ -173,9 +173,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     [key in "wokwi" | "ewb" | "matlab"]: KabelKoneksiItem[];
   }>(KABEL_AWAL_PER_MODE);
 
-  // State Tema Warna Latar Kanvas: Gelap (Dark Blueprint) vs Putih Terang (Light Clean)
   const [latarKanvasTerang, setLatarKanvasTerang] = useState<boolean>(false);
-
   const [tampilkanRuangan, setTampilkanRuangan] = useState<boolean>(true);
   const [daftarRuanganFisik, setDaftarRuanganFisik] = useState<ZonaRuanganFisik[]>(
     DAFTAR_RUANGAN_FISIK_AWAL
@@ -195,6 +193,199 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
 
   const [riwayatUndo, setRiwayatUndo] = useState<SnapshotUndoKanvas[]>([]);
   const [riwayatRedo, setRiwayatRedo] = useState<SnapshotUndoKanvas[]>([]);
+
+  const [projectAktif, setProjectAktif] = useState<PresetTutorialProject>(
+    DEFAULT_PROJECT
+  );
+  const [idProjectSaatIni, setIdProjectSaatIni] = useState<string>(
+    DEFAULT_PROJECT.id
+  );
+  const [namaProjectInput, setNamaProjectInput] = useState<string>(
+    DEFAULT_PROJECT.judul
+  );
+  const [statusAutoSave, setStatusAutoSave] = useState<string>("Auto-Saved ✓");
+
+  const [widgetsBlynkSaatIni, setWidgetsBlynkSaatIni] = useState<
+    ExtendedWidgetBlynkItem[]
+  >(
+    DEFAULT_PROJECT.blynkWidgets.map((w, idx) => ({
+      ...w,
+      x: 20 + (idx % 3) * 245,
+      y: 20 + Math.floor(idx / 3) * 175,
+      w: 230,
+      h: 155,
+    }))
+  );
+
+  const [daftarProjectTersimpan, setDaftarProjectTersimpan] = useState<
+    ProjectTersimpanAkun[]
+  >([]);
+  const [bukaPanelProjectAkun, setBukaPanelProjectAkun] = useState(false);
+  const [infoPopupNotifProject, setInfoPopupNotifProject] =
+    useState<InfoPopupNotifProject | null>(null);
+
+  const [bahasaPerMcu, setBahasaPerMcu] = useState<{
+    [mcuId: string]: "cpp" | "micropython";
+  }>({});
+  const [kodePerMcuMap, setKodePerMcuMap] = useState<{ [mcuId: string]: string }>(
+    DEFAULT_PROJECT.kodePerMcu
+  );
+  const [kodeMicroPythonMap, setKodeMicroPythonMap] = useState<{
+    [mcuId: string]: string;
+  }>(DEFAULT_PROJECT.kodeMicroPythonPerMcu);
+
+  const [statusRunPerMcu, setStatusRunPerMcu] = useState<{
+    [mcuId: string]: boolean;
+  }>({
+    "p5-esp1": true,
+    "p5-esp2": true,
+  });
+  const [errorCompilerPerMcu, setErrorCompilerPerMcu] = useState<{
+    [mcuId: string]: string | null;
+  }>({});
+
+  const [idTabMcuAktif, setIdTabMcuAktif] = useState<string>("p5-esp1");
+  const [logSerialMultiMcu, setLogSerialMultiMcu] = useState<string[]>([
+    "[10:30:01] 🚀 Semua Mikrokontroler lolos pemeriksaan Library & sedang RUNNING...",
+  ]);
+
+  const [kategoriPaletAktif, setKategoriPaletAktif] = useState<string>("Semua");
+  const [cariKomponen, setCariKomponen] = useState<string>("");
+  const [ukuranKanvas, setUkuranKanvas] = useState<
+    "kecil" | "sedang" | "besar" | "penuh"
+  >("besar");
+  const [skalaZoom, setSkalaZoom] = useState<number>(1);
+  const [idKomponenTerpilih, setIdKomponenTerpilih] = useState<string | null>(
+    KOMPONEN_AWAL_PER_MODE[mode][0]?.id || null
+  );
+  const [sedangGeserId, setSedangGeserId] = useState<string | null>(null);
+  const [hoveredPinInfo, setHoveredPinInfo] = useState<{
+    nodeLabel: string;
+    pin: TitikPinFisik;
+    absX: number;
+    absY: number;
+  } | null>(null);
+  const [idKabelTerpilih, setIdKabelTerpilih] = useState<string | null>(null);
+  const [sedangGeserSiku, setSedangGeserSiku] = useState<{
+    kabelId: string;
+    indeksTitik: number;
+  } | null>(null);
+  const [warnaKabelAktif, setWarnaKabelAktif] = useState<string>("#22c55e");
+  const [sedangTarikKabelDariPin, setSedangTarikKabelDariPin] = useState<{
+    nodeId: string;
+    nodeLabel: string;
+    pin: TitikPinFisik;
+    xAsal: number;
+    yAsal: number;
+  } | null>(null);
+  const [posisiKursorKanvas, setPosisiKursorKanvas] = useState<TitikSikuKabel>({
+    x: 200,
+    y: 150,
+  });
+  const [bukaDashboardIot, setBukaDashboardIot] = useState<boolean>(true);
+  const [sudahHydrateDraft, setSudahHydrateDraft] = useState<boolean>(false);
+
+  // ============================================================================
+  // 1. PULIHKAN OTOMATIS PROJECT TERAKHIR DARI DATABASE SERVER & DRAFT LOKAL
+  //    SAAT PC BARU DINYALAKAN / HALAMAN DI-REFRESH!
+  // ============================================================================
+  useEffect(() => {
+    let aktif = true;
+    async function pulihkanDariServerDanDraft() {
+      // A. Pulihkan dari Auto-Draft Lokal terlebih dahulu secara instan
+      try {
+        const rawDraft = localStorage.getItem(draftKeyUser);
+        if (rawDraft) {
+          const parsedDraft = JSON.parse(rawDraft) as ProjectTersimpanAkun;
+          if (parsedDraft.nodes && parsedDraft.nodes.length > 0) {
+            terapkanDataProjectKeState(parsedDraft, false);
+          }
+        }
+        const rawList = localStorage.getItem(storageKeyUser);
+        if (rawList) {
+          setDaftarProjectTersimpan(JSON.parse(rawList));
+        }
+      } catch {}
+
+      // B. Tarik daftar project tersimpan dari API Database Server (/api/iot/projects)
+      try {
+        const res = await fetch(
+          `/api/iot/projects?userId=${encodeURIComponent(idPemilikAktif)}`
+        );
+        const json = await res.json();
+        if (aktif && json.ok && Array.isArray(json.projects)) {
+          if (json.projects.length > 0) {
+            setDaftarProjectTersimpan(json.projects);
+            localStorage.setItem(storageKeyUser, JSON.stringify(json.projects));
+            // Jika belum ada draft lokal, otomatis buka project terakhir dari server!
+            if (!localStorage.getItem(draftKeyUser)) {
+              terapkanDataProjectKeState(json.projects[0], false);
+            }
+          }
+        }
+      } catch {}
+      if (aktif) setSudahHydrateDraft(true);
+    }
+    pulihkanDariServerDanDraft();
+    return () => {
+      aktif = false;
+    };
+  }, [idPemilikAktif]);
+
+  const nodesSaatIni = daftarNode[mode] || [];
+  const kabelSaatIni = daftarKabel[mode] || [];
+
+  // ============================================================================
+  // 2. AUTO-SAVE DRAFT SETIAP KALI ADA PERUBAHAN KOMPONEN, KABEL, ATAU KODE
+  // ============================================================================
+  useEffect(() => {
+    if (!sudahHydrateDraft) return;
+    setStatusAutoSave("Menyimpan draft...");
+    const timer = setTimeout(() => {
+      try {
+        const paketDraft: ProjectTersimpanAkun = {
+          idProject: idProjectSaatIni,
+          namaProject: namaProjectInput,
+          pemilikId: idPemilikAktif,
+          pemilikNama: namaPemilikAktif,
+          waktuSimpan: new Date().toLocaleTimeString("id-ID"),
+          mode,
+          nodes: nodesSaatIni,
+          kabel: kabelSaatIni,
+          kodePerMcu: kodePerMcuMap,
+          kodeMicroPythonPerMcu: kodeMicroPythonMap,
+          blynkWidgets: widgetsBlynkSaatIni,
+          ruanganFisik: daftarRuanganFisik,
+        };
+        localStorage.setItem(draftKeyUser, JSON.stringify(paketDraft));
+        setStatusAutoSave("Draft Tersimpan ✓");
+      } catch {}
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [
+    sudahHydrateDraft,
+    nodesSaatIni,
+    kabelSaatIni,
+    kodePerMcuMap,
+    kodeMicroPythonMap,
+    widgetsBlynkSaatIni,
+    daftarRuanganFisik,
+    namaProjectInput,
+  ]);
+
+  const daftarMcuDiKanvas = useMemo(
+    () => nodesSaatIni.filter((n) => TIPE_MCU_LIST.includes(n.tipe)),
+    [nodesSaatIni]
+  );
+
+  useEffect(() => {
+    if (
+      daftarMcuDiKanvas.length > 0 &&
+      !daftarMcuDiKanvas.some((m) => m.id === idTabMcuAktif)
+    ) {
+      setIdTabMcuAktif(daftarMcuDiKanvas[0].id);
+    }
+  }, [daftarMcuDiKanvas, idTabMcuAktif]);
 
   const simpanSnapshotUndo = () => {
     setRiwayatUndo((prev) => [
@@ -237,172 +428,18 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     setRiwayatRedo((prev) => prev.slice(0, -1));
   };
 
-  const [projectAktif, setProjectAktif] = useState<PresetTutorialProject>(
-    DEFAULT_PROJECT
-  );
-
-  const [widgetsBlynkSaatIni, setWidgetsBlynkSaatIni] = useState<
-    ExtendedWidgetBlynkItem[]
-  >(
-    DEFAULT_PROJECT.blynkWidgets.map((w, idx) => ({
-      ...w,
-      x: 20 + (idx % 3) * 245,
-      y: 20 + Math.floor(idx / 3) * 175,
-      w: 230,
-      h: 155,
-    }))
-  );
-
-  const idPemilikAktif = userLogin?.id || "guest_user";
-  const namaPemilikAktif = userLogin?.nama || "Tamu (Guest)";
-  const storageKeyUser = `hibahilmu_iot_projects_${idPemilikAktif}`;
-
-  const [daftarProjectTersimpan, setDaftarProjectTersimpan] = useState<
-    ProjectTersimpanAkun[]
-  >([]);
-  const [namaProjectInput, setNamaProjectInput] = useState(
-    DEFAULT_PROJECT.judul
-  );
-  const [bukaPanelProjectAkun, setBukaPanelProjectAkun] = useState(false);
-  const [infoPopupNotifProject, setInfoPopupNotifProject] =
-    useState<InfoPopupNotifProject | null>(null);
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(storageKeyUser);
-      setDaftarProjectTersimpan(raw ? JSON.parse(raw) : []);
-    } catch {
-      setDaftarProjectTersimpan([]);
-    }
-  }, [storageKeyUser]);
-
-  const [bahasaPerMcu, setBahasaPerMcu] = useState<{
-    [mcuId: string]: "cpp" | "micropython";
-  }>({});
-  const [kodePerMcuMap, setKodePerMcuMap] = useState<{ [mcuId: string]: string }>(
-    DEFAULT_PROJECT.kodePerMcu
-  );
-  const [kodeMicroPythonMap, setKodeMicroPythonMap] = useState<{
-    [mcuId: string]: string;
-  }>(DEFAULT_PROJECT.kodeMicroPythonPerMcu);
-
-  const [statusRunPerMcu, setStatusRunPerMcu] = useState<{
-    [mcuId: string]: boolean;
-  }>({
-    "p5-esp1": true,
-    "p5-esp2": true,
-  });
-  const [errorCompilerPerMcu, setErrorCompilerPerMcu] = useState<{
-    [mcuId: string]: string | null;
-  }>({});
-
-  const [idTabMcuAktif, setIdTabMcuAktif] = useState<string>("p5-esp1");
-  const [logSerialMultiMcu, setLogSerialMultiMcu] = useState<string[]>([
-    "[10:30:01] 🚀 Semua Mikrokontroler lolos pemeriksaan Library & sedang RUNNING...",
-    "[10:30:02] [Ruang A -> Ruang B]: Komunikasi lintas ruangan aktif!",
-  ]);
-
-  const [kategoriPaletAktif, setKategoriPaletAktif] = useState<string>("Semua");
-  const [cariKomponen, setCariKomponen] = useState<string>("");
-
-  const [ukuranKanvas, setUkuranKanvas] = useState<"kecil" | "sedang" | "besar" | "penuh">(
-    "besar"
-  );
-  const [skalaZoom, setSkalaZoom] = useState<number>(1);
-
-  const [idKomponenTerpilih, setIdKomponenTerpilih] = useState<string | null>(
-    KOMPONEN_AWAL_PER_MODE[mode][0]?.id || null
-  );
-  const [sedangGeserId, setSedangGeserId] = useState<string | null>(null);
-
-  const [hoveredPinInfo, setHoveredPinInfo] = useState<{
-    nodeLabel: string;
-    pin: TitikPinFisik;
-    absX: number;
-    absY: number;
-  } | null>(null);
-
-  const [idKabelTerpilih, setIdKabelTerpilih] = useState<string | null>(null);
-  const [sedangGeserSiku, setSedangGeserSiku] = useState<{
-    kabelId: string;
-    indeksTitik: number;
-  } | null>(null);
-
-  const [warnaKabelAktif, setWarnaKabelAktif] = useState<string>("#22c55e");
-  const [sedangTarikKabelDariPin, setSedangTarikKabelDariPin] = useState<{
-    nodeId: string;
-    nodeLabel: string;
-    pin: TitikPinFisik;
-    xAsal: number;
-    yAsal: number;
-  } | null>(null);
-  const [posisiKursorKanvas, setPosisiKursorKanvas] = useState<TitikSikuKabel>({
-    x: 200,
-    y: 150,
-  });
-
-  const [bukaDashboardIot, setBukaDashboardIot] = useState<boolean>(true);
-
-  const nodesSaatIni = daftarNode[mode] || [];
-  const kabelSaatIni = daftarKabel[mode] || [];
-
-  const daftarMcuDiKanvas = useMemo(
-    () => nodesSaatIni.filter((n) => TIPE_MCU_LIST.includes(n.tipe)),
-    [nodesSaatIni]
-  );
-
-  useEffect(() => {
-    if (
-      daftarMcuDiKanvas.length > 0 &&
-      !daftarMcuDiKanvas.some((m) => m.id === idTabMcuAktif)
-    ) {
-      setIdTabMcuAktif(daftarMcuDiKanvas[0].id);
-    }
-  }, [daftarMcuDiKanvas, idTabMcuAktif]);
-
-  const handleSimpanProjectKeAkun = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    const judul = namaProjectInput.trim() || projectAktif.judul || "Project IoT Saya";
-    const baru: ProjectTersimpanAkun = {
-      idProject: "prj-" + Date.now(),
-      namaProject: judul,
-      pemilikId: idPemilikAktif,
-      pemilikNama: namaPemilikAktif,
-      waktuSimpan: new Date().toLocaleString("id-ID"),
-      mode,
-      nodes: JSON.parse(JSON.stringify(nodesSaatIni)),
-      kabel: JSON.parse(JSON.stringify(kabelSaatIni)),
-      kodePerMcu: JSON.parse(JSON.stringify(kodePerMcuMap)),
-      kodeMicroPythonPerMcu: JSON.parse(JSON.stringify(kodeMicroPythonMap)),
-      blynkWidgets: JSON.parse(JSON.stringify(widgetsBlynkSaatIni)),
-      ruanganFisik: JSON.parse(JSON.stringify(daftarRuanganFisik)),
-    };
-
-    const listBaru = [baru, ...daftarProjectTersimpan];
-    setDaftarProjectTersimpan(listBaru);
-    try {
-      localStorage.setItem(storageKeyUser, JSON.stringify(listBaru));
-    } catch {}
-
-    setInfoPopupNotifProject({
-      judul: "Project & Denah Ruangan Disimpan!",
-      namaProject: judul,
-      namaAkun: namaPemilikAktif,
-      jumlahKomponen: nodesSaatIni.length,
-      jumlahKabel: kabelSaatIni.length,
-      jumlahWidgetBlynk: widgetsBlynkSaatIni.length,
-    });
-  };
-
-  const handleMuatProjectDariAkun = (prj: ProjectTersimpanAkun) => {
-    simpanSnapshotUndo();
-    setDaftarNode((prev) => ({ ...prev, [prj.mode]: prj.nodes }));
-    setDaftarKabel((prev) => ({ ...prev, [prj.mode]: prj.kabel }));
+  // Fungsi Menerapkan Data Project (Baik dari Server, LocalStorage, maupun Import File JSON)
+  const terapkanDataProjectKeState = (
+    prj: ProjectTersimpanAkun,
+    simpanUndo = true
+  ) => {
+    if (simpanUndo) simpanSnapshotUndo();
+    const targetMode = prj.mode || mode;
+    setDaftarNode((prev) => ({ ...prev, [targetMode]: prj.nodes }));
+    setDaftarKabel((prev) => ({ ...prev, [targetMode]: prj.kabel }));
     setKodePerMcuMap(prj.kodePerMcu || {});
     setKodeMicroPythonMap(prj.kodeMicroPythonPerMcu || {});
-    if (prj.blynkWidgets) {
-      setWidgetsBlynkSaatIni(prj.blynkWidgets);
-    }
+    if (prj.blynkWidgets) setWidgetsBlynkSaatIni(prj.blynkWidgets);
     if (prj.ruanganFisik && prj.ruanganFisik.length > 0) {
       setDaftarRuanganFisik(prj.ruanganFisik);
     }
@@ -416,15 +453,97 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     setErrorCompilerPerMcu({});
     if (mcuNodes[0]) setIdTabMcuAktif(mcuNodes[0].id);
     setIdKomponenTerpilih(prj.nodes[0]?.id || null);
-    setNamaProjectInput(prj.namaProject);
-    setBukaPanelProjectAkun(false);
+    setIdProjectSaatIni(prj.idProject || "prj-" + Date.now());
+    setNamaProjectInput(prj.namaProject || "Project Simulator");
   };
 
-  const handleHapusProjectAkun = (idPrj: string) => {
+  // ============================================================================
+  // 3. FUNGSI SAVE & SAVE AS KE DATABASE API SERVER (/api/iot/projects) + LOKAL
+  // ============================================================================
+  const eksekusiSimpanKeServerDanLokal = async (
+    judulFile: string,
+    isSaveAs: boolean
+  ) => {
+    const idPrj = isSaveAs
+      ? "prj-" + Date.now()
+      : idProjectSaatIni || "prj-" + Date.now();
+
+    const paketSimpan: ProjectTersimpanAkun = {
+      idProject: idPrj,
+      namaProject: judulFile,
+      pemilikId: idPemilikAktif,
+      pemilikNama: namaPemilikAktif,
+      waktuSimpan: new Date().toLocaleString("id-ID"),
+      mode,
+      nodes: JSON.parse(JSON.stringify(nodesSaatIni)),
+      kabel: JSON.parse(JSON.stringify(kabelSaatIni)),
+      kodePerMcu: JSON.parse(JSON.stringify(kodePerMcuMap)),
+      kodeMicroPythonPerMcu: JSON.parse(JSON.stringify(kodeMicroPythonMap)),
+      blynkWidgets: JSON.parse(JSON.stringify(widgetsBlynkSaatIni)),
+      ruanganFisik: JSON.parse(JSON.stringify(daftarRuanganFisik)),
+    };
+
+    setIdProjectSaatIni(idPrj);
+    setNamaProjectInput(judulFile);
+
+    // Update LocalStorage
+    const listLama = daftarProjectTersimpan.filter(
+      (p) =>
+        isSaveAs ||
+        (p.idProject !== idPrj &&
+          p.namaProject.toLowerCase() !== judulFile.toLowerCase())
+    );
+    const listBaru = [paketSimpan, ...listLama];
+    setDaftarProjectTersimpan(listBaru);
+    try {
+      localStorage.setItem(storageKeyUser, JSON.stringify(listBaru));
+      localStorage.setItem(draftKeyUser, JSON.stringify(paketSimpan));
+    } catch {}
+
+    // Kirim ke Endpoint API Server (/api/iot/projects)
+    try {
+      const res = await fetch("/api/iot/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: isSaveAs ? "save_as" : "save",
+          userId: idPemilikAktif,
+          project: paketSimpan,
+        }),
+      });
+      const json = await res.json();
+      if (json.ok && Array.isArray(json.projects)) {
+        setDaftarProjectTersimpan(json.projects);
+      }
+    } catch {}
+
+    setStatusAutoSave("Tersimpan di Server ✓");
+    setInfoPopupNotifProject({
+      judul: isSaveAs
+        ? "Berhasil Disimpan Sebagai File Baru (Save As)!"
+        : "Project Berhasil Disimpan ke Database Server!",
+      namaProject: judulFile,
+      namaAkun: namaPemilikAktif,
+      jumlahKomponen: nodesSaatIni.length,
+      jumlahKabel: kabelSaatIni.length,
+      jumlahWidgetBlynk: widgetsBlynkSaatIni.length,
+    });
+  };
+
+  const handleHapusProjectAkun = async (idPrj: string) => {
     const sisa = daftarProjectTersimpan.filter((p) => p.idProject !== idPrj);
     setDaftarProjectTersimpan(sisa);
     try {
       localStorage.setItem(storageKeyUser, JSON.stringify(sisa));
+      await fetch("/api/iot/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "delete",
+          userId: idPemilikAktif,
+          idProject: idPrj,
+        }),
+      });
     } catch {}
   };
 
@@ -527,14 +646,10 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
   const muatPresetTutorialProject = (proj: PresetTutorialProject) => {
     simpanSnapshotUndo();
     setProjectAktif(proj);
-    setDaftarNode({
-      ...daftarNode,
-      wokwi: proj.nodes,
-    });
-    setDaftarKabel({
-      ...daftarKabel,
-      wokwi: proj.kabel,
-    });
+    setIdProjectSaatIni(proj.id);
+    setNamaProjectInput(proj.judul);
+    setDaftarNode((prev) => ({ ...prev, wokwi: proj.nodes }));
+    setDaftarKabel((prev) => ({ ...prev, wokwi: proj.kabel }));
     setKodePerMcuMap(proj.kodePerMcu);
     setKodeMicroPythonMap(proj.kodeMicroPythonPerMcu);
     setWidgetsBlynkSaatIni(
@@ -554,11 +669,8 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
       runMapBaru[m.id] = true;
     });
     setStatusRunPerMcu(runMapBaru);
-    if (mcuNodes[0]) {
-      setIdTabMcuAktif(mcuNodes[0].id);
-    }
+    if (mcuNodes[0]) setIdTabMcuAktif(mcuNodes[0].id);
     setIdKomponenTerpilih(proj.nodes[0]?.id || null);
-    setNamaProjectInput(proj.judul);
   };
 
   const jalankanSatuMcu = (mcuId: string, jalan: boolean) => {
@@ -654,13 +766,9 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
   });
 
   const komponenTerpilih =
-    nodesSaatIni.find((n) => n.id === idKomponenTerpilih) || nodesSaatIni[0] || null;
-  const layoutTerpilih = komponenTerpilih
-    ? ambilLayoutFisikKomponen(komponenTerpilih.tipe)
-    : null;
-  const rentangTerpilih = komponenTerpilih
-    ? ambilKonfigurasiRentangKomponen(komponenTerpilih.tipe)
-    : null;
+    nodesSaatIni.find((n) => n.id === idKomponenTerpilih) ||
+    nodesSaatIni[0] ||
+    null;
   const ruanganKomponenTerpilih = komponenTerpilih
     ? cariRuanganTempatKomponen(
         komponenTerpilih.x,
@@ -706,10 +814,10 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
       nyala: true,
     };
 
-    setDaftarNode({
-      ...daftarNode,
+    setDaftarNode((prev) => ({
+      ...prev,
       [mode]: [...nodesSaatIni, baru],
-    });
+    }));
     setIdKomponenTerpilih(baru.id);
 
     if (TIPE_MCU_LIST.includes(tipe)) {
@@ -841,7 +949,9 @@ void loop() {
   ) => {
     setDaftarNode({
       ...daftarNode,
-      [mode]: nodesSaatIni.map((n) => (n.id === id ? { ...n, ...perubahan } : n)),
+      [mode]: nodesSaatIni.map((n) =>
+        n.id === id ? { ...n, ...perubahan } : n
+      ),
     });
   };
 
@@ -898,10 +1008,16 @@ void loop() {
       [mode]: kabelSaatIni.map((k) => {
         if (k.id !== kabelId) return k;
         const sikuSaatIni = k.titikSiku || [{ x: 260, y: 150 }];
-        const terakhir = sikuSaatIni[sikuSaatIni.length - 1] || { x: 260, y: 150 };
+        const terakhir = sikuSaatIni[sikuSaatIni.length - 1] || {
+          x: 260,
+          y: 150,
+        };
         return {
           ...k,
-          titikSiku: [...sikuSaatIni, { x: terakhir.x + 35, y: terakhir.y + 30 }],
+          titikSiku: [
+            ...sikuSaatIni,
+            { x: terakhir.x + 35, y: terakhir.y + 30 },
+          ],
         };
       }),
     });
@@ -917,7 +1033,8 @@ void loop() {
   };
 
   const mcuTabAktifObj =
-    daftarMcuDiKanvas.find((m) => m.id === idTabMcuAktif) || daftarMcuDiKanvas[0];
+    daftarMcuDiKanvas.find((m) => m.id === idTabMcuAktif) ||
+    daftarMcuDiKanvas[0];
   const bahasaTabAktif = mcuTabAktifObj
     ? bahasaPerMcu[mcuTabAktifObj.id] || "cpp"
     : "cpp";
@@ -983,7 +1100,7 @@ void loop() {
             )}
             <div>
               <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded bg-emerald-500 text-slate-950">
-                Packet Tracer Physical Room Mode • C++ ⇄ MicroPython • Cloud Project
+                Database Cloud Sync • Save / Save As • Export &amp; Import JSON
               </span>
               <h3 className="font-black text-base sm:text-lg text-white mt-0.5">
                 {mode === "wokwi"
@@ -996,7 +1113,6 @@ void loop() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            {/* Tombol Ganti Tema Latar Kanvas: Putih Terang vs Gelap */}
             <button
               type="button"
               onClick={() => setLatarKanvasTerang(!latarKanvasTerang)}
@@ -1005,15 +1121,14 @@ void loop() {
                   ? "bg-white text-slate-900 border-amber-400"
                   : "bg-slate-950 text-amber-300 border-slate-700 hover:border-amber-400"
               }`}
-              title="Ubah warna latar kanvas menjadi Putih Terang atau Gelap"
             >
               {latarKanvasTerang ? (
                 <>
-                  <Moon className="w-3.5 h-3.5 text-indigo-600" /> Latar: Putih (Klik ke Gelap)
+                  <Moon className="w-3.5 h-3.5 text-indigo-600" /> Latar: Putih
                 </>
               ) : (
                 <>
-                  <Sun className="w-3.5 h-3.5 text-amber-400" /> Latar: Gelap (Klik ke Putih)
+                  <Sun className="w-3.5 h-3.5 text-amber-400" /> Latar: Gelap
                 </>
               )}
             </button>
@@ -1036,22 +1151,6 @@ void loop() {
                 <Redo2 className="w-3.5 h-3.5" /> Redo
               </button>
             </div>
-
-            <button
-              type="button"
-              onClick={() => handleSimpanProjectKeAkun()}
-              className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black flex items-center gap-1.5 cursor-pointer shadow-md"
-            >
-              💾 Simpan Cepat
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setBukaPanelProjectAkun(!bukaPanelProjectAkun)}
-              className="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black flex items-center gap-1.5 cursor-pointer shadow-md"
-            >
-              <FolderOpen className="w-4 h-4" /> Buka ({daftarProjectTersimpan.length})
-            </button>
 
             {mode === "wokwi" && (
               <button
@@ -1118,16 +1217,104 @@ void loop() {
           </div>
         </div>
 
-        <AccountProjectRepositoryDrawer
+        {/* TOOLBAR FILE MANAGER BARU: SAVE, SAVE AS, EXPORT JSON/CODE, & IMPORT JSON */}
+        <ProjectFileManagerToolbar
+          mode={mode}
+          idProjectSaatIni={idProjectSaatIni}
+          namaFileSaatIni={namaProjectInput}
+          setNamaFileSaatIni={setNamaProjectInput}
+          namaPemilikAktif={namaPemilikAktif}
+          jumlahProjectTersimpan={daftarProjectTersimpan.length}
+          statusAutoSave={statusAutoSave}
+          nodesSaatIni={nodesSaatIni}
+          kabelSaatIni={kabelSaatIni}
+          kodePerMcuMap={kodePerMcuMap}
+          kodeMicroPythonMap={kodeMicroPythonMap}
+          widgetsBlynkSaatIni={widgetsBlynkSaatIni}
+          daftarRuanganFisik={daftarRuanganFisik}
+          onSaveLangsung={(namaFile, isSaveAs) =>
+            eksekusiSimpanKeServerDanLokal(namaFile, isSaveAs)
+          }
+          onImportProjectLengkap={(dataImport) => {
+            terapkanDataProjectKeState(dataImport, true);
+            eksekusiSimpanKeServerDanLokal(
+              dataImport.namaProject || "Imported Project",
+              true
+            );
+          }}
+          onBukaDrawerRepositori={() =>
+            setBukaPanelProjectAkun(!bukaPanelProjectAkun)
+          }
+        />
+
+<AccountProjectRepositoryDrawer
           buka={bukaPanelProjectAkun}
           namaPemilikAktif={namaPemilikAktif}
           idPemilikAktif={idPemilikAktif}
           namaProjectInput={namaProjectInput}
           setNamaProjectInput={setNamaProjectInput}
           daftarProjectTersimpan={daftarProjectTersimpan}
-          onSimpanProject={handleSimpanProjectKeAkun}
-          onMuatProject={handleMuatProjectDariAkun}
+          onSimpanProject={(modeSimpan) => {
+            eksekusiSimpanKeServerDanLokal(
+              namaProjectInput,
+              modeSimpan === "save_as_new"
+            );
+          }}
+          onMuatProject={(prj) => {
+            terapkanDataProjectKeState(prj, true);
+            setBukaPanelProjectAkun(false);
+          }}
           onHapusProject={handleHapusProjectAkun}
+          onExportJsonKePc={(prjTarget) => {
+            const target = prjTarget || {
+              idProject: idProjectSaatIni,
+              namaProject: namaProjectInput,
+              pemilikId: idPemilikAktif,
+              pemilikNama: namaPemilikAktif,
+              waktuSimpan: new Date().toLocaleString("id-ID"),
+              mode,
+              nodes: nodesSaatIni,
+              kabel: kabelSaatIni,
+              kodePerMcu: kodePerMcuMap,
+              kodeMicroPythonPerMcu: kodeMicroPythonMap,
+              blynkWidgets: widgetsBlynkSaatIni,
+              ruanganFisik: daftarRuanganFisik,
+            };
+            const slug = (target.namaProject || "project_hibahilmu")
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, "_");
+            const blob = new Blob([JSON.stringify(target, null, 2)], {
+              type: "application/json",
+            });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `${slug}.hibah.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          }}
+          onImportJsonDariPc={(file) => {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+              try {
+                const parsed = JSON.parse(
+                  ev.target?.result as string
+                ) as ProjectTersimpanAkun;
+                if (parsed.nodes && Array.isArray(parsed.nodes)) {
+                  terapkanDataProjectKeState(parsed, true);
+                  eksekusiSimpanKeServerDanLokal(
+                    parsed.namaProject || "Imported Project",
+                    true
+                  );
+                }
+              } catch {
+                alert("Format file JSON tidak valid!");
+              }
+            };
+            reader.readAsText(file);
+          }}
         />
 
         {/* PANEL 7 TUTORIAL & CONTOH RANGKAIAN PROJECT JADI */}
@@ -1141,7 +1328,7 @@ void loop() {
                 </span>
               </div>
               <span className="text-[11px] font-mono text-emerald-300">
-                Aktif: {projectAktif.level}
+                File Aktif: {namaProjectInput}
               </span>
             </div>
 
@@ -1176,7 +1363,7 @@ void loop() {
                       </div>
                     </div>
                     <span className="text-[10px] font-bold text-emerald-300 flex items-center gap-1">
-                      <Sparkles className="w-3 h-3" /> Muat Project &amp; Blynk ({proj.blynkWidgets.length} Widget)
+                      <Sparkles className="w-3 h-3" /> Muat Template Ini
                     </span>
                   </button>
                 );
@@ -1185,7 +1372,6 @@ void loop() {
           </div>
         )}
 
-        {/* TOOLBAR PENGATUR DENAH RUANGAN FISIK ALA PACKET TRACER */}
         <PhysicalRoomsToolbar
           tampilkanRuangan={tampilkanRuangan}
           setTampilkanRuangan={setTampilkanRuangan}
@@ -1199,8 +1385,7 @@ void loop() {
             <div className="flex items-center gap-2 text-xs">
               <Move className="w-4 h-4 text-amber-400" />
               <span className="font-black uppercase text-amber-300">
-                Gudang Komponen ({komponenPaletTersaring.length} Item — Termasuk ESP32-C6, GPS
-                NEO-6M, Socket Baterai 18650, Sensor Tegangan &amp; DHT22):
+                Gudang Komponen ({komponenPaletTersaring.length} Item):
               </span>
             </div>
 
@@ -1260,8 +1445,12 @@ void loop() {
                   className="p-2 rounded-2xl bg-slate-900 hover:bg-indigo-950/90 border border-slate-800 hover:border-emerald-400 cursor-grab active:cursor-grabbing flex flex-col items-center justify-between text-center gap-1 transition group"
                 >
                   <div className="w-full flex justify-between items-center text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-950 text-indigo-300">
-                    <span className="truncate">{item.kategori.split(" ")[0]}</span>
-                    <span className="text-amber-300 shrink-0">{layoutInfo.pins.length}p</span>
+                    <span className="truncate">
+                      {item.kategori.split(" ")[0]}
+                    </span>
+                    <span className="text-amber-300 shrink-0">
+                      {layoutInfo.pins.length}p
+                    </span>
                   </div>
 
                   <div className="h-11 flex items-center justify-center py-0.5 group-hover:scale-105 transition-transform">
@@ -1291,8 +1480,8 @@ void loop() {
               onClick={() => jalankanSemuaMcuSerentak(true)}
               className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black flex items-center gap-1.5 cursor-pointer shadow-lg"
             >
-              <Play className="w-3.5 h-3.5 fill-slate-950" /> Compile &amp; Run Semua (
-              {daftarMcuDiKanvas.length} MCU)
+              <Play className="w-3.5 h-3.5 fill-slate-950" /> Compile &amp; Run
+              Semua ({daftarMcuDiKanvas.length} MCU)
             </button>
             <button
               type="button"
@@ -1308,7 +1497,8 @@ void loop() {
                 onClick={() => handleDuplikatKomponen(komponenTerpilih)}
                 className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black flex items-center gap-1.5 cursor-pointer shadow-md"
               >
-                <CopyPlus className="w-3.5 h-3.5" /> Duplikat &ldquo;{komponenTerpilih.label}&rdquo;
+                <CopyPlus className="w-3.5 h-3.5" /> Duplikat &ldquo;
+                {komponenTerpilih.label}&rdquo;
               </button>
             )}
           </div>
@@ -1341,7 +1531,7 @@ void loop() {
           </div>
         </div>
 
-        {/* AREA UTAMA: KANVAS DRAG & DROP (8 KOLOM) + INSPEKTOR (4 KOLOM) */}
+        {/* AREA UTAMA: KANVAS DRAG & DROP (8 KOLOM) + INSPEKTOR SIDEBAR MODULAR (4 KOLOM) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           <div
             ref={containerRef}
@@ -1378,8 +1568,8 @@ void loop() {
                 className="sticky top-3 left-3 z-40 inline-flex flex-wrap items-center gap-2 bg-slate-900/95 border-2 border-amber-400 px-3.5 py-2 rounded-2xl shadow-2xl text-xs ml-3 mt-3"
               >
                 <span className="font-black text-amber-300 flex items-center gap-1">
-                  <CornerDownRight className="w-3.5 h-3.5" /> Kabel [{kabelTerpilihObj.pinAsal} ➔{" "}
-                  {kabelTerpilihObj.pinTujuan}]:
+                  <CornerDownRight className="w-3.5 h-3.5" /> Kabel [
+                  {kabelTerpilihObj.pinAsal} ➔ {kabelTerpilihObj.pinTujuan}]:
                 </span>
                 <div className="flex items-center gap-1">
                   {PILIHAN_WARNA_KABEL.map((w) => (
@@ -1452,7 +1642,9 @@ void loop() {
                   });
                 }}
                 onHapusRuangan={(id) =>
-                  setDaftarRuanganFisik((prev) => prev.filter((x) => x.id !== id))
+                  setDaftarRuanganFisik((prev) =>
+                    prev.filter((x) => x.id !== id)
+                  )
                 }
                 onUbahNamaRuangan={(id, namaBaru) =>
                   setDaftarRuanganFisik((prev) =>
@@ -1463,7 +1655,6 @@ void loop() {
                 }
               />
 
-              {/* LAYER TENGAH: GARIS KABEL SIKU */}
               <svg className="absolute inset-0 w-full h-full z-20 pointer-events-none">
                 {kabelSaatIni.map((kbl) => {
                   const asal = nodesSaatIni.find((n) => n.id === kbl.dariId);
@@ -1471,7 +1662,10 @@ void loop() {
                   if (!asal || !tujuan) return null;
 
                   const koorAsal = cariKoordinatPinAbsolut(asal, kbl.pinAsal);
-                  const koorTujuan = cariKoordinatPinAbsolut(tujuan, kbl.pinTujuan);
+                  const koorTujuan = cariKoordinatPinAbsolut(
+                    tujuan,
+                    kbl.pinTujuan
+                  );
 
                   const { d, daftarHandle } = bangunJalurSikuWokwi(
                     koorAsal.x,
@@ -1512,8 +1706,18 @@ void loop() {
                           setIdKabelTerpilih(kbl.id);
                         }}
                       />
-                      <circle cx={koorAsal.x} cy={koorAsal.y} r="4" fill={kbl.warna} />
-                      <circle cx={koorTujuan.x} cy={koorTujuan.y} r="4" fill={kbl.warna} />
+                      <circle
+                        cx={koorAsal.x}
+                        cy={koorAsal.y}
+                        r="4"
+                        fill={kbl.warna}
+                      />
+                      <circle
+                        cx={koorTujuan.x}
+                        cy={koorTujuan.y}
+                        r="4"
+                        fill={kbl.warna}
+                      />
 
                       {apakahTerpilih &&
                         daftarHandle.map((pt, hIdx) => (
@@ -1561,13 +1765,17 @@ void loop() {
               {hoveredPinInfo && (
                 <div
                   style={{
-                    left: `${Math.min(520, Math.max(10, hoveredPinInfo.absX - 60))}px`,
+                    left: `${Math.min(
+                      520,
+                      Math.max(10, hoveredPinInfo.absX - 60)
+                    )}px`,
                     top: `${Math.max(8, hoveredPinInfo.absY - 52)}px`,
                   }}
                   className="absolute z-50 pointer-events-none bg-slate-950/95 border-2 border-amber-400 text-white px-3 py-1.5 rounded-xl shadow-2xl text-[11px] font-mono whitespace-nowrap"
                 >
                   <div className="font-black text-amber-300">
-                    ● {hoveredPinInfo.pin.nama} (Pin #{hoveredPinInfo.pin.nomorPin})
+                    ● {hoveredPinInfo.pin.nama} (Pin #
+                    {hoveredPinInfo.pin.nomorPin})
                   </div>
                   <div className="text-[10px] text-slate-300">
                     {hoveredPinInfo.pin.keterangan}
@@ -1575,7 +1783,6 @@ void loop() {
                 </div>
               )}
 
-              {/* LAYER ATAS: KOMPONEN IOT DENGAN HEADER LEBAR UTUH (TIDAK TERPOTONG/TERTIMPA!) */}
               {nodesSaatIni.map((node) => {
                 const aktifDipilih = komponenTerpilih?.id === node.id;
                 const layout = ambilLayoutFisikKomponen(node.tipe);
@@ -1613,16 +1820,18 @@ void loop() {
                     }}
                     className={`absolute rounded-2xl cursor-move transition-all ${
                       aktifDipilih ? "ring-2 ring-emerald-400 z-20" : "z-10"
-                    } ${!terhubungKeRangkaianAktif ? "opacity-65 grayscale-[30%]" : ""}`}
+                    } ${
+                      !terhubungKeRangkaianAktif
+                        ? "opacity-65 grayscale-[30%]"
+                        : ""
+                    }`}
                   >
-                    {/* PITA TELEMETRI LIVE DI ATAS HEADER (TIDAK MENIMPA HEADER!) */}
                     {teksTelemetriAtas && (
                       <div className="absolute -top-[22px] left-1/2 -translate-x-1/2 w-max px-2.5 py-0.5 rounded-full bg-slate-950/95 border border-sky-400/70 text-[9px] font-mono font-black text-amber-300 shadow-md pointer-events-none z-30">
                         {teksTelemetriAtas}
                       </div>
                     )}
 
-                    {/* HEADER NAMA KOMPONEN UTUH (LEBAR OTOMATIS w-max TANPA TRUNCATE!) */}
                     <div className="h-[18px] flex justify-center items-center relative z-20">
                       <div
                         className={`w-max min-w-full px-2.5 h-[18px] flex justify-between items-center gap-2 rounded-t-xl border-x border-t text-[9.5px] font-black shadow-xs whitespace-nowrap ${
@@ -1655,7 +1864,6 @@ void loop() {
                       </div>
                     </div>
 
-                    {/* BODI UTAMA SVG KOMPONEN + TITIK PIN FISIK */}
                     <div
                       style={{
                         width: `${layout.lebar}px`,
@@ -1688,7 +1896,9 @@ void loop() {
                             style={{
                               left: `${pin.x - 5}px`,
                               top: `${pin.y - 5}px`,
-                              backgroundColor: sedangAsal ? "#ffffff" : warnaDot,
+                              backgroundColor: sedangAsal
+                                ? "#ffffff"
+                                : warnaDot,
                             }}
                             onMouseDown={(e) => e.stopPropagation()}
                             onMouseEnter={() =>
@@ -1706,9 +1916,12 @@ void loop() {
                               const absY = node.y + pin.y + 18;
 
                               if (!sedangTarikKabelDariPin) {
-                                if (pin.kategori === "POWER") setWarnaKabelAktif("#ef4444");
-                                else if (pin.kategori === "GND") setWarnaKabelAktif("#94a3b8");
-                                else if (pin.kategori === "UART") setWarnaKabelAktif("#22c55e");
+                                if (pin.kategori === "POWER")
+                                  setWarnaKabelAktif("#ef4444");
+                                else if (pin.kategori === "GND")
+                                  setWarnaKabelAktif("#94a3b8");
+                                else if (pin.kategori === "UART")
+                                  setWarnaKabelAktif("#22c55e");
 
                                 setSedangTarikKabelDariPin({
                                   nodeId: node.id,
@@ -1730,7 +1943,9 @@ void loop() {
                               }
                             }}
                             className={`absolute w-[10px] h-[10px] rounded-full border border-slate-950 cursor-crosshair transition-transform hover:scale-175 hover:ring-2 hover:ring-amber-400 z-30 ${
-                              sedangAsal ? "scale-175 ring-2 ring-amber-300 animate-ping" : ""
+                              sedangAsal
+                                ? "scale-175 ring-2 ring-amber-300 animate-ping"
+                                : ""
                             }`}
                           />
                         );
@@ -1742,200 +1957,33 @@ void loop() {
             </div>
           </div>
 
-          {/* PANEL SAMPING KANAN (4 KOLOM): INSPEKTOR, LOKASI RUANGAN & DUPLIKAT ITEM */}
-          <div
-            className={`${
-              ukuranKanvas === "penuh" ? "lg:col-span-12" : "lg:col-span-4"
-            } bg-slate-950 p-5 rounded-3xl border border-slate-800 space-y-5 max-h-[640px] overflow-y-auto`}
-          >
-            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
-              <span className="font-black text-xs uppercase text-emerald-400 flex items-center gap-1.5">
-                <Sliders className="w-4 h-4" /> Inspector &amp; Lokasi Ruangan
-              </span>
-              {komponenTerpilih && (
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => handleDuplikatKomponen(komponenTerpilih)}
-                    className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-black flex items-center gap-1 cursor-pointer"
-                  >
-                    <CopyPlus className="w-3 h-3" /> Duplikat
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      simpanSnapshotUndo();
-                      setDaftarNode({
-                        ...daftarNode,
-                        [mode]: nodesSaatIni.filter((n) => n.id !== komponenTerpilih.id),
-                      });
-                      setIdKomponenTerpilih(null);
-                    }}
-                    className="px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-300 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
-                  >
-                    <Trash2 className="w-3 h-3" /> Hapus
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {komponenTerpilih && layoutTerpilih && rentangTerpilih && (
-              <div className="space-y-4 text-xs">
-                <div className="p-2.5 rounded-xl bg-indigo-950/60 border border-indigo-500/40 text-[11px] font-bold flex items-center justify-between">
-                  <span className="text-slate-300">Lokasi Fisik:</span>
-                  <span className="text-amber-300 font-black">
-                    {ruanganKomponenTerpilih
-                      ? `${ruanganKomponenTerpilih.ikon} ${ruanganKomponenTerpilih.namaRuangan}`
-                      : "📍 Area Terbuka (Diluar Ruangan)"}
-                  </span>
-                </div>
-
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 block mb-1">
-                    Nama Komponen Terpilih:
-                  </label>
-                  <input
-                    type="text"
-                    value={komponenTerpilih.label}
-                    onChange={(e) =>
-                      updatePropertiKomponen(komponenTerpilih.id, {
-                        label: e.target.value,
-                      })
-                    }
-                    className="w-full p-2 rounded-xl bg-slate-900 border border-slate-700 font-bold text-white"
-                  />
-                </div>
-
-                {komponenTerpilih.tipe === "resistor" ? (
-                  <div className="p-4 rounded-2xl bg-slate-900 border border-amber-500/40 space-y-3">
-                    <div className="font-black text-amber-300 uppercase text-[11px]">
-                      🎨 Nilai Hambatan &amp; Gelang Warna
-                    </div>
-                    <div className="flex justify-center">
-                      <ResistorVisualSvg
-                        nilaiOhm={komponenTerpilih.nilaiResistor || 1000}
-                        ukuran="besar"
-                      />
-                    </div>
-                    <input
-                      type="number"
-                      min={1}
-                      max={10000000}
-                      value={komponenTerpilih.nilaiResistor || 1000}
-                      onChange={(e) =>
-                        updatePropertiKomponen(komponenTerpilih.id, {
-                          nilaiResistor: Math.max(1, Number(e.target.value)),
-                        })
-                      }
-                      className="w-full p-2 rounded-xl bg-slate-950 border border-slate-700 font-mono font-black text-amber-300"
-                    />
-                  </div>
-                ) : (
-                  <div className="p-4 rounded-2xl bg-slate-900 border border-emerald-500/30 space-y-3">
-                    <div className="text-[11px] font-black text-emerald-300 uppercase">
-                      ⚙️ {rentangTerpilih.labelParameter}
-                    </div>
-
-                    {rentangTerpilih.punyaSlider ? (
-                      <>
-                        <div className="flex justify-between items-center font-mono text-xs">
-                          <span className="text-slate-400">
-                            Min: {rentangTerpilih.min} {rentangTerpilih.satuan}
-                          </span>
-                          <span className="text-base font-black text-amber-300 bg-slate-950 px-3 py-1 rounded-xl border border-amber-400/40">
-                            {komponenTerpilih.nilaiSensor ?? rentangTerpilih.defaultVal}{" "}
-                            {rentangTerpilih.satuan}
-                          </span>
-                          <span className="text-slate-400">
-                            Max: {rentangTerpilih.max} {rentangTerpilih.satuan}
-                          </span>
-                        </div>
-
-                        <input
-                          type="range"
-                          min={rentangTerpilih.min}
-                          max={rentangTerpilih.max}
-                          step={rentangTerpilih.step}
-                          value={komponenTerpilih.nilaiSensor ?? rentangTerpilih.defaultVal}
-                          onChange={(e) =>
-                            updatePropertiKomponen(komponenTerpilih.id, {
-                              nilaiSensor: Number(e.target.value),
-                            })
-                          }
-                          className="w-full accent-emerald-400 cursor-pointer"
-                        />
-                      </>
-                    ) : (
-                      <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-200 font-semibold">
-                        ⚡ Komponen Digital Sakelar <b>ON / OFF</b>.
-                      </div>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        updatePropertiKomponen(komponenTerpilih.id, {
-                          nyala: !komponenTerpilih.nyala,
-                        })
-                      }
-                      className={`w-full py-2.5 rounded-xl font-black flex items-center justify-center gap-1.5 cursor-pointer transition ${
-                        komponenTerpilih.nyala
-                          ? "bg-emerald-500 text-slate-950 shadow-lg"
-                          : "bg-slate-800 text-slate-300"
-                      }`}
-                    >
-                      <Power className="w-4 h-4" />
-                      {komponenTerpilih.nyala
-                        ? "STATUS: ON / HIGH (AKTIF)"
-                        : "STATUS: OFF / LOW (MATI)"}
-                    </button>
-                  </div>
-                )}
-
-                <div className="p-3.5 rounded-2xl bg-indigo-950/30 border border-indigo-500/30 space-y-2.5">
-                  <span className="font-black text-indigo-300 uppercase text-[11px] flex items-center gap-1">
-                    <Info className="w-3.5 h-3.5" /> Daftar &amp; Keterangan Pin (
-                    {layoutTerpilih.pins.length} Titik)
-                  </span>
-                  <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                    {layoutTerpilih.pins.map((p) => (
-                      <div
-                        key={p.idPin}
-                        onClick={() => {
-                          const absX = komponenTerpilih.x + p.x;
-                          const absY = komponenTerpilih.y + p.y + 18;
-                          setSedangTarikKabelDariPin({
-                            nodeId: komponenTerpilih.id,
-                            nodeLabel: komponenTerpilih.label,
-                            pin: p,
-                            xAsal: absX,
-                            yAsal: absY,
-                          });
-                        }}
-                        className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 cursor-pointer space-y-0.5"
-                      >
-                        <div className="flex justify-between items-center">
-                          <span className="font-mono font-black text-amber-300 flex items-center gap-1.5">
-                            <span
-                              style={{ backgroundColor: warnaTitikPin(p.kategori) }}
-                              className="w-2.5 h-2.5 rounded-full inline-block"
-                            />
-                            #{p.nomorPin} {p.nama}
-                          </span>
-                          <span className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded bg-slate-950 text-slate-400">
-                            {p.sisi}
-                          </span>
-                        </div>
-                        <div className="text-[10px] text-slate-300 pl-4">
-                          {p.keterangan}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+          {/* SIDEBAR INSPEKTOR MODULAR */}
+          <ComponentInspectorSidebar
+            ukuranKanvasPenuh={ukuranKanvas === "penuh"}
+            komponenTerpilih={komponenTerpilih}
+            ruanganKomponenTerpilih={ruanganKomponenTerpilih}
+            onDuplikatKomponen={handleDuplikatKomponen}
+            onHapusKomponen={(idHapus) => {
+              simpanSnapshotUndo();
+              setDaftarNode((prev) => ({
+                ...prev,
+                [mode]: nodesSaatIni.filter((n) => n.id !== idHapus),
+              }));
+              setIdKomponenTerpilih(null);
+            }}
+            onUpdateProperti={updatePropertiKomponen}
+            onMulaiTarikKabelDariPin={(node, p) => {
+              const absX = node.x + p.x;
+              const absY = node.y + p.y + 18;
+              setSedangTarikKabelDariPin({
+                nodeId: node.id,
+                nodeLabel: node.label,
+                pin: p,
+                xAsal: absX,
+                yAsal: absY,
+              });
+            }}
+          />
         </div>
 
         {/* STUDIO PEMROGRAMAN MULTI-MIKROKONTROLER */}
@@ -1977,7 +2025,7 @@ void loop() {
         <IotCloudBlynkPanel
           nodesKanvas={nodesSaatIni}
           userLogin={userLogin}
-          idProjectAktif={projectAktif.id}
+          idProjectAktif={idProjectSaatIni}
           namaProjectAktif={namaProjectInput || projectAktif.judul}
           presetWidgets={projectAktif.blynkWidgets}
           customWidgetsState={widgetsBlynkSaatIni}
@@ -1987,7 +2035,10 @@ void loop() {
           }
           onGenerateKodeIotKeEditor={(kodeBaru) => {
             if (mcuTabAktifObj) {
-              setBahasaPerMcu((prev) => ({ ...prev, [mcuTabAktifObj.id]: "cpp" }));
+              setBahasaPerMcu((prev) => ({
+                ...prev,
+                [mcuTabAktifObj.id]: "cpp",
+              }));
               setKodePerMcuMap((prev) => ({
                 ...prev,
                 [mcuTabAktifObj.id]: kodeBaru,
