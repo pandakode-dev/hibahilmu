@@ -126,7 +126,384 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // 1. ESP32 DevKit V1 & NodeMCU
+  // ============================================================================
+  // 1. ESP32-C6-DEVKITC-1 (RISC-V WI-FI 6, ZIGBEE, THREAD & RGB LED GPIO8)
+  // ============================================================================
+  if (tipe === "esp32_c6") {
+    return (
+      <svg viewBox="0 0 160 225" className={isIkon ? "w-14 h-14" : "w-full h-full overflow-visible"}>
+        {/* Papan PCB Hitam-Teal khas Espressif ESP32-C6-DevKitC-1 */}
+        <rect
+          x="16"
+          y="8"
+          width="128"
+          height="209"
+          rx="8"
+          fill="#042f2e"
+          stroke="#14b8a6"
+          strokeWidth="2.5"
+        />
+        {!isIkon && nyala && (
+          <g className="animate-pulse">
+            <path d="M 60 4 Q 80 -6, 100 4" stroke="#2dd4bf" strokeWidth="1.8" fill="none" />
+            <text x="80" y="-4" textAnchor="middle" fill="#5eead4" fontSize="6.5" fontWeight="900">
+              Wi-Fi 6 • Zigbee • Thread
+            </text>
+          </g>
+        )}
+        {/* Antena PCB 2.4GHz Atas */}
+        <rect x="44" y="12" width="72" height="18" rx="3" fill="#0f172a" stroke="#f59e0b" strokeWidth="1.5" />
+        {/* Modul RF Kaleng Perak ESP32-C6-WROOM-1 */}
+        <rect x="38" y="34" width="84" height="72" rx="4" fill="#e2e8f0" stroke="#64748b" strokeWidth="2" />
+        <text x="80" y="62" textAnchor="middle" fill="#0f172a" fontSize="8.5" fontWeight="900">
+          ESP32-C6-WROOM-1
+        </text>
+        <text x="80" y="76" textAnchor="middle" fill="#0f766e" fontSize="7" fontWeight="900">
+          RISC-V 160MHz SoC
+        </text>
+        <text x="80" y="90" textAnchor="middle" fill="#334155" fontSize="6.5" fontWeight="bold">
+          Wi-Fi 6 + BLE 5 + 802.15.4
+        </text>
+
+        {/* LED RGB WS2812 Addressable Bawaan di GPIO8 */}
+        {nyala && (
+          <circle cx="80" cy="126" r="12" fill="#a855f7" opacity="0.4" className="animate-ping" />
+        )}
+        <rect x="73" y="119" width="14" height="14" rx="3" fill="#f8fafc" stroke="#9333ea" strokeWidth="1.5" />
+        <circle cx="80" cy="126" r="4.5" fill={nyala ? "#ec4899" : "#475569"} />
+        <text x="80" y="144" textAnchor="middle" fill="#f0abfc" fontSize="5.5" fontFamily="monospace" fontWeight="bold">
+          RGB GPIO8
+        </text>
+
+        {/* Tombol RST & BOOT */}
+        <rect x="38" y="176" width="18" height="12" rx="2" fill="#cbd5e1" />
+        <text x="47" y="173" textAnchor="middle" fill="#99f6e4" fontSize="5.5" fontWeight="bold">
+          RST
+        </text>
+        <rect x="104" y="176" width="18" height="12" rx="2" fill="#cbd5e1" />
+        <text x="113" y="173" textAnchor="middle" fill="#99f6e4" fontSize="5.5" fontWeight="bold">
+          BOOT
+        </text>
+
+        {/* 2 Port USB Type-C di Bawah (USB Native & UART Bridge) */}
+        <rect x="44" y="201" width="30" height="15" rx="4" fill="#94a3b8" stroke="#334155" strokeWidth="1.5" />
+        <rect x="86" y="201" width="30" height="15" rx="4" fill="#94a3b8" stroke="#334155" strokeWidth="1.5" />
+        <text x="59" y="198" textAnchor="middle" fill="#cbd5e1" fontSize="5" fontFamily="monospace">
+          USB-C
+        </text>
+        <text x="101" y="198" textAnchor="middle" fill="#cbd5e1" fontSize="5" fontFamily="monospace">
+          UART-C
+        </text>
+
+        {/* Label Silkscreen 15 Pin Kiri & 15 Pin Kanan ESP32-C6 */}
+        {["3V3", "RST", "G0", "G1", "G2", "G3", "G4", "G5", "G6", "G7", "G10", "G11", "G12", "G13", "GND"].map(
+          (lbl, idx) => (
+            <text
+              key={`c6l-${idx}`}
+              x="22"
+              y={29 + idx * 13}
+              fill="#ccfbf1"
+              fontSize="6.5"
+              fontFamily="monospace"
+              fontWeight="bold"
+            >
+              {lbl}
+            </text>
+          )
+        )}
+        {["5V", "TX0", "RX0", "G18", "G19", "G20", "G21", "G22", "G23", "G15", "G14", "G9", "G8", "GND", "GND"].map(
+          (lbl, idx) => (
+            <text
+              key={`c6r-${idx}`}
+              x="138"
+              y={29 + idx * 13}
+              textAnchor="end"
+              fill="#fde047"
+              fontSize="6.5"
+              fontFamily="monospace"
+              fontWeight="bold"
+            >
+              {lbl}
+            </text>
+          )
+        )}
+      </svg>
+    );
+  }
+
+  // ============================================================================
+  // 2. MODUL GPS NEO-6M U-BLOX (DENGAN ANTENA KERAMIK PATCH & ANIMASI SATELIT)
+  // ============================================================================
+  if (tipe === "gps_neo6m") {
+    const speedKmh = nilaiSensor ?? 45;
+    const latSim = (-0.5071 + speedKmh * 0.0001).toFixed(4);
+    const lonSim = (101.4478 + speedKmh * 0.0001).toFixed(4);
+
+    return (
+      <svg viewBox="0 0 145 115" className={isIkon ? "w-18 h-14" : "w-full h-full overflow-visible"}>
+        {!isIkon && nyala && (
+          <g>
+            {/* Animasi Sinyal Satelit GPS di Atas Modul */}
+            <path
+              d="M 45 -4 Q 72 -18, 100 -4"
+              stroke="#38bdf8"
+              strokeWidth="1.8"
+              strokeDasharray="3 2"
+              fill="none"
+              className="animate-pulse"
+            />
+            <rect
+              x="8"
+              y="-24"
+              width="129"
+              height="16"
+              rx="4"
+              fill="#0f172a"
+              stroke="#38bdf8"
+              strokeWidth="1.2"
+            />
+            <text x="72" y="-13" textAnchor="middle" fill="#fde047" fontSize="7" fontFamily="monospace" fontWeight="bold">
+              🛰️ {latSim}, {lonSim} ({speedKmh}km/h)
+            </text>
+          </g>
+        )}
+
+        {/* Papan PCB Biru GY-GPS6MV2 */}
+        <rect
+          x="10"
+          y="6"
+          width="125"
+          height="78"
+          rx="6"
+          fill="#1e3a8a"
+          stroke="#60a5fa"
+          strokeWidth="2"
+        />
+
+        {/* Chip u-blox NEO-6M di Sisi Kiri PCB */}
+        <rect x="18" y="16" width="48" height="38" rx="3" fill="#e2e8f0" stroke="#64748b" strokeWidth="1.5" />
+        <text x="42" y="32" textAnchor="middle" fill="#0f172a" fontSize="7.5" fontWeight="900">
+          u-blox
+        </text>
+        <text x="42" y="43" textAnchor="middle" fill="#1d4ed8" fontSize="7" fontWeight="900">
+          NEO-6M-0
+        </text>
+
+        {/* Antena Keramik Patch Aktif (Kotak Cokelat Muda/Krem dengan Pin Perak di Tengah) */}
+        <rect
+          x="74"
+          y="14"
+          width="52"
+          height="48"
+          rx="5"
+          fill="#d6d3d1"
+          stroke="#b45309"
+          strokeWidth="2.5"
+        />
+        <rect x="81" y="21" width="38" height="34" rx="3" fill="#e7e5e4" stroke="#a8a29e" strokeWidth="1.5" />
+        <circle cx="100" cy="38" r="5" fill="#94a3b8" stroke="#475569" strokeWidth="1.5" />
+        {/* Kabel Coaxial U.FL dari Chip ke Antena */}
+        <path d="M 66 26 Q 72 10, 82 22" stroke="#1e293b" strokeWidth="2.5" fill="none" />
+
+        {/* LED Indikator PPS (Pulse Per Second) Berkedip Hijau/Merah */}
+        {nyala && <circle cx="28" cy="66" r="7" fill="#22c55e" opacity="0.4" className="animate-ping" />}
+        <circle cx="28" cy="66" r="3.5" fill={nyala ? "#22c55e" : "#334155"} />
+        <text x="50" y="69" fill="#93c5fd" fontSize="6.5" fontFamily="monospace" fontWeight="bold">
+          PPS FIX
+        </text>
+
+        {/* 5 Kaki Pin Fisik Menghadap ke Bawah: PPS, RXD, TXD, GND, VCC (x = 25, 49, 73, 97, 121) */}
+        {["PPS", "RXD", "TXD", "GND", "VCC"].map((lbl, idx) => {
+          const xPos = 25 + idx * 24;
+          return (
+            <g key={lbl}>
+              <line x1={xPos} y1="84" x2={xPos} y2="108" stroke="#eab308" strokeWidth="3.5" />
+              <text
+                x={xPos}
+                y="79"
+                textAnchor="middle"
+                fill="#fde047"
+                fontSize="6"
+                fontFamily="monospace"
+                fontWeight="bold"
+              >
+                {lbl}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    );
+  }
+
+  // ============================================================================
+  // 3. SOCKET HOLDER BATERAI 2x 18650 LI-ION (DENGAN INDIKATOR VOLTASE & SAKELAR)
+  // ============================================================================
+  if (tipe === "battery_socket") {
+    const voltase = nilaiSensor ?? 8.4;
+    const persenBaterai = Math.max(5, Math.min(100, Math.round(((voltase - 3.0) / 9.6) * 100)));
+
+    return (
+      <svg viewBox="0 0 135 105" className={isIkon ? "w-18 h-14" : "w-full h-full overflow-visible"}>
+        {!isIkon && (
+          <text
+            x="67"
+            y="-4"
+            textAnchor="middle"
+            fill={nyala ? "#34d399" : "#94a3b8"}
+            fontSize="7.5"
+            fontFamily="monospace"
+            fontWeight="900"
+          >
+            🔋 {nyala ? `OUTPUT: ${voltase}V DC (${persenBaterai}%)` : "SWITCH OFF (0.0V)"}
+          </text>
+        )}
+
+        {/* Kotak Casing Hitam Holder 2x 18650 */}
+        <rect
+          x="10"
+          y="6"
+          width="115"
+          height="68"
+          rx="8"
+          fill="#0f172a"
+          stroke={nyala ? "#f59e0b" : "#475569"}
+          strokeWidth="2.5"
+        />
+
+        {/* Sel Baterai 18650 #1 (Atas) */}
+        <rect x="18" y="13" width="94" height="22" rx="5" fill="#1d4ed8" stroke="#60a5fa" strokeWidth="1.5" />
+        <rect x="112" y="18" width="5" height="12" rx="1.5" fill="#eab308" />
+        <rect
+          x="21"
+          y="16"
+          width={Math.max(8, (persenBaterai / 100) * 86)}
+          height="16"
+          rx="3"
+          fill="#22c55e"
+          opacity="0.55"
+        />
+        <text x="65" y="27" textAnchor="middle" fill="#ffffff" fontSize="7.5" fontWeight="900">
+          LI-ION 18650 • {(voltase / 2).toFixed(1)}V
+        </text>
+
+        {/* Sel Baterai 18650 #2 (Bawah) */}
+        <rect x="23" y="41" width="94" height="22" rx="5" fill="#1d4ed8" stroke="#60a5fa" strokeWidth="1.5" />
+        <rect x="18" y="46" width="5" height="12" rx="1.5" fill="#eab308" />
+        <rect
+          x="26"
+          y="44"
+          width={Math.max(8, (persenBaterai / 100) * 86)}
+          height="16"
+          rx="3"
+          fill="#22c55e"
+          opacity="0.55"
+        />
+        <text x="70" y="55" textAnchor="middle" fill="#fde047" fontSize="7.5" fontWeight="900">
+          TOTAL: {voltase}V DC
+        </text>
+
+        {/* 2 Kabel Keluaran di Bawah: BAT+ Merah (x=42) & BAT- Hitam (x=94) */}
+        <line x1="42" y1="74" x2="42" y2="98" stroke="#ef4444" strokeWidth="4.5" />
+        <line x1="94" y1="74" x2="94" y2="98" stroke="#64748b" strokeWidth="4.5" />
+        <text x="26" y="90" fill="#f87171" fontSize="7" fontFamily="monospace" fontWeight="bold">
+          BAT+
+        </text>
+        <text x="108" y="90" fill="#94a3b8" fontSize="7" fontFamily="monospace" fontWeight="bold">
+          BAT-
+        </text>
+      </svg>
+    );
+  }
+
+  // ============================================================================
+  // 4. SENSOR TEGANGAN DC 0-25V (2 TERMINAL SEKRUP ATAS + 3 PIN HEADER BAWAH)
+  // ============================================================================
+  if (tipe === "voltage_sensor") {
+    const vIn = nilaiSensor ?? 8.4;
+    const vOutAdc = (vIn / 5).toFixed(2); // Pembagi tegangan 30k & 7.5k = 1/5
+
+    return (
+      <svg viewBox="0 0 120 112" className={isIkon ? "w-16 h-14" : "w-full h-full overflow-visible"}>
+        {!isIkon && (
+          <text
+            x="60"
+            y="-4"
+            textAnchor="middle"
+            fill="#fde047"
+            fontSize="7.5"
+            fontFamily="monospace"
+            fontWeight="900"
+          >
+            ⚡ Vin: {vIn}V ➔ Pin S: {vOutAdc}V
+          </text>
+        )}
+
+        {/* Papan PCB Biru Modul Sensor Tegangan 0-25V */}
+        <rect
+          x="14"
+          y="10"
+          width="92"
+          height="78"
+          rx="6"
+          fill="#1d4ed8"
+          stroke="#60a5fa"
+          strokeWidth="2"
+        />
+
+        {/* Blok Terminal Sekrup Biru/Hijau di Atas (VCC_IN x=38 & GND_IN x=82) */}
+        <rect x="26" y="12" width="68" height="22" rx="3" fill="#0284c7" stroke="#bae6fd" strokeWidth="1.5" />
+        <circle cx="38" cy="23" r="6" fill="#cbd5e1" stroke="#334155" strokeWidth="1.5" />
+        <line x1="34" y1="23" x2="42" y2="23" stroke="#0f172a" strokeWidth="2" />
+        <circle cx="82" cy="23" r="6" fill="#cbd5e1" stroke="#334155" strokeWidth="1.5" />
+        <line x1="78" y1="23" x2="86" y2="23" stroke="#0f172a" strokeWidth="2" />
+        <text x="38" y="42" textAnchor="middle" fill="#fde047" fontSize="6.5" fontWeight="900">
+          VCC(+)
+        </text>
+        <text x="82" y="42" textAnchor="middle" fill="#e2e8f0" fontSize="6.5" fontWeight="900">
+          GND(-)
+        </text>
+
+        {/* 2 Resistor SMD Pembagi Tegangan Presisi (30kΩ & 7.5kΩ) */}
+        <rect x="28" y="48" width="26" height="12" rx="2" fill="#0f172a" stroke="#94a3b8" />
+        <text x="41" y="57" textAnchor="middle" fill="#38bdf8" fontSize="6" fontFamily="monospace" fontWeight="bold">
+          303 (30k)
+        </text>
+        <rect x="66" y="48" width="26" height="12" rx="2" fill="#0f172a" stroke="#94a3b8" />
+        <text x="79" y="57" textAnchor="middle" fill="#34d399" fontSize="6" fontFamily="monospace" fontWeight="bold">
+          752 (7.5k)
+        </text>
+
+        <text x="60" y="72" textAnchor="middle" fill="#ffffff" fontSize="7" fontWeight="900">
+          VOLTAGE 0-25V
+        </text>
+
+        {/* 3 Kaki Pin Header di Bawah: S (x=32), + (x=60), - (x=88) */}
+        {[
+          { lbl: "S", x: 32 },
+          { lbl: "+", x: 60 },
+          { lbl: "-", x: 88 },
+        ].map((p) => (
+          <g key={p.lbl}>
+            <line x1={p.x} y1="88" x2={p.x} y2="104" stroke="#eab308" strokeWidth="3.5" />
+            <text
+              x={p.x}
+              y="84"
+              textAnchor="middle"
+              fill="#fde047"
+              fontSize="7.5"
+              fontFamily="monospace"
+              fontWeight="900"
+            >
+              {p.lbl}
+            </text>
+          </g>
+        ))}
+      </svg>
+    );
+  }
+
+  // 5. ESP32 DevKit V1 & NodeMCU
   if (tipe === "esp32" || tipe === "esp8266_nodemcu") {
     const isEsp32 = tipe === "esp32";
     return (
@@ -173,7 +550,7 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // 2. STM32 BluePill & Raspberry Pi Pico
+  // 6. STM32 BluePill & Raspberry Pi Pico
   if (tipe === "stm32_bluepill" || tipe === "raspberry_pico") {
     const isPico = tipe === "raspberry_pico";
     return (
@@ -192,7 +569,7 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // 3. Arduino Uno R3
+  // 7. Arduino Uno R3
   if (tipe === "arduino_uno") {
     return (
       <svg viewBox="0 0 195 140" className={isIkon ? "w-20 h-12" : "w-full h-full"}>
@@ -216,9 +593,7 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // ============================================================================
-  // 4. MODUL RELAY 1-CHANNEL, 2-CHANNEL, DAN 4-CHANNEL (VISUALISASI ASLI!)
-  // ============================================================================
+  // 8. Modul Relay 1-Ch, 2-Ch, dan 4-Ch
   if (tipe === "relay_1ch" || tipe === "relay_5v" || tipe === "relay_2ch" || tipe === "relay_4ch") {
     const jmlCh = tipe === "relay_4ch" ? 4 : tipe === "relay_2ch" ? 2 : 1;
     const lebarSvg = jmlCh === 4 ? 220 : jmlCh === 2 ? 150 : 110;
@@ -229,7 +604,6 @@ export const VisualKomponenRealistis: React.FC<{
         viewBox={`0 0 ${lebarSvg} ${tinggiSvg}`}
         className={isIkon ? "w-20 h-12" : "w-full h-full overflow-visible"}
       >
-        {/* Papan PCB Merah/Hitam Modul Relay */}
         <rect
           x="8"
           y="10"
@@ -240,8 +614,6 @@ export const VisualKomponenRealistis: React.FC<{
           stroke={nyala ? "#34d399" : "#f87171"}
           strokeWidth="2"
         />
-
-        {/* Render Kotak Relay Biru Songle & Terminal Sekrup Hijau per Channel */}
         {Array.from({ length: jmlCh }).map((_, chIdx) => {
           const offsetX =
             jmlCh === 1
@@ -253,7 +625,6 @@ export const VisualKomponenRealistis: React.FC<{
 
           return (
             <g key={chIdx}>
-              {/* Blok Terminal Sekrup Hijau Atas (NO, COM, NC) */}
               <rect
                 x={offsetX + 2}
                 y="12"
@@ -264,7 +635,6 @@ export const VisualKomponenRealistis: React.FC<{
                 stroke="#86efac"
                 strokeWidth="1"
               />
-              {/* Kotak Relay Biru Songle SRD-05VDC-SL-C */}
               <rect
                 x={offsetX}
                 y="32"
@@ -275,7 +645,6 @@ export const VisualKomponenRealistis: React.FC<{
                 stroke="#60a5fa"
                 strokeWidth="1.5"
               />
-              {/* Animasi Kontak Sakelar Internal Relay (COM ke NO atau NC) */}
               <circle cx={offsetX + lebarKotak / 2} cy="66" r="3" fill="#facc15" />
               <line
                 x1={offsetX + lebarKotak / 2}
@@ -299,14 +668,6 @@ export const VisualKomponenRealistis: React.FC<{
               >
                 CH{chIdx + 1}: {nyala ? "NO (ON)" : "NC (OFF)"}
               </text>
-              {/* Lampu LED Indikator Trigger Channel */}
-              <circle
-                cx={offsetX + lebarKotak / 2}
-                cy="88"
-                r="3.5"
-                fill={nyala ? "#ef4444" : "#334155"}
-                className={nyala ? "animate-ping" : ""}
-              />
               <circle
                 cx={offsetX + lebarKotak / 2}
                 cy="88"
@@ -316,7 +677,6 @@ export const VisualKomponenRealistis: React.FC<{
             </g>
           );
         })}
-
         <text
           x={lebarSvg / 2}
           y={tinggiSvg - 15}
@@ -332,9 +692,7 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // ============================================================================
-  // 5. SOLENOID DOOR LOCK 12V (MURNI ON/OFF + 2 PIN KABEL MERAH VCC+ & HITAM GND-)
-  // ============================================================================
+  // 9. Solenoid Door Lock 12V
   if (tipe === "solenoid_lock") {
     const terbuka = nyala;
     return (
@@ -362,7 +720,6 @@ export const VisualKomponenRealistis: React.FC<{
           strokeWidth="2.5"
         />
         <rect x="26" y="22" width="44" height="34" rx="3" fill="#78350f" stroke="#f59e0b" strokeWidth="1.5" />
-        {/* Tuas Lidah Besi Pengunci Maju/Mundur */}
         <g
           style={{
             transform: terbuka ? "translateX(-16px)" : "translateX(0px)",
@@ -379,7 +736,6 @@ export const VisualKomponenRealistis: React.FC<{
         <text x="48" y="42" textAnchor="middle" fill="#fde047" fontSize="7.5" fontWeight="900">
           SOLENOID 12V
         </text>
-        {/* 2 Kabel Asli di Bawah: Merah (+) x=38 & Hitam (-) x=82 */}
         <line x1="38" y1="64" x2="38" y2="90" stroke="#ef4444" strokeWidth="4" />
         <line x1="82" y1="64" x2="82" y2="90" stroke="#64748b" strokeWidth="4" />
         <text x="27" y="82" fill="#f87171" fontSize="7" fontWeight="bold">
@@ -392,9 +748,7 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // ============================================================================
-  // 6. POMPA AIR MINI SUBMERSIBLE DC (2 KAKI KABEL MERAH VCC+ & HITAM GND- KE RELAY)
-  // ============================================================================
+  // 10. Pompa Air Mini
   if (tipe === "water_pump") {
     return (
       <svg viewBox="0 0 120 98" className={isIkon ? "w-16 h-12" : "w-full h-full overflow-visible"}>
@@ -425,7 +779,6 @@ export const VisualKomponenRealistis: React.FC<{
         <text x="60" y="50" textAnchor="middle" fill="#fde047" fontSize="7" fontWeight="bold">
           {nyala ? "STATUS: ON (AKTIF)" : "STATUS: OFF (MATI)"}
         </text>
-        {/* 2 Kabel Asli di Bawah: Merah (+) x=38 & Hitam (-) x=82 */}
         <line x1="38" y1="64" x2="38" y2="90" stroke="#ef4444" strokeWidth="4" />
         <line x1="82" y1="64" x2="82" y2="90" stroke="#64748b" strokeWidth="4" />
         <text x="27" y="82" fill="#f87171" fontSize="7" fontWeight="bold">
@@ -438,7 +791,7 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // 7. Sensor Infrared (IR) Obstacle Avoidance (Jarak 2-30 cm)
+  // 11. Sensor Infrared (IR) Obstacle Avoidance
   if (tipe === "ir_obstacle") {
     const jarakCm = nilaiSensor ?? 8;
     const terhalang = nyala && jarakCm <= 15;
@@ -502,7 +855,7 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // 8. Sensor Api (Flame Sensor KY-026: 0-100%)
+  // 12. Sensor Api (Flame Sensor KY-026)
   if (tipe === "flame_sensor") {
     const intensitasApi = nilaiSensor ?? 80;
     const adaApi = nyala && intensitasApi >= 50;
@@ -529,7 +882,7 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // 9. Kipas DC & Motor DC (PWM 0 - 255)
+  // 13. Kipas DC & Motor DC
   if (tipe === "kipas_dc" || tipe === "dc_motor") {
     const pwmVal = nilaiSensor ?? 200;
     const aktifBerputar = nyala && pwmVal > 10;
@@ -558,7 +911,7 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // 10. Soil Moisture, Raindrop & Water Level (0 - 100%)
+  // 14. Soil Moisture, Raindrop & Water Level
   if (tipe === "soil_moisture" || tipe === "rain_sensor" || tipe === "water_level") {
     const kadarAir = Math.max(0, Math.min(100, nilaiSensor ?? 65));
     const basah = kadarAir >= 50;
@@ -590,7 +943,7 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // 11. RFID RC522
+  // 15. RFID RC522
   if (tipe === "rfid_rc522") {
     return (
       <svg viewBox="0 0 130 100" className={isIkon ? "w-18 h-12" : "w-full h-full overflow-visible"}>
@@ -614,7 +967,7 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // 12. Sensor Suhu DHT22 (-40 s/d +80 °C)
+  // 16. Sensor Suhu DHT22 (4 Pin Kaki Asli di Bawah: VCC, DATA, NC, GND)
   if (tipe === "dht22") {
     const suhu = nilaiSensor ?? 28.5;
     const isPanas = suhu >= 33;
@@ -648,13 +1001,18 @@ export const VisualKomponenRealistis: React.FC<{
           {suhu}°C
         </text>
         {[23, 41, 59, 77].map((x, idx) => (
-          <line key={idx} x1={x} y1="78" x2={x} y2="108" stroke="#eab308" strokeWidth="3.5" />
+          <g key={idx}>
+            <line x1={x} y1="78" x2={x} y2="108" stroke="#eab308" strokeWidth="3.5" />
+            <text x={x} y="92" textAnchor="middle" fill="#94a3b8" fontSize="6" fontFamily="monospace" fontWeight="bold">
+              {idx === 0 ? "VCC" : idx === 1 ? "DAT" : idx === 2 ? "NC" : "GND"}
+            </text>
+          </g>
         ))}
       </svg>
     );
   }
 
-  // 13. Sensor Ultrasonik HC-SR04 (2 cm s/d 400 cm)
+  // 17. Sensor Ultrasonik HC-SR04
   if (tipe === "ultrasonik") {
     const jarakCm = Math.max(2, Math.min(400, nilaiSensor ?? 45));
     const offsetOrangY = -16 - (jarakCm / 400) * 65;
@@ -699,7 +1057,7 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // 14. Sensor Gerak PIR (Sudut FOV -60° s/d +60°)
+  // 18. Sensor Gerak PIR
   if (tipe === "pir_sensor") {
     const sudutOrang = nilaiSensor ?? 0;
     const terdeteksi = nyala && sudutOrang >= -35 && sudutOrang <= 35;
@@ -739,7 +1097,7 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // 15. Sensor Cahaya LDR (0 - 1000 Lux)
+  // 19. Sensor Cahaya LDR
   if (tipe === "ldr_sensor") {
     const lux = nilaiSensor ?? 450;
     const terang = lux >= 300;
@@ -764,7 +1122,7 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // 16. Layar OLED / LCD 16x2 / MQ-2 Gas (100 - 10000 ppm)
+  // 20. Layar OLED / LCD 16x2 / MQ-2 Gas
   if (tipe === "oled_display" || tipe === "lcd_16x2" || tipe === "mq2_gas") {
     const isLcd = tipe === "lcd_16x2";
     const isGas = tipe === "mq2_gas";
@@ -796,7 +1154,7 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // 17. LED & Buzzer
+  // 21. LED & Buzzer
   if (
     tipe === "led_hijau" ||
     tipe === "led_merah" ||
@@ -835,9 +1193,7 @@ export const VisualKomponenRealistis: React.FC<{
     );
   }
 
-  // ============================================================================
-  // 18. MOTOR SERVO 180° (POSITIONAL) & MOTOR SERVO 360° (CONTINUOUS ROTATION)
-  // ============================================================================
+  // 22. Motor Servo 180°, Motor Servo 360° & Potensiometer
   if (
     tipe === "servo" ||
     tipe === "servo_360" ||

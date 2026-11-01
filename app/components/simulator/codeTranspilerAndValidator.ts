@@ -5,6 +5,10 @@ import { TitikPinFisik, ambilLayoutFisikKomponen } from "./pinoutDefinitions";
 
 export interface TitikSikuKabel {
   x: number;
+}
+
+export interface TitikSikuKabel {
+  x: number;
   y: number;
 }
 
@@ -18,6 +22,7 @@ export interface ItemPaletGudang {
 
 export const TIPE_MCU_LIST = [
   "esp32",
+  "esp32_c6",
   "arduino_uno",
   "esp8266_nodemcu",
   "stm32_bluepill",
@@ -45,6 +50,12 @@ export const PUSTAKA_RESMI_IOT: {
     cppHeader: "#include <DHT.h>",
     microPythonImport: "import dht",
     wajibUntukTipe: ["dht22"],
+  },
+  {
+    label: "TinyGPSPlus (Modul GPS NEO-6M)",
+    cppHeader: "#include <TinyGPSPlus.h>",
+    microPythonImport: "from machine import UART",
+    wajibUntukTipe: ["gps_neo6m"],
   },
   {
     label: "ESP32Servo / Servo PWM",
@@ -82,39 +93,163 @@ export const PALET_KOMPONEN: {
   [key in "wokwi" | "ewb" | "matlab"]: ItemPaletGudang[];
 } = {
   wokwi: [
-    { tipe: "esp32", label: "ESP32 DevKit (30 Pin)", kategori: "Microcontroller" },
+    // Kategori Microcontroller (Termasuk ESP32-C6 Baru!)
+    { tipe: "esp32_c6", label: "ESP32-C6 DevKitC-1 (30p)", kategori: "Microcontroller" },
+    { tipe: "esp32", label: "ESP32 DevKit V1 (30 Pin)", kategori: "Microcontroller" },
     { tipe: "arduino_uno", label: "Arduino Uno (28 Pin)", kategori: "Microcontroller" },
     { tipe: "esp8266_nodemcu", label: "NodeMCU ESP8266 (30p)", kategori: "Microcontroller" },
     { tipe: "stm32_bluepill", label: "STM32 BluePill (32p)", kategori: "Microcontroller" },
     { tipe: "raspberry_pico", label: "Raspberry Pi Pico (32p)", kategori: "Microcontroller" },
+    // Kategori Power, Baterai & Sensor Tegangan
+    {
+      tipe: "battery_socket",
+      label: "Socket Baterai 18650 (2p)",
+      kategori: "Baterai & Daya",
+      defaultSensor: 8.4,
+    },
+    {
+      tipe: "voltage_sensor",
+      label: "Sensor Tegangan 0-25V (5p)",
+      kategori: "Baterai & Daya",
+      defaultSensor: 8.4,
+    },
+    // Kategori Modul Relay
     { tipe: "relay_1ch", label: "Relay 1-Channel (6p)", kategori: "Modul Relay" },
     { tipe: "relay_2ch", label: "Relay 2-Channel (10p)", kategori: "Modul Relay" },
     { tipe: "relay_4ch", label: "Relay 4-Channel (18p)", kategori: "Modul Relay" },
-    { tipe: "ultrasonik", label: "Ultrasonik HC-SR04 (2-400cm)", kategori: "Sensor IoT", defaultSensor: 45 },
-    { tipe: "pir_sensor", label: "Sensor Gerak PIR (-60..60°)", kategori: "Sensor IoT", defaultSensor: 0 },
-    { tipe: "ir_obstacle", label: "Sensor Infrared IR (2-30cm)", kategori: "Sensor IoT", defaultSensor: 8 },
-    { tipe: "ldr_sensor", label: "Sensor Cahaya LDR (0-1000Lx)", kategori: "Sensor IoT", defaultSensor: 450 },
-    { tipe: "flame_sensor", label: "Sensor Api Flame (0-100%)", kategori: "Sensor IoT", defaultSensor: 80 },
-    { tipe: "dht22", label: "Sensor Suhu DHT22 (-40..80°C)", kategori: "Sensor IoT", defaultSensor: 28.5 },
-    { tipe: "soil_moisture", label: "Kelembapan Tanah (0-100%)", kategori: "Sensor IoT", defaultSensor: 65 },
-    { tipe: "rain_sensor", label: "Sensor Hujan Rain (0-100%)", kategori: "Sensor IoT", defaultSensor: 70 },
-    { tipe: "mq2_gas", label: "Sensor Gas MQ-2 (100-10000ppm)", kategori: "Sensor IoT", defaultSensor: 350 },
+    // Kategori Sensor IoT & GPS (Termasuk GPS NEO-6M & DHT22)
+    {
+      tipe: "gps_neo6m",
+      label: "GPS NEO-6M u-blox (5p)",
+      kategori: "Sensor IoT",
+      defaultSensor: 45,
+    },
+    {
+      tipe: "dht22",
+      label: "Sensor Suhu DHT22 (4p)",
+      kategori: "Sensor IoT",
+      defaultSensor: 28.5,
+    },
+    {
+      tipe: "ultrasonik",
+      label: "Ultrasonik HC-SR04 (4p)",
+      kategori: "Sensor IoT",
+      defaultSensor: 45,
+    },
+    {
+      tipe: "pir_sensor",
+      label: "Sensor Gerak PIR (3p)",
+      kategori: "Sensor IoT",
+      defaultSensor: 0,
+    },
+    {
+      tipe: "ir_obstacle",
+      label: "Sensor Infrared IR (3p)",
+      kategori: "Sensor IoT",
+      defaultSensor: 8,
+    },
+    {
+      tipe: "ldr_sensor",
+      label: "Sensor Cahaya LDR (3p)",
+      kategori: "Sensor IoT",
+      defaultSensor: 450,
+    },
+    {
+      tipe: "flame_sensor",
+      label: "Sensor Api Flame (3p)",
+      kategori: "Sensor IoT",
+      defaultSensor: 80,
+    },
+    {
+      tipe: "soil_moisture",
+      label: "Kelembapan Tanah (4p)",
+      kategori: "Sensor IoT",
+      defaultSensor: 65,
+    },
+    {
+      tipe: "rain_sensor",
+      label: "Sensor Hujan Rain (4p)",
+      kategori: "Sensor IoT",
+      defaultSensor: 70,
+    },
+    {
+      tipe: "mq2_gas",
+      label: "Sensor Gas MQ-2 (4p)",
+      kategori: "Sensor IoT",
+      defaultSensor: 350,
+    },
     { tipe: "rfid_rc522", label: "RFID Card Reader (6p)", kategori: "Sensor IoT" },
-    { tipe: "solenoid_lock", label: "Solenoid Lock 12V (2p ON/OFF)", kategori: "Aktuator & Motor" },
-    { tipe: "water_pump", label: "Pompa Air Mini (2p ke Relay)", kategori: "Aktuator & Motor" },
-    { tipe: "servo", label: "Servo SG90 180° (Positional)", kategori: "Aktuator & Motor", defaultSensor: 90 },
-    { tipe: "servo_360", label: "Servo MG996R 360° (Continuous)", kategori: "Aktuator & Motor", defaultSensor: 60 },
-    { tipe: "kipas_dc", label: "Kipas DC (PWM 0-255)", kategori: "Aktuator & Motor", defaultSensor: 200 },
-    { tipe: "oled_display", label: "Layar OLED I2C (4p)", kategori: "Aktuator & Motor", defaultSensor: 100 },
-    { tipe: "lcd_16x2", label: "LCD 16x2 I2C (4p)", kategori: "Aktuator & Motor", defaultSensor: 25 },
-    { tipe: "buzzer", label: "Buzzer Piezo (ON/OFF)", kategori: "Aktuator & Motor" },
+    // Kategori Aktuator & Motor
+    {
+      tipe: "solenoid_lock",
+      label: "Solenoid Lock 12V (2p)",
+      kategori: "Aktuator & Motor",
+    },
+    {
+      tipe: "water_pump",
+      label: "Pompa Air Mini (2p)",
+      kategori: "Aktuator & Motor",
+    },
+    {
+      tipe: "servo",
+      label: "Servo SG90 180° (3p)",
+      kategori: "Aktuator & Motor",
+      defaultSensor: 90,
+    },
+    {
+      tipe: "servo_360",
+      label: "Servo MG996R 360° (3p)",
+      kategori: "Aktuator & Motor",
+      defaultSensor: 60,
+    },
+    {
+      tipe: "kipas_dc",
+      label: "Kipas DC (PWM 0-255)",
+      kategori: "Aktuator & Motor",
+      defaultSensor: 200,
+    },
+    {
+      tipe: "oled_display",
+      label: "Layar OLED I2C (4p)",
+      kategori: "Aktuator & Motor",
+      defaultSensor: 100,
+    },
+    {
+      tipe: "lcd_16x2",
+      label: "LCD 16x2 I2C (4p)",
+      kategori: "Aktuator & Motor",
+      defaultSensor: 25,
+    },
+    { tipe: "buzzer", label: "Buzzer Piezo (2p)", kategori: "Aktuator & Motor" },
     { tipe: "keypad_4x4", label: "Keypad Matriks 4x4 (8p)", kategori: "Pasif & Input" },
     { tipe: "led_hijau", label: "LED Hijau 5mm (2p)", kategori: "Pasif & Input" },
     { tipe: "led_merah", label: "LED Merah 5mm (2p)", kategori: "Pasif & Input" },
-    { tipe: "resistor", label: "Resistor Gelang Warna", kategori: "Pasif & Input", defaultResistor: 220 },
-    { tipe: "potensiometer", label: "Potensiometer (ADC 0-4095)", kategori: "Pasif & Input", defaultSensor: 2048 },
+    {
+      tipe: "resistor",
+      label: "Resistor Gelang Warna",
+      kategori: "Pasif & Input",
+      defaultResistor: 220,
+    },
+    {
+      tipe: "potensiometer",
+      label: "Potensiometer (ADC 0-4095)",
+      kategori: "Pasif & Input",
+      defaultSensor: 2048,
+    },
   ],
   ewb: [
+    {
+      tipe: "battery_socket",
+      label: "Socket Baterai 18650",
+      kategori: "Power & Ground",
+      defaultSensor: 8.4,
+    },
+    {
+      tipe: "voltage_sensor",
+      label: "Sensor Tegangan 0-25V",
+      kategori: "Power & Ground",
+      defaultSensor: 8.4,
+    },
     { tipe: "vcc_dc", label: "Sumber Tegangan DC", kategori: "Power & Ground", defaultSensor: 12 },
     { tipe: "ac_source", label: "Generator Sinyal AC", kategori: "Power & Ground", defaultSensor: 50 },
     { tipe: "gnd", label: "Ground (GND 0V)", kategori: "Power & Ground" },
@@ -141,7 +276,7 @@ export function konversiCppKeMicroPython(kodeCpp: string, labelBoard: string): s
 
   if (kodeCpp.includes("analogRead")) imports.add("from machine import ADC");
   if (kodeCpp.includes("Servo") || kodeCpp.includes("analogWrite")) imports.add("from machine import PWM");
-  if (kodeCpp.includes("Serial2")) imports.add("from machine import UART");
+  if (kodeCpp.includes("Serial2") || kodeCpp.includes("TinyGPS")) imports.add("from machine import UART");
   if (kodeCpp.includes("DHT.h") || kodeCpp.includes("dht.")) imports.add("import dht");
   if (kodeCpp.includes("MFRC522") || kodeCpp.includes("SPI.h")) {
     imports.add("from machine import SPI");
@@ -166,7 +301,7 @@ export function konversiCppKeMicroPython(kodeCpp: string, labelBoard: string): s
       const arah = mPinMode[2] === "OUTPUT" ? "Pin.OUT" : "Pin.IN";
       inisialisasi.push(`pin_${mPinMode[1].toLowerCase()} = Pin(${mPinMode[1]}, ${arah})`);
     }
-    if (brs.includes("Serial2.begin")) inisialisasi.push("uart2 = UART(2, baudrate=9600, tx=17, rx=16)");
+    if (brs.includes("Serial2.begin")) inisialisasi.push("uart_gps = UART(1, baudrate=9600, tx=5, rx=4)");
     if (brs.includes("dht.begin")) inisialisasi.push(`sensor_dht = dht.DHT22(Pin(${defineMap["PIN_DHT"] || "15"}))`);
     const mServoAttach = brs.match(/([A-Za-z0-9_]+)\.attach\(\s*([A-Za-z0-9_]+)\s*\)/);
     if (mServoAttach) inisialisasi.push(`servo_pwm = PWM(Pin(${mServoAttach[2]}), freq=50)`);
@@ -198,7 +333,7 @@ export function konversiCppKeMicroPython(kodeCpp: string, labelBoard: string): s
   return `# [MICROPYTHON AUTO-CONVERTED DARI C++] - ${labelBoard.toUpperCase()}
 ${Array.from(imports).join("\n")}
 
-${inisialisasi.length > 0 ? inisialisasi.join("\n") : "led_builtin = Pin(2, Pin.OUT)"}
+${inisialisasi.length > 0 ? inisialisasi.join("\n") : "led_builtin = Pin(8, Pin.OUT)"}
 
 print("=== [${labelBoard} MicroPython] READY & RUNNING ===")
 
@@ -280,6 +415,9 @@ export function validasiLibraryMcuKetat(
       if (comp.tipe === "dht22" && !kode.includes("#include <DHT.h>") && !kode.includes('#include "DHT.h"')) {
         return `Compile Error pada ${mcuNode.label}: Sensor '${comp.label}' terhubung, tetapi '#include <DHT.h>' belum ditulis!`;
       }
+      if (comp.tipe === "gps_neo6m" && !kode.includes("#include <TinyGPSPlus.h>") && !kode.includes("Serial2")) {
+        return `Compile Error pada ${mcuNode.label}: Modul '${comp.label}' terhubung, wajib menyertakan '#include <TinyGPSPlus.h>' atau inisialisasi UART 'Serial2'!`;
+      }
       if ((comp.tipe === "servo" || comp.tipe === "servo_360") && !kode.includes("#include <ESP32Servo.h>") && !kode.includes("#include <Servo.h>")) {
         return `Compile Error pada ${mcuNode.label}: Motor '${comp.label}' membutuhkan '#include <ESP32Servo.h>' atau '#include <Servo.h>'!`;
       }
@@ -297,6 +435,9 @@ export function validasiLibraryMcuKetat(
     for (const comp of komponenTerhubung) {
       if (comp.tipe === "dht22" && !kode.includes("import dht")) {
         return `MicroPython ImportError pada ${mcuNode.label}: Sensor '${comp.label}' terhubung, tetapi 'import dht' belum ditulis!`;
+      }
+      if (comp.tipe === "gps_neo6m" && !kode.includes("UART")) {
+        return `MicroPython NameError pada ${mcuNode.label}: Modul '${comp.label}' membutuhkan 'from machine import UART'!`;
       }
       if ((comp.tipe === "servo" || comp.tipe === "servo_360") && !kode.includes("PWM")) {
         return `MicroPython NameError pada ${mcuNode.label}: Motor '${comp.label}' membutuhkan 'from machine import PWM'!`;
