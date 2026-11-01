@@ -11,12 +11,11 @@ const WARNA_GELANG_RESISTOR: {
   3: { nama: "Oranye", hex: "#ea580c" },
   4: { nama: "Kuning", hex: "#facc15" },
   5: { nama: "Hijau", hex: "#16a34a" },
-  6: { nama: "#2563eb", nama: "Biru" } as never,
+  6: { nama: "Biru", hex: "#2563eb" },
   7: { nama: "Ungu", hex: "#9333ea" },
   8: { nama: "Abu-abu", hex: "#64748b" },
   9: { nama: "Putih", hex: "#f8fafc" },
 };
-WARNA_GELANG_RESISTOR[6] = { nama: "Biru", hex: "#2563eb" };
 
 const WARNA_PENGALI: { [eksponen: number]: { nama: string; hex: string } } = {
   [-2]: { nama: "Perak (0.01x)", hex: "#cbd5e1" },
@@ -929,7 +928,7 @@ export const VisualKomponenRealistis: React.FC<{
           {isGas ? `${nilaiSensor} PPM` : `DATA: ${nilaiSensor}`}
         </text>
         {[40, 60, 80, 100].map((x, idx) => (
-          <line key={idx} x1={x} y1="68" x2={x} y2="88" stroke="#eab308" strokeWidth="3" />
+          <line key={idx} x1={x} y1="68" x2={x} y2="88" stroke="#eab308" strokeWidth="3.5" />
         ))}
       </svg>
     );
