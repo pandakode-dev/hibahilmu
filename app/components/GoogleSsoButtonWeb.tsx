@@ -42,9 +42,10 @@ export const GoogleSsoButtonWeb: React.FC<GoogleSsoWebProps> = ({
   const [sedangMemproses, setSedangMemproses] = useState(false);
   const [pesanError, setPesanError] = useState<string | null>(null);
 
+  // Client ID Web resmi dari Google Cloud Console Anda
   const clientId =
     process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
-    "MASUKKAN_WEB_CLIENT_ID_ANDA_DISINI.apps.googleusercontent.com";
+    "1043466129331-1b2t0m91ku0i6l02b0ve6o45dbg5coof.apps.googleusercontent.com";
 
   const verifikasiCredentialKeServer = async (idToken: string) => {
     setSedangMemproses(true);
@@ -71,26 +72,29 @@ export const GoogleSsoButtonWeb: React.FC<GoogleSsoWebProps> = ({
           password: "",
           role: json.user.role,
           status: "approved",
-          infoTambahan: json.user.instansi,
+          infoTambahan: json.user.instansi || "Google Verified Account",
           waktuDaftar: "Hari ini (Google SSO)",
           xp: json.user.xp || 550,
         });
       }
     } catch {
-      setPesanError("Gagal menghubungi server autentikasi.");
+      setPesanError("Gagal menghubungi server autentikasi hibahilmu.my.id.");
     } finally {
       setSedangMemproses(false);
     }
   };
 
   useEffect(() => {
-    if (!clientId || clientId.startsWith("MASUKKAN_")) return;
+    if (!clientId) return;
 
     const scriptId = "google-gsi-client-script";
     let script = document.getElementById(scriptId) as HTMLScriptElement | null;
 
     const initGsi = () => {
       if (window.google?.accounts?.id && googleBtnContainerRef.current) {
+        // Bersihkan container sebelumnya agar tidak double render
+        googleBtnContainerRef.current.innerHTML = "";
+        
         window.google.accounts.id.initialize({
           client_id: clientId,
           callback: (resp) => {
@@ -123,18 +127,18 @@ export const GoogleSsoButtonWeb: React.FC<GoogleSsoWebProps> = ({
   }, [clientId, rolePilihan]);
 
   return (
-    <div className="space-y-2.5 flex flex-col items-center w-full">
+    <div className="space-y-3 flex flex-col items-center w-full">
       {/* Container Resmi Tombol Google Identity Services */}
-      <div ref={googleBtnContainerRef} className="flex justify-center" />
+      <div ref={googleBtnContainerRef} className="flex justify-center min-h-[44px]" />
 
       {sedangMemproses && (
-        <div className="text-xs font-bold text-emerald-600 animate-pulse">
+        <div className="text-xs font-bold text-emerald-600 animate-pulse text-center">
           🔄 Memverifikasi akun Google ke server hibahilmu.my.id...
         </div>
       )}
 
       {pesanError && (
-        <div className="text-xs font-bold text-rose-600 bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-200">
+        <div className="text-xs font-bold text-rose-600 bg-rose-50 px-3 py-2 rounded-xl border border-rose-200 text-center">
           ⚠️ {pesanError}
         </div>
       )}
