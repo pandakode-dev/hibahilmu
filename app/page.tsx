@@ -175,6 +175,56 @@ export default function AplikasiHibahIlmu() {
     }
   }, [kelasAktif]);
 
+  // ============================================================================
+  // SINKRONISASI REALTIME DARI SERVER (API /api/mobile/auth & /api/mobile/content)
+  // Menarik Data Akun Baru Google SSO, Beasiswa, & Laporan Bug
+  // ============================================================================
+  useEffect(() => {
+    const tarikDataDariServer = async () => {
+      try {
+        // 1. Tarik Data Akun (Termasuk yang daftar via Google SSO Android)
+        const resAuth = await fetch("/api/mobile/auth");
+        const jsonAuth = await resAuth.json();
+        if (jsonAuth.ok && Array.isArray(jsonAuth.accounts)) {
+          setDaftarAkun((prevLokal) => {
+            const mapGabung = new Map<string, AkunPengguna>();
+            jsonAuth.accounts.forEach((acc: AkunPengguna) => {
+              mapGabung.set(acc.email.toLowerCase(), acc);
+            });
+            prevLokal.forEach((lok) => {
+              if (!mapGabung.has(lok.email.toLowerCase())) {
+                mapGabung.set(lok.email.toLowerCase(), lok);
+              }
+            });
+            return Array.from(mapGabung.values());
+          });
+        }
+
+        // 2. Tarik Data Beasiswa & Laporan Bug dari Android
+        const resContent = await fetch("/api/mobile/content");
+        const jsonContent = await resContent.json();
+        if (jsonContent.ok) {
+          if (Array.isArray(jsonContent.beasiswaList) && jsonContent.beasiswaList.length > 0) {
+            setDaftarBeasiswa(jsonContent.beasiswaList);
+          }
+          if (Array.isArray(jsonContent.laporanList) && jsonContent.laporanList.length > 0) {
+            setDaftarLaporanBug(jsonContent.laporanList);
+          }
+        }
+      } catch (error) {
+        console.error("Gagal sinkronisasi dengan server:", error);
+      }
+    };
+
+    // Tarik pertama kali saat render
+    tarikDataDariServer();
+
+    // Tarik data secara berkala setiap 5 detik (Polling)
+    const intervalId = setInterval(tarikDataDariServer, 5000);
+    return () => clearInterval(intervalId);
+  }, []);
+  // ============================================================================
+
   const tambahXP = (tambahan: number) => {
     setPoinXP((prev) => prev + tambahan);
     confetti({ particleCount: 70, spread: 65, origin: { y: 0.6 } });
