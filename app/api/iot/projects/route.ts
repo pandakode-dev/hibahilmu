@@ -3,139 +3,117 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 
-export interface ServerSavedProject {
-  idProject: string;
+const DB_PROJECTS_PATH = path.join(process.cwd(), "iot_projects_cloud.json");
+
+export interface CloudIotProjectItem {
+  id: string;
+  ownerEmail: string;
+  ownerName: string;
   namaProject: string;
-  pemilikId: string;
-  pemilikNama: string;
-  waktuSimpan: string;
-  mode: "wokwi" | "ewb" | "matlab";
-  nodes: unknown[];
-  kabel: unknown[];
-  kodePerMcu: Record<string, string>;
-  kodeMicroPythonPerMcu: Record<string, string>;
-  blynkWidgets: unknown[];
-  ruanganFisik?: unknown[];
+  updatedAt: string;
+  rooms: any[];
+  nodes: any[];
+  wires: any[];
+  sourceCode: string;
+  bahasa: string;
 }
 
-// Memory Store + Persistent File Database (Agar saat PC / Server restart tidak hilang)
-const GLOBAL_PROJECTS_MEMORY: Record<string, ServerSavedProject[]> = {};
-const DB_FILE_PATH = path.join(process.cwd(), "iot_projects_database.json");
+const globalForProjects = globalThis as unknown as {
+  hibahIlmuIotProjectsDb?: CloudIotProjectItem[];
+};
 
-function bacaDatabaseDariDisk(): Record<string, ServerSavedProject[]> {
+function muatDatabaseProject(): CloudIotProjectItem[] {
+  if (globalForProjects.hibahIlmuIotProjectsDb) {
+    return globalForProjects.hibahIlmuIotProjectsDb;
+  }
   try {
-    if (fs.existsSync(DB_FILE_PATH)) {
-      const raw = fs.readFileSync(DB_FILE_PATH, "utf-8");
+    if (fs.existsSync(DB_PROJECTS_PATH)) {
+      const raw = fs.readFileSync(DB_PROJECTS_PATH, "utf-8");
       const parsed = JSON.parse(raw);
-      return { ...GLOBAL_PROJECTS_MEMORY, ...parsed };
+      if (Array.isArray(parsed)) {
+        globalForProjects.hibahIlmuIotProjectsDb = parsed;
+        return parsed;
+      }
     }
   } catch {
-    // Jika berjalan di environment serverless read-only, gunakan memory store
+    // Fallback serverless memory
   }
-  return GLOBAL_PROJECTS_MEMORY;
+  globalForProjects.hibahIlmuIotProjectsDb = [];
+  return globalForProjects.hibahIlmuIotProjectsDb;
 }
 
-function simpanDatabaseKeDisk(db: Record<string, ServerSavedProject[]>) {
+function simpanDatabaseProject(list: CloudIotProjectItem[]) {
+  globalForProjects.hibahIlmuIotProjectsDb = list;
   try {
-    fs.writeFileSync(DB_FILE_PATH, JSON.stringify(db, null, 2), "utf-8");
+    fs.writeFileSync(DB_PROJECTS_PATH, JSON.stringify(list, null, 2), "utf-8");
   } catch {
-    // Fallback aman untuk Vercel serverless
+    // Fallback read-only environment
   }
 }
 
-// GET /api/iot/projects?userId=xxx
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const userId = searchParams.get("userId") || "guest_user";
+  const email = (searchParams.get("email") || "").trim().toLowerCase();
+  const db = muatDatabaseProject();
 
-  const db = bacaDatabaseDariDisk();
-  const projectsMilikUser = db[userId] || [];
+  const daftarMilikUser = email
+    ? db.filter((p) => p.ownerEmail.toLowerCase() === email || p.ownerEmail === "public")
+    : db;
 
   return NextResponse.json({
     ok: true,
-    userId,
-    total: projectsMilikUser.length,
-    projects: projectsMilikUser,
+    total: daftarMilikUser.length,
+    projects: daftarMilikUser,
   });
 }
 
-// POST /api/iot/projects (Simpan Baru / Timpa Save / Save As / Hapus)
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const action: "save" | "save_as" | "delete" = body.action || "save";
-    const userId: string = body.userId || "guest_user";
+    const action = body.action || "save";
+    const db = muatDatabaseProject();
 
-    const db = bacaDatabaseDariDisk();
-    const listUser = db[userId] || [];
+    if (action === "save") {
+      const ownerEmail = (body.ownerEmail || "public").trim().toLowerCase();
+      const projectBaru: CloudIotProjectItem = {
+        id: body.id || `prj-${Date.now()}`,
+        ownerEmail,
+        ownerName: body.ownerName || "Maker HibahIlmu",
+        namaProject: body.namaProject || "Rangkaian IoT Tanpa Judul",
+        updatedAt: new Date().toLocaleString("id-ID"),
+        rooms: body.rooms || [],
+        nodes: body.nodes || [],
+        wires: body.wires || [],
+        sourceCode: body.sourceCode || "",
+        bahasa: body.bahasa || "iot_esp32",
+      };
 
-    if (action === "delete") {
-      const idHapus = body.idProject;
-      const sisa = listUser.filter((p) => p.idProject !== idHapus);
-      GLOBAL_PROJECTS_MEMORY[userId] = sisa;
-      db[userId] = sisa;
-      simpanDatabaseKeDisk(db);
+      const idxLama = db.findIndex((p) => p.id === projectBaru.id);
+      if (idxLama >= 0) {
+        db[idxLama] = projectBaru;
+      } else {
+        db.unshift(projectBaru);
+      }
+
+      simpanDatabaseProject(db);
 
       return NextResponse.json({
         ok: true,
-        message: "Project berhasil dihapus dari database server.",
-        projects: sisa,
+        message: "Project berhasil disimpan ke Server Cloud! Bisa dibuka di PC/HP mana saja.",
+        project: projectBaru,
+        projects: db.filter((p) => p.ownerEmail.toLowerCase() === ownerEmail || p.ownerEmail === "public"),
       });
     }
 
-    const projectData: ServerSavedProject = body.project;
-    if (!projectData || !projectData.namaProject) {
-      return NextResponse.json(
-        { ok: false, error: "Data project tidak lengkap" },
-        { status: 400 }
-      );
+    if (action === "delete") {
+      const targetId = body.id;
+      const baru = db.filter((p) => p.id !== targetId);
+      simpanDatabaseProject(baru);
+      return NextResponse.json({ ok: true, projects: baru });
     }
 
-    let listTerbaru: ServerSavedProject[];
-
-    if (action === "save") {
-      // Cek apakah project dengan ID atau nama yang sama sudah ada -> Timpa (Update)
-      const idxAda = listUser.findIndex(
-        (p) =>
-          p.idProject === projectData.idProject ||
-          p.namaProject.toLowerCase() === projectData.namaProject.toLowerCase()
-      );
-      if (idxAda >= 0) {
-        listTerbaru = [...listUser];
-        listTerbaru[idxAda] = {
-          ...projectData,
-          waktuSimpan: new Date().toLocaleString("id-ID"),
-        };
-      } else {
-        listTerbaru = [projectData, ...listUser];
-      }
-    } else {
-      // Save As -> Selalu buat entri project baru dengan ID baru
-      const baruSaveAs: ServerSavedProject = {
-        ...projectData,
-        idProject: "prj-" + Date.now(),
-        waktuSimpan: new Date().toLocaleString("id-ID"),
-      };
-      listTerbaru = [baruSaveAs, ...listUser];
-    }
-
-    GLOBAL_PROJECTS_MEMORY[userId] = listTerbaru;
-    db[userId] = listTerbaru;
-    simpanDatabaseKeDisk(db);
-
-    return NextResponse.json({
-      ok: true,
-      message:
-        action === "save_as"
-          ? `Berhasil disimpan sebagai project baru "${projectData.namaProject}"!`
-          : `Project "${projectData.namaProject}" berhasil diperbarui di server!`,
-      projectAktif: listTerbaru[0],
-      projects: listTerbaru,
-    });
+    return NextResponse.json({ ok: false, message: "Action tidak valid" }, { status: 400 });
   } catch {
-    return NextResponse.json(
-      { ok: false, error: "Gagal memproses penyimpanan database project" },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, message: "Gagal memproses JSON project" }, { status: 400 });
   }
 }
