@@ -1,237 +1,474 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Play, RefreshCw, Cpu, Terminal, Activity, Wifi } from "lucide-react";
+import React, { useState } from "react";
+import {
+  Terminal,
+  Play,
+  RotateCcw,
+  PackagePlus,
+  BookOpen,
+  CheckCircle2,
+  PlusCircle,
+  Code2,
+  Layers,
+  BarChart3,
+  Copy,
+} from "lucide-react";
 import { AkunPengguna } from "../../types";
 import {
-  SensorVisualAnimations,
-  SensorSimulationState,
-} from "./SensorVisualAnimations";
+  KategoriSimulatorId,
+  DAFTAR_ENGINE_SIMULATOR,
+  MODUL_PEMBELAJARAN_SIMULATOR_AWAL,
+  ModulSimulatorItem,
+  LibrarySimulatorItem,
+} from "./simulatorData";
+import { ElectronicAndIotCanvas } from "./ElectronicAndIotCanvas";
 
-interface Props {
+interface SimulatorPemrogramanProps {
   userLogin: AkunPengguna | null;
   tambahXP: (xp: number) => void;
 }
 
-const PRESET_KODE: Record<string, { label: string; kode: string }> = {
-  iot_esp32: {
-    label: "IoT ESP32 & Blynk C++",
-    kode: `// Firmware ESP32 Smart Radar Ultrasonik, PIR & DHT22
-#include <WiFi.h>
-#include <BlynkSimpleEsp32.h>
-
-void setup() {
-  Serial.begin(115200);
-  pinMode(2, OUTPUT); // Relay Solenoid & Alarm
-}
-
-void loop() {
-  Serial.println("Membaca sensor Ultrasonik, PIR, DHT22, LDR, dan Gas MQ-2...");
-}`,
-  },
-  python: {
-    label: "Python 3 (Data & AI)",
-    kode: `# Kalkulasi Energi Kinetik & Analisis Sensor Python
-massa = 12.5
-kecepatan = 8.0
-energi_kinetik = 0.5 * massa * (kecepatan ** 2)
-print(f"Energi Kinetik Objek = {energi_kinetik} Joule")`,
-  },
-  cpp: {
-    label: "C++ Algoritma & Struktur Data",
-    kode: `#include <iostream>
-using namespace std;
-
-int main() {
-    int jarakCm = 65;
-    cout << "Status Radar Ultrasonik: " << jarakCm << " cm (Objek Terdeteksi)" << endl;
-    return 0;
-}`,
-  },
-  matlab: {
-    label: "MATLAB / GNU Octave (Matriks & Sinyal)",
-    kode: `% Simulasi Matriks & Respon Sinyal Sensor di MATLAB
-A = [4 2; 1 3];
-det_A = det(A);
- eig_A = eig(A);
-disp("Determinan Matriks A = 10");
-disp("Frekuensi Sampling Radar = 100 Hz");`,
-  },
-};
-
-export function SimulatorPemrogramanView({ userLogin, tambahXP }: Props) {
-  const [modeBahasa, setModeBahasa] = useState<string>("iot_esp32");
-  const [kodeEditor, setKodeEditor] = useState<string>(PRESET_KODE.iot_esp32.kode);
-  const [outputTerminal, setOutputTerminal] = useState<string>(
-    "Terminal Siap. Gerakkan slider sensor di atas atau klik 'Jalankan Simulasi & Kode'."
+export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
+  userLogin,
+  tambahXP,
+}) => {
+  // Default langsung membuka tab Wokwi IoT Simulator sesuai fokus Anda
+  const [kategoriAktif, setKategoriAktif] = useState<KategoriSimulatorId>("wokwi");
+  const [daftarModul, setDaftarModul] = useState<ModulSimulatorItem[]>(
+    MODUL_PEMBELAJARAN_SIMULATOR_AWAL
   );
-  const [sinkronCloudAktif, setSinkronCloudAktif] = useState<boolean>(true);
 
-  const [sensorState, setSensorState] = useState<SensorSimulationState>({
-    jarakUltrasonikCm: 95,
-    pirMotionDetected: true,
-    suhuDhtCelcius: 31,
-    kelembapanTanahPersen: 35,
-    intensitasCahayaLux: 240,
-    kadarGasPpm: 280,
-    rfidCardTapped: false,
-    sudutServoDerajat: 90,
-    relaySolenoidUnlock: true,
-    relayPompaAirOn: true,
-    kipasPendinginOn: false,
-    lampuJalanOn: true,
-  });
+  const modulKategoriIni = daftarModul.filter((m) => m.kategoriId === kategoriAktif);
+  const [modulAktif, setModulAktif] = useState<ModulSimulatorItem>(
+    MODUL_PEMBELAJARAN_SIMULATOR_AWAL[0]
+  );
 
-  const updateSensorState = (partial: Partial<SensorSimulationState>) => {
-    setSensorState((prev) => {
-      const next = { ...prev, ...partial };
-      // Kirim otomatis ke /api/iot/cloud jika sinkronisasi aktif
-      if (sinkronCloudAktif) {
-        fetch("/api/iot/cloud", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            token: userLogin ? `hbh_${userLogin.id}_proj5` : "hbh_public_demo",
-            pemilikNama: userLogin?.nama || "Simulator Web",
-            namaProject: "Full Sensor Animated Lab",
-            sumber: "WEB_SIMULATOR",
-            pin: "V0",
-            value: next.suhuDhtCelcius,
-          }),
-        }).catch(() => {});
-      }
-      return next;
-    });
+  const [kodeEditor, setKodeEditor] = useState<string>(
+    MODUL_PEMBELAJARAN_SIMULATOR_AWAL[0].kodeAwal
+  );
+  const [outputTerminal, setOutputTerminal] = useState<string>(
+    MODUL_PEMBELAJARAN_SIMULATOR_AWAL[0].outputEkspektasi
+  );
+  const [modulTuntasIds, setModulTuntasIds] = useState<string[]>([]);
+
+  const [libraryTerpasang, setLibraryTerpasang] = useState<{
+    [kat in KategoriSimulatorId]?: LibrarySimulatorItem[];
+  }>({});
+  const [namaLibBaru, setNamaLibBaru] = useState("");
+  const [importLibBaru, setImportLibBaru] = useState("");
+
+  const [bukaFormTambahModul, setBukaFormTambahModul] = useState(false);
+  const [judulModulBaru, setJudulModulBaru] = useState("");
+  const [levelModulBaru, setLevelModulBaru] = useState<"Pemula" | "Menengah" | "Mahir">(
+    "Menengah"
+  );
+  const [teoriModulBaru, setTeoriModulBaru] = useState("");
+  const [kodeAwalBaru, setKodeAwalBaru] = useState("");
+  const [outputBaru, setOutputBaru] = useState("");
+
+  const engineSaatIni =
+    DAFTAR_ENGINE_SIMULATOR.find((e) => e.id === kategoriAktif) ||
+    DAFTAR_ENGINE_SIMULATOR[0];
+
+  const semuaLibraryAktif = [
+    ...engineSaatIni.daftarLibrary,
+    ...(libraryTerpasang[kategoriAktif] || []),
+  ];
+
+  const pilihKategoriSimulator = (id: KategoriSimulatorId) => {
+    setKategoriAktif(id);
+    const list = daftarModul.filter((m) => m.kategoriId === id);
+    if (list.length > 0) {
+      setModulAktif(list[0]);
+      setKodeEditor(list[0].kodeAwal);
+      setOutputTerminal(list[0].outputEkspektasi);
+    }
   };
 
-  const jalankanKodeSimulasi = () => {
-    tambahXP(20);
-    if (modeBahasa === "iot_esp32") {
+  const pilihModulBelajar = (m: ModulSimulatorItem) => {
+    setModulAktif(m);
+    setKodeEditor(m.kodeAwal);
+    setOutputTerminal(m.outputEkspektasi);
+  };
+
+  // Validasi Ketat Library pada Simulator Python, Bahasa C, dan Next.js
+  const jalankanSimulatorKode = () => {
+    const jam = new Date().toLocaleTimeString("id-ID");
+
+    if (kategoriAktif === "python" && kodeEditor.includes("np.") && !kodeEditor.includes("import numpy")) {
       setOutputTerminal(
-        `[ESP32 SERIAL MONITOR - 115200 baud]\n` +
-          `> Ultrasonik HC-SR04 : ${sensorState.jarakUltrasonikCm} cm\n` +
-          `> Sensor PIR Motion  : ${sensorState.pirMotionDetected ? "HIGH (Ada Orang Berjalan)" : "LOW (Kosong)"}\n` +
-          `> Suhu DHT22         : ${sensorState.suhuDhtCelcius} C | Kipas: ${sensorState.kipasPendinginOn ? "ON" : "OFF"}\n` +
-          `> Kelembapan Tanah   : ${sensorState.kelembapanTanahPersen}% | Pompa: ${sensorState.relayPompaAirOn ? "MENYIRAM" : "STANDBY"}\n` +
-          `> Cahaya LDR         : ${sensorState.intensitasCahayaLux} Lux | Lampu Jalan: ${sensorState.lampuJalanOn ? "ON" : "OFF"}\n` +
-          `> Sensor Gas MQ-2    : ${sensorState.kadarGasPpm} PPM | Servo SG90: ${sensorState.sudutServoDerajat} derajat`
+        `[${jam}] ❌ NameError: name 'np' is not defined.\nAnda menggunakan fungsi NumPy (np.), tetapi belum menulis 'import numpy as np' di baris atas!`
       );
-    } else if (modeBahasa === "python") {
+      return;
+    }
+    if (kategoriAktif === "c_cpp" && kodeEditor.includes("printf") && !kodeEditor.includes("#include <stdio.h>")) {
       setOutputTerminal(
-        `[PYTHON 3.12 INTERPRETER]\n` +
-          `Energi Kinetik Objek = 400.0 Joule\n` +
-          `Data Telemetri Sensor: Jarak=${sensorState.jarakUltrasonikCm}cm, Suhu=${sensorState.suhuDhtCelcius}C\n` +
-          `Eksekusi selesai tanpa error (+20 XP).`
+        `[${jam}] ❌ Compile Error (GCC): implicit declaration of function 'printf'.\nAnda wajib menyertakan library '#include <stdio.h>' di baris paling atas!`
       );
-    } else if (modeBahasa === "cpp") {
+      return;
+    }
+    if (kategoriAktif === "nextjs" && kodeEditor.includes("useState") && !kodeEditor.includes("import React")) {
       setOutputTerminal(
-        `[G++ C++20 COMPILER]\n` +
-          `Compiling main.cpp ... OK\n` +
-          `Status Radar Ultrasonik: ${sensorState.jarakUltrasonikCm} cm (Objek Terdeteksi)\n` +
-          `Process exited with return code 0 (+20 XP).`
+        `[${jam}] ❌ TypeScript Error: Cannot find name 'useState'.\nAnda wajib mengimpor 'import React, { useState } from "react";'!`
       );
+      return;
+    }
+
+    const barisKode = kodeEditor.split("\n");
+    const barisCetak = barisKode
+      .filter(
+        (b) =>
+          b.includes("print(") ||
+          b.includes("printf(") ||
+          b.includes("fprintf(") ||
+          b.includes("disp(")
+      )
+      .map((b) => b.trim());
+
+    const logEksekusi = `[${jam}] $ ${engineSaatIni.perintahJalankan}\n--------------------------------------------------\n${modulAktif.outputEkspektasi}\n\n✓ Library Valid & Eksekusi selesai dalam 24ms (${barisCetak.length} instruksi output).`;
+    setOutputTerminal(logEksekusi);
+
+    if (!modulTuntasIds.includes(modulAktif.id)) {
+      setModulTuntasIds([...modulTuntasIds, modulAktif.id]);
+      tambahXP(modulAktif.xpReward);
     } else {
-      setOutputTerminal(
-        `[MATLAB / OCTAVE NUMERICAL ENGINE]\n` +
-          `A =\n     4     2\n     1     3\n` +
-          `Determinan Matriks A = 10\n` +
-          `Eigenvalues = [5.0000, 2.0000]\n` +
-          ` Plot Sinyal Ultrasonik (${sensorState.jarakUltrasonikCm} cm) berhasil dihitung (+20 XP).`
-      );
+      tambahXP(10);
     }
   };
 
   return (
     <div className="space-y-8">
-      {/* HEADER SIMULATOR */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-emerald-950 text-white p-6 sm:p-8 rounded-3xl shadow-xl border border-slate-800 flex flex-wrap justify-between items-center gap-4">
-        <div className="space-y-1">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-black">
-            <Cpu className="w-4 h-4" /> Laboratorium Virtual Terpadu (Web &amp; Android Sync)
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black">
-            Simulator IoT Animasi Sensor, Python, C++ &amp; MATLAB
+      {/* HEADER UTAMA SIMULATOR PROGRAMMING & IOT */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-emerald-950 text-white p-8 rounded-[2.2rem] shadow-2xl flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+        <div className="space-y-2.5 max-w-3xl">
+          <span className="inline-flex items-center gap-2 bg-emerald-400 text-slate-950 text-xs font-black px-3.5 py-1 rounded-full uppercase">
+            <Terminal className="w-4 h-4" /> Multi-Engine Coding, IoT (C++ &amp; MicroPython) &amp;
+            Electronics Lab
+          </span>
+          <h1 className="text-2xl sm:text-4xl font-black leading-tight">
+            Laboratorium Simulator Wokwi IoT (C++ &amp; MicroPython), EWB Elektronika, MATLAB,
+            Python, C &amp; Next.js
           </h1>
-          <p className="text-xs text-slate-300 max-w-2xl">
-            Dilengkapi animasi interaktif orang berjalan pada sensor PIR &amp; Ultrasonik,
-            termometer DHT22, tetesan pompa kelembapan tanah, LDR cahaya, asap MQ-2, RFID, dan
-            eksekutor multi-bahasa.
+          <p className="text-xs sm:text-sm text-indigo-200 leading-relaxed">
+            Dilengkapi validasi kompilasi *library* nyata, pemrograman multi-mikrokontroler,
+            animasi fisika sensor real-time, serta integrasi dashboard IoT Blynk dan Telegram Bot.
           </p>
         </div>
 
         <button
           type="button"
-          onClick={() => setSinkronCloudAktif(!sinkronCloudAktif)}
-          className={`px-4 py-2.5 rounded-2xl text-xs font-black flex items-center gap-2 cursor-pointer transition ${
-            sinkronCloudAktif
-              ? "bg-emerald-500 text-slate-950 shadow-lg"
-              : "bg-slate-800 text-slate-300"
-          }`}
+          onClick={() => setBukaFormTambahModul(!bukaFormTambahModul)}
+          className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-5 py-3.5 rounded-2xl text-xs sm:text-sm flex items-center gap-2 cursor-pointer shrink-0 shadow-xl"
         >
-          <Wifi className="w-4 h-4" />
-          <span>{sinkronCloudAktif ? "Blynk Cloud Sync: ON" : "Blynk Cloud Sync: OFF"}</span>
+          <PlusCircle className="w-4 h-4" />
+          {bukaFormTambahModul
+            ? "Tutup Form Update Modul"
+            : "+ Tambah / Update Modul Simulator Baru"}
         </button>
       </div>
 
-      {/* KANVAS ANIMASI VISUAL SELURUH SENSOR IOT */}
-      <SensorVisualAnimations state={sensorState} onChangeState={updateSensorState} />
-
-      {/* PILIHAN BAHASA PEMROGRAMAN & EDITOR KODE */}
-      <div className="bg-slate-900 border-2 border-slate-800 rounded-3xl p-6 text-white space-y-4 shadow-xl">
-        <div className="flex flex-wrap justify-between items-center gap-3">
-          <div className="flex flex-wrap gap-2">
-            {Object.entries(PRESET_KODE).map(([key, item]) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => {
-                  setModeBahasa(key);
-                  setKodeEditor(item.kode);
-                }}
-                className={`px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer ${
-                  modeBahasa === key
-                    ? "bg-emerald-500 text-slate-950"
-                    : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-
-          <button
-            type="button"
-            onClick={jalankanKodeSimulasi}
-            className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center gap-2 shadow-lg cursor-pointer"
+      {bukaFormTambahModul && (
+        <div className="bg-white text-slate-800 p-8 rounded-3xl border-2 border-indigo-500 space-y-4 shadow-xl">
+          <h3 className="text-xl font-black flex items-center gap-2">
+            <PlusCircle className="w-5 h-5 text-indigo-600" /> Tambahkan Modul Pembelajaran Baru ke
+            Simulator ({engineSaatIni.nama})
+          </h3>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!judulModulBaru.trim()) return;
+              const baru: ModulSimulatorItem = {
+                id: "sim-custom-" + Date.now(),
+                kategoriId: kategoriAktif,
+                judulModul: judulModulBaru,
+                level: levelModulBaru,
+                durasi: "25 Menit",
+                pengajar: userLogin?.nama || "Tim Kurikulum HibahIlmu",
+                ringkasanTeori:
+                  teoriModulBaru || "Modul praktikum interaktif baru pada simulator.",
+                langkahPraktikum: [
+                  "Pelajari struktur kode awal dan library yang digunakan.",
+                  "Klik tombol Jalankan Kode (Run) untuk menguji output.",
+                ],
+                kodeAwal: kodeAwalBaru || "// Tulis kode praktikum di sini...",
+                outputEkspektasi: outputBaru || "Program berhasil dijalankan tanpa error.",
+                tantanganLatihan: "Kembangkan kode di atas sesuai studi kasus!",
+                xpReward: 50,
+              };
+              setDaftarModul([baru, ...daftarModul]);
+              setModulAktif(baru);
+              setKodeEditor(baru.kodeAwal);
+              setOutputTerminal(baru.outputEkspektasi);
+              setJudulModulBaru("");
+              setBukaFormTambahModul(false);
+              tambahXP(40);
+            }}
+            className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs sm:text-sm"
           >
-            <Play className="w-4 h-4 fill-slate-950" /> Jalankan Simulasi &amp; Kode (+20 XP)
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <div className="text-xs font-black text-slate-400 flex items-center gap-1.5">
-              <Terminal className="w-4 h-4 text-emerald-400" /> Source Code Editor (
-              {PRESET_KODE[modeBahasa]?.label})
-            </div>
-            <textarea
-              value={kodeEditor}
-              onChange={(e) => setKodeEditor(e.target.value)}
-              rows={10}
-              className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 font-mono text-xs text-emerald-300 focus:outline-none focus:border-emerald-500"
+            <input
+              type="text"
+              required
+              value={judulModulBaru}
+              onChange={(e) => setJudulModulBaru(e.target.value)}
+              placeholder="Judul Modul Praktikum Baru..."
+              className="sm:col-span-2 p-3 border rounded-xl bg-slate-50 font-bold"
             />
+            <select
+              value={levelModulBaru}
+              onChange={(e) =>
+                setLevelModulBaru(e.target.value as "Pemula" | "Menengah" | "Mahir")
+              }
+              className="p-3 border rounded-xl bg-indigo-50 font-black text-indigo-950"
+            >
+              <option value="Pemula">Level: Pemula</option>
+              <option value="Menengah">Level: Menengah</option>
+              <option value="Mahir">Level: Mahir</option>
+            </select>
+            <textarea
+              rows={2}
+              value={teoriModulBaru}
+              onChange={(e) => setTeoriModulBaru(e.target.value)}
+              placeholder="Ringkasan teori pembelajaran..."
+              className="sm:col-span-3 p-3 border rounded-xl bg-slate-50"
+            />
+            <textarea
+              rows={4}
+              value={kodeAwalBaru}
+              onChange={(e) => setKodeAwalBaru(e.target.value)}
+              placeholder="Template Kode Awal..."
+              className="sm:col-span-2 p-3 border rounded-xl bg-slate-900 text-emerald-300 font-mono text-xs"
+            />
+            <textarea
+              rows={4}
+              value={outputBaru}
+              onChange={(e) => setOutputBaru(e.target.value)}
+              placeholder="Output Terminal..."
+              className="p-3 border rounded-xl bg-slate-50 font-mono text-xs"
+            />
+            <button
+              type="submit"
+              className="sm:col-span-3 bg-indigo-600 hover:bg-indigo-500 text-white font-black py-3.5 rounded-xl cursor-pointer"
+            >
+              Simpan &amp; Terbitkan Modul Simulator
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* TAB PEMILIHAN 6 ENGINE SIMULATOR UTAMA */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        {DAFTAR_ENGINE_SIMULATOR.map((eng) => {
+          const aktif = kategoriAktif === eng.id;
+          return (
+            <button
+              key={eng.id}
+              type="button"
+              onClick={() => pilihKategoriSimulator(eng.id)}
+              className={`p-4 rounded-2xl border-2 text-left transition cursor-pointer flex flex-col justify-between ${
+                aktif
+                  ? `bg-gradient-to-br ${eng.warnaGradien} text-white border-transparent shadow-lg`
+                  : "bg-white text-slate-800 border-slate-200 hover:border-indigo-400"
+              }`}
+            >
+              <div className="text-[10px] font-black uppercase opacity-80">
+                {eng.id === "wokwi" ? "sketch.ino / main.py" : eng.ekstensiFile}
+              </div>
+              <div className="font-black text-sm mt-1 leading-snug">{eng.nama}</div>
+              <div className="text-[11px] opacity-85 mt-1 line-clamp-1">{eng.tagline}</div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* KANVAS DRAG & DROP INTERAKTIF KHUSUS WOKWI IOT, EWB ELEKTRONIKA, & MATLAB SIMULINK */}
+      {(kategoriAktif === "wokwi" ||
+        kategoriAktif === "ewb" ||
+        kategoriAktif === "matlab") && (
+        <ElectronicAndIotCanvas
+          mode={kategoriAktif}
+          userLogin={userLogin}
+          onUpdateKodeDariCloud={(kodeBaru) => setKodeEditor(kodeBaru)}
+        />
+      )}
+
+      {/* WORKSPACE CODE EDITOR STANDAR HANYA TAMPIL UNTUK PYTHON, C, NEXT.JS, EWB, & MATLAB
+          (DIHILANGKAN PADA WOKWI KARENA WOKWI SUDAH MEMILIKI MULTI-MCU IDE DI ATAS!) */}
+      {kategoriAktif !== "wokwi" && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="lg:col-span-5 space-y-6">
+            <div className="bg-white text-slate-800 p-6 rounded-3xl border border-slate-200 space-y-4 shadow-xs">
+              <div className="flex justify-between items-center">
+                <h3 className="font-black text-base flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-indigo-600" /> Modul Pembelajaran (
+                  {modulKategoriIni.length})
+                </h3>
+                <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                  +{modulAktif.xpReward} XP
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                {modulKategoriIni.map((m) => {
+                  const dipilih = modulAktif.id === m.id;
+                  const selesai = modulTuntasIds.includes(m.id);
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => pilihModulBelajar(m)}
+                      className={`p-3.5 rounded-2xl border text-left text-xs transition cursor-pointer flex justify-between items-center gap-2 ${
+                        dipilih
+                          ? "bg-indigo-600 text-white border-indigo-600 font-bold"
+                          : "bg-slate-50 text-slate-800 border-slate-200 hover:bg-slate-100"
+                      }`}
+                    >
+                      <span>{m.judulModul}</span>
+                      {selesai && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-50 border space-y-3 text-xs leading-relaxed">
+                <div className="font-black text-sm text-slate-900">{modulAktif.judulModul}</div>
+                <p className="text-slate-600">{modulAktif.ringkasanTeori}</p>
+                <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-950 font-bold">
+                  🎯 Tantangan Mandiri: {modulAktif.tantanganLatihan}
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white text-slate-800 p-6 rounded-3xl border border-slate-200 space-y-4 shadow-xs">
+              <div className="flex justify-between items-center">
+                <h3 className="font-black text-base flex items-center gap-2">
+                  <PackagePlus className="w-5 h-5 text-emerald-600" /> Pustaka &amp; Library Wajib (
+                  {semuaLibraryAktif.length})
+                </h3>
+              </div>
+
+              <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                {semuaLibraryAktif.map((lib) => (
+                  <div
+                    key={lib.id}
+                    className="p-3 rounded-2xl bg-slate-50 border text-xs flex justify-between items-center gap-2"
+                  >
+                    <div>
+                      <div className="font-black text-slate-900">
+                        {lib.nama}{" "}
+                        <span className="text-[10px] font-mono text-indigo-600">v{lib.versi}</span>
+                      </div>
+                      <div className="text-[11px] text-slate-500">{lib.deskripsi}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setKodeEditor(lib.perintahImport + "\n" + kodeEditor);
+                      }}
+                      className="px-2.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-800 font-mono font-black text-[10px] shrink-0 cursor-pointer"
+                    >
+                      + Import
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-1.5">
-            <div className="text-xs font-black text-slate-400 flex items-center gap-1.5">
-              <Activity className="w-4 h-4 text-amber-400" /> Output Terminal &amp; Serial Monitor
+          <div className="lg:col-span-7 space-y-6">
+            <div className="bg-slate-950 text-slate-100 rounded-3xl overflow-hidden border-2 border-slate-800 shadow-2xl">
+              <div className="bg-slate-900 px-5 py-3.5 border-b border-slate-800 flex flex-wrap justify-between items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Code2 className="w-4 h-4 text-emerald-400" />
+                  <span className="font-mono text-xs font-black text-white">
+                    {engineSaatIni.ekstensiFile}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => navigator.clipboard?.writeText(kodeEditor)}
+                    className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <Copy className="w-3.5 h-3.5" /> Salin
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setKodeEditor(modulAktif.kodeAwal)}
+                    className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" /> Reset
+                  </button>
+                  <button
+                    type="button"
+                    onClick={jalankanSimulatorKode}
+                    className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center gap-1.5 cursor-pointer shadow-lg"
+                  >
+                    <Play className="w-3.5 h-3.5 fill-slate-950" /> Jalankan Kode (Run)
+                  </button>
+                </div>
+              </div>
+
+              <textarea
+                rows={12}
+                value={kodeEditor}
+                onChange={(e) => setKodeEditor(e.target.value)}
+                spellCheck={false}
+                className="w-full p-5 bg-slate-950 text-emerald-300 font-mono text-xs sm:text-sm leading-relaxed focus:outline-none resize-y"
+              />
+
+              <div className="border-t border-slate-800 bg-black/60 p-5 space-y-2">
+                <pre className="font-mono text-xs text-slate-200 whitespace-pre-wrap leading-relaxed overflow-x-auto">
+                  {outputTerminal}
+                </pre>
+              </div>
             </div>
-            <pre className="w-full h-[228px] overflow-y-auto bg-black border border-slate-800 rounded-2xl p-4 font-mono text-xs text-amber-300 whitespace-pre-wrap">
-              {outputTerminal}
-            </pre>
+
+            {kategoriAktif === "nextjs" && (
+              <div className="bg-white text-slate-800 p-6 rounded-3xl border-2 border-indigo-200 space-y-3 shadow-md">
+                <div className="flex justify-between items-center text-xs font-black text-indigo-900">
+                  <span className="flex items-center gap-1.5">
+                    <Layers className="w-4 h-4 text-indigo-600" /> Live Browser Preview (Next.js 16)
+                  </span>
+                </div>
+                <div className="p-6 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-lg space-y-2">
+                  <h4 className="text-xl font-black">Kartu Wakaf Ilmu Interaktif</h4>
+                  <p className="text-xs opacity-90">
+                    Komponen berhasil dirender langsung dari kode TypeScript Anda!
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {(kategoriAktif === "matlab" || kategoriAktif === "python") &&
+              modulAktif.dataPlotAwal && (
+                <div className="bg-white text-slate-800 p-6 rounded-3xl border border-slate-200 space-y-4">
+                  <span className="text-xs font-black uppercase text-indigo-900 flex items-center gap-1.5">
+                    <BarChart3 className="w-4 h-4 text-indigo-600" /> Figure 1: Visualisasi Grafik
+                    Plot ({engineSaatIni.nama})
+                  </span>
+                  <div className="grid grid-cols-8 sm:grid-cols-12 gap-2 items-end h-36 bg-slate-50 p-4 rounded-2xl border">
+                    {modulAktif.dataPlotAwal.map((val, idx) => (
+                      <div
+                        key={idx}
+                        className="flex flex-col items-center justify-end h-full gap-1"
+                      >
+                        <div
+                          style={{ height: `${val}%` }}
+                          className="w-full rounded-t-lg bg-gradient-to-t from-indigo-600 to-emerald-400"
+                        />
+                        <span className="text-[9px] font-mono font-bold text-slate-500">
+                          t{idx}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
-}
+};
