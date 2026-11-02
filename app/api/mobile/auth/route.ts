@@ -3,13 +3,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { AKUN_DEFAULT } from "../../../mockData";
 import { AkunPengguna } from "../../../types";
 
-// Database akun di memori server (Memuat seluruh akun asli dari mockData.ts)
 export const SERVER_ACCOUNTS_DB: AkunPengguna[] = [...AKUN_DEFAULT];
 
 export async function GET() {
   return NextResponse.json({
     ok: true,
-    server: "HibahIlmu Central Auth Server",
+    server: "HibahIlmu Central Auth & Google SSO Server",
     totalAkunTerdaftar: SERVER_ACCOUNTS_DB.length,
     daftarEmailTerdaftar: SERVER_ACCOUNTS_DB.map((a) => ({
       nama: a.nama,
@@ -23,8 +22,109 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const action: "login" | "register" = body.action || "login";
+    const action: "login" | "register" | "google_sso" = body.action || "login";
 
+    // ========================================================================
+    // 1. HANDLER KHUSUS LOGIN / REGISTER VIA GOOGLE SSO (WEB & ANDROID NATIVE)
+    // ========================================================================
+    if (action === "google_sso") {
+      const idToken: string = body.idToken || "";
+      const rolePilihan: "siswa" | "guru" =
+        body.role === "guru" ? "guru" : "siswa";
+      const instansiInput: string =
+        (body.instansi || "").trim() || "Google Verified Account";
+
+      let emailGoogle = "";
+      let namaGoogle = "";
+      let googleSubId = "";
+
+      // Jika mengirim idToken resmi dari Google Sign-In / Credential Manager
+      if (idToken) {
+        const googleVerifyRes = await fetch(
+          `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(
+            idToken
+          )}`
+        );
+
+        if (!googleVerifyRes.ok) {
+          return NextResponse.json(
+            {
+              ok: false,
+              message:
+                "Token Google SSO tidak valid atau sudah kedaluwarsa! Silakan ulangi login Google.",
+            },
+            { status: 401 }
+          );
+        }
+
+        const tokenInfo = await googleVerifyRes.json();
+        emailGoogle = (tokenInfo.email || "").toLowerCase();
+        namaGoogle =
+          tokenInfo.name ||
+          emailGoogle.split("@")[0] ||
+          "Pengguna Google HibahIlmu";
+        googleSubId = tokenInfo.sub || Date.now().toString();
+      } else if (body.email && body.nama) {
+        // Fallback jika menggunakan Google OAuth Profile Payload
+        emailGoogle = (body.email || "").trim().toLowerCase();
+        namaGoogle = (body.nama || "").trim();
+        googleSubId = body.googleId || Date.now().toString();
+      } else {
+        return NextResponse.json(
+          {
+            ok: false,
+            message: "Data kredensial Google SSO kosong!",
+          },
+          { status: 400 }
+        );
+      }
+
+      // Cek apakah email Google ini sudah terdaftar di SERVER_ACCOUNTS_DB
+      let akun = SERVER_ACCOUNTS_DB.find(
+        (u) => u.email.toLowerCase() === emailGoogle
+      );
+
+      if (!akun) {
+        // Jika belum pernah daftar -> OTOMATIS REGISTRASI AKUN BARU (AUTO-PROVISIONING)
+        akun = {
+          id: `usr-google-${googleSubId.slice(-8)}`,
+          nama: namaGoogle,
+          email: emailGoogle,
+          password: `GOOGLE_SSO_${googleSubId}`,
+          role: rolePilihan,
+          status: "approved",
+          infoTambahan: `${instansiInput} (Terverifikasi Google SSO)`,
+          waktuDaftar: new Date().toLocaleDateString("id-ID"),
+          xp: 550, // Bonus +50 XP untuk pengguna Google Verified
+        };
+        SERVER_ACCOUNTS_DB.unshift(akun);
+      }
+
+      if (akun.status === "rejected") {
+        return NextResponse.json(
+          { ok: false, message: "Akun Anda ditolak oleh Admin server." },
+          { status: 403 }
+        );
+      }
+
+      return NextResponse.json({
+        ok: true,
+        message: `Berhasil masuk dengan Google sebagai ${akun.nama}!`,
+        user: {
+          id: akun.id,
+          nama: akun.nama,
+          email: akun.email,
+          role: akun.role,
+          status: akun.status,
+          instansi: akun.infoTambahan || "Google Verified Account",
+          xp: akun.xp || 550,
+        },
+      });
+    }
+
+    // ========================================================================
+    // 2. HANDLER LOGIN REGULER (EMAIL & PASSWORD)
+    // ========================================================================
     if (action === "login") {
       const emailInput = (body.email || "").trim().toLowerCase();
       const passInput = body.password || "";
@@ -38,7 +138,7 @@ export async function POST(req: NextRequest) {
           {
             ok: false,
             message:
-              "Akun tidak ditemukan di server hibahilmu.my.id atau password salah! Silakan daftar akun terlebih dahulu.",
+              "Akun tidak ditemukan di server hibahilmu.my.id atau password salah! Silakan daftar atau gunakan tombol Login Google.",
           },
           { status: 401 }
         );
@@ -46,10 +146,7 @@ export async function POST(req: NextRequest) {
 
       if (akunKetemu.status === "rejected") {
         return NextResponse.json(
-          {
-            ok: false,
-            message: "Akun Anda ditolak oleh Admin server.",
-          },
+          { ok: false, message: "Akun Anda ditolak oleh Admin server." },
           { status: 403 }
         );
       }
@@ -69,6 +166,9 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // ========================================================================
+    // 3. HANDLER REGISTER REGULER
+    // ========================================================================
     if (action === "register") {
       const nama = (body.nama || "").trim();
       const email = (body.email || "").trim().toLowerCase();
@@ -80,7 +180,8 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(
           {
             ok: false,
-            message: "Nama, email, dan password (minimal 4 karakter) wajib diisi!",
+            message:
+              "Nama, email, dan password (minimal 4 karakter) wajib diisi!",
           },
           { status: 400 }
         );
