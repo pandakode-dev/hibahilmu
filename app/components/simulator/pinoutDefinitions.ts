@@ -18,11 +18,8 @@ export interface LayoutFisikKomponen {
   pins: TitikPinFisik[];
 }
 
-// ============================================================================
-// KONFIGURASI PARAMETER REALISTIS SETIAP SENSOR & AKTUATOR (BUKAN 0-180 SEMUA!)
-// ============================================================================
 export interface KonfigurasiRentangKomponen {
-  punyaSlider: boolean; // False jika murni sakelar ON/OFF (Solenoid, Pompa, Relay, LED, Buzzer)
+  punyaSlider: boolean;
   labelParameter: string;
   min: number;
   max: number;
@@ -43,7 +40,40 @@ export function ambilKonfigurasiRentangKomponen(tipe: string): KonfigurasiRentan
         step: 0.5,
         defaultVal: 28.5,
         satuan: "°C",
-        catatanFisik: "Rentang asli sensor DHT22/AM2302: -40°C hingga +80°C (Akurasi ±0.5°C).",
+        catatanFisik: "Rentang asli sensor DHT22/AM2302: -40°C hingga +80°C (4 Kaki: VCC, DATA, NC, GND).",
+      };
+    case "gps_neo6m":
+      return {
+        punyaSlider: true,
+        labelParameter: "Jumlah Satelit GPS Terkunci & Kecepatan (NEO-6M)",
+        min: 0,
+        max: 120,
+        step: 1,
+        defaultVal: 45,
+        satuan: "km/h",
+        catatanFisik: "Mengirimkan kalimat NMEA ($GPGGA, $GPRMC) melalui pin TXD (9600 bps) berisi koordinat Latitude, Longitude & Kecepatan.",
+      };
+    case "battery_socket":
+      return {
+        punyaSlider: true,
+        labelParameter: "Tegangan Socket Baterai 2x 18650 Li-Ion",
+        min: 3.0,
+        max: 12.6,
+        step: 0.1,
+        defaultVal: 8.4,
+        satuan: "Volt",
+        catatanFisik: "1x 18650 = 3.7V–4.2V | 2x Seri 18650 = 7.4V–8.4V | 3x Seri = 12.6V. Hubungkan ke VIN atau ke terminal atas Sensor Tegangan!",
+      };
+    case "voltage_sensor":
+      return {
+        punyaSlider: true,
+        labelParameter: "Tegangan Terukur pada Sensor Tegangan (0–25V DC)",
+        min: 0,
+        max: 25,
+        step: 0.1,
+        defaultVal: 8.4,
+        satuan: "Volt",
+        catatanFisik: "Pembagi tegangan R1=30kΩ & R2=7.5kΩ (Rasio 5:1) sehingga tegangan input hingga 25V aman dibaca oleh ADC 3.3V/5V ESP32.",
       };
     case "ultrasonik":
       return {
@@ -65,7 +95,7 @@ export function ambilKonfigurasiRentangKomponen(tipe: string): KonfigurasiRentan
         step: 10,
         defaultVal: 450,
         satuan: "Lux",
-        catatanFisik: "0 Lux (Gelap Malam -> Resistansi Tinggi) s/d 1000 Lux (Terang Siang -> Resistansi Rendah).",
+        catatanFisik: "0 Lux (Gelap Malam) s/d 1000 Lux (Terang Siang).",
       };
     case "mq2_gas":
       return {
@@ -76,7 +106,7 @@ export function ambilKonfigurasiRentangKomponen(tipe: string): KonfigurasiRentan
         step: 50,
         defaultVal: 350,
         satuan: "ppm",
-        catatanFisik: "Rentang deteksi gas LPG/Propana/Asap: 100 ppm (Aman) s/d 10.000 ppm (Bahaya Kebocoran!).",
+        catatanFisik: "Rentang deteksi gas LPG/Propana/Asap: 100 ppm s/d 10.000 ppm.",
       };
     case "soil_moisture":
     case "rain_sensor":
@@ -116,7 +146,7 @@ export function ambilKonfigurasiRentangKomponen(tipe: string): KonfigurasiRentan
         step: 1,
         defaultVal: 80,
         satuan: "%",
-        catatanFisik: "Mendeteksi panjang gelombang cahaya api 760 nm – 1100 nm (di atas 50% memicu alarm).",
+        catatanFisik: "Mendeteksi panjang gelombang cahaya api 760 nm – 1100 nm.",
       };
     case "pir_sensor":
       return {
@@ -127,7 +157,7 @@ export function ambilKonfigurasiRentangKomponen(tipe: string): KonfigurasiRentan
         step: 1,
         defaultVal: 0,
         satuan: "° FOV",
-        catatanFisik: "Sudut deteksi lensa Fresnel PIR: -60° (Kiri) s/d +60° (Kanan). Di antara -35° s/d +35° = MOTION DETECTED!",
+        catatanFisik: "Sudut deteksi lensa Fresnel PIR: -60° (Kiri) s/d +60° (Kanan).",
       };
     case "potensiometer":
       return {
@@ -138,7 +168,7 @@ export function ambilKonfigurasiRentangKomponen(tipe: string): KonfigurasiRentan
         step: 15,
         defaultVal: 2048,
         satuan: "ADC",
-        catatanFisik: "Resolusi ADC ESP32: 0 (0.0V) hingga 4095 (3.3V) | Arduino Uno: 0–1023.",
+        catatanFisik: "Resolusi ADC ESP32 / ESP32-C6: 0 (0.0V) hingga 4095 (3.3V).",
       };
     case "servo":
       return {
@@ -149,7 +179,7 @@ export function ambilKonfigurasiRentangKomponen(tipe: string): KonfigurasiRentan
         step: 1,
         defaultVal: 90,
         satuan: "°",
-        catatanFisik: "Servo standar bergerak menuju sudut target antara 0° hingga 180° (Lebar pulsa PWM 500–2400 µs).",
+        catatanFisik: "Servo standar bergerak menuju sudut target antara 0° hingga 180°.",
       };
     case "servo_360":
       return {
@@ -160,7 +190,7 @@ export function ambilKonfigurasiRentangKomponen(tipe: string): KonfigurasiRentan
         step: 5,
         defaultVal: 60,
         satuan: "% RPM",
-        catatanFisik: "Servo 360° berputar terus-menerus: -100% (Putar Kiri Penuh/CCW), 0% (Stop), +100% (Putar Kanan Penuh/CW).",
+        catatanFisik: "-100% (Putar Kiri/CCW), 0% (Stop), +100% (Putar Kanan/CW).",
       };
     case "kipas_dc":
     case "dc_motor":
@@ -172,7 +202,7 @@ export function ambilKonfigurasiRentangKomponen(tipe: string): KonfigurasiRentan
         step: 5,
         defaultVal: 200,
         satuan: "PWM",
-        catatanFisik: "Kendali kecepatan analogWrite/ledcWrite: 0 (Berhenti) hingga 255 (Kecepatan Penuh 100%).",
+        catatanFisik: "Kendali kecepatan PWM: 0 (Berhenti) hingga 255 (Kecepatan Penuh).",
       };
     case "vcc_dc":
       return {
@@ -183,7 +213,7 @@ export function ambilKonfigurasiRentangKomponen(tipe: string): KonfigurasiRentan
         step: 0.5,
         defaultVal: 12,
         satuan: "Volt",
-        catatanFisik: "Sumber tegangan DC variabel 3.0V – 24.0V (Gunakan 12V untuk Solenoid & Motor).",
+        catatanFisik: "Sumber tegangan DC variabel 3.0V – 24.0V.",
       };
     case "ac_source":
       return {
@@ -205,7 +235,7 @@ export function ambilKonfigurasiRentangKomponen(tipe: string): KonfigurasiRentan
         step: 10,
         defaultVal: 100,
         satuan: "μF",
-        catatanFisik: "Kapasitansi penyimpan muatan listrik dalam satuan mikroFarad (μF).",
+        catatanFisik: "Kapasitansi penyimpan muatan listrik dalam mikroFarad (μF).",
       };
     case "induktor":
       return {
@@ -216,9 +246,8 @@ export function ambilKonfigurasiRentangKomponen(tipe: string): KonfigurasiRentan
         step: 5,
         defaultVal: 25,
         satuan: "mH",
-        catatanFisik: "Induktansi kumparan dalam satuan miliHenry (mH).",
+        catatanFisik: "Induktansi kumparan dalam miliHenry (mH).",
       };
-    // KOMPONEN MURNI DIGITAL ON/OFF (SOLENOID, POMPA 2-PIN, RELAY 1/2/4 CH, LED, BUZZER, RFID)
     case "solenoid_lock":
     case "water_pump":
     case "relay_1ch":
@@ -238,14 +267,7 @@ export function ambilKonfigurasiRentangKomponen(tipe: string): KonfigurasiRentan
         step: 1,
         defaultVal: 1,
         satuan: "Digital",
-        catatanFisik:
-          tipe === "solenoid_lock"
-            ? "Solenoid Door Lock 12V hanya bekerja ON (Tuas Ditarik / Pintu Terbuka) atau OFF (Terkunci). Hubungkan ke terminal NO & COM pada Modul Relay!"
-            : tipe === "water_pump"
-            ? "Pompa Air Mini DC memiliki 2 kabel (Merah VCC+ & Hitam GND-). Hubungkan melalui kontak sakelar Relay (NO & COM) agar aman bagi mikrokontroler!"
-            : tipe.startsWith("relay_")
-            ? "Modul Relay memisahkan rangkaian kontrol bertegangan rendah (3.3V/5V GPIO) dengan beban berdaya tinggi (12V Solenoid/Pompa/Lampu 220V)."
-            : "Komponen bekerja dengan dua keadaan logika digital: HIGH (ON / Aktif) atau LOW (OFF / Mati).",
+        catatanFisik: "Komponen bekerja dengan dua keadaan logika digital: HIGH (ON / Aktif) atau LOW (OFF / Mati).",
       };
     default:
       return {
@@ -282,11 +304,50 @@ export function warnaTitikPin(kategori: TitikPinFisik["kategori"]): string {
   }
 }
 
+// ============================================================================
+// PINOUT FISIK ESP32-C6-DEVKITC-1 (RISC-V WI-FI 6 / ZIGBEE / THREAD - 30 PIN)
+// ============================================================================
+const ESP32_C6_PINS_KIRI: Omit<TitikPinFisik, "x" | "y" | "sisi" | "nomorPin">[] = [
+  { idPin: "3V3", nama: "3V3 (+3.3V Out)", kategori: "POWER", keterangan: "Sumber daya +3.3V DC untuk sensor & GPS NEO-6M" },
+  { idPin: "RST", nama: "RST (EN / Reset)", kategori: "GPIO", keterangan: "Tombol & Pin Reset Chip ESP32-C6" },
+  { idPin: "GPIO0", nama: "GPIO0 (ADC1_CH0 / XTAL)", kategori: "ADC", keterangan: "Input Analog ADC (Cocok untuk Pin S Sensor Tegangan!)" },
+  { idPin: "GPIO1", nama: "GPIO1 (ADC1_CH1)", kategori: "ADC", keterangan: "Input Analog ADC 12-bit (Sensor LDR / Soil)" },
+  { idPin: "GPIO2", nama: "GPIO2 (ADC1_CH2 / FSPI)", kategori: "ADC", keterangan: "Input Analog ADC & Strapping Pin" },
+  { idPin: "GPIO3", nama: "GPIO3 (ADC1_CH3)", kategori: "ADC", keterangan: "Input Analog ADC & Digital GPIO" },
+  { idPin: "GPIO4", nama: "GPIO4 (ADC1_CH4 / RX1)", kategori: "UART", keterangan: "UART1 RX ← Hubungkan ke Pin TXD Modul GPS NEO-6M!" },
+  { idPin: "GPIO5", nama: "GPIO5 (ADC1_CH5 / TX1)", kategori: "UART", keterangan: "UART1 TX → Hubungkan ke Pin RXD Modul GPS NEO-6M!" },
+  { idPin: "GPIO6", nama: "GPIO6 (I2C SDA / ADC1_CH6)", kategori: "I2C", keterangan: "Jalur Data I2C (SDA) untuk OLED/LCD" },
+  { idPin: "GPIO7", nama: "GPIO7 (I2C SCL / SPI)", kategori: "I2C", keterangan: "Jalur Clock I2C (SCL) untuk OLED/LCD" },
+  { idPin: "GPIO10", nama: "GPIO10 (Digital I/O)", kategori: "GPIO", keterangan: "Pin Digital I/O Serbaguna (Trigger Relay IN1)" },
+  { idPin: "GPIO11", nama: "GPIO11 (Digital I/O)", kategori: "GPIO", keterangan: "Pin Digital I/O Serbaguna (Trigger Relay IN2)" },
+  { idPin: "GPIO12", nama: "GPIO12 (USB_D- /TRIG)", kategori: "GPIO", keterangan: "Pin Digital I/O (Trigger Ultrasonik)" },
+  { idPin: "GPIO13", nama: "GPIO13 (USB_D+ / ECHO)", kategori: "GPIO", keterangan: "Pin Digital I/O (Echo Ultrasonik)" },
+  { idPin: "GND_L", nama: "GND (Ground Kiri)", kategori: "GND", keterangan: "Referensi Ground 0V" },
+];
+
+const ESP32_C6_PINS_KANAN: Omit<TitikPinFisik, "x" | "y" | "sisi" | "nomorPin">[] = [
+  { idPin: "5V", nama: "5V / VBUS (Input Baterai)", kategori: "POWER", keterangan: "Catu daya +5V DC (Hubungkan ke Socket Baterai / Regulator)" },
+  { idPin: "GPIO16", nama: "TX0 (GPIO16 / U0TXD)", kategori: "UART", keterangan: "UART0 Transmit bawaan" },
+  { idPin: "GPIO17", nama: "RX0 (GPIO17 / U0RXD)", kategori: "UART", keterangan: "UART0 Receive bawaan" },
+  { idPin: "GPIO18", nama: "GPIO18 (PWM / Servo)", kategori: "PWM", keterangan: "Output LEDC PWM untuk Motor Servo 180°/360°" },
+  { idPin: "GPIO19", nama: "GPIO19 (SPI CLK)", kategori: "SPI", keterangan: "FSPI Clock & Digital I/O" },
+  { idPin: "GPIO20", nama: "GPIO20 (SPI MISO)", kategori: "SPI", keterangan: "FSPI MISO & Digital I/O" },
+  { idPin: "GPIO21", nama: "GPIO21 (SPI MOSI)", kategori: "SPI", keterangan: "FSPI MOSI & Digital I/O" },
+  { idPin: "GPIO22", nama: "GPIO22 (SPI CS / RFID)", kategori: "SPI", keterangan: "FSPI Chip Select untuk RFID RC522" },
+  { idPin: "GPIO23", nama: "GPIO23 (DHT22 DATA)", kategori: "GPIO", keterangan: "Pin Digital One-Wire → Hubungkan ke DATA Sensor DHT22!" },
+  { idPin: "GPIO15", nama: "GPIO15 (JTAG / PWM)", kategori: "PWM", keterangan: "Pin PWM & Digital I/O" },
+  { idPin: "GPIO14", nama: "GPIO14 (Output Buzzer)", kategori: "GPIO", keterangan: "Digital Output untuk Buzzer / LED" },
+  { idPin: "GPIO9", nama: "GPIO9 (BOOT Button)", kategori: "GPIO", keterangan: "Tombol Boot & Strapping Pin" },
+  { idPin: "GPIO8", nama: "GPIO8 (Built-in RGB LED)", kategori: "PWM", keterangan: "Mengendalikan LED NeoPixel RGB WS2812 bawaan papan ESP32-C6" },
+  { idPin: "GND_R1", nama: "GND (Ground Kanan 1)", kategori: "GND", keterangan: "Referensi Ground 0V" },
+  { idPin: "GND_R2", nama: "GND (Ground Kanan 2)", kategori: "GND", keterangan: "Referensi Ground 0V" },
+];
+
 const ESP32_PINS_KIRI: Omit<TitikPinFisik, "x" | "y" | "sisi" | "nomorPin">[] = [
   { idPin: "EN", nama: "EN (Reset)", kategori: "GPIO", keterangan: "Enable / Reset Chip ESP32" },
   { idPin: "GPIO36", nama: "VP (GPIO36 / ADC0)", kategori: "ADC", keterangan: "Input Only & Analog ADC1_CH0" },
   { idPin: "GPIO39", nama: "VN (GPIO39 / ADC3)", kategori: "ADC", keterangan: "Input Only & Analog ADC1_CH3" },
-  { idPin: "GPIO34", nama: "D34 (GPIO34 / ADC6)", kategori: "ADC", keterangan: "Input Analog (LDR / Soil / Rain / MQ2)" },
+  { idPin: "GPIO34", nama: "D34 (GPIO34 / ADC6)", kategori: "ADC", keterangan: "Input Analog (Sensor Tegangan / LDR / Soil / MQ2)" },
   { idPin: "GPIO35", nama: "D35 (GPIO35 / ADC7)", kategori: "ADC", keterangan: "Input Analog Sensor" },
   { idPin: "GPIO32", nama: "D32 (GPIO32 / Relay IN1)", kategori: "GPIO", keterangan: "Output Pemicu Modul Relay IN1" },
   { idPin: "GPIO33", nama: "D33 (GPIO33 / Relay IN2)", kategori: "GPIO", keterangan: "Output Pemicu Modul Relay IN2 / Kipas" },
@@ -309,8 +370,8 @@ const ESP32_PINS_KANAN: Omit<TitikPinFisik, "x" | "y" | "sisi" | "nomorPin">[] =
   { idPin: "GPIO19", nama: "D19 (GPIO19 / MISO)", kategori: "SPI", keterangan: "VSPI MISO (Ke MISO RFID RC522)" },
   { idPin: "GPIO18", nama: "D18 (GPIO18 / SERVO PWM)", kategori: "PWM", keterangan: "Output PWM Motor Servo (180° / 360°)" },
   { idPin: "GPIO5", nama: "D5 (GPIO5 / SS RFID / Relay)", kategori: "SPI", keterangan: "VSPI CS/SDA RFID atau Trigger Relay" },
-  { idPin: "GPIO17", nama: "TX2 (GPIO17 / UART2 TX)", kategori: "UART", keterangan: "UART2 Transmit → Ke D0(RX) Arduino Uno" },
-  { idPin: "GPIO16", nama: "RX2 (GPIO16 / UART2 RX)", kategori: "UART", keterangan: "UART2 Receive ← Dari D1(TX) Arduino Uno" },
+  { idPin: "GPIO17", nama: "TX2 (GPIO17 / UART2 TX)", kategori: "UART", keterangan: "UART2 TX → Ke RXD GPS NEO-6M atau D0(RX) Arduino" },
+  { idPin: "GPIO16", nama: "RX2 (GPIO16 / UART2 RX)", kategori: "UART", keterangan: "UART2 RX ← Dari TXD GPS NEO-6M atau D1(TX) Arduino" },
   { idPin: "GPIO4", nama: "D4 (GPIO4 / PIR / IR)", kategori: "GPIO", keterangan: "Input Sensor PIR / Infrared / Flame" },
   { idPin: "GPIO2", nama: "D2 (GPIO2 / Built-in LED)", kategori: "GPIO", keterangan: "LED Internal & Output Indikator" },
   { idPin: "GPIO15", nama: "D15 (GPIO15 / DHT22 DATA)", kategori: "GPIO", keterangan: "Pin DATA Sensor Suhu DHT22" },
@@ -332,7 +393,7 @@ const ARDUINO_PINS_ATAS: Omit<TitikPinFisik, "x" | "y" | "sisi" | "nomorPin">[] 
   { idPin: "D7", nama: "D7 (Trigger Relay IN)", kategori: "GPIO", keterangan: "Output Pemicu Modul Relay (Solenoid/Pompa)" },
   { idPin: "D4", nama: "D4 (Sensor IR / Flame)", kategori: "GPIO", keterangan: "Input Digital Sensor IR / Api" },
   { idPin: "D1_TX", nama: "D1 (TX - Transmit)", kategori: "UART", keterangan: "UART TX → Ke RX2 (GPIO16) ESP32" },
-  { idPin: "D0_RX", nama: "D0 (RX - Receive)", kategori: "UART", keterangan: "UART RX ← Dari TX2 (GPIO17) ESP32" },
+  { idPin: "D0_RX", nama: "D0 (RX - Receive)", kategori: "UART", keterangan: "UART RX ← Dari TX2 (GPIO17) ESP32 / TXD GPS" },
 ];
 
 const ARDUINO_PINS_BAWAH: Omit<TitikPinFisik, "x" | "y" | "sisi" | "nomorPin">[] = [
@@ -342,8 +403,8 @@ const ARDUINO_PINS_BAWAH: Omit<TitikPinFisik, "x" | "y" | "sisi" | "nomorPin">[]
   { idPin: "5V", nama: "5V Out (VCC Utama)", kategori: "POWER", keterangan: "Catu daya +5V DC" },
   { idPin: "GND_1", nama: "GND (Ground 1)", kategori: "GND", keterangan: "Ground 0V" },
   { idPin: "GND_2", nama: "GND (Ground 2)", kategori: "GND", keterangan: "Ground 0V" },
-  { idPin: "VIN", nama: "VIN (Input 7-12V)", kategori: "POWER", keterangan: "Tegangan +12V untuk Solenoid / Pompa via Relay" },
-  { idPin: "A0", nama: "A0 (ADC LDR / Pot)", kategori: "ADC", keterangan: "ADC 10-bit untuk LDR / Potensiometer" },
+  { idPin: "VIN", nama: "VIN (Input 7-12V)", kategori: "POWER", keterangan: "Input Tegangan dari Socket Baterai 18650" },
+  { idPin: "A0", nama: "A0 (ADC Sensor Tegangan/LDR)", kategori: "ADC", keterangan: "ADC 10-bit untuk Pin S Sensor Tegangan / LDR" },
   { idPin: "A1", nama: "A1 (ADC Soil / Rain)", kategori: "ADC", keterangan: "ADC 10-bit untuk Kelembapan Tanah / Hujan" },
   { idPin: "A2", nama: "A2 (ADC Water / MQ2)", kategori: "ADC", keterangan: "ADC 10-bit untuk Tinggi Air / Gas" },
   { idPin: "A3", nama: "A3 (Analog Input 3)", kategori: "ADC", keterangan: "ADC 10-bit" },
@@ -353,7 +414,32 @@ const ARDUINO_PINS_BAWAH: Omit<TitikPinFisik, "x" | "y" | "sisi" | "nomorPin">[]
 ];
 
 export function ambilLayoutFisikKomponen(tipe: string): LayoutFisikKomponen {
-  // 1. ESP32 & NodeMCU (30 Pin)
+  // 1. ESP32-C6 DevKitC-1 (30 Pin Fisik: 15 Kiri & 15 Kanan)
+  if (tipe === "esp32_c6") {
+    const pinsKiri: TitikPinFisik[] = ESP32_C6_PINS_KIRI.map((p, i) => ({
+      ...p,
+      nomorPin: i + 1,
+      x: 8,
+      y: 26 + i * 13,
+      sisi: "kiri",
+    }));
+    const pinsKanan: TitikPinFisik[] = ESP32_C6_PINS_KANAN.map((p, i) => ({
+      ...p,
+      nomorPin: 16 + i,
+      x: 152,
+      y: 26 + i * 13,
+      sisi: "kanan",
+    }));
+    return {
+      lebar: 160,
+      tinggi: 225,
+      fungsiUtama:
+        "ESP32-C6-DevKitC-1 (32-bit RISC-V 160MHz dengan Wi-Fi 6 802.11ax, Bluetooth 5 LE, Zigbee & Thread 802.15.4, serta LED RGB WS2812 di GPIO8).",
+      pins: [...pinsKiri, ...pinsKanan],
+    };
+  }
+
+  // 2. ESP32 DevKit V1 & NodeMCU (30 Pin)
   if (tipe === "esp32" || tipe === "esp8266_nodemcu") {
     const pinsKiri: TitikPinFisik[] = ESP32_PINS_KIRI.map((p, i) => ({
       ...p,
@@ -380,7 +466,155 @@ export function ambilLayoutFisikKomponen(tipe: string): LayoutFisikKomponen {
     };
   }
 
-  // 2. STM32 BluePill & Raspberry Pi Pico (32 Pin)
+  // 3. MODUL GPS NEO-6M U-BLOX (5 PIN KAKI ASLI DI BAWAH: PPS, RXD, TXD, GND, VCC)
+  if (tipe === "gps_neo6m") {
+    const gpsPins = [
+      {
+        idPin: "PPS",
+        nama: "Pin 1: PPS (Pulse Per Second)",
+        kat: "PWM" as const,
+        ket: "Output detak sinkronisasi satelit 1Hz (Opsional ke GPIO digital)",
+      },
+      {
+        idPin: "RXD",
+        nama: "Pin 2: RXD (Serial Receive GPS)",
+        kat: "UART" as const,
+        ket: "Hubungkan silang ke Pin TX2 (GPIO17 ESP32 / GPIO5 ESP32-C6)!",
+      },
+      {
+        idPin: "TXD",
+        nama: "Pin 3: TXD (Serial Transmit GPS)",
+        kat: "UART" as const,
+        ket: "Mengirim data koordinat NMEA → Hubungkan ke Pin RX2 (GPIO16 ESP32 / GPIO4 ESP32-C6)!",
+      },
+      {
+        idPin: "GND",
+        nama: "Pin 4: GND (Ground 0V)",
+        kat: "GND" as const,
+        ket: "Hubungkan ke pin GND mikrokontroler",
+      },
+      {
+        idPin: "VCC",
+        nama: "Pin 5: VCC (3.3V - 5V DC)",
+        kat: "POWER" as const,
+        ket: "Hubungkan ke pin 3V3 atau 5V pada ESP32 / ESP32-C6",
+      },
+    ];
+    return {
+      lebar: 145,
+      tinggi: 115,
+      fungsiUtama:
+        "Modul Navigasi Satelit GPS u-blox NEO-6M dengan Antena Keramik Patch Aktif & EEPROM (5 Pin Bawah: PPS, RXD, TXD, GND, VCC).",
+      pins: gpsPins.map((p, i) => ({
+        idPin: p.idPin,
+        nomorPin: i + 1,
+        nama: p.nama,
+        x: 25 + i * 24,
+        y: 108,
+        sisi: "bawah",
+        kategori: p.kat,
+        keterangan: p.ket,
+      })),
+    };
+  }
+
+  // 4. SENSOR TEGANGAN DC 0-25V (5 PIN ASLI: 2 TERMINAL SEKRUP ATAS + 3 PIN HEADER BAWAH)
+  if (tipe === "voltage_sensor") {
+    return {
+      lebar: 120,
+      tinggi: 112,
+      fungsiUtama:
+        "Modul Sensor Tegangan DC 0–25V (Voltage Divider R1=30kΩ & R2=7.5kΩ): 2 Terminal Sekrup Biru di Atas (VCC_IN & GND_IN dari Baterai) dan 3 Pin Header di Bawah (S, +, -) menuju ADC Mikrokontroler.",
+      pins: [
+        // 2 Terminal Sekrup Input Sumber Tegangan di Atas
+        {
+          idPin: "VCC_IN",
+          nomorPin: 1,
+          nama: "VCC (Terminal Input Positif 0–25V DC)",
+          x: 38,
+          y: 10,
+          sisi: "atas",
+          kategori: "POWER",
+          keterangan: "Hubungkan ke Kabel Merah (BAT+) dari Socket Baterai 18650 atau Power Supply yang ingin diukur!",
+        },
+        {
+          idPin: "GND_IN",
+          nomorPin: 2,
+          nama: "GND (Terminal Input Negatif 0V)",
+          x: 82,
+          y: 10,
+          sisi: "atas",
+          kategori: "GND",
+          keterangan: "Hubungkan ke Kabel Hitam (BAT-) dari Socket Baterai!",
+        },
+        // 3 Pin Header Output ke Mikrokontroler di Bawah (S, +, -)
+        {
+          idPin: "SIG",
+          nomorPin: 3,
+          nama: "Pin S (Signal Output Analog 0–3.3V/5V)",
+          x: 32,
+          y: 104,
+          sisi: "bawah",
+          kategori: "ADC",
+          keterangan: "Output pembagi tegangan (Vin / 5) → Hubungkan ke Pin ADC (GPIO34 ESP32 / GPIO0 ESP32-C6 / A0 Arduino)!",
+        },
+        {
+          idPin: "PLUS_NC",
+          nomorPin: 4,
+          nama: "Pin + (VCC Referensi / Opsional)",
+          x: 60,
+          y: 104,
+          sisi: "bawah",
+          kategori: "POWER",
+          keterangan: "Opsional ke 3.3V/5V atau dibiarkan kosong",
+        },
+        {
+          idPin: "MINUS_GND",
+          nomorPin: 5,
+          nama: "Pin - (GND Output ke MCU)",
+          x: 88,
+          y: 104,
+          sisi: "bawah",
+          kategori: "GND",
+          keterangan: "Wajib dihubungkan ke pin GND pada ESP32 / ESP32-C6 / Arduino!",
+        },
+      ],
+    };
+  }
+
+  // 5. SOCKET BATERAI 2x 18650 LI-ION (2 KABEL KELUARAN DI BAWAH: BAT+ MERAH & BAT- HITAM)
+  if (tipe === "battery_socket") {
+    return {
+      lebar: 135,
+      tinggi: 105,
+      fungsiUtama:
+        "Socket Holder Baterai 2x 18650 Li-Ion (7.4V – 8.4V DC) dilengkapi sakelar ON/OFF. Memiliki 2 kabel keluaran di bagian bawah: Kabel Merah (BAT+) dan Kabel Hitam (BAT-).",
+      pins: [
+        {
+          idPin: "BAT_POS",
+          nomorPin: 1,
+          nama: "BAT+ (Kabel Merah Positif +3.7V..12V)",
+          x: 42,
+          y: 98,
+          sisi: "bawah",
+          kategori: "POWER",
+          keterangan: "Hubungkan ke Terminal VCC_IN Sensor Tegangan, Terminal COM Relay, atau Pin VIN/5V Mikrokontroler!",
+        },
+        {
+          idPin: "BAT_NEG",
+          nomorPin: 2,
+          nama: "BAT- (Kabel Hitam Negatif GND 0V)",
+          x: 94,
+          y: 98,
+          sisi: "bawah",
+          kategori: "GND",
+          keterangan: "Hubungkan ke Terminal GND_IN Sensor Tegangan & Pin GND Mikrokontroler (Common Ground)!",
+        },
+      ],
+    };
+  }
+
+  // 6. STM32 BluePill & Raspberry Pi Pico (32 Pin)
   if (tipe === "stm32_bluepill" || tipe === "raspberry_pico") {
     const kiri: TitikPinFisik[] = Array.from({ length: 16 }).map((_, i) => ({
       idPin: i === 0 ? "3V3" : i === 15 ? "GND" : i === 4 ? "TX1_PA9" : i === 5 ? "RX1_PA10" : `GP${i}`,
@@ -428,7 +662,7 @@ export function ambilLayoutFisikKomponen(tipe: string): LayoutFisikKomponen {
     };
   }
 
-  // 3. Arduino Uno R3 (28 Pin)
+  // 7. Arduino Uno R3 (28 Pin)
   if (tipe === "arduino_uno") {
     const atas: TitikPinFisik[] = ARDUINO_PINS_ATAS.map((p, i) => ({
       ...p,
@@ -452,111 +686,47 @@ export function ambilLayoutFisikKomponen(tipe: string): LayoutFisikKomponen {
     };
   }
 
-  // ============================================================================
-  // 4. MODUL RELAY 1-CHANNEL (6 PIN ASLI: 3 TERMINAL BEBAN ATAS + 3 PIN KONTROL BAWAH)
-  // ============================================================================
+  // 8. Modul Relay 1-Channel (6 Pin)
   if (tipe === "relay_1ch" || tipe === "relay_5v") {
     return {
       lebar: 110,
       tinggi: 115,
       fungsiUtama:
-        "Modul Relay 1-Channel 5V Optocoupler (6 Pin Asli): 3 Pin Kontrol di Bawah (VCC, GND, IN) & 3 Terminal Sekrup di Atas (NO, COM, NC) untuk menyalakan Solenoid 12V atau Pompa Air.",
+        "Modul Relay 1-Channel 5V Optocoupler (6 Pin Asli): 3 Pin Kontrol di Bawah (VCC, GND, IN) & 3 Terminal Sekrup di Atas (NO, COM, NC).",
       pins: [
-        // 3 Terminal Sekrup Beban di Atas
-        {
-          idPin: "NO",
-          nomorPin: 1,
-          nama: "NO (Normally Open - Beban+)",
-          x: 28,
-          y: 10,
-          sisi: "atas",
-          kategori: "POWER",
-          keterangan: "Terhubung ke COM saat Relay ON → Sambungkan ke kabel Merah (+) Solenoid / Pompa Air!",
-        },
-        {
-          idPin: "COM",
-          nomorPin: 2,
-          nama: "COM (Common - Sumber Daya Beban)",
-          x: 55,
-          y: 10,
-          sisi: "atas",
-          kategori: "POWER",
-          keterangan: "Terminal Tengah Sakelar → Sambungkan ke Sumber +12V / VIN!",
-        },
-        {
-          idPin: "NC",
-          nomorPin: 3,
-          nama: "NC (Normally Closed)",
-          x: 82,
-          y: 10,
-          sisi: "atas",
-          kategori: "PASIF",
-          keterangan: "Terhubung ke COM saat Relay OFF (Jarang dipakai untuk beban normal)",
-        },
-        // 3 Pin Header Kontrol Mikrokontroler di Bawah
-        {
-          idPin: "VCC",
-          nomorPin: 4,
-          nama: "VCC (+5V Modul Relay)",
-          x: 28,
-          y: 106,
-          sisi: "bawah",
-          kategori: "POWER",
-          keterangan: "Hubungkan ke pin 5V / VIN pada ESP32 atau Arduino",
-        },
-        {
-          idPin: "GND",
-          nomorPin: 5,
-          nama: "GND (Ground Relay)",
-          x: 55,
-          y: 106,
-          sisi: "bawah",
-          kategori: "GND",
-          keterangan: "Hubungkan ke pin GND mikrokontroler",
-        },
-        {
-          idPin: "IN1",
-          nomorPin: 6,
-          nama: "IN (Input Pemicu Relay)",
-          x: 82,
-          y: 106,
-          sisi: "bawah",
-          kategori: "GPIO",
-          keterangan: "Hubungkan ke Pin Digital GPIO (misal GPIO32 / GPIO5 / D7) untuk memicu sakelar Relay!",
-        },
+        { idPin: "NO", nomorPin: 1, nama: "NO (Normally Open - Beban+)", x: 28, y: 10, sisi: "atas", kategori: "POWER", keterangan: "Ke Kabel (+) Solenoid / Pompa Air" },
+        { idPin: "COM", nomorPin: 2, nama: "COM (Common - Sumber Daya)", x: 55, y: 10, sisi: "atas", kategori: "POWER", keterangan: "Ke Sumber +12V / Socket Baterai BAT+" },
+        { idPin: "NC", nomorPin: 3, nama: "NC (Normally Closed)", x: 82, y: 10, sisi: "atas", kategori: "PASIF", keterangan: "Terhubung ke COM saat Relay OFF" },
+        { idPin: "VCC", nomorPin: 4, nama: "VCC (+5V Modul Relay)", x: 28, y: 106, sisi: "bawah", kategori: "POWER", keterangan: "Ke pin 5V / VIN mikrokontroler" },
+        { idPin: "GND", nomorPin: 5, nama: "GND (Ground Relay)", x: 55, y: 106, sisi: "bawah", kategori: "GND", keterangan: "Ke pin GND mikrokontroler" },
+        { idPin: "IN1", nomorPin: 6, nama: "IN (Input Pemicu Relay)", x: 82, y: 106, sisi: "bawah", kategori: "GPIO", keterangan: "Ke Pin Digital GPIO (GPIO32 / GPIO10 / D7)" },
       ],
     };
   }
 
-  // ============================================================================
-  // 5. MODUL RELAY 2-CHANNEL (10 PIN ASLI: 6 TERMINAL ATAS + 4 PIN KONTROL BAWAH)
-  // ============================================================================
+  // 9. Modul Relay 2-Channel (10 Pin)
   if (tipe === "relay_2ch") {
     return {
       lebar: 150,
       tinggi: 120,
       fungsiUtama:
-        "Modul Relay 2-Channel 5V Optocoupler (10 Pin Asli): Mengendalikan 2 beban independen (misal Ch1 untuk Solenoid Lock & Ch2 untuk Pompa Air Mini).",
+        "Modul Relay 2-Channel 5V Optocoupler (10 Pin Asli): 6 Terminal Sekrup Atas & 4 Pin Kontrol Bawah.",
       pins: [
-        // 6 Terminal Sekrup Atas (Relay 1 & Relay 2)
-        { idPin: "NO1", nomorPin: 1, nama: "NO1 (Output Relay 1)", x: 20, y: 10, sisi: "atas", kategori: "POWER", keterangan: "Ke Kabel (+) Beban 1 (Misal Solenoid Door Lock)" },
-        { idPin: "COM1", nomorPin: 2, nama: "COM1 (Common Relay 1)", x: 42, y: 10, sisi: "atas", kategori: "POWER", keterangan: "Ke Sumber Tegangan +12V / +5V" },
+        { idPin: "NO1", nomorPin: 1, nama: "NO1 (Output Relay 1)", x: 20, y: 10, sisi: "atas", kategori: "POWER", keterangan: "Ke Beban 1 (+)" },
+        { idPin: "COM1", nomorPin: 2, nama: "COM1 (Common Relay 1)", x: 42, y: 10, sisi: "atas", kategori: "POWER", keterangan: "Ke Sumber Daya (+)" },
         { idPin: "NC1", nomorPin: 3, nama: "NC1 (Normally Closed 1)", x: 64, y: 10, sisi: "atas", kategori: "PASIF", keterangan: "NC Kanal 1" },
-        { idPin: "NO2", nomorPin: 4, nama: "NO2 (Output Relay 2)", x: 88, y: 10, sisi: "atas", kategori: "POWER", keterangan: "Ke Kabel (+) Beban 2 (Misal Pompa Air Mini)" },
-        { idPin: "COM2", nomorPin: 5, nama: "COM2 (Common Relay 2)", x: 110, y: 10, sisi: "atas", kategori: "POWER", keterangan: "Ke Sumber Tegangan +12V / +5V" },
+        { idPin: "NO2", nomorPin: 4, nama: "NO2 (Output Relay 2)", x: 88, y: 10, sisi: "atas", kategori: "POWER", keterangan: "Ke Beban 2 (+)" },
+        { idPin: "COM2", nomorPin: 5, nama: "COM2 (Common Relay 2)", x: 110, y: 10, sisi: "atas", kategori: "POWER", keterangan: "Ke Sumber Daya (+)" },
         { idPin: "NC2", nomorPin: 6, nama: "NC2 (Normally Closed 2)", x: 132, y: 10, sisi: "atas", kategori: "PASIF", keterangan: "NC Kanal 2" },
-        // 4 Pin Header Bawah (GND, IN1, IN2, VCC)
-        { idPin: "GND", nomorPin: 7, nama: "GND (Ground)", x: 35, y: 112, sisi: "bawah", kategori: "GND", keterangan: "Hubungkan ke GND ESP32/Arduino" },
-        { idPin: "IN1", nomorPin: 8, nama: "IN1 (Trigger Relay 1)", x: 62, y: 112, sisi: "bawah", kategori: "GPIO", keterangan: "Hubungkan ke GPIO32 / D7 untuk mengaktifkan Relay 1" },
-        { idPin: "IN2", nomorPin: 9, nama: "IN2 (Trigger Relay 2)", x: 89, y: 112, sisi: "bawah", kategori: "GPIO", keterangan: "Hubungkan ke GPIO33 / D8 untuk mengaktifkan Relay 2" },
-        { idPin: "VCC", nomorPin: 10, nama: "VCC (+5V)", x: 116, y: 112, sisi: "bawah", kategori: "POWER", keterangan: "Hubungkan ke 5V / VIN mikrokontroler" },
+        { idPin: "GND", nomorPin: 7, nama: "GND (Ground)", x: 35, y: 112, sisi: "bawah", kategori: "GND", keterangan: "Ke GND Mikrokontroler" },
+        { idPin: "IN1", nomorPin: 8, nama: "IN1 (Trigger Relay 1)", x: 62, y: 112, sisi: "bawah", kategori: "GPIO", keterangan: "Ke GPIO32 / GPIO10" },
+        { idPin: "IN2", nomorPin: 9, nama: "IN2 (Trigger Relay 2)", x: 89, y: 112, sisi: "bawah", kategori: "GPIO", keterangan: "Ke GPIO33 / GPIO11" },
+        { idPin: "VCC", nomorPin: 10, nama: "VCC (+5V)", x: 116, y: 112, sisi: "bawah", kategori: "POWER", keterangan: "Ke 5V / VIN" },
       ],
     };
   }
 
-  // ============================================================================
-  // 6. MODUL RELAY 4-CHANNEL (18 PIN ASLI: 12 TERMINAL ATAS + 6 PIN KONTROL BAWAH)
-  // ============================================================================
+  // 10. Modul Relay 4-Channel (18 Pin)
   if (tipe === "relay_4ch") {
     const terminalAtas: TitikPinFisik[] = [
       "NO1", "COM1", "NC1", "NO2", "COM2", "NC2", "NO3", "COM3", "NC3", "NO4", "COM4", "NC4",
@@ -568,19 +738,15 @@ export function ambilLayoutFisikKomponen(tipe: string): LayoutFisikKomponen {
       y: 10,
       sisi: "atas",
       kategori: kode.startsWith("NC") ? "PASIF" : "POWER",
-      keterangan: kode.startsWith("NO")
-        ? `Sambungkan ke kutub (+) Beban ke-${Math.floor(idx / 3) + 1} (Solenoid/Pompa/Kipas/Lampu)`
-        : kode.startsWith("COM")
-        ? "Sambungkan ke Sumber Daya +12V / 220V AC"
-        : "Terminal Normally Closed",
+      keterangan: `Terminal ${kode} Modul Relay 4-Channel`,
     }));
 
     const headerBawah: TitikPinFisik[] = [
       { id: "GND", ket: "Ground 0V Mikrokontroler", kat: "GND" as const },
-      { id: "IN1", ket: "Trigger Kanal Relay 1 (Ke GPIO32)", kat: "GPIO" as const },
-      { id: "IN2", ket: "Trigger Kanal Relay 2 (Ke GPIO33)", kat: "GPIO" as const },
-      { id: "IN3", ket: "Trigger Kanal Relay 3 (Ke GPIO25)", kat: "GPIO" as const },
-      { id: "IN4", ket: "Trigger Kanal Relay 4 (Ke GPIO26)", kat: "GPIO" as const },
+      { id: "IN1", ket: "Trigger Kanal Relay 1", kat: "GPIO" as const },
+      { id: "IN2", ket: "Trigger Kanal Relay 2", kat: "GPIO" as const },
+      { id: "IN3", ket: "Trigger Kanal Relay 3", kat: "GPIO" as const },
+      { id: "IN4", ket: "Trigger Kanal Relay 4", kat: "GPIO" as const },
       { id: "VCC", ket: "Catu Daya +5V Modul Relay", kat: "POWER" as const },
     ].map((h, i) => ({
       idPin: h.id,
@@ -596,23 +762,20 @@ export function ambilLayoutFisikKomponen(tipe: string): LayoutFisikKomponen {
     return {
       lebar: 220,
       tinggi: 124,
-      fungsiUtama:
-        "Modul Relay 4-Channel 5V Optocoupler (18 Pin Asli): 6 Pin Header Input di Bawah (GND, IN1, IN2, IN3, IN4, VCC) & 12 Terminal Sekrup di Atas untuk mengontrol 4 beban sekaligus!",
+      fungsiUtama: "Modul Relay 4-Channel 5V Optocoupler (18 Pin Asli).",
       pins: [...terminalAtas, ...headerBawah],
     };
   }
 
-  // ============================================================================
-  // 7. SOLENOID DOOR LOCK 12V & POMPA AIR MINI DC (2 KAKI KABEL ASLI: VCC+ & GND-)
-  // ============================================================================
+  // 11. Solenoid Door Lock 12V & Pompa Air Mini DC (2 Pin)
   if (tipe === "solenoid_lock" || tipe === "water_pump") {
     const isPump = tipe === "water_pump";
     return {
       lebar: 120,
       tinggi: 98,
       fungsiUtama: isPump
-        ? "Pompa Air Mini Submersible DC (2 Kabel Asli: Merah VCC+ & Hitam GND-). Wajib dikendalikan melalui kontak NO/COM Modul Relay!"
-        : "Solenoid Door Lock 12V DC (2 Kabel Asli: Merah VCC+ & Hitam GND-). Hanya bekerja ON (Tuas Ditarik) atau OFF (Terkunci) melalui Modul Relay!",
+        ? "Pompa Air Mini Submersible DC (2 Kabel Asli: Merah VCC+ & Hitam GND-)."
+        : "Solenoid Door Lock 12V DC (2 Kabel Asli: Merah VCC+ & Hitam GND-).",
       pins: [
         {
           idPin: "VCC_POS",
@@ -622,7 +785,7 @@ export function ambilLayoutFisikKomponen(tipe: string): LayoutFisikKomponen {
           y: 90,
           sisi: "bawah",
           kategori: "POWER",
-          keterangan: "Hubungkan ke terminal NO (Normally Open) pada Modul Relay 1CH/2CH/4CH!",
+          keterangan: "Hubungkan ke terminal NO (Normally Open) pada Modul Relay!",
         },
         {
           idPin: "GND_NEG",
@@ -632,23 +795,24 @@ export function ambilLayoutFisikKomponen(tipe: string): LayoutFisikKomponen {
           y: 90,
           sisi: "bawah",
           kategori: "GND",
-          keterangan: "Hubungkan ke jalur Ground (GND 0V) catu daya!",
+          keterangan: "Hubungkan ke jalur Ground (GND 0V) atau BAT- Socket Baterai!",
         },
       ],
     };
   }
 
+  // 12. SENSOR SUHU & KELEMBAPAN DHT22 (4 PIN KAKI ASLI DI BAWAH)
   if (tipe === "dht22") {
     const dhtPins = [
-      { idPin: "VCC", nama: "Pin 1: VCC (3.3V-5V)", kat: "POWER" as const, ket: "Catu daya positif sensor" },
-      { idPin: "DATA", nama: "Pin 2: DATA (SDA)", kat: "GPIO" as const, ket: "Ke GPIO15 ESP32 atau D2 Arduino" },
-      { idPin: "NC", nama: "Pin 3: NC (Kosong)", kat: "PASIF" as const, ket: "Tidak digunakan" },
-      { idPin: "GND", nama: "Pin 4: GND (Ground)", kat: "GND" as const, ket: "Ke GND (0V)" },
+      { idPin: "VCC", nama: "Pin 1: VCC (3.3V-5V)", kat: "POWER" as const, ket: "Hubungkan ke pin 3V3 atau 5V pada ESP32 / ESP32-C6" },
+      { idPin: "DATA", nama: "Pin 2: DATA / SDA (One-Wire)", kat: "GPIO" as const, ket: "Hubungkan ke GPIO15 (ESP32), GPIO23 (ESP32-C6), atau D2 (Arduino)" },
+      { idPin: "NC", nama: "Pin 3: NC (Not Connected)", kat: "PASIF" as const, ket: "Kaki ke-3 kosong sesuai standar fisik DHT22" },
+      { idPin: "GND", nama: "Pin 4: GND (Ground 0V)", kat: "GND" as const, ket: "Hubungkan ke pin GND mikrokontroler" },
     ];
     return {
       lebar: 100,
       tinggi: 115,
-      fungsiUtama: "Sensor Suhu (-40..80°C) & Kelembapan DHT22 dengan 4 kaki pin di bagian bawah.",
+      fungsiUtama: "Sensor Digital Suhu (-40..80°C) & Kelembapan Udara DHT22 dengan 4 kaki pin menghadap ke bawah.",
       pins: dhtPins.map((p, i) => ({
         idPin: p.idPin,
         nomorPin: i + 1,
@@ -662,6 +826,7 @@ export function ambilLayoutFisikKomponen(tipe: string): LayoutFisikKomponen {
     };
   }
 
+  // 13. Sensor Ultrasonik HC-SR04 (4 Pin)
   if (tipe === "ultrasonik") {
     const ultraPins = [
       { idPin: "VCC", nama: "Pin 1: VCC (+5V)", kat: "POWER" as const, ket: "Ke 5V / VIN" },
@@ -700,13 +865,13 @@ export function ambilLayoutFisikKomponen(tipe: string): LayoutFisikKomponen {
           { idPin: "VCC", nama: "Pin 1: VCC (+5V)", kat: "POWER" as const, ket: "Ke 5V / 3V3" },
           { idPin: "GND", nama: "Pin 2: GND (0V)", kat: "GND" as const, ket: "Ke Ground" },
           { idPin: "DO", nama: "Pin 3: DO (Digital Out)", kat: "GPIO" as const, ket: "Output Threshold Digital (HIGH/LOW)" },
-          { idPin: "AO", nama: "Pin 4: AO (Analog Out)", kat: "ADC" as const, ket: "Output Analog → Ke GPIO34 / A0 / A1" },
+          { idPin: "AO", nama: "Pin 4: AO (Analog Out)", kat: "ADC" as const, ket: "Output Analog → Ke GPIO34 / GPIO0 / A0" },
         ]
       : [
           { idPin: "GND", nama: "Pin 1: GND (Ground)", kat: "GND" as const, ket: "Ke GND" },
           { idPin: "VCC", nama: "Pin 2: VCC (+3.3V/+5V)", kat: "POWER" as const, ket: "Ke 3V3 atau 5V" },
-          { idPin: "SCL", nama: "Pin 3: SCL (I2C Clock)", kat: "I2C" as const, ket: "Ke GPIO22 / A5" },
-          { idPin: "SDA", nama: "Pin 4: SDA (I2C Data)", kat: "I2C" as const, ket: "Ke GPIO21 / A4" },
+          { idPin: "SCL", nama: "Pin 3: SCL (I2C Clock)", kat: "I2C" as const, ket: "Ke GPIO22 / GPIO7 / A5" },
+          { idPin: "SDA", nama: "Pin 4: SDA (I2C Data)", kat: "I2C" as const, ket: "Ke GPIO21 / GPIO6 / A4" },
         ];
     return {
       lebar: 140,
@@ -725,7 +890,6 @@ export function ambilLayoutFisikKomponen(tipe: string): LayoutFisikKomponen {
     };
   }
 
-  // Servo 180°, Servo 360° Continuous, Kipas DC, Motor DC, IR, Flame, Water Level, PIR, LDR, Potensiometer
   if (
     tipe === "servo" ||
     tipe === "servo_360" ||
@@ -747,12 +911,7 @@ export function ambilLayoutFisikKomponen(tipe: string): LayoutFisikKomponen {
     return {
       lebar: 120,
       tinggi: 98,
-      fungsiUtama:
-        tipe === "servo_360"
-          ? "Motor Servo MG996R 360° Continuous Rotation (3 Pin: VCC 5V, PWM Kecepatan/Arah, GND)."
-          : tipe === "servo"
-          ? "Motor Servo SG90 180° Positional (3 Pin: VCC 5V, PWM Sudut 0°–180°, GND)."
-          : `Komponen ${tipe.toUpperCase()} dengan 3 pin kaki di bagian bawah (VCC, OUT/PWM, GND).`,
+      fungsiUtama: `Komponen ${tipe.toUpperCase()} dengan 3 pin kaki di bagian bawah (VCC, OUT/PWM, GND).`,
       pins: [
         {
           idPin: "VCC",
@@ -775,7 +934,7 @@ export function ambilLayoutFisikKomponen(tipe: string): LayoutFisikKomponen {
           sisi: "bawah",
           kategori: isServoAtauMotor ? "PWM" : "GPIO",
           keterangan: isServoAtauMotor
-            ? "Hubungkan ke Pin PWM (GPIO18 ESP32 / D9 Arduino)"
+            ? "Hubungkan ke Pin PWM (GPIO18 ESP32/ESP32-C6 / D9 Arduino)"
             : "Mengirimkan sinyal deteksi ke GPIO / ADC mikrokontroler",
         },
         {

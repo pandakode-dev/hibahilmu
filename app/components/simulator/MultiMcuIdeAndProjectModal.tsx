@@ -1,10 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useRef } from "react";
 import {
   CheckCircle2,
   FolderOpen,
   Save,
+  CopyPlus,
+  Download,
+  Upload,
   Trash2,
   Code2,
   ArrowLeftRight,
@@ -112,7 +115,7 @@ export const ProjectSavedPopupModal: React.FC<{
 };
 
 // ============================================================================
-// 2. DRAWER REPOSITORI PROJECT TERSIMPAN PER AKUN
+// 2. DRAWER REPOSITORI PROJECT TERSIMPAN PER AKUN (DENGAN SAVE, SAVE AS, EXPORT & IMPORT)
 // ============================================================================
 export const AccountProjectRepositoryDrawer: React.FC<{
   buka: boolean;
@@ -121,9 +124,11 @@ export const AccountProjectRepositoryDrawer: React.FC<{
   namaProjectInput: string;
   setNamaProjectInput: (v: string) => void;
   daftarProjectTersimpan: ProjectTersimpanAkun[];
-  onSimpanProject: (e: React.FormEvent) => void;
+  onSimpanProject: (modeSimpan: "save_overwrite" | "save_as_new") => void;
   onMuatProject: (prj: ProjectTersimpanAkun) => void;
   onHapusProject: (idPrj: string) => void;
+  onExportJsonKePc?: (prj?: ProjectTersimpanAkun) => void;
+  onImportJsonDariPc?: (file: File) => void;
 }> = ({
   buka,
   namaPemilikAktif,
@@ -134,7 +139,11 @@ export const AccountProjectRepositoryDrawer: React.FC<{
   onSimpanProject,
   onMuatProject,
   onHapusProject,
+  onExportJsonKePc,
+  onImportJsonDariPc,
 }) => {
+  const inputImportRef = useRef<HTMLInputElement | null>(null);
+
   if (!buka) return null;
 
   return (
@@ -142,34 +151,73 @@ export const AccountProjectRepositoryDrawer: React.FC<{
       <div className="flex flex-wrap justify-between items-center gap-2 border-b border-slate-800 pb-3">
         <div>
           <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded bg-amber-400 text-slate-950">
-            Private Account Cloud Storage
+            Private Account Cloud &amp; Server Database
           </span>
           <h4 className="font-black text-base text-white mt-1">
             Repositori Project Tersimpan Milik Akun: {namaPemilikAktif} (ID: {idPemilikAktif})
           </h4>
         </div>
-        <span className="text-slate-400">
-          Tersimpan otomatis beserta koordinat komponen, kabel siku, kode C++/MicroPython &amp;
-          posisi bebas widget Blynk.
-        </span>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {onExportJsonKePc && (
+            <button
+              type="button"
+              onClick={() => onExportJsonKePc()}
+              className="px-3 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500 text-sky-300 hover:text-slate-950 border border-sky-500/40 font-black flex items-center gap-1.5 cursor-pointer transition"
+            >
+              <Download className="w-3.5 h-3.5" /> Export Project Aktif (.JSON)
+            </button>
+          )}
+
+          {onImportJsonDariPc && (
+            <>
+              <input
+                ref={inputImportRef}
+                type="file"
+                accept=".json,application/json"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) onImportJsonDariPc(f);
+                  e.target.value = "";
+                }}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => inputImportRef.current?.click()}
+                className="px-3 py-2 rounded-xl bg-purple-500/20 hover:bg-purple-500 text-purple-300 hover:text-white border border-purple-500/40 font-black flex items-center gap-1.5 cursor-pointer transition"
+              >
+                <Upload className="w-3.5 h-3.5" /> Import dari PC (.JSON)
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
-      <form onSubmit={onSimpanProject} className="flex flex-col sm:flex-row gap-2">
+      <div className="flex flex-col sm:flex-row gap-2">
         <input
           type="text"
           required
           value={namaProjectInput}
           onChange={(e) => setNamaProjectInput(e.target.value)}
-          placeholder="Ketik nama project yang ingin disimpan..."
+          placeholder="Ketik nama file project yang ingin disimpan..."
           className="flex-1 p-3 rounded-xl bg-slate-900 border border-slate-700 font-bold text-white"
         />
         <button
-          type="submit"
-          className="px-5 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black flex items-center justify-center gap-2 cursor-pointer shrink-0 shadow-lg"
+          type="button"
+          onClick={() => onSimpanProject("save_overwrite")}
+          className="px-4 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black flex items-center justify-center gap-1.5 cursor-pointer shrink-0 shadow-lg"
         >
-          <Save className="w-4 h-4" /> Simpan Project ke Akun {namaPemilikAktif}
+          <Save className="w-4 h-4" /> Save (Timpa)
         </button>
-      </form>
+        <button
+          type="button"
+          onClick={() => onSimpanProject("save_as_new")}
+          className="px-4 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black flex items-center justify-center gap-1.5 cursor-pointer shrink-0 shadow-lg"
+        >
+          <CopyPlus className="w-4 h-4" /> Save As Baru
+        </button>
+      </div>
 
       {daftarProjectTersimpan.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
@@ -190,18 +238,29 @@ export const AccountProjectRepositoryDrawer: React.FC<{
                 </div>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-1.5">
                 <button
                   type="button"
                   onClick={() => onMuatProject(prj)}
                   className="flex-1 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-[11px] cursor-pointer"
                 >
-                  📂 Buka Project Ini
+                  📂 Buka Project
                 </button>
+                {onExportJsonKePc && (
+                  <button
+                    type="button"
+                    onClick={() => onExportJsonKePc(prj)}
+                    className="p-2 rounded-xl bg-sky-500/20 hover:bg-sky-500 text-sky-300 hover:text-slate-950 cursor-pointer"
+                    title="Export project ini ke file .JSON"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => onHapusProject(prj.idProject)}
                   className="p-2 rounded-xl bg-rose-500/20 hover:bg-rose-600 text-rose-300 hover:text-white cursor-pointer"
+                  title="Hapus project dari database"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
