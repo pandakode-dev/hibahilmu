@@ -29,20 +29,21 @@ declare global {
   }
 }
 
-interface GoogleSsoWebProps {
+export interface GoogleSsoWebProps {
   rolePilihan: "siswa" | "guru";
+  instansiPilihan?: string;
   onBerhasilLoginGoogle: (akun: AkunPengguna) => void;
 }
 
 export const GoogleSsoButtonWeb: React.FC<GoogleSsoWebProps> = ({
   rolePilihan,
+  instansiPilihan = "HibahIlmu Web Google SSO",
   onBerhasilLoginGoogle,
 }) => {
   const googleBtnContainerRef = useRef<HTMLDivElement | null>(null);
-  const [sedangMemproses, setSedangMemproses] = useState(false);
+  const [sedangMemproses, setSedangMemproses] = useState<boolean>(false);
   const [pesanError, setPesanError] = useState<string | null>(null);
 
-  // Client ID Web resmi dari Google Cloud Console Anda
   const clientId =
     process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
     "1043466129331-1b2t0m91ku0i6l02b0ve6o45dbg5coof.apps.googleusercontent.com";
@@ -56,9 +57,9 @@ export const GoogleSsoButtonWeb: React.FC<GoogleSsoWebProps> = ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "google_sso",
-          idToken,
+          idToken: idToken,
           role: rolePilihan,
-          instansi: "HibahIlmu Web Google SSO",
+          instansi: instansiPilihan,
         }),
       });
       const json = await res.json();
@@ -72,7 +73,7 @@ export const GoogleSsoButtonWeb: React.FC<GoogleSsoWebProps> = ({
           password: "",
           role: json.user.role,
           status: "approved",
-          infoTambahan: json.user.instansi || "Google Verified Account",
+          infoTambahan: json.user.instansi || instansiPilihan,
           waktuDaftar: "Hari ini (Google SSO)",
           xp: json.user.xp || 550,
         });
@@ -92,9 +93,7 @@ export const GoogleSsoButtonWeb: React.FC<GoogleSsoWebProps> = ({
 
     const initGsi = () => {
       if (window.google?.accounts?.id && googleBtnContainerRef.current) {
-        // Bersihkan container sebelumnya agar tidak double render
         googleBtnContainerRef.current.innerHTML = "";
-        
         window.google.accounts.id.initialize({
           client_id: clientId,
           callback: (resp) => {
@@ -108,7 +107,7 @@ export const GoogleSsoButtonWeb: React.FC<GoogleSsoWebProps> = ({
           size: "large",
           text: "continue_with",
           shape: "pill",
-          width: 320,
+          width: 300,
         });
       }
     };
@@ -124,22 +123,24 @@ export const GoogleSsoButtonWeb: React.FC<GoogleSsoWebProps> = ({
     } else {
       initGsi();
     }
-  }, [clientId, rolePilihan]);
+  }, [clientId, rolePilihan, instansiPilihan]);
 
   return (
     <div className="space-y-3 flex flex-col items-center w-full">
-      {/* Container Resmi Tombol Google Identity Services */}
-      <div ref={googleBtnContainerRef} className="flex justify-center min-h-[44px]" />
+      <div
+        ref={googleBtnContainerRef}
+        className="flex justify-center min-h-[44px]"
+      />
 
       {sedangMemproses && (
         <div className="text-xs font-bold text-emerald-600 animate-pulse text-center">
-          🔄 Memverifikasi akun Google ke server hibahilmu.my.id...
+          Memverifikasi akun Google ({rolePilihan.toUpperCase()}) ke server...
         </div>
       )}
 
       {pesanError && (
         <div className="text-xs font-bold text-rose-600 bg-rose-50 px-3 py-2 rounded-xl border border-rose-200 text-center">
-          ⚠️ {pesanError}
+          {pesanError}
         </div>
       )}
     </div>

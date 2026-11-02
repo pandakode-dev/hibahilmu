@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from "react";
 import {
@@ -65,6 +65,7 @@ import {
 import { RuangBelajarView } from "./components/RuangBelajarView";
 import { TryoutDanForumView } from "./components/TryoutDanForumView";
 import { DashboardPanelView } from "./components/DashboardPanelView";
+import { AuthGateSecureView } from "./components/AuthGateSecureView";
 import {
   SmartAlertBanner,
   AgendaWebinarView,
@@ -173,16 +174,11 @@ export default function AplikasiHibahIlmu() {
         ...prev,
       ]);
     }
-  }, [kelasAktif]);
+  }, [kelasAktif, userLogin]);
 
-  // ============================================================================
-  // SINKRONISASI REALTIME DARI SERVER (API /api/mobile/auth & /api/mobile/content)
-  // Menarik Data Akun Baru Google SSO, Beasiswa, & Laporan Bug
-  // ============================================================================
   useEffect(() => {
     const tarikDataDariServer = async () => {
       try {
-        // 1. Tarik Data Akun (Termasuk yang daftar via Google SSO Android)
         const resAuth = await fetch("/api/mobile/auth");
         const jsonAuth = await resAuth.json();
         if (jsonAuth.ok && Array.isArray(jsonAuth.accounts)) {
@@ -200,7 +196,6 @@ export default function AplikasiHibahIlmu() {
           });
         }
 
-        // 2. Tarik Data Beasiswa & Laporan Bug dari Android
         const resContent = await fetch("/api/mobile/content");
         const jsonContent = await resContent.json();
         if (jsonContent.ok) {
@@ -216,14 +211,10 @@ export default function AplikasiHibahIlmu() {
       }
     };
 
-    // Tarik pertama kali saat render
     tarikDataDariServer();
-
-    // Tarik data secara berkala setiap 5 detik (Polling)
     const intervalId = setInterval(tarikDataDariServer, 5000);
     return () => clearInterval(intervalId);
   }, []);
-  // ============================================================================
 
   const tambahXP = (tambahan: number) => {
     setPoinXP((prev) => prev + tambahan);
@@ -279,7 +270,7 @@ export default function AplikasiHibahIlmu() {
       id: "notif-bug-" + Date.now(),
       targetUserId: "ALL",
       tipeNotif: "bug_masukan",
-      judul: `🐞 [${laporanBaru.kategoriLaporan}] dari ${laporanBaru.pelaporNama}`,
+      judul: `[${laporanBaru.kategoriLaporan}] dari ${laporanBaru.pelaporNama}`,
       pesan: `Halaman "${laporanBaru.halamanTerkait}": ${laporanBaru.deskripsiDetail} (Kontak: ${laporanBaru.pelaporKontak})`,
       pengirim: laporanBaru.pelaporNama,
       waktu: "Baru saja",
@@ -297,7 +288,7 @@ export default function AplikasiHibahIlmu() {
       id: "notif-don-" + Date.now(),
       targetUserId: "ALL",
       tipeNotif: "donasi_masuk",
-      judul: `💝 Wakaf & Donasi Baru: Rp ${nominal.toLocaleString("id-ID")}`,
+      judul: `Wakaf & Donasi Baru: Rp ${nominal.toLocaleString("id-ID")}`,
       pesan: `Donatur "${namaDonatur}" telah menyalurkan dukungan melalui ${metode}. Terima kasih atas kebaikannya!`,
       pengirim: namaDonatur,
       waktu: "Baru saja",
@@ -321,7 +312,7 @@ export default function AplikasiHibahIlmu() {
       ...prev,
     ]);
     kirimBroadcastNotif(
-      `📥 Tugas Dikumpulkan: ${tugasInfo?.judul || "Tugas Modul"}`,
+      `Tugas Dikumpulkan: ${tugasInfo?.judul || "Tugas Modul"}`,
       `Mahasiswa/Siswa ${userLogin.nama} telah mengumpulkan tugas sebelum batas waktu tutup.`,
       "tugas_deadline"
     );
@@ -332,7 +323,7 @@ export default function AplikasiHibahIlmu() {
     if (listBaru.length > daftarTugas.length) {
       const tugasTerbaru = listBaru[0];
       kirimBroadcastNotif(
-        `📝 TUGAS BARU DIBUKA: ${tugasTerbaru.judul}`,
+        `TUGAS BARU DIBUKA: ${tugasTerbaru.judul}`,
         `Pengajar ${tugasTerbaru.pembuatNama} telah menerbitkan tugas baru. Batas waktu tutup: ${tugasTerbaru.deadline}.`,
         "tugas_deadline"
       );
@@ -423,11 +414,6 @@ export default function AplikasiHibahIlmu() {
   );
   const jumlahBelumDibaca = notifikasiUserAktif.filter((n) => !n.dibaca).length;
 
-  // ==========================================================================
-  // PROTEKSI LOGIN WAJIB (AUTH GUARD):
-  // Pengunjung belum login HANYA bisa melihat halaman utama Beranda.
-  // Jika memilih menu selain beranda ATAU membuka jenjang/modul kelas, wajib login!
-  // ==========================================================================
   const butuhLoginSekarang =
     !userLogin && (menuAktif !== "beranda" || jenjangAktif !== null || kelasAktif !== null);
 
@@ -443,7 +429,6 @@ export default function AplikasiHibahIlmu() {
         spasiTeksLebar ? "tracking-wider leading-loose" : ""
       }`}
     >
-      {/* HEADER NAVBAR */}
       <header
         className={`sticky top-0 z-40 backdrop-blur-xl border-b shadow-xs ${
           darkMode || kontrasTinggi
@@ -480,12 +465,12 @@ export default function AplikasiHibahIlmu() {
           <nav className="flex items-center gap-1.5 overflow-x-auto">
             {[
               { id: "beranda", label: "Beranda & Kelas" },
-              { id: "simulator", label: "💻 Simulator Coding & IoT" },
-              { id: "inovasi", label: "✨ Hub Inovasi" },
-              { id: "webinar", label: "🔴 Webinar" },
+              { id: "simulator", label: "Simulator Coding & IoT" },
+              { id: "inovasi", label: "Hub Inovasi" },
+              { id: "webinar", label: "Webinar" },
               { id: "tryout", label: "Tryout CBT" },
-              { id: "donasi", label: "💝 Wakaf & Donasi" },
-              { id: "lapor_bug", label: "🐞 Lapor Bug" },
+              { id: "donasi", label: "Wakaf & Donasi" },
+              { id: "lapor_bug", label: "Lapor Bug" },
               { id: "forum", label: "Forum PR" },
               { id: "leaderboard", label: "Leaderboard" },
             ].map((tab) => (
@@ -525,28 +510,28 @@ export default function AplikasiHibahIlmu() {
               {bukaMenuAksesibilitas && (
                 <div className="absolute right-0 mt-2 w-72 bg-white text-slate-800 rounded-3xl shadow-2xl border-2 border-indigo-200 p-4 z-50 space-y-2.5 text-xs">
                   <div className="font-black text-sm border-b pb-2 text-indigo-950">
-                    ♿ Pengaturan Ramah Disabilitas
+                    Pengaturan Ramah Disabilitas
                   </div>
                   <button
                     onClick={() => setUkuranTeksBesar(!ukuranTeksBesar)}
                     className="w-full text-left p-2.5 rounded-xl border font-bold flex justify-between items-center cursor-pointer"
                   >
                     <span>Perbesar Font Teks</span>
-                    <b>{ukuranTeksBesar ? "Aktif ✓" : "Normal"}</b>
+                    <b>{ukuranTeksBesar ? "Aktif" : "Normal"}</b>
                   </button>
                   <button
                     onClick={() => setKontrasTinggi(!kontrasTinggi)}
                     className="w-full text-left p-2.5 rounded-xl border font-bold flex justify-between items-center cursor-pointer"
                   >
                     <span>Mode Kontras Tinggi</span>
-                    <b>{kontrasTinggi ? "Aktif ✓" : "Mati"}</b>
+                    <b>{kontrasTinggi ? "Aktif" : "Mati"}</b>
                   </button>
                   <button
                     onClick={() => setSpasiTeksLebar(!spasiTeksLebar)}
                     className="w-full text-left p-2.5 rounded-xl border font-bold flex justify-between items-center cursor-pointer"
                   >
                     <span>Spasi Huruf Lebar (Disleksia)</span>
-                    <b>{spasiTeksLebar ? "Aktif ✓" : "Normal"}</b>
+                    <b>{spasiTeksLebar ? "Aktif" : "Normal"}</b>
                   </button>
                   <button
                     onClick={bacakanLayarAksesibilitas}
@@ -652,7 +637,6 @@ export default function AplikasiHibahIlmu() {
         </div>
       </header>
 
-      {/* FLOATING ALERT BANNER */}
       <SmartAlertBanner
         userLogin={userLogin}
         agendaList={agendaList}
@@ -671,7 +655,6 @@ export default function AplikasiHibahIlmu() {
         }}
       />
 
-      {/* MAIN CONTENT */}
       <main className="max-w-7xl mx-auto px-4 py-8">
         {butuhLoginSekarang ? (
           <div className="space-y-6">
@@ -682,7 +665,7 @@ export default function AplikasiHibahIlmu() {
                 </div>
                 <div>
                   <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-black/25">
-                    Akses Terproteksi • Wajib Login Akun
+                    Akses Terproteksi - Wajib Login Akun
                   </span>
                   <h2 className="text-xl sm:text-2xl font-black mt-0.5">
                     Silakan Masuk (Login) sebagai Siswa atau Pengajar Terlebih Dahulu
@@ -703,48 +686,15 @@ export default function AplikasiHibahIlmu() {
                 }}
                 className="px-4 py-2.5 rounded-xl bg-white text-slate-900 font-black text-xs cursor-pointer shrink-0"
               >
-                ← Kembali ke Beranda
+                Kembali ke Beranda
               </button>
             </div>
 
-            <DashboardPanelView
-              userLogin={userLogin}
-              setUserLogin={setUserLogin}
+            <AuthGateSecureView
               daftarAkun={daftarAkun}
               setDaftarAkun={setDaftarAkun}
-              daftarJenjang={daftarJenjang}
-              setDaftarJenjang={setDaftarJenjang}
-              daftarPaketTryout={daftarPaketTryout}
-              setDaftarPaketTryout={setDaftarPaketTryout}
-              riwayatTryout={riwayatTryout}
-              daftarTugas={daftarTugas}
-              setDaftarTugas={handleSetDaftarTugasDenganNotif}
-              daftarPengumpulan={daftarPengumpulan}
-              setDaftarPengumpulan={setDaftarPengumpulan}
-              daftarPresensi={daftarPresensi}
-              setDaftarPresensi={setDaftarPresensi}
-              rppList={rppList}
-              setRppList={setRppList}
-              bankSoalKolektif={bankSoalKolektif}
-              setBankSoalKolektif={setBankSoalKolektif}
-              daftarKelompok={daftarKelompok}
-              setDaftarKelompok={setDaftarKelompok}
-              jadwalLive={jadwalLive}
-              setJadwalLive={setJadwalLive}
-              studyRooms={studyRooms}
-              setStudyRooms={setStudyRooms}
-              daftarBeasiswa={daftarBeasiswa}
-              setDaftarBeasiswa={setDaftarBeasiswa}
-              logAktivitas={logAktivitas}
-              poinXP={poinXP}
-              materiSelesai={materiSelesai}
-              tambahXP={tambahXP}
-              kirimNotifikasiKeUser={kirimNotifikasiKeUser}
-              konfigurasiWeb={konfigurasiWeb}
-              setKonfigurasiWeb={setKonfigurasiWeb}
-              daftarLaporanBug={daftarLaporanBug}
-              setDaftarLaporanBug={setDaftarLaporanBug}
-              modeRoleAwalAuth={modeRoleAuth}
+              onLoginBerhasil={(akun) => setUserLogin(akun)}
+              modeRoleAwal={modeRoleAuth}
             />
           </div>
         ) : (
@@ -898,45 +848,54 @@ export default function AplikasiHibahIlmu() {
               )}
 
             {menuAktif === "dashboard" && (
-              <DashboardPanelView
-                userLogin={userLogin}
-                setUserLogin={setUserLogin}
-                daftarAkun={daftarAkun}
-                setDaftarAkun={setDaftarAkun}
-                daftarJenjang={daftarJenjang}
-                setDaftarJenjang={setDaftarJenjang}
-                daftarPaketTryout={daftarPaketTryout}
-                setDaftarPaketTryout={setDaftarPaketTryout}
-                riwayatTryout={riwayatTryout}
-                daftarTugas={daftarTugas}
-                setDaftarTugas={handleSetDaftarTugasDenganNotif}
-                daftarPengumpulan={daftarPengumpulan}
-                setDaftarPengumpulan={setDaftarPengumpulan}
-                daftarPresensi={daftarPresensi}
-                setDaftarPresensi={setDaftarPresensi}
-                rppList={rppList}
-                setRppList={setRppList}
-                bankSoalKolektif={bankSoalKolektif}
-                setBankSoalKolektif={setBankSoalKolektif}
-                daftarKelompok={daftarKelompok}
-                setDaftarKelompok={setDaftarKelompok}
-                jadwalLive={jadwalLive}
-                setJadwalLive={setJadwalLive}
-                studyRooms={studyRooms}
-                setStudyRooms={setStudyRooms}
-                daftarBeasiswa={daftarBeasiswa}
-                setDaftarBeasiswa={setDaftarBeasiswa}
-                logAktivitas={logAktivitas}
-                poinXP={poinXP}
-                materiSelesai={materiSelesai}
-                tambahXP={tambahXP}
-                kirimNotifikasiKeUser={kirimNotifikasiKeUser}
-                konfigurasiWeb={konfigurasiWeb}
-                setKonfigurasiWeb={setKonfigurasiWeb}
-                daftarLaporanBug={daftarLaporanBug}
-                setDaftarLaporanBug={setDaftarLaporanBug}
-                modeRoleAwalAuth={modeRoleAuth}
-              />
+              userLogin ? (
+                <DashboardPanelView
+                  userLogin={userLogin}
+                  setUserLogin={setUserLogin}
+                  daftarAkun={daftarAkun}
+                  setDaftarAkun={setDaftarAkun}
+                  daftarJenjang={daftarJenjang}
+                  setDaftarJenjang={setDaftarJenjang}
+                  daftarPaketTryout={daftarPaketTryout}
+                  setDaftarPaketTryout={setDaftarPaketTryout}
+                  riwayatTryout={riwayatTryout}
+                  daftarTugas={daftarTugas}
+                  setDaftarTugas={handleSetDaftarTugasDenganNotif}
+                  daftarPengumpulan={daftarPengumpulan}
+                  setDaftarPengumpulan={setDaftarPengumpulan}
+                  daftarPresensi={daftarPresensi}
+                  setDaftarPresensi={setDaftarPresensi}
+                  rppList={rppList}
+                  setRppList={setRppList}
+                  bankSoalKolektif={bankSoalKolektif}
+                  setBankSoalKolektif={setBankSoalKolektif}
+                  daftarKelompok={daftarKelompok}
+                  setDaftarKelompok={setDaftarKelompok}
+                  jadwalLive={jadwalLive}
+                  setJadwalLive={setJadwalLive}
+                  studyRooms={studyRooms}
+                  setStudyRooms={setStudyRooms}
+                  daftarBeasiswa={daftarBeasiswa}
+                  setDaftarBeasiswa={setDaftarBeasiswa}
+                  logAktivitas={logAktivitas}
+                  poinXP={poinXP}
+                  materiSelesai={materiSelesai}
+                  tambahXP={tambahXP}
+                  kirimNotifikasiKeUser={kirimNotifikasiKeUser}
+                  konfigurasiWeb={konfigurasiWeb}
+                  setKonfigurasiWeb={setKonfigurasiWeb}
+                  daftarLaporanBug={daftarLaporanBug}
+                  setDaftarLaporanBug={setDaftarLaporanBug}
+                  modeRoleAwalAuth={modeRoleAuth}
+                />
+              ) : (
+                <AuthGateSecureView
+                  daftarAkun={daftarAkun}
+                  setDaftarAkun={setDaftarAkun}
+                  onLoginBerhasil={(akun) => setUserLogin(akun)}
+                  modeRoleAwal={modeRoleAuth}
+                />
+              )
             )}
           </>
         )}
@@ -953,14 +912,14 @@ export default function AplikasiHibahIlmu() {
             className="w-14 h-14 rounded-2xl object-cover shadow-md border-2 border-emerald-500"
           />
           <div className="font-black text-lg text-slate-800 dark:text-slate-200">
-            HibahIlmu.id — Gerakan Wakaf &amp; Hibah Ilmu Pengetahuan Indonesia
+            HibahIlmu.id - Gerakan Wakaf &amp; Hibah Ilmu Pengetahuan Indonesia
           </div>
           <p className="max-w-md text-xs text-slate-500">
-            Dibangun dengan dedikasi oleh <strong>Panda Kode</strong> • 100% Pendidikan Terbuka Gratis
+            Dibangun dengan dedikasi oleh <strong>Panda Kode</strong> - 100% Pendidikan Terbuka Gratis
             Selamanya.
           </p>
           <div className="text-xs font-bold text-slate-600 dark:text-slate-400 pt-1">
-            📞 {konfigurasiWeb.nomorKontakWa} • ✉️ {konfigurasiWeb.emailKontakResmi}
+            {konfigurasiWeb.nomorKontakWa} | {konfigurasiWeb.emailKontakResmi}
           </div>
         </div>
       </footer>
