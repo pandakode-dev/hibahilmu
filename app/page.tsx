@@ -11,6 +11,7 @@ import {
   Accessibility,
   Volume2,
   Lock,
+  LogOut,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 
@@ -74,6 +75,9 @@ import { DonasiDanBugView } from "./components/DonasiDanBugView";
 import { FiturInovasiHubView } from "./components/FiturInovasiHubView";
 import { SimulatorPemrogramanView } from "./components/simulator/SimulatorPemrogramanView";
 
+const SESSION_STORAGE_KEY = "hibahilmu_active_user_session_v1";
+const LAST_MENU_STORAGE_KEY = "hibahilmu_last_active_menu_v1";
+
 export default function AplikasiHibahIlmu() {
   const [darkMode, setDarkMode] = useState<boolean>(false);
   const [ukuranTeksBesar, setUkuranTeksBesar] = useState<boolean>(false);
@@ -91,7 +95,9 @@ export default function AplikasiHibahIlmu() {
   const [hanyaMateriDiikuti, setHanyaMateriDiikuti] = useState<boolean>(false);
 
   const [daftarAkun, setDaftarAkun] = useState<AkunPengguna[]>(AKUN_DEFAULT);
-  const [userLogin, setUserLogin] = useState<AkunPengguna | null>(null);
+  const [userLogin, setUserLoginState] = useState<AkunPengguna | null>(null);
+  const [sudahCekSesiLokal, setSudahCekSesiLokal] = useState<boolean>(false);
+
   const [logAktivitas] = useState<LogAktivitas[]>(LOG_AWAL);
   const [daftarKelompok, setDaftarKelompok] = useState<KelompokBelajar[]>(KELOMPOK_AWAL);
 
@@ -157,6 +163,52 @@ export default function AplikasiHibahIlmu() {
 
   const semuaModulFlat = daftarJenjang.flatMap((j) => j.kelas);
 
+  // Wrapper setUserLogin yang otomatis menyimpan sesi ke localStorage agar TIDAK logout saat reload
+  const setUserLogin: React.Dispatch<React.SetStateAction<AkunPengguna | null>> = (
+    valOrUpdater
+  ) => {
+    setUserLoginState((prev) => {
+      const next =
+        typeof valOrUpdater === "function" ? valOrUpdater(prev) : valOrUpdater;
+      try {
+        if (next) {
+          localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(next));
+          if (next.xp && next.xp > 0) setPoinXP(next.xp);
+        } else {
+          localStorage.removeItem(SESSION_STORAGE_KEY);
+        }
+      } catch {}
+      return next;
+    });
+  };
+
+  // Pulihkan sesi login & menu terakhir saat halaman di-reload
+  useEffect(() => {
+    try {
+      const rawSession = localStorage.getItem(SESSION_STORAGE_KEY);
+      if (rawSession) {
+        const parsedUser = JSON.parse(rawSession) as AkunPengguna;
+        if (parsedUser && parsedUser.email) {
+          setUserLoginState(parsedUser);
+          if (parsedUser.xp) setPoinXP(parsedUser.xp);
+        }
+      }
+      const rawMenu = localStorage.getItem(LAST_MENU_STORAGE_KEY);
+      if (rawMenu) {
+        setMenuAktif(rawMenu);
+      }
+    } catch {}
+    setSudahCekSesiLokal(true);
+  }, []);
+
+  // Simpan menu aktif terakhir agar saat reload di halaman Simulator tetap di Simulator
+  useEffect(() => {
+    if (!sudahCekSesiLokal) return;
+    try {
+      localStorage.setItem(LAST_MENU_STORAGE_KEY, menuAktif);
+    } catch {}
+  }, [menuAktif, sudahCekSesiLokal]);
+
   useEffect(() => {
     if (kelasAktif && userLogin) {
       const jam = new Date().toLocaleTimeString("id-ID", {
@@ -179,7 +231,7 @@ export default function AplikasiHibahIlmu() {
   useEffect(() => {
     const tarikDataDariServer = async () => {
       try {
-        const resAuth = await fetch("/api/mobile/auth");
+        const resAuth = await fetch("/api/mobile/auth", { cache: "no-store" });
         const jsonAuth = await resAuth.json();
         if (jsonAuth.ok && Array.isArray(jsonAuth.accounts)) {
           setDaftarAkun((prevLokal) => {
@@ -196,7 +248,7 @@ export default function AplikasiHibahIlmu() {
           });
         }
 
-        const resContent = await fetch("/api/mobile/content");
+        const resContent = await fetch("/api/mobile/content", { cache: "no-store" });
         const jsonContent = await resContent.json();
         if (jsonContent.ok) {
           if (Array.isArray(jsonContent.beasiswaList) && jsonContent.beasiswaList.length > 0) {
@@ -217,7 +269,20 @@ export default function AplikasiHibahIlmu() {
   }, []);
 
   const tambahXP = (tambahan: number) => {
-    setPoinXP((prev) => prev + tambahan);
+    setPoinXP((prev) => {
+      const baru = prev + tambahan;
+      try {
+        const raw = localStorage.getItem(SESSION_STORAGE_KEY);
+        if (raw) {
+          const u = JSON.parse(raw);
+          localStorage.setItem(
+            SESSION_STORAGE_KEY,
+            JSON.stringify({ ...u, xp: baru })
+          );
+        }
+      } catch {}
+      return baru;
+    });
     confetti({ particleCount: 70, spread: 65, origin: { y: 0.6 } });
   };
 
@@ -415,7 +480,9 @@ export default function AplikasiHibahIlmu() {
   const jumlahBelumDibaca = notifikasiUserAktif.filter((n) => !n.dibaca).length;
 
   const butuhLoginSekarang =
-    !userLogin && (menuAktif !== "beranda" || jenjangAktif !== null || kelasAktif !== null);
+    sudahCekSesiLokal &&
+    !userLogin &&
+    (menuAktif !== "beranda" || jenjangAktif !== null || kelasAktif !== null);
 
   return (
     <div
@@ -631,8 +698,21 @@ export default function AplikasiHibahIlmu() {
               className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-2 shadow-md cursor-pointer"
             >
               <LayoutDashboard className="w-4 h-4" />
-              <span>{userLogin ? `Panel ${userLogin.role}` : "Masuk / Daftar"}</span>
+              <span>{userLogin ? `${userLogin.nama.split(" ")[0]} (${userLogin.role})` : "Masuk / Daftar"}</span>
             </button>
+
+            {userLogin && (
+              <button
+                onClick={() => {
+                  setUserLogin(null);
+                  setMenuAktif("beranda");
+                }}
+                title="Keluar / Logout Akun"
+                className="p-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
       </header>

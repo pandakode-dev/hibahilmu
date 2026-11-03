@@ -2,57 +2,73 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import os from "os";
 
-const DB_PROJECTS_PATH = path.join(process.cwd(), "iot_projects_cloud.json");
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+// Gunakan baik direktori kerja lokal maupun /tmp (satu-satunya folder writable di Vercel Serverless)
+const DB_LOCAL_PATH = path.join(process.cwd(), "iot_projects_cloud.json");
+const DB_TMP_PATH = path.join(os.tmpdir(), "hibahilmu_iot_projects_cloud.json");
 const PUBLIC_GLOBAL_KEY = "__public_global_projects__";
 
 const globalForProjects = globalThis as unknown as {
   hibahIlmuIotProjectsByUser?: Record<string, any[]>;
 };
 
-function muatDatabaseSemuaUser(): Record<string, any[]> {
-  if (globalForProjects.hibahIlmuIotProjectsByUser) {
-    return globalForProjects.hibahIlmuIotProjectsByUser;
-  }
-  try {
-    if (fs.existsSync(DB_PROJECTS_PATH)) {
-      const raw = fs.readFileSync(DB_PROJECTS_PATH, "utf-8");
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-        globalForProjects.hibahIlmuIotProjectsByUser = parsed;
-        return parsed;
-      }
-    }
-  } catch {
-    // Fallback serverless memory
-  }
-  globalForProjects.hibahIlmuIotProjectsByUser = {};
-  return globalForProjects.hibahIlmuIotProjectsByUser;
-}
-
-function simpanDatabaseSemuaUser(db: Record<string, any[]>) {
-  globalForProjects.hibahIlmuIotProjectsByUser = db;
-  try {
-    fs.writeFileSync(DB_PROJECTS_PATH, JSON.stringify(db, null, 2), "utf-8");
-  } catch {
-    // Fallback read-only environment
-  }
-}
-
-// Gabungkan daftar project berdasarkan kombinasi Nama Project + ID agar semua project (1, 2, 3, dst.) utuh
 function gabungkanSemuaProjectUnik(lists: any[][]): any[] {
   const map = new Map<string, any>();
   for (const list of lists) {
     if (!Array.isArray(list)) continue;
     for (const item of list) {
       if (!item || !item.namaProject) continue;
-      const kunciUnik = `${(item.namaProject || "").trim().toLowerCase()}__${item.mode || "wokwi"}`;
+      const kunciUnik = `${(item.namaProject || "").trim().toLowerCase()}__${
+        item.mode || "wokwi"
+      }`;
       if (!map.has(kunciUnik)) {
         map.set(kunciUnik, item);
       }
     }
   }
   return Array.from(map.values());
+}
+
+function muatDatabaseSemuaUser(): Record<string, any[]> {
+  const hasilGabung: Record<string, any[]> =
+    globalForProjects.hibahIlmuIotProjectsByUser || {};
+
+  for (const filePath of [DB_TMP_PATH, DB_LOCAL_PATH]) {
+    try {
+      if (fs.existsSync(filePath)) {
+        const raw = fs.readFileSync(filePath, "utf-8");
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          for (const [k, arr] of Object.entries(parsed)) {
+            if (Array.isArray(arr)) {
+              hasilGabung[k] = gabungkanSemuaProjectUnik([
+                hasilGabung[k] || [],
+                arr,
+              ]);
+            }
+          }
+        }
+      }
+    } catch {}
+  }
+
+  globalForProjects.hibahIlmuIotProjectsByUser = hasilGabung;
+  return hasilGabung;
+}
+
+function simpanDatabaseSemuaUser(db: Record<string, any[]>) {
+  globalForProjects.hibahIlmuIotProjectsByUser = db;
+  const jsonStr = JSON.stringify(db, null, 2);
+  try {
+    fs.writeFileSync(DB_TMP_PATH, jsonStr, "utf-8");
+  } catch {}
+  try {
+    fs.writeFileSync(DB_LOCAL_PATH, jsonStr, "utf-8");
+  } catch {}
 }
 
 export async function GET(req: NextRequest) {
@@ -89,18 +105,26 @@ export async function GET(req: NextRequest) {
 
   const hasilGabung = gabungkanSemuaProjectUnik(kandidatList);
 
-  return NextResponse.json({
-    ok: true,
-    userId: email || userId || "public",
-    total: hasilGabung.length,
-    projects: hasilGabung,
-  });
+  return NextResponse.json(
+    {
+      ok: true,
+      userId: email || userId || "public",
+      total: hasilGabung.length,
+      projects: hasilGabung,
+    },
+    {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+      },
+    }
+  );
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const action: "save" | "save_as" | "delete" | "sync_bulk" = body.action || "save";
+    const action: "save" | "save_as" | "delete" | "sync_bulk" =
+      body.action || "save";
     const userId = (body.userId || "guest_user").trim().toLowerCase();
     const email = (body.email || userId).trim().toLowerCase();
 
@@ -109,7 +133,6 @@ export async function POST(req: NextRequest) {
       new Set([userId, email, PUBLIC_GLOBAL_KEY].filter(Boolean))
     );
 
-    // SINKRONISASI MASSAL (Mengunggah semua project yang ada di PC/Browser ke Database Publik Server)
     if (action === "sync_bulk" && Array.isArray(body.projects)) {
       for (const k of keysToSync) {
         const listLama = Array.isArray(db[k]) ? db[k] : [];
@@ -117,11 +140,14 @@ export async function POST(req: NextRequest) {
       }
       simpanDatabaseSemuaUser(db);
       const primaryKey = email || userId || PUBLIC_GLOBAL_KEY;
-      return NextResponse.json({
-        ok: true,
-        message: "Seluruh project berhasil disinkronkan ke Database Publik Server!",
-        projects: db[primaryKey] || [],
-      });
+      return NextResponse.json(
+        {
+          ok: true,
+          message: "Seluruh project berhasil disinkronkan ke Server Publik!",
+          projects: db[primaryKey] || [],
+        },
+        { headers: { "Cache-Control": "no-store" } }
+      );
     }
 
     if (action === "save" || action === "save_as") {
@@ -135,8 +161,6 @@ export async function POST(req: NextRequest) {
 
       const namaBersih = (prj.namaProject || "Project IoT").trim();
       const slugNama = namaBersih.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-
-      // Pastikan setiap Nama Project yang berbeda memiliki ID unik sendiri agar tidak menimpa project lain!
       const idUnikBerdasarkanNama =
         action === "save_as"
           ? `prj-${slugNama}-${Date.now()}`
@@ -152,7 +176,6 @@ export async function POST(req: NextRequest) {
 
       for (const k of keysToSync) {
         const listLama = Array.isArray(db[k]) ? db[k] : [];
-        // Hanya timpa jika NAMA PROJECT-nya persis sama; jika namanya beda, tambahkan sebagai project baru!
         const sisa = listLama.filter(
           (p) =>
             (p.namaProject || "").trim().toLowerCase() !==
@@ -164,12 +187,15 @@ export async function POST(req: NextRequest) {
       simpanDatabaseSemuaUser(db);
       const primaryKey = email || userId || PUBLIC_GLOBAL_KEY;
 
-      return NextResponse.json({
-        ok: true,
-        message: "Project berhasil disimpan ke Database Publik Server!",
-        project: prjLengkap,
-        projects: db[primaryKey] || [],
-      });
+      return NextResponse.json(
+        {
+          ok: true,
+          message: "Project berhasil disimpan ke Database Publik Server!",
+          project: prjLengkap,
+          projects: db[primaryKey] || [],
+        },
+        { headers: { "Cache-Control": "no-store" } }
+      );
     }
 
     if (action === "delete") {
@@ -187,10 +213,13 @@ export async function POST(req: NextRequest) {
       }
       simpanDatabaseSemuaUser(db);
       const primaryKey = email || userId || PUBLIC_GLOBAL_KEY;
-      return NextResponse.json({
-        ok: true,
-        projects: db[primaryKey] || [],
-      });
+      return NextResponse.json(
+        {
+          ok: true,
+          projects: db[primaryKey] || [],
+        },
+        { headers: { "Cache-Control": "no-store" } }
+      );
     }
 
     return NextResponse.json(

@@ -275,6 +275,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     pin: TitikPinFisik;
     absX: number;
     absY: number;
+    jumlahKabelTerhubung: number;
   } | null>(null);
   const [idKabelTerpilih, setIdKabelTerpilih] = useState<string | null>(null);
   const [sedangGeserSiku, setSedangGeserSiku] = useState<{
@@ -297,70 +298,72 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
   const [sudahHydrateDraft, setSudahHydrateDraft] = useState<boolean>(false);
 
   // ============================================================================
-  // 1. GABUNGKAN SEMUA PROJECT DARI LOKAL & SERVER PUBLIK (ANTI HILANG LINTAS PC)
+  // 1. SINKRONISASI TANPA CACHE DARI SERVER PUBLIK SAAT GANTI BROWSER / PC
   // ============================================================================
-  useEffect(() => {
-    let aktif = true;
-    async function pulihkanDanSinkronkanSemuaProject() {
-      let listLokal: ProjectTersimpanAkun[] = [];
-      try {
-        // Kumpulkan semua project lokal dari semua key hibahilmu_iot_projects_* di browser ini
-        for (let i = 0; i < localStorage.length; i++) {
-          const k = localStorage.key(i);
-          if (k && k.startsWith("hibahilmu_iot_projects_")) {
-            const raw = localStorage.getItem(k);
-            if (raw) {
-              const parsed = JSON.parse(raw);
-              if (Array.isArray(parsed)) {
-                listLokal = [...listLokal, ...parsed];
-              }
+  const tarikDaftarProjectTerbaruDariServer = async (terapkanKeKanvasJikaAwal = false) => {
+    let listLokal: ProjectTersimpanAkun[] = [];
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith("hibahilmu_iot_projects_")) {
+          const raw = localStorage.getItem(k);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+              listLokal = [...listLokal, ...parsed];
             }
           }
         }
-      } catch {}
+      }
+    } catch {}
 
-      try {
-        const qUserId = encodeURIComponent(userLogin?.id || idPemilikAktif);
-        const qEmail = encodeURIComponent(emailPemilikAktif || idPemilikAktif);
-        const qNama = encodeURIComponent(namaPemilikAktif);
+    try {
+      const qUserId = encodeURIComponent(userLogin?.id || idPemilikAktif);
+      const qEmail = encodeURIComponent(emailPemilikAktif || idPemilikAktif);
+      const qNama = encodeURIComponent(namaPemilikAktif);
 
-        // Jika di PC ini ada project lokal (misal 3 project), langsung push semuanya ke Server Publik!
-        if (listLokal.length > 0) {
-          await fetch("/api/iot/projects", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              action: "sync_bulk",
-              userId: userLogin?.id || idPemilikAktif,
-              email: emailPemilikAktif || idPemilikAktif,
-              projects: listLokal,
-            }),
-          });
-        }
-
-        // Tarik daftar gabungan lengkap dari Server Publik
-        const res = await fetch(
-          `/api/iot/projects?userId=${qUserId}&email=${qEmail}&nama=${qNama}`
-        );
-        const json = await res.json();
-        if (aktif && json.ok && Array.isArray(json.projects) && json.projects.length > 0) {
-          setDaftarProjectTersimpan(json.projects);
-          localStorage.setItem(storageKeyUser, JSON.stringify(json.projects));
-          terapkanDataProjectKeState(json.projects[0], false);
-        } else if (aktif && listLokal.length > 0) {
-          setDaftarProjectTersimpan(listLokal);
-          terapkanDataProjectKeState(listLokal[0], false);
-        }
-      } catch {
-        if (aktif && listLokal.length > 0) {
-          setDaftarProjectTersimpan(listLokal);
-          terapkanDataProjectKeState(listLokal[0], false);
-        }
+      if (listLokal.length > 0) {
+        await fetch("/api/iot/projects", {
+          method: "POST",
+          cache: "no-store",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "sync_bulk",
+            userId: userLogin?.id || idPemilikAktif,
+            email: emailPemilikAktif || idPemilikAktif,
+            projects: listLokal,
+          }),
+        });
       }
 
-      if (aktif) setSudahHydrateDraft(true);
+      const res = await fetch(
+        `/api/iot/projects?userId=${qUserId}&email=${qEmail}&nama=${qNama}&t=${Date.now()}`,
+        { cache: "no-store" }
+      );
+      const json = await res.json();
+      if (json.ok && Array.isArray(json.projects) && json.projects.length > 0) {
+        setDaftarProjectTersimpan(json.projects);
+        localStorage.setItem(storageKeyUser, JSON.stringify(json.projects));
+        if (terapkanKeKanvasJikaAwal) {
+          terapkanDataProjectKeState(json.projects[0], false);
+        }
+        return;
+      }
+    } catch {}
+
+    if (listLokal.length > 0) {
+      setDaftarProjectTersimpan(listLokal);
+      if (terapkanKeKanvasJikaAwal) {
+        terapkanDataProjectKeState(listLokal[0], false);
+      }
     }
-    pulihkanDanSinkronkanSemuaProject();
+  };
+
+  useEffect(() => {
+    let aktif = true;
+    tarikDaftarProjectTerbaruDariServer(true).finally(() => {
+      if (aktif) setSudahHydrateDraft(true);
+    });
     return () => {
       aktif = false;
     };
@@ -369,65 +372,25 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
   const nodesSaatIni = daftarNode[mode] || [];
   const kabelSaatIni = daftarKabel[mode] || [];
 
-  // ============================================================================
-  // 2. AUTO-SAVE KE LOKAL & SERVER TANPA MENIMPA PROJECT DENGAN NAMA BERBEDA
-  // ============================================================================
-  useEffect(() => {
-    if (!sudahHydrateDraft) return;
-    setStatusAutoSave("Menyimpan ke Cloud...");
-    const timer = setTimeout(async () => {
-      try {
-        const namaBersih = (namaProjectInput || "Project Simulator").trim();
-        const slugNama = namaBersih.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-        const idUnik = `prj-${slugNama}-${mode}`;
-
-        const paketDraft: ProjectTersimpanAkun = {
-          idProject: idUnik,
-          namaProject: namaBersih,
-          pemilikId: idPemilikAktif,
-          pemilikNama: namaPemilikAktif,
-          waktuSimpan: new Date().toLocaleTimeString("id-ID"),
-          mode,
-          nodes: nodesSaatIni,
-          kabel: kabelSaatIni,
-          kodePerMcu: kodePerMcuMap,
-          kodeMicroPythonPerMcu: kodeMicroPythonMap,
-          blynkWidgets: widgetsBlynkSaatIni,
-          ruanganFisik: daftarRuanganFisik,
-        };
-        localStorage.setItem(draftKeyUser, JSON.stringify(paketDraft));
-
-        const res = await fetch("/api/iot/projects", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "save",
-            userId: userLogin?.id || idPemilikAktif,
-            email: emailPemilikAktif || idPemilikAktif,
-            project: paketDraft,
-          }),
-        });
-        const json = await res.json();
-        if (json.ok && Array.isArray(json.projects)) {
-          setDaftarProjectTersimpan(json.projects);
-          localStorage.setItem(storageKeyUser, JSON.stringify(json.projects));
-        }
-        setStatusAutoSave("Cloud Synced ✓");
-      } catch {
-        setStatusAutoSave("Draft Lokal ✓");
-      }
-    }, 900);
-    return () => clearTimeout(timer);
-  }, [
-    sudahHydrateDraft,
-    nodesSaatIni,
-    kabelSaatIni,
-    kodePerMcuMap,
-    kodeMicroPythonMap,
-    widgetsBlynkSaatIni,
-    daftarRuanganFisik,
-    namaProjectInput,
-  ]);
+  // Hitung peta jumlah kabel yang terhubung di setiap pin: key = `${nodeId}__${pinId}`
+  const petaPinTerhubung = useMemo(() => {
+    const map = new Map<string, { count: number; warnaTerakhir: string }>();
+    kabelSaatIni.forEach((kbl) => {
+      const kAsal = `${kbl.dariId}__${kbl.pinAsal}`;
+      const kTujuan = `${kbl.keId}__${kbl.pinTujuan}`;
+      const prevAsal = map.get(kAsal);
+      map.set(kAsal, {
+        count: (prevAsal?.count || 0) + 1,
+        warnaTerakhir: kbl.warna,
+      });
+      const prevTujuan = map.get(kTujuan);
+      map.set(kTujuan, {
+        count: (prevTujuan?.count || 0) + 1,
+        warnaTerakhir: kbl.warna,
+      });
+    });
+    return map;
+  }, [kabelSaatIni]);
 
   const daftarMcuDiKanvas = useMemo(
     () => nodesSaatIni.filter((n) => TIPE_MCU_LIST.includes(n.tipe)),
@@ -540,7 +503,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     setIdProjectSaatIni(idPrj);
     setNamaProjectInput(namaBersih);
 
-    // Hanya timpa jika namanya sama persis; jika namanya beda, simpan semuanya!
     const listLama = daftarProjectTersimpan.filter(
       (p) =>
         (p.namaProject || "").trim().toLowerCase() !==
@@ -556,6 +518,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     try {
       const res = await fetch("/api/iot/projects", {
         method: "POST",
+        cache: "no-store",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "sync_bulk",
@@ -592,6 +555,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
       localStorage.setItem(storageKeyUser, JSON.stringify(sisa));
       await fetch("/api/iot/projects", {
         method: "POST",
+        cache: "no-store",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "delete",
@@ -1041,7 +1005,7 @@ void loop() {
   };
 
   // ============================================================================
-  // 3. DUKUNGAN MULTI-WIRE PER PIN (1 PIN BISA DICABANGKAN KE BANYAK TITIK LAIN)
+  // 2. DUKUNGAN MULTI-WIRE PER PIN DENGAN PEMISAHAN SIKU OTOMATIS AGAR MUDAH DIKLIK
   // ============================================================================
   const tambahKabelKoneksi = (
     dariId: string,
@@ -1052,8 +1016,6 @@ void loop() {
   ) => {
     if (!dariId || !keId || (dariId === keId && pinDariId === pinKeId)) return;
 
-    // Hanya cegah jika kabel dengan pasangan (Pin A <-> Pin B) yang PERSIS SAMA sudah ada;
-    // menghubungkan Pin A ke Pin C, Pin D, dst. DIIZINKAN SEPENUHNYA!
     const sudahAdaPersis = kabelSaatIni.some(
       (k) =>
         (k.dariId === dariId &&
@@ -1075,13 +1037,29 @@ void loop() {
     const p1 = cariKoordinatPinAbsolut(asal, pinDariId);
     const p2 = cariKoordinatPinAbsolut(tujuan, pinKeId);
 
-    // Beri sedikit offset jalur siku jika pin tersebut sudah punya cabang kabel lain agar rapi terlihat
-    const jumlahCabangDiPinIni = kabelSaatIni.filter(
+    // Hitung total cabang pada pin asal maupun pin tujuan agar siku kabel baru terpisah jelas (tidak berhimpit)
+    const cabangAsal = kabelSaatIni.filter(
       (k) =>
         (k.dariId === dariId && k.pinAsal === pinDariId) ||
         (k.keId === dariId && k.pinTujuan === pinDariId)
     ).length;
-    const midX = Math.round((p1.x + p2.x) / 2) + jumlahCabangDiPinIni * 8;
+    const cabangTujuan = kabelSaatIni.filter(
+      (k) =>
+        (k.dariId === keId && k.pinAsal === pinKeId) ||
+        (k.keId === keId && k.pinTujuan === pinKeId)
+    ).length;
+    const totalCabang = cabangAsal + cabangTujuan;
+
+    const offsetX =
+      totalCabang === 0
+        ? 0
+        : (totalCabang % 2 === 1 ? 1 : -1) * Math.ceil(totalCabang / 2) * 18;
+    const offsetY =
+      totalCabang === 0
+        ? 0
+        : (totalCabang % 2 === 1 ? -1 : 1) * Math.ceil(totalCabang / 2) * 10;
+
+    const midX = Math.round((p1.x + p2.x) / 2) + offsetX;
 
     const baru: KabelKoneksiItem = {
       id: "kbl-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
@@ -1091,8 +1069,8 @@ void loop() {
       pinTujuan: pinKeId,
       warna,
       titikSiku: [
-        { x: midX, y: p1.y },
-        { x: midX, y: p2.y },
+        { x: midX, y: p1.y + offsetY },
+        { x: midX, y: p2.y + offsetY },
       ],
     };
     setDaftarKabel((prev) => ({
@@ -1211,7 +1189,7 @@ void loop() {
             )}
             <div>
               <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded bg-emerald-500 text-slate-950">
-                Database Cloud Sync • Multi-Wire Jumper • Export &amp; Import JSON
+                Database Cloud Sync • Multi-Wire Jumper Indicator • Export &amp; Import JSON
               </span>
               <h3 className="font-black text-base sm:text-lg text-white mt-0.5">
                 {mode === "wokwi"
@@ -1353,9 +1331,10 @@ void loop() {
               true
             );
           }}
-          onBukaDrawerRepositori={() =>
-            setBukaPanelProjectAkun(!bukaPanelProjectAkun)
-          }
+          onBukaDrawerRepositori={() => {
+            tarikDaftarProjectTerbaruDariServer(false);
+            setBukaPanelProjectAkun(!bukaPanelProjectAkun);
+          }}
         />
 
         <AccountProjectRepositoryDrawer
@@ -1715,13 +1694,48 @@ void loop() {
                 : "bg-[#070d19] border-slate-700 bg-[radial-gradient(#1e293b_1.5px,transparent_1.5px)] [background-size:20px_20px]"
             }`}
           >
+            {/* BAR PILIH CEPAT SEMUA KABEL TERPASANG AGAR MUDAH DIKLIK MESKI BERTUMPUK */}
+            {kabelSaatIni.length > 0 && (
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="sticky top-2 left-3 z-40 inline-flex flex-wrap items-center gap-1.5 bg-slate-950/90 border border-slate-700 px-3 py-1.5 rounded-2xl text-[10px] ml-3 mt-2 shadow-lg"
+              >
+                <span className="font-black text-slate-400 mr-1">
+                  Klik Kabel untuk Edit ({kabelSaatIni.length}):
+                </span>
+                {kabelSaatIni.map((k, idx) => {
+                  const aktif = idKabelTerpilih === k.id;
+                  return (
+                    <button
+                      key={k.id}
+                      type="button"
+                      onClick={() => setIdKabelTerpilih(aktif ? null : k.id)}
+                      className={`px-2 py-0.5 rounded-lg font-mono font-black flex items-center gap-1 cursor-pointer border transition ${
+                        aktif
+                          ? "bg-amber-400 text-slate-950 border-white scale-105"
+                          : "bg-slate-900 text-slate-200 border-slate-700 hover:border-amber-400"
+                      }`}
+                    >
+                      <span
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: k.warna }}
+                      />
+                      <span>
+                        #{idx + 1} {k.pinAsal}➔{k.pinTujuan}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             {kabelTerpilihObj && (
               <div
                 onClick={(e) => e.stopPropagation()}
-                className="sticky top-3 left-3 z-40 inline-flex flex-wrap items-center gap-2 bg-slate-900/95 border-2 border-amber-400 px-3.5 py-2 rounded-2xl shadow-2xl text-xs ml-3 mt-3"
+                className="sticky top-12 left-3 z-40 inline-flex flex-wrap items-center gap-2 bg-slate-900/95 border-2 border-amber-400 px-3.5 py-2 rounded-2xl shadow-2xl text-xs ml-3 mt-2"
               >
                 <span className="font-black text-amber-300 flex items-center gap-1">
-                  <CornerDownRight className="w-3.5 h-3.5" /> Kabel [
+                  <CornerDownRight className="w-3.5 h-3.5" /> Edit Kabel [
                   {kabelTerpilihObj.pinAsal} ➔ {kabelTerpilihObj.pinTujuan}]:
                 </span>
                 <div className="flex items-center gap-1">
@@ -1751,7 +1765,7 @@ void loop() {
                   onClick={() => hapusKabel(kabelTerpilihObj.id)}
                   className="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-black text-[10px] cursor-pointer"
                 >
-                  Hapus Kabel
+                  ✕ Hapus Kabel
                 </button>
               </div>
             )}
@@ -1809,7 +1823,7 @@ void loop() {
               />
 
               <svg className="absolute inset-0 w-full h-full z-20 pointer-events-none">
-                {kabelSaatIni.map((kbl) => {
+                {kabelSaatIni.map((kbl, kIdx) => {
                   const asal = nodesSaatIni.find((n) => n.id === kbl.dariId);
                   const tujuan = nodesSaatIni.find((n) => n.id === kbl.keId);
                   if (!asal || !tujuan) return null;
@@ -1832,14 +1846,23 @@ void loop() {
                     setIdKomponenTerhubungKeMcuRunning.has(asal.id) &&
                     setIdKomponenTerhubungKeMcuRunning.has(tujuan.id);
 
+                  const titikTengahBadge =
+                    daftarHandle.length > 0
+                      ? daftarHandle[Math.floor(daftarHandle.length / 2)]
+                      : {
+                          x: Math.round((koorAsal.x + koorTujuan.x) / 2),
+                          y: Math.round((koorAsal.y + koorTujuan.y) / 2),
+                        };
+
                   return (
-                    <g key={kbl.id}>
+                    <g key={kbl.id} className="pointer-events-auto">
+                      {/* Area klik lebar pada batang kabel */}
                       <path
                         d={d}
                         stroke="transparent"
-                        strokeWidth="10"
+                        strokeWidth="14"
                         fill="none"
-                        className="cursor-pointer pointer-events-stroke"
+                        className="cursor-pointer"
                         onClick={(e) => {
                           e.stopPropagation();
                           setIdKabelTerpilih(kbl.id);
@@ -1848,32 +1871,43 @@ void loop() {
                       <path
                         d={d}
                         stroke={kbl.warna}
-                        strokeWidth={apakahTerpilih ? "4.5" : "3.2"}
+                        strokeWidth={apakahTerpilih ? "5" : "3.2"}
                         strokeLinejoin="round"
                         strokeLinecap="round"
                         fill="none"
-                        opacity={kabelDialiriArus ? 1 : 0.4}
-                        className="cursor-pointer pointer-events-stroke"
+                        opacity={kabelDialiriArus ? 1 : 0.45}
+                        className="cursor-pointer"
                         onClick={(e) => {
                           e.stopPropagation();
                           setIdKabelTerpilih(kbl.id);
                         }}
                       />
-                      {/* Bulatan ujung kabel diberi pointer-events-none agar TIDAK menutupi klik pada titik Pin! */}
-                      <circle
-                        cx={koorAsal.x}
-                        cy={koorAsal.y}
-                        r="3.5"
-                        fill={kbl.warna}
-                        className="pointer-events-none"
-                      />
-                      <circle
-                        cx={koorTujuan.x}
-                        cy={koorTujuan.y}
-                        r="3.5"
-                        fill={kbl.warna}
-                        className="pointer-events-none"
-                      />
+
+                      {/* Lencana Nomor Kabel di Tengah Jalur (Memudahkan Klik Edit Kabel yang Dicabangkan) */}
+                      <g
+                        transform={`translate(${titikTengahBadge.x}, ${titikTengahBadge.y})`}
+                        className="cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIdKabelTerpilih(kbl.id);
+                        }}
+                      >
+                        <circle
+                          r={apakahTerpilih ? "9" : "7.5"}
+                          fill={apakahTerpilih ? "#facc15" : "#0f172a"}
+                          stroke={kbl.warna}
+                          strokeWidth="2"
+                        />
+                        <text
+                          y="2.5"
+                          fill={apakahTerpilih ? "#0f172a" : "#ffffff"}
+                          fontSize="6.5"
+                          fontWeight="bold"
+                          textAnchor="middle"
+                        >
+                          #{kIdx + 1}
+                        </text>
+                      </g>
 
                       {apakahTerpilih &&
                         daftarHandle.map((pt, hIdx) => (
@@ -1885,7 +1919,7 @@ void loop() {
                             fill="#facc15"
                             stroke="#0f172a"
                             strokeWidth="2.5"
-                            className="cursor-grab active:cursor-grabbing pointer-events-auto"
+                            className="cursor-grab active:cursor-grabbing"
                             onMouseDown={(e) => {
                               e.stopPropagation();
                               simpanSnapshotUndo();
@@ -1925,13 +1959,16 @@ void loop() {
                       520,
                       Math.max(10, hoveredPinInfo.absX - 60)
                     )}px`,
-                    top: `${Math.max(8, hoveredPinInfo.absY - 52)}px`,
+                    top: `${Math.max(8, hoveredPinInfo.absY - 56)}px`,
                   }}
                   className="absolute z-50 pointer-events-none bg-slate-950/95 border-2 border-amber-400 text-white px-3 py-1.5 rounded-xl shadow-2xl text-[11px] font-mono whitespace-nowrap"
                 >
                   <div className="font-black text-amber-300">
                     ● {hoveredPinInfo.pin.nama} (Pin #
-                    {hoveredPinInfo.pin.nomorPin}) — Klik untuk Cabang Kabel Baru
+                    {hoveredPinInfo.pin.nomorPin}){" "}
+                    {hoveredPinInfo.jumlahKabelTerhubung > 0
+                      ? `— ⚡ ${hoveredPinInfo.jumlahKabelTerhubung} Kabel Terhubung (Klik untuk Tambah Cabang)`
+                      : "— Belum Terhubung"}
                   </div>
                   <div className="text-[10px] text-slate-300">
                     {hoveredPinInfo.pin.keterangan}
@@ -2053,30 +2090,39 @@ void loop() {
                         />
                       )}
 
-                      {/* OVERLAY ANIMASI FISIK */}
                       <ExtendedSensorLiveOverlay
                         tipe={node.tipe}
                         nilaiSensor={node.nilaiSensor}
                         nyala={Boolean(node.nyala)}
                       />
 
-                      {/* TITIK PIN BERADA DI Z-40 AGAR SELALU BISA DIKLIK BERKALI-KALI UNTUK BANYAK CABANG KABEL */}
+                      {/* TITIK PIN DENGAN INDIKATOR MENYALA & BADGE JUMLAH CABANG SAAT TERHUBUNG */}
                       {layout.pins.map((pin) => {
                         const sedangAsal =
                           sedangTarikKabelDariPin?.nodeId === node.id &&
                           sedangTarikKabelDariPin?.pin.idPin === pin.idPin;
                         const warnaDot = warnaTitikPin(pin.kategori);
+                        const infoKoneksiPin = petaPinTerhubung.get(
+                          `${node.id}__${pin.idPin}`
+                        );
+                        const jmlKabelDiPinIni = infoKoneksiPin?.count || 0;
+                        const pinSudahTerhubung = jmlKabelDiPinIni > 0;
 
                         return (
                           <button
                             key={pin.idPin}
                             type="button"
                             style={{
-                              left: `${pin.x - 5}px`,
-                              top: `${pin.y - 5}px`,
+                              left: `${pin.x - 5.5}px`,
+                              top: `${pin.y - 5.5}px`,
                               backgroundColor: sedangAsal
                                 ? "#ffffff"
                                 : warnaDot,
+                              boxShadow: pinSudahTerhubung
+                                ? `0 0 8px 2px ${
+                                    infoKoneksiPin?.warnaTerakhir || "#10b981"
+                                  }`
+                                : "none",
                             }}
                             onMouseDown={(e) => e.stopPropagation()}
                             onMouseEnter={() =>
@@ -2085,6 +2131,7 @@ void loop() {
                                 pin,
                                 absX: node.x + pin.x,
                                 absY: node.y + pin.y + 18,
+                                jumlahKabelTerhubung: jmlKabelDiPinIni,
                               })
                             }
                             onMouseLeave={() => setHoveredPinInfo(null)}
@@ -2120,12 +2167,21 @@ void loop() {
                                 setSedangTarikKabelDariPin(null);
                               }
                             }}
-                            className={`absolute w-[11px] h-[11px] rounded-full border border-slate-950 cursor-crosshair transition-transform hover:scale-175 hover:ring-2 hover:ring-amber-400 z-40 pointer-events-auto ${
+                            className={`absolute w-[11px] h-[11px] rounded-full cursor-crosshair transition-transform hover:scale-175 hover:ring-2 hover:ring-amber-400 z-40 pointer-events-auto flex items-center justify-center ${
                               sedangAsal
                                 ? "scale-175 ring-2 ring-amber-300 animate-ping"
-                                : ""
+                                : pinSudahTerhubung
+                                ? "ring-2 ring-white border border-slate-950 scale-115"
+                                : "border border-slate-950"
                             }`}
-                          />
+                          >
+                            {/* Indikator Titik Tengah Menyala jika terhubung 1 kabel, atau Angka jika >1 cabang */}
+                            {pinSudahTerhubung && (
+                              <span className="text-[6.5px] font-black text-slate-950 leading-none select-none pointer-events-none">
+                                {jmlKabelDiPinIni > 1 ? jmlKabelDiPinIni : "•"}
+                              </span>
+                            )}
+                          </button>
                         );
                       })}
                     </div>
