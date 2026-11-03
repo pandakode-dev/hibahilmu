@@ -278,6 +278,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     jumlahKabelTerhubung: number;
   } | null>(null);
   const [idKabelTerpilih, setIdKabelTerpilih] = useState<string | null>(null);
+  const [idKabelHover, setIdKabelHover] = useState<string | null>(null);
   const [sedangGeserSiku, setSedangGeserSiku] = useState<{
     kabelId: string;
     indeksTitik: number;
@@ -298,9 +299,11 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
   const [sudahHydrateDraft, setSudahHydrateDraft] = useState<boolean>(false);
 
   // ============================================================================
-  // 1. SINKRONISASI TANPA CACHE DARI SERVER PUBLIK SAAT GANTI BROWSER / PC
+  // 1. SINKRONISASI DARI SERVER CLOUD PERMANEN SAAT PINDAH BROWSER / PC
   // ============================================================================
-  const tarikDaftarProjectTerbaruDariServer = async (terapkanKeKanvasJikaAwal = false) => {
+  const tarikDaftarProjectTerbaruDariServer = async (
+    terapkanKeKanvasJikaAwal = false
+  ) => {
     let listLokal: ProjectTersimpanAkun[] = [];
     try {
       for (let i = 0; i < localStorage.length; i++) {
@@ -372,7 +375,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
   const nodesSaatIni = daftarNode[mode] || [];
   const kabelSaatIni = daftarKabel[mode] || [];
 
-  // Hitung peta jumlah kabel yang terhubung di setiap pin: key = `${nodeId}__${pinId}`
   const petaPinTerhubung = useMemo(() => {
     const map = new Map<string, { count: number; warnaTerakhir: string }>();
     kabelSaatIni.forEach((kbl) => {
@@ -390,6 +392,53 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
       });
     });
     return map;
+  }, [kabelSaatIni]);
+
+  // DETEKSI OTOMATIS TITIK SAMBUNGAN / PERCABANGAN KABEL (WIRE JUNCTION DOTS ●)
+  const daftarTitikJunctionKabel = useMemo(() => {
+    const dots: { x: number; y: number; warna: string }[] = [];
+    // 1. Jika 1 Pin memiliki >= 2 kabel cabang, tampilkan titik penghubung di semua siku pertamanya
+    const mapPinKeKabel = new Map<string, KabelKoneksiItem[]>();
+    kabelSaatIni.forEach((k) => {
+      const keyA = `${k.dariId}__${k.pinAsal}`;
+      const keyB = `${k.keId}__${k.pinTujuan}`;
+      mapPinKeKabel.set(keyA, [...(mapPinKeKabel.get(keyA) || []), k]);
+      mapPinKeKabel.set(keyB, [...(mapPinKeKabel.get(keyB) || []), k]);
+    });
+
+    mapPinKeKabel.forEach((arr) => {
+      if (arr.length >= 2) {
+        arr.forEach((kbl) => {
+          if (kbl.titikSiku && kbl.titikSiku.length > 0) {
+            dots.push({
+              x: kbl.titikSiku[0].x,
+              y: kbl.titikSiku[0].y,
+              warna: kbl.warna,
+            });
+          }
+        });
+      }
+    });
+
+    // 2. Jika ada titik siku antar-kabel yang berdekatan (< 10px), tandai sebagai Junction Dot
+    for (let i = 0; i < kabelSaatIni.length; i++) {
+      for (let j = i + 1; j < kabelSaatIni.length; j++) {
+        const s1 = kabelSaatIni[i].titikSiku || [];
+        const s2 = kabelSaatIni[j].titikSiku || [];
+        s1.forEach((p1) => {
+          s2.forEach((p2) => {
+            if (Math.hypot(p1.x - p2.x, p1.y - p2.y) <= 10) {
+              dots.push({
+                x: Math.round((p1.x + p2.x) / 2),
+                y: Math.round((p1.y + p2.y) / 2),
+                warna: kabelSaatIni[i].warna,
+              });
+            }
+          });
+        });
+      }
+    }
+    return dots;
   }, [kabelSaatIni]);
 
   const daftarMcuDiKanvas = useMemo(
@@ -534,11 +583,11 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
       }
     } catch {}
 
-    setStatusAutoSave("Tersimpan di Server Publik ✓");
+    setStatusAutoSave("Tersimpan di Cloud Permanen ✓");
     setInfoPopupNotifProject({
       judul: isSaveAs
         ? "Berhasil Disimpan Sebagai File Baru (Save As)!"
-        : "Project Berhasil Disimpan ke Database Publik Server!",
+        : "Project Berhasil Disimpan ke Database Cloud Permanen!",
       namaProject: namaBersih,
       namaAkun: namaPemilikAktif,
       jumlahKomponen: nodesSaatIni.length,
@@ -954,9 +1003,9 @@ void loop() {
     }
 
     if (sedangGeserSiku) {
-      setDaftarKabel({
-        ...daftarKabel,
-        [mode]: kabelSaatIni.map((kbl) => {
+      setDaftarKabel((prev) => ({
+        ...prev,
+        [mode]: (prev[mode] || []).map((kbl) => {
           if (kbl.id !== sedangGeserSiku.kabelId) return kbl;
           const asal = nodesSaatIni.find((n) => n.id === kbl.dariId);
           const tujuan = nodesSaatIni.find((n) => n.id === kbl.keId);
@@ -976,19 +1025,19 @@ void loop() {
           };
           return { ...kbl, titikSiku: listSikuLama };
         }),
-      });
+      }));
       return;
     }
 
     if (sedangGeserId) {
       const xBaru = Math.max(15, mouseX - 65);
       const yBaru = Math.max(38, mouseY - 40);
-      setDaftarNode({
-        ...daftarNode,
-        [mode]: nodesSaatIni.map((n) =>
+      setDaftarNode((prev) => ({
+        ...prev,
+        [mode]: (prev[mode] || []).map((n) =>
           n.id === sedangGeserId ? { ...n, x: xBaru, y: yBaru } : n
         ),
-      });
+      }));
     }
   };
 
@@ -1005,14 +1054,15 @@ void loop() {
   };
 
   // ============================================================================
-  // 2. DUKUNGAN MULTI-WIRE PER PIN DENGAN PEMISAHAN SIKU OTOMATIS AGAR MUDAH DIKLIK
+  // 2. SAMBUNG KABEL ANTAR-PIN ATAU LANGSUNG KE TENGAH BATANG KABEL (T-JUNCTION)
   // ============================================================================
   const tambahKabelKoneksi = (
     dariId: string,
     pinDariId: string,
     keId: string,
     pinKeId: string,
-    warna: string
+    warna: string,
+    customTitikJunction?: TitikSikuKabel
   ) => {
     if (!dariId || !keId || (dariId === keId && pinDariId === pinKeId)) return;
 
@@ -1037,7 +1087,6 @@ void loop() {
     const p1 = cariKoordinatPinAbsolut(asal, pinDariId);
     const p2 = cariKoordinatPinAbsolut(tujuan, pinKeId);
 
-    // Hitung total cabang pada pin asal maupun pin tujuan agar siku kabel baru terpisah jelas (tidak berhimpit)
     const cabangAsal = kabelSaatIni.filter(
       (k) =>
         (k.dariId === dariId && k.pinAsal === pinDariId) ||
@@ -1057,9 +1106,21 @@ void loop() {
     const offsetY =
       totalCabang === 0
         ? 0
-        : (totalCabang % 2 === 1 ? -1 : 1) * Math.ceil(totalCabang / 2) * 10;
+        : (totalCabang % 2 === 1 ? -1 : 1) * Math.ceil(totalCabang / 2) * 12;
 
-    const midX = Math.round((p1.x + p2.x) / 2) + offsetX;
+    const midX = customTitikJunction
+      ? customTitikJunction.x
+      : Math.round((p1.x + p2.x) / 2) + offsetX;
+
+    const titikSikuBaru = customTitikJunction
+      ? [
+          { x: customTitikJunction.x, y: p1.y },
+          { x: customTitikJunction.x, y: customTitikJunction.y },
+        ]
+      : [
+          { x: midX, y: p1.y + offsetY },
+          { x: midX, y: p2.y + offsetY },
+        ];
 
     const baru: KabelKoneksiItem = {
       id: "kbl-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
@@ -1068,16 +1129,69 @@ void loop() {
       keId,
       pinTujuan: pinKeId,
       warna,
-      titikSiku: [
-        { x: midX, y: p1.y + offsetY },
-        { x: midX, y: p2.y + offsetY },
-      ],
+      titikSiku: titikSikuBaru,
     };
     setDaftarKabel((prev) => ({
       ...prev,
       [mode]: [...(prev[mode] || []), baru],
     }));
     setIdKabelTerpilih(baru.id);
+  };
+
+  // Klik langsung pada batang kabel:
+  // - Jika sedang menarik kabel dari suatu Pin -> otomatis sambungkan Pin tersebut ke kabel ini (T-Junction)!
+  // - Jika tidak sedang menarik kabel -> pilih kabel ini untuk diedit/digeser sikunya!
+  const handleKlikPadaBatangKabel = (
+    kblTarget: KabelKoneksiItem,
+    e: React.MouseEvent
+  ) => {
+    e.stopPropagation();
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const klikX = Math.round((e.clientX - rect.left) / skalaZoom);
+    const klikY = Math.round((e.clientY - rect.top) / skalaZoom);
+
+    if (sedangTarikKabelDariPin) {
+      // Sambungkan pin yang sedang ditarik ke sumber kabel yang diklik melalui titik T-Junction (klikX, klikY)!
+      tambahKabelKoneksi(
+        sedangTarikKabelDariPin.nodeId,
+        sedangTarikKabelDariPin.pin.idPin,
+        kblTarget.dariId,
+        kblTarget.pinAsal,
+        kblTarget.warna,
+        { x: klikX, y: klikY }
+      );
+      setSedangTarikKabelDariPin(null);
+      return;
+    }
+
+    setIdKabelTerpilih(kblTarget.id);
+  };
+
+  // Double-click pada batang kabel langsung menambahkan titik siku fleksibel di posisi mouse!
+  const handleDoubleClickBatangKabel = (
+    kblTarget: KabelKoneksiItem,
+    e: React.MouseEvent
+  ) => {
+    e.stopPropagation();
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const klikX = Math.round((e.clientX - rect.left) / skalaZoom);
+    const klikY = Math.round((e.clientY - rect.top) / skalaZoom);
+
+    simpanSnapshotUndo();
+    setDaftarKabel((prev) => ({
+      ...prev,
+      [mode]: (prev[mode] || []).map((k) => {
+        if (k.id !== kblTarget.id) return k;
+        const sikuLama = k.titikSiku || [];
+        return {
+          ...k,
+          titikSiku: [...sikuLama, { x: klikX, y: klikY }],
+        };
+      }),
+    }));
+    setIdKabelTerpilih(kblTarget.id);
   };
 
   const ubahWarnaKabel = (kabelId: string, warnaBaru: string) => {
@@ -1189,7 +1303,7 @@ void loop() {
             )}
             <div>
               <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded bg-emerald-500 text-slate-950">
-                Database Cloud Sync • Multi-Wire Jumper Indicator • Export &amp; Import JSON
+                Cloud KV Sync • Klik Batang Kabel untuk Cabang T-Junction • Drag Sudut Kabel Fleksibel
               </span>
               <h3 className="font-black text-base sm:text-lg text-white mt-0.5">
                 {mode === "wokwi"
@@ -1306,7 +1420,7 @@ void loop() {
           </div>
         </div>
 
-        {/* TOOLBAR FILE MANAGER: SAVE, SAVE AS, EXPORT JSON/CODE, & IMPORT JSON */}
+        {/* TOOLBAR FILE MANAGER */}
         <ProjectFileManagerToolbar
           mode={mode}
           idProjectSaatIni={idProjectSaatIni}
@@ -1491,7 +1605,6 @@ void loop() {
             </div>
           </div>
 
-          {/* KATEGORI UTAMA */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
             <Filter className="w-3.5 h-3.5 text-indigo-400 shrink-0 mr-1" />
             {daftarKategoriUnik.map((kat) => (
@@ -1517,7 +1630,6 @@ void loop() {
             ))}
           </div>
 
-          {/* SUB-KATEGORI KHUSUS SAAT KATEGORI "Sensor" DIPILIH */}
           {kategoriPaletAktif === "Sensor" && (
             <div className="flex items-center gap-1.5 overflow-x-auto bg-slate-900/90 p-2 rounded-2xl border border-emerald-500/30">
               <span className="text-[10px] font-black uppercase text-emerald-400 px-2 shrink-0">
@@ -1694,14 +1806,16 @@ void loop() {
                 : "bg-[#070d19] border-slate-700 bg-[radial-gradient(#1e293b_1.5px,transparent_1.5px)] [background-size:20px_20px]"
             }`}
           >
-            {/* BAR PILIH CEPAT SEMUA KABEL TERPASANG AGAR MUDAH DIKLIK MESKI BERTUMPUK */}
+            {/* BAR PILIH CEPAT SEMUA KABEL TERPASANG */}
             {kabelSaatIni.length > 0 && (
               <div
                 onClick={(e) => e.stopPropagation()}
-                className="sticky top-2 left-3 z-40 inline-flex flex-wrap items-center gap-1.5 bg-slate-950/90 border border-slate-700 px-3 py-1.5 rounded-2xl text-[10px] ml-3 mt-2 shadow-lg"
+                className="sticky top-2 left-3 z-50 inline-flex flex-wrap items-center gap-1.5 bg-slate-950/95 border border-slate-700 px-3 py-1.5 rounded-2xl text-[10px] ml-3 mt-2 shadow-lg"
               >
-                <span className="font-black text-slate-400 mr-1">
-                  Klik Kabel untuk Edit ({kabelSaatIni.length}):
+                <span className="font-black text-emerald-400 mr-1">
+                  {sedangTarikKabelDariPin
+                    ? "🎯 Klik Pin Tujuan ATAU Klik Batang Kabel di Bawah untuk Mencabangkan:"
+                    : `Pilih / Edit Kabel (${kabelSaatIni.length}):`}
                 </span>
                 {kabelSaatIni.map((k, idx) => {
                   const aktif = idKabelTerpilih === k.id;
@@ -1709,7 +1823,7 @@ void loop() {
                     <button
                       key={k.id}
                       type="button"
-                      onClick={() => setIdKabelTerpilih(aktif ? null : k.id)}
+                      onClick={(e) => handleKlikPadaBatangKabel(k, e)}
                       className={`px-2 py-0.5 rounded-lg font-mono font-black flex items-center gap-1 cursor-pointer border transition ${
                         aktif
                           ? "bg-amber-400 text-slate-950 border-white scale-105"
@@ -1732,7 +1846,7 @@ void loop() {
             {kabelTerpilihObj && (
               <div
                 onClick={(e) => e.stopPropagation()}
-                className="sticky top-12 left-3 z-40 inline-flex flex-wrap items-center gap-2 bg-slate-900/95 border-2 border-amber-400 px-3.5 py-2 rounded-2xl shadow-2xl text-xs ml-3 mt-2"
+                className="sticky top-12 left-3 z-50 inline-flex flex-wrap items-center gap-2 bg-slate-900/95 border-2 border-amber-400 px-3.5 py-2 rounded-2xl shadow-2xl text-xs ml-3 mt-2"
               >
                 <span className="font-black text-amber-300 flex items-center gap-1">
                   <CornerDownRight className="w-3.5 h-3.5" /> Edit Kabel [
@@ -1822,7 +1936,13 @@ void loop() {
                 }
               />
 
-              <svg className="absolute inset-0 w-full h-full z-20 pointer-events-none">
+              {/* ================================================================ */}
+              {/* LAPISAN SVG KABEL DI Z-35 (BISA DIKLIK, DIGESER & DICABANGKAN)   */}
+              {/* ================================================================ */}
+              <svg
+                className="absolute inset-0 w-full h-full z-35"
+                style={{ pointerEvents: "none" }}
+              >
                 {kabelSaatIni.map((kbl, kIdx) => {
                   const asal = nodesSaatIni.find((n) => n.id === kbl.dariId);
                   const tujuan = nodesSaatIni.find((n) => n.id === kbl.keId);
@@ -1842,87 +1962,70 @@ void loop() {
                     kbl.titikSiku
                   );
                   const apakahTerpilih = idKabelTerpilih === kbl.id;
+                  const apakahHover = idKabelHover === kbl.id;
                   const kabelDialiriArus =
                     setIdKomponenTerhubungKeMcuRunning.has(asal.id) &&
                     setIdKomponenTerhubungKeMcuRunning.has(tujuan.id);
 
-                  const titikTengahBadge =
-                    daftarHandle.length > 0
-                      ? daftarHandle[Math.floor(daftarHandle.length / 2)]
-                      : {
-                          x: Math.round((koorAsal.x + koorTujuan.x) / 2),
-                          y: Math.round((koorAsal.y + koorTujuan.y) / 2),
-                        };
-
                   return (
-                    <g key={kbl.id} className="pointer-events-auto">
-                      {/* Area klik lebar pada batang kabel */}
+                    <g
+                      key={kbl.id}
+                      onMouseEnter={() => setIdKabelHover(kbl.id)}
+                      onMouseLeave={() => setIdKabelHover(null)}
+                    >
+                      {/* Area Hitbox Lebar (18px) dengan pointerEvents: "stroke" eksplisit */}
                       <path
                         d={d}
-                        stroke="transparent"
-                        strokeWidth="14"
+                        stroke="rgba(255,255,255,0.01)"
+                        strokeWidth="18"
                         fill="none"
-                        className="cursor-pointer"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setIdKabelTerpilih(kbl.id);
-                        }}
+                        style={{ pointerEvents: "stroke", cursor: "pointer" }}
+                        onClick={(e) => handleKlikPadaBatangKabel(kbl, e)}
+                        onDoubleClick={(e) =>
+                          handleDoubleClickBatangKabel(kbl, e)
+                        }
                       />
+                      {/* Garis Visual Kabel */}
                       <path
                         d={d}
                         stroke={kbl.warna}
-                        strokeWidth={apakahTerpilih ? "5" : "3.2"}
+                        strokeWidth={
+                          apakahTerpilih ? "5.2" : apakahHover ? "4.5" : "3.2"
+                        }
                         strokeLinejoin="round"
                         strokeLinecap="round"
                         fill="none"
-                        opacity={kabelDialiriArus ? 1 : 0.45}
-                        className="cursor-pointer"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setIdKabelTerpilih(kbl.id);
-                        }}
+                        opacity={kabelDialiriArus ? 1 : 0.55}
+                        style={{ pointerEvents: "stroke", cursor: "pointer" }}
+                        onClick={(e) => handleKlikPadaBatangKabel(kbl, e)}
+                        onDoubleClick={(e) =>
+                          handleDoubleClickBatangKabel(kbl, e)
+                        }
                       />
 
-                      {/* Lencana Nomor Kabel di Tengah Jalur (Memudahkan Klik Edit Kabel yang Dicabangkan) */}
-                      <g
-                        transform={`translate(${titikTengahBadge.x}, ${titikTengahBadge.y})`}
-                        className="cursor-pointer"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setIdKabelTerpilih(kbl.id);
-                        }}
-                      >
-                        <circle
-                          r={apakahTerpilih ? "9" : "7.5"}
-                          fill={apakahTerpilih ? "#facc15" : "#0f172a"}
-                          stroke={kbl.warna}
-                          strokeWidth="2"
-                        />
-                        <text
-                          y="2.5"
-                          fill={apakahTerpilih ? "#0f172a" : "#ffffff"}
-                          fontSize="6.5"
-                          fontWeight="bold"
-                          textAnchor="middle"
-                        >
-                          #{kIdx + 1}
-                        </text>
-                      </g>
-
-                      {apakahTerpilih &&
+                      {/* TITIK HANDLE PENGATUR GARIS SIKU (SELALU AKTIF SAAT HOVER ATAU TERPILIH) */}
+                      {(apakahTerpilih || apakahHover) &&
                         daftarHandle.map((pt, hIdx) => (
                           <circle
                             key={hIdx}
                             cx={pt.x}
                             cy={pt.y}
-                            r="7.5"
+                            r={apakahTerpilih ? "7.5" : "6"}
                             fill="#facc15"
                             stroke="#0f172a"
-                            strokeWidth="2.5"
-                            className="cursor-grab active:cursor-grabbing"
+                            strokeWidth="2.2"
+                            style={{
+                              pointerEvents: "all",
+                              cursor: "move",
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setIdKabelTerpilih(kbl.id);
+                            }}
                             onMouseDown={(e) => {
                               e.stopPropagation();
                               simpanSnapshotUndo();
+                              setIdKabelTerpilih(kbl.id);
                               setSedangGeserSiku({
                                 kabelId: kbl.id,
                                 indeksTitik: hIdx,
@@ -1933,6 +2036,21 @@ void loop() {
                     </g>
                   );
                 })}
+
+                {/* TITIK SOLDER PENGHUBUNG CABANG KABEL OTOMATIS (WIRE JUNCTION DOTS ●) */}
+                {daftarTitikJunctionKabel.map((jd, idx) => (
+                  <g key={`junc-${idx}`} style={{ pointerEvents: "none" }}>
+                    <circle
+                      cx={jd.x}
+                      cy={jd.y}
+                      r="6"
+                      fill={jd.warna}
+                      stroke="#ffffff"
+                      strokeWidth="2"
+                    />
+                    <circle cx={jd.x} cy={jd.y} r="2.5" fill="#0f172a" />
+                  </g>
+                ))}
 
                 {sedangTarikKabelDariPin && (
                   <path
@@ -1967,7 +2085,7 @@ void loop() {
                     ● {hoveredPinInfo.pin.nama} (Pin #
                     {hoveredPinInfo.pin.nomorPin}){" "}
                     {hoveredPinInfo.jumlahKabelTerhubung > 0
-                      ? `— ⚡ ${hoveredPinInfo.jumlahKabelTerhubung} Kabel Terhubung (Klik untuk Tambah Cabang)`
+                      ? `— ⚡ ${hoveredPinInfo.jumlahKabelTerhubung} Kabel Terhubung`
                       : "— Belum Terhubung"}
                   </div>
                   <div className="text-[10px] text-slate-300">
@@ -2013,7 +2131,7 @@ void loop() {
                       setSedangGeserId(node.id);
                     }}
                     className={`absolute rounded-2xl cursor-move transition-all ${
-                      aktifDipilih ? "ring-2 ring-emerald-400 z-30" : "z-25"
+                      aktifDipilih ? "ring-2 ring-emerald-400 z-25" : "z-20"
                     } ${
                       !terhubungKeRangkaianAktif
                         ? "opacity-65 grayscale-[30%]"
@@ -2096,7 +2214,7 @@ void loop() {
                         nyala={Boolean(node.nyala)}
                       />
 
-                      {/* TITIK PIN DENGAN INDIKATOR MENYALA & BADGE JUMLAH CABANG SAAT TERHUBUNG */}
+                      {/* TITIK PIN DENGAN INDIKATOR SOLDER TERMINAL JELAS SAAT TERHUBUNG */}
                       {layout.pins.map((pin) => {
                         const sedangAsal =
                           sedangTarikKabelDariPin?.nodeId === node.id &&
@@ -2113,13 +2231,15 @@ void loop() {
                             key={pin.idPin}
                             type="button"
                             style={{
-                              left: `${pin.x - 5.5}px`,
-                              top: `${pin.y - 5.5}px`,
+                              left: `${pin.x - 6}px`,
+                              top: `${pin.y - 6}px`,
                               backgroundColor: sedangAsal
                                 ? "#ffffff"
+                                : pinSudahTerhubung
+                                ? infoKoneksiPin?.warnaTerakhir || warnaDot
                                 : warnaDot,
                               boxShadow: pinSudahTerhubung
-                                ? `0 0 8px 2px ${
+                                ? `0 0 0 2.5px #ffffff, 0 0 10px 3px ${
                                     infoKoneksiPin?.warnaTerakhir || "#10b981"
                                   }`
                                 : "none",
@@ -2167,19 +2287,15 @@ void loop() {
                                 setSedangTarikKabelDariPin(null);
                               }
                             }}
-                            className={`absolute w-[11px] h-[11px] rounded-full cursor-crosshair transition-transform hover:scale-175 hover:ring-2 hover:ring-amber-400 z-40 pointer-events-auto flex items-center justify-center ${
+                            className={`absolute w-[12px] h-[12px] rounded-full cursor-crosshair transition-transform hover:scale-175 hover:ring-2 hover:ring-amber-400 z-45 pointer-events-auto flex items-center justify-center ${
                               sedangAsal
                                 ? "scale-175 ring-2 ring-amber-300 animate-ping"
-                                : pinSudahTerhubung
-                                ? "ring-2 ring-white border border-slate-950 scale-115"
                                 : "border border-slate-950"
                             }`}
                           >
-                            {/* Indikator Titik Tengah Menyala jika terhubung 1 kabel, atau Angka jika >1 cabang */}
+                            {/* Titik Solder Hitam/Putih di Tengah Pin yang Sudah Terhubung Kabel */}
                             {pinSudahTerhubung && (
-                              <span className="text-[6.5px] font-black text-slate-950 leading-none select-none pointer-events-none">
-                                {jmlKabelDiPinIni > 1 ? jmlKabelDiPinIni : "•"}
-                              </span>
+                              <span className="w-[5px] h-[5px] rounded-full bg-slate-950 border border-white pointer-events-none" />
                             )}
                           </button>
                         );

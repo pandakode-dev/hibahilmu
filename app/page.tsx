@@ -75,8 +75,45 @@ import { DonasiDanBugView } from "./components/DonasiDanBugView";
 import { FiturInovasiHubView } from "./components/FiturInovasiHubView";
 import { SimulatorPemrogramanView } from "./components/simulator/SimulatorPemrogramanView";
 
-const SESSION_STORAGE_KEY = "hibahilmu_active_user_session_v1";
-const LAST_MENU_STORAGE_KEY = "hibahilmu_last_active_menu_v1";
+const SESSION_STORAGE_KEY = "hibahilmu_active_user_session_v2";
+const SESSION_COOKIE_NAME = "hibahilmu_session_user";
+const LAST_MENU_STORAGE_KEY = "hibahilmu_last_active_menu_v2";
+
+function bacaSesiTersimpanSinkron(): AkunPengguna | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const dariLs = window.localStorage.getItem(SESSION_STORAGE_KEY);
+    if (dariLs) {
+      const parsed = JSON.parse(dariLs);
+      if (parsed && parsed.email) return parsed;
+    }
+    const matchCookie = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith(`${SESSION_COOKIE_NAME}=`));
+    if (matchCookie) {
+      const rawVal = decodeURIComponent(matchCookie.split("=")[1] || "");
+      const parsedCookie = JSON.parse(rawVal);
+      if (parsedCookie && parsedCookie.email) return parsedCookie;
+    }
+  } catch {}
+  return null;
+}
+
+function simpanSesiKeStorageDanCookie(akun: AkunPengguna | null) {
+  if (typeof window === "undefined") return;
+  try {
+    if (akun) {
+      const jsonStr = JSON.stringify(akun);
+      window.localStorage.setItem(SESSION_STORAGE_KEY, jsonStr);
+      document.cookie = `${SESSION_COOKIE_NAME}=${encodeURIComponent(
+        jsonStr
+      )}; path=/; max-age=2592000; SameSite=Lax`;
+    } else {
+      window.localStorage.removeItem(SESSION_STORAGE_KEY);
+      document.cookie = `${SESSION_COOKIE_NAME}=; path=/; max-age=0`;
+    }
+  } catch {}
+}
 
 export default function AplikasiHibahIlmu() {
   const [darkMode, setDarkMode] = useState<boolean>(false);
@@ -85,7 +122,12 @@ export default function AplikasiHibahIlmu() {
   const [spasiTeksLebar, setSpasiTeksLebar] = useState<boolean>(false);
   const [bukaMenuAksesibilitas, setBukaMenuAksesibilitas] = useState<boolean>(false);
 
-  const [menuAktif, setMenuAktif] = useState<string>("beranda");
+  const [menuAktif, setMenuAktif] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return window.localStorage.getItem(LAST_MENU_STORAGE_KEY) || "beranda";
+    }
+    return "beranda";
+  });
   const [modeRoleAuth, setModeRoleAuth] = useState<"siswa" | "guru">("siswa");
 
   const [daftarJenjang, setDaftarJenjang] = useState<JenjangItem[]>(STRUKTUR_AWAL);
@@ -95,8 +137,11 @@ export default function AplikasiHibahIlmu() {
   const [hanyaMateriDiikuti, setHanyaMateriDiikuti] = useState<boolean>(false);
 
   const [daftarAkun, setDaftarAkun] = useState<AkunPengguna[]>(AKUN_DEFAULT);
-  const [userLogin, setUserLoginState] = useState<AkunPengguna | null>(null);
-  const [sudahCekSesiLokal, setSudahCekSesiLokal] = useState<boolean>(false);
+
+  // Inisialisasi langsung secara sinkron agar Ctrl+R tidak pernah membuat userLogin null
+  const [userLogin, setUserLoginState] = useState<AkunPengguna | null>(() =>
+    bacaSesiTersimpanSinkron()
+  );
 
   const [logAktivitas] = useState<LogAktivitas[]>(LOG_AWAL);
   const [daftarKelompok, setDaftarKelompok] = useState<KelompokBelajar[]>(KELOMPOK_AWAL);
@@ -163,51 +208,34 @@ export default function AplikasiHibahIlmu() {
 
   const semuaModulFlat = daftarJenjang.flatMap((j) => j.kelas);
 
-  // Wrapper setUserLogin yang otomatis menyimpan sesi ke localStorage agar TIDAK logout saat reload
   const setUserLogin: React.Dispatch<React.SetStateAction<AkunPengguna | null>> = (
     valOrUpdater
   ) => {
     setUserLoginState((prev) => {
       const next =
         typeof valOrUpdater === "function" ? valOrUpdater(prev) : valOrUpdater;
-      try {
-        if (next) {
-          localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(next));
-          if (next.xp && next.xp > 0) setPoinXP(next.xp);
-        } else {
-          localStorage.removeItem(SESSION_STORAGE_KEY);
-        }
-      } catch {}
+      simpanSesiKeStorageDanCookie(next);
+      if (next?.xp && next.xp > 0) setPoinXP(next.xp);
       return next;
     });
   };
 
-  // Pulihkan sesi login & menu terakhir saat halaman di-reload
+  // Pastikan sesi dari Cookie/LocalStorage langsung aktif saat mount
   useEffect(() => {
-    try {
-      const rawSession = localStorage.getItem(SESSION_STORAGE_KEY);
-      if (rawSession) {
-        const parsedUser = JSON.parse(rawSession) as AkunPengguna;
-        if (parsedUser && parsedUser.email) {
-          setUserLoginState(parsedUser);
-          if (parsedUser.xp) setPoinXP(parsedUser.xp);
-        }
-      }
-      const rawMenu = localStorage.getItem(LAST_MENU_STORAGE_KEY);
-      if (rawMenu) {
-        setMenuAktif(rawMenu);
-      }
-    } catch {}
-    setSudahCekSesiLokal(true);
+    const tersimpan = bacaSesiTersimpanSinkron();
+    if (tersimpan && !userLogin) {
+      setUserLoginState(tersimpan);
+      if (tersimpan.xp) setPoinXP(tersimpan.xp);
+    }
+    const savedMenu = window.localStorage.getItem(LAST_MENU_STORAGE_KEY);
+    if (savedMenu) setMenuAktif(savedMenu);
   }, []);
 
-  // Simpan menu aktif terakhir agar saat reload di halaman Simulator tetap di Simulator
   useEffect(() => {
-    if (!sudahCekSesiLokal) return;
     try {
-      localStorage.setItem(LAST_MENU_STORAGE_KEY, menuAktif);
+      window.localStorage.setItem(LAST_MENU_STORAGE_KEY, menuAktif);
     } catch {}
-  }, [menuAktif, sudahCekSesiLokal]);
+  }, [menuAktif]);
 
   useEffect(() => {
     if (kelasAktif && userLogin) {
@@ -271,16 +299,9 @@ export default function AplikasiHibahIlmu() {
   const tambahXP = (tambahan: number) => {
     setPoinXP((prev) => {
       const baru = prev + tambahan;
-      try {
-        const raw = localStorage.getItem(SESSION_STORAGE_KEY);
-        if (raw) {
-          const u = JSON.parse(raw);
-          localStorage.setItem(
-            SESSION_STORAGE_KEY,
-            JSON.stringify({ ...u, xp: baru })
-          );
-        }
-      } catch {}
+      if (userLogin) {
+        simpanSesiKeStorageDanCookie({ ...userLogin, xp: baru });
+      }
       return baru;
     });
     confetti({ particleCount: 70, spread: 65, origin: { y: 0.6 } });
@@ -480,7 +501,6 @@ export default function AplikasiHibahIlmu() {
   const jumlahBelumDibaca = notifikasiUserAktif.filter((n) => !n.dibaca).length;
 
   const butuhLoginSekarang =
-    sudahCekSesiLokal &&
     !userLogin &&
     (menuAktif !== "beranda" || jenjangAktif !== null || kelasAktif !== null);
 
@@ -698,7 +718,11 @@ export default function AplikasiHibahIlmu() {
               className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-2 shadow-md cursor-pointer"
             >
               <LayoutDashboard className="w-4 h-4" />
-              <span>{userLogin ? `${userLogin.nama.split(" ")[0]} (${userLogin.role})` : "Masuk / Daftar"}</span>
+              <span>
+                {userLogin
+                  ? `${userLogin.nama.split(" ")[0]} (${userLogin.role})`
+                  : "Masuk / Daftar"}
+              </span>
             </button>
 
             {userLogin && (
