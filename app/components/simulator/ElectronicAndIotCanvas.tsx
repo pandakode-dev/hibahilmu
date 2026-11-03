@@ -397,7 +397,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     nodesSaatIni,
     kabelSaatIni,
     kodePerMcuMap,
-    kodeMicroPythonPerMcu,
+    kodeMicroPythonMap,
     widgetsBlynkSaatIni,
     daftarRuanganFisik,
     namaProjectInput,
