@@ -1979,6 +1979,7 @@ void loop() {
                           nilaiSensor={node.nilaiSensor}
                           nyala={statusNyalaEfektif}
                           ukuran="kanvas"
+                          onInteraksiKomponen={(perubahan: { nyala?: boolean; nilaiSensor?: number }) => updatePropertiKomponen(node.id, perubahan)}
                         />
                       ) : (
                         <VisualKomponenRealistis
