@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 
 const DB_PROJECTS_PATH = path.join(process.cwd(), "iot_projects_cloud.json");
+const PUBLIC_GLOBAL_KEY = "__public_global_projects__";
 
 const globalForProjects = globalThis as unknown as {
   hibahIlmuIotProjectsByUser?: Record<string, any[]>;
@@ -38,13 +39,16 @@ function simpanDatabaseSemuaUser(db: Record<string, any[]>) {
   }
 }
 
-function gabungkanUnikProjects(lists: any[][]): any[] {
+// Gabungkan daftar project berdasarkan kombinasi Nama Project + ID agar semua project (1, 2, 3, dst.) utuh
+function gabungkanSemuaProjectUnik(lists: any[][]): any[] {
   const map = new Map<string, any>();
   for (const list of lists) {
     if (!Array.isArray(list)) continue;
     for (const item of list) {
-      if (item && item.idProject && !map.has(item.idProject)) {
-        map.set(item.idProject, item);
+      if (!item || !item.namaProject) continue;
+      const kunciUnik = `${(item.namaProject || "").trim().toLowerCase()}__${item.mode || "wokwi"}`;
+      if (!map.has(kunciUnik)) {
+        map.set(kunciUnik, item);
       }
     }
   }
@@ -62,9 +66,9 @@ export async function GET(req: NextRequest) {
   const kandidatList: any[][] = [];
   if (email && db[email]) kandidatList.push(db[email]);
   if (userId && db[userId]) kandidatList.push(db[userId]);
+  if (db[PUBLIC_GLOBAL_KEY]) kandidatList.push(db[PUBLIC_GLOBAL_KEY]);
 
-  // Cari juga di seluruh bucket kalau ada project dengan pemilikId / pemilikNama yang sama
-  const semuaSemua: any[] = [];
+  const semuaCocok: any[] = [];
   Object.values(db).forEach((arr) => {
     if (Array.isArray(arr)) {
       arr.forEach((p) => {
@@ -76,18 +80,18 @@ export async function GET(req: NextRequest) {
           (userId && pid === userId) ||
           (nama && nama !== "tamu (guest)" && pnama === nama)
         ) {
-          semuaSemua.push(p);
+          semuaCocok.push(p);
         }
       });
     }
   });
-  kandidatList.push(semuaSemua);
+  kandidatList.unshift(semuaCocok);
 
-  const hasilGabung = gabungkanUnikProjects(kandidatList);
+  const hasilGabung = gabungkanSemuaProjectUnik(kandidatList);
 
   return NextResponse.json({
     ok: true,
-    userId: email || userId || "guest_user",
+    userId: email || userId || "public",
     total: hasilGabung.length,
     projects: hasilGabung,
   });
@@ -96,62 +100,93 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const action: "save" | "save_as" | "delete" = body.action || "save";
+    const action: "save" | "save_as" | "delete" | "sync_bulk" = body.action || "save";
     const userId = (body.userId || "guest_user").trim().toLowerCase();
     const email = (body.email || userId).trim().toLowerCase();
 
     const db = muatDatabaseSemuaUser();
-    const keysToSync = Array.from(new Set([userId, email].filter(Boolean)));
+    const keysToSync = Array.from(
+      new Set([userId, email, PUBLIC_GLOBAL_KEY].filter(Boolean))
+    );
+
+    // SINKRONISASI MASSAL (Mengunggah semua project yang ada di PC/Browser ke Database Publik Server)
+    if (action === "sync_bulk" && Array.isArray(body.projects)) {
+      for (const k of keysToSync) {
+        const listLama = Array.isArray(db[k]) ? db[k] : [];
+        db[k] = gabungkanSemuaProjectUnik([body.projects, listLama]);
+      }
+      simpanDatabaseSemuaUser(db);
+      const primaryKey = email || userId || PUBLIC_GLOBAL_KEY;
+      return NextResponse.json({
+        ok: true,
+        message: "Seluruh project berhasil disinkronkan ke Database Publik Server!",
+        projects: db[primaryKey] || [],
+      });
+    }
 
     if (action === "save" || action === "save_as") {
       const prj = body.project;
-      if (!prj || !prj.idProject) {
+      if (!prj || !prj.namaProject) {
         return NextResponse.json(
           { ok: false, message: "Data project tidak lengkap" },
           { status: 400 }
         );
       }
 
+      const namaBersih = (prj.namaProject || "Project IoT").trim();
+      const slugNama = namaBersih.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+
+      // Pastikan setiap Nama Project yang berbeda memiliki ID unik sendiri agar tidak menimpa project lain!
+      const idUnikBerdasarkanNama =
+        action === "save_as"
+          ? `prj-${slugNama}-${Date.now()}`
+          : `prj-${slugNama}-${prj.mode || "wokwi"}`;
+
       const prjLengkap = {
         ...prj,
+        idProject: idUnikBerdasarkanNama,
+        namaProject: namaBersih,
         pemilikId: email || userId,
         pemilikEmail: email,
       };
 
       for (const k of keysToSync) {
         const listLama = Array.isArray(db[k]) ? db[k] : [];
-        if (action === "save_as") {
-          db[k] = [prjLengkap, ...listLama];
-        } else {
-          const sisa = listLama.filter(
-            (p) =>
-              p.idProject !== prjLengkap.idProject &&
-              (p.namaProject || "").toLowerCase() !==
-                (prjLengkap.namaProject || "").toLowerCase()
-          );
-          db[k] = [prjLengkap, ...sisa];
-        }
+        // Hanya timpa jika NAMA PROJECT-nya persis sama; jika namanya beda, tambahkan sebagai project baru!
+        const sisa = listLama.filter(
+          (p) =>
+            (p.namaProject || "").trim().toLowerCase() !==
+            namaBersih.toLowerCase()
+        );
+        db[k] = [prjLengkap, ...sisa];
       }
 
       simpanDatabaseSemuaUser(db);
-      const primaryKey = email || userId;
+      const primaryKey = email || userId || PUBLIC_GLOBAL_KEY;
 
       return NextResponse.json({
         ok: true,
-        message: "Project berhasil disimpan ke Server Cloud!",
+        message: "Project berhasil disimpan ke Database Publik Server!",
+        project: prjLengkap,
         projects: db[primaryKey] || [],
       });
     }
 
     if (action === "delete") {
       const idHapus = body.idProject;
+      const namaHapus = (body.namaProject || "").trim().toLowerCase();
       for (const k of keysToSync) {
         if (Array.isArray(db[k])) {
-          db[k] = db[k].filter((p) => p.idProject !== idHapus);
+          db[k] = db[k].filter(
+            (p) =>
+              p.idProject !== idHapus &&
+              (!namaHapus ||
+                (p.namaProject || "").trim().toLowerCase() !== namaHapus)
+          );
         }
       }
       simpanDatabaseSemuaUser(db);
-      const primaryKey = email || userId;
+      const primaryKey = email || userId || PUBLIC_GLOBAL_KEY;
       return NextResponse.json({
         ok: true,
         projects: db[primaryKey] || [],

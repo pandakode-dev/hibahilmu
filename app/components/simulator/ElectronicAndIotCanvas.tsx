@@ -297,48 +297,70 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
   const [sudahHydrateDraft, setSudahHydrateDraft] = useState<boolean>(false);
 
   // ============================================================================
-  // 1. PULIHKAN PROJECT DARI SERVER CLOUD (PRIORITAS UTAMA AGAR PINDAH BROWSER AMAN)
+  // 1. GABUNGKAN SEMUA PROJECT DARI LOKAL & SERVER PUBLIK (ANTI HILANG LINTAS PC)
   // ============================================================================
   useEffect(() => {
     let aktif = true;
-    async function pulihkanDariServerDanDraft() {
-      let berhasilDariServer = false;
+    async function pulihkanDanSinkronkanSemuaProject() {
+      let listLokal: ProjectTersimpanAkun[] = [];
+      try {
+        // Kumpulkan semua project lokal dari semua key hibahilmu_iot_projects_* di browser ini
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith("hibahilmu_iot_projects_")) {
+            const raw = localStorage.getItem(k);
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              if (Array.isArray(parsed)) {
+                listLokal = [...listLokal, ...parsed];
+              }
+            }
+          }
+        }
+      } catch {}
 
       try {
         const qUserId = encodeURIComponent(userLogin?.id || idPemilikAktif);
         const qEmail = encodeURIComponent(emailPemilikAktif || idPemilikAktif);
         const qNama = encodeURIComponent(namaPemilikAktif);
+
+        // Jika di PC ini ada project lokal (misal 3 project), langsung push semuanya ke Server Publik!
+        if (listLokal.length > 0) {
+          await fetch("/api/iot/projects", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "sync_bulk",
+              userId: userLogin?.id || idPemilikAktif,
+              email: emailPemilikAktif || idPemilikAktif,
+              projects: listLokal,
+            }),
+          });
+        }
+
+        // Tarik daftar gabungan lengkap dari Server Publik
         const res = await fetch(
           `/api/iot/projects?userId=${qUserId}&email=${qEmail}&nama=${qNama}`
         );
         const json = await res.json();
         if (aktif && json.ok && Array.isArray(json.projects) && json.projects.length > 0) {
-          berhasilDariServer = true;
           setDaftarProjectTersimpan(json.projects);
           localStorage.setItem(storageKeyUser, JSON.stringify(json.projects));
           terapkanDataProjectKeState(json.projects[0], false);
+        } else if (aktif && listLokal.length > 0) {
+          setDaftarProjectTersimpan(listLokal);
+          terapkanDataProjectKeState(listLokal[0], false);
         }
-      } catch {}
-
-      if (!berhasilDariServer && aktif) {
-        try {
-          const rawDraft = localStorage.getItem(draftKeyUser);
-          if (rawDraft) {
-            const parsedDraft = JSON.parse(rawDraft) as ProjectTersimpanAkun;
-            if (parsedDraft.nodes && parsedDraft.nodes.length > 0) {
-              terapkanDataProjectKeState(parsedDraft, false);
-            }
-          }
-          const rawList = localStorage.getItem(storageKeyUser);
-          if (rawList) {
-            setDaftarProjectTersimpan(JSON.parse(rawList));
-          }
-        } catch {}
+      } catch {
+        if (aktif && listLokal.length > 0) {
+          setDaftarProjectTersimpan(listLokal);
+          terapkanDataProjectKeState(listLokal[0], false);
+        }
       }
 
       if (aktif) setSudahHydrateDraft(true);
     }
-    pulihkanDariServerDanDraft();
+    pulihkanDanSinkronkanSemuaProject();
     return () => {
       aktif = false;
     };
@@ -348,16 +370,20 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
   const kabelSaatIni = daftarKabel[mode] || [];
 
   // ============================================================================
-  // 2. AUTO-SAVE KE LOKAL & AUTO-SYNC KE CLOUD SERVER SETIAP PERUBAHAN
+  // 2. AUTO-SAVE KE LOKAL & SERVER TANPA MENIMPA PROJECT DENGAN NAMA BERBEDA
   // ============================================================================
   useEffect(() => {
     if (!sudahHydrateDraft) return;
     setStatusAutoSave("Menyimpan ke Cloud...");
     const timer = setTimeout(async () => {
       try {
+        const namaBersih = (namaProjectInput || "Project Simulator").trim();
+        const slugNama = namaBersih.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+        const idUnik = `prj-${slugNama}-${mode}`;
+
         const paketDraft: ProjectTersimpanAkun = {
-          idProject: idProjectSaatIni,
-          namaProject: namaProjectInput,
+          idProject: idUnik,
+          namaProject: namaBersih,
           pemilikId: idPemilikAktif,
           pemilikNama: namaPemilikAktif,
           waktuSimpan: new Date().toLocaleTimeString("id-ID"),
@@ -371,7 +397,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
         };
         localStorage.setItem(draftKeyUser, JSON.stringify(paketDraft));
 
-        // Sinkronkan juga ke server secara otomatis agar pindah browser langsung ada
         const res = await fetch("/api/iot/projects", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -385,6 +410,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
         const json = await res.json();
         if (json.ok && Array.isArray(json.projects)) {
           setDaftarProjectTersimpan(json.projects);
+          localStorage.setItem(storageKeyUser, JSON.stringify(json.projects));
         }
         setStatusAutoSave("Cloud Synced ✓");
       } catch {
@@ -490,13 +516,15 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     judulFile: string,
     isSaveAs: boolean
   ) => {
+    const namaBersih = (judulFile || "Project Simulator").trim();
+    const slugNama = namaBersih.toLowerCase().replace(/[^a-z0-9]+/g, "-");
     const idPrj = isSaveAs
-      ? "prj-" + Date.now()
-      : idProjectSaatIni || "prj-" + Date.now();
+      ? `prj-${slugNama}-${Date.now()}`
+      : `prj-${slugNama}-${mode}`;
 
     const paketSimpan: ProjectTersimpanAkun = {
       idProject: idPrj,
-      namaProject: judulFile,
+      namaProject: namaBersih,
       pemilikId: idPemilikAktif,
       pemilikNama: namaPemilikAktif,
       waktuSimpan: new Date().toLocaleString("id-ID"),
@@ -510,13 +538,13 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     };
 
     setIdProjectSaatIni(idPrj);
-    setNamaProjectInput(judulFile);
+    setNamaProjectInput(namaBersih);
 
+    // Hanya timpa jika namanya sama persis; jika namanya beda, simpan semuanya!
     const listLama = daftarProjectTersimpan.filter(
       (p) =>
-        isSaveAs ||
-        (p.idProject !== idPrj &&
-          p.namaProject.toLowerCase() !== judulFile.toLowerCase())
+        (p.namaProject || "").trim().toLowerCase() !==
+        namaBersih.toLowerCase()
     );
     const listBaru = [paketSimpan, ...listLama];
     setDaftarProjectTersimpan(listBaru);
@@ -530,24 +558,25 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: isSaveAs ? "save_as" : "save",
+          action: "sync_bulk",
           userId: userLogin?.id || idPemilikAktif,
           email: emailPemilikAktif || idPemilikAktif,
-          project: paketSimpan,
+          projects: listBaru,
         }),
       });
       const json = await res.json();
       if (json.ok && Array.isArray(json.projects)) {
         setDaftarProjectTersimpan(json.projects);
+        localStorage.setItem(storageKeyUser, JSON.stringify(json.projects));
       }
     } catch {}
 
-    setStatusAutoSave("Tersimpan di Server ✓");
+    setStatusAutoSave("Tersimpan di Server Publik ✓");
     setInfoPopupNotifProject({
       judul: isSaveAs
         ? "Berhasil Disimpan Sebagai File Baru (Save As)!"
-        : "Project Berhasil Disimpan ke Database Server!",
-      namaProject: judulFile,
+        : "Project Berhasil Disimpan ke Database Publik Server!",
+      namaProject: namaBersih,
       namaAkun: namaPemilikAktif,
       jumlahKomponen: nodesSaatIni.length,
       jumlahKabel: kabelSaatIni.length,
@@ -556,6 +585,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
   };
 
   const handleHapusProjectAkun = async (idPrj: string) => {
+    const targetHapus = daftarProjectTersimpan.find((p) => p.idProject === idPrj);
     const sisa = daftarProjectTersimpan.filter((p) => p.idProject !== idPrj);
     setDaftarProjectTersimpan(sisa);
     try {
@@ -568,6 +598,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
           userId: userLogin?.id || idPemilikAktif,
           email: emailPemilikAktif || idPemilikAktif,
           idProject: idPrj,
+          namaProject: targetHapus?.namaProject || "",
         }),
       });
     } catch {}
@@ -776,7 +807,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     setLogSerialMultiMcu((prev) => [...logBaru, ...prev]);
   };
 
-  // GABUNGKAN PALET KOMPONEN ASLI + 11 SENSOR BARU & KATEGORIKAN SEMUA SENSOR KE "Sensor" + SUB-KATEGORI
   const paletModeIni = useMemo(() => {
     const asli = PALET_KOMPONEN[mode] || [];
     if (mode !== "wokwi") return asli;
@@ -1010,6 +1040,9 @@ void loop() {
     });
   };
 
+  // ============================================================================
+  // 3. DUKUNGAN MULTI-WIRE PER PIN (1 PIN BISA DICABANGKAN KE BANYAK TITIK LAIN)
+  // ============================================================================
   const tambahKabelKoneksi = (
     dariId: string,
     pinDariId: string,
@@ -1018,6 +1051,22 @@ void loop() {
     warna: string
   ) => {
     if (!dariId || !keId || (dariId === keId && pinDariId === pinKeId)) return;
+
+    // Hanya cegah jika kabel dengan pasangan (Pin A <-> Pin B) yang PERSIS SAMA sudah ada;
+    // menghubungkan Pin A ke Pin C, Pin D, dst. DIIZINKAN SEPENUHNYA!
+    const sudahAdaPersis = kabelSaatIni.some(
+      (k) =>
+        (k.dariId === dariId &&
+          k.pinAsal === pinDariId &&
+          k.keId === keId &&
+          k.pinTujuan === pinKeId) ||
+        (k.dariId === keId &&
+          k.pinAsal === pinKeId &&
+          k.keId === dariId &&
+          k.pinTujuan === pinDariId)
+    );
+    if (sudahAdaPersis) return;
+
     simpanSnapshotUndo();
     const asal = nodesSaatIni.find((n) => n.id === dariId);
     const tujuan = nodesSaatIni.find((n) => n.id === keId);
@@ -1025,10 +1074,17 @@ void loop() {
 
     const p1 = cariKoordinatPinAbsolut(asal, pinDariId);
     const p2 = cariKoordinatPinAbsolut(tujuan, pinKeId);
-    const midX = Math.round((p1.x + p2.x) / 2);
+
+    // Beri sedikit offset jalur siku jika pin tersebut sudah punya cabang kabel lain agar rapi terlihat
+    const jumlahCabangDiPinIni = kabelSaatIni.filter(
+      (k) =>
+        (k.dariId === dariId && k.pinAsal === pinDariId) ||
+        (k.keId === dariId && k.pinTujuan === pinDariId)
+    ).length;
+    const midX = Math.round((p1.x + p2.x) / 2) + jumlahCabangDiPinIni * 8;
 
     const baru: KabelKoneksiItem = {
-      id: "kbl-" + Date.now(),
+      id: "kbl-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
       dariId,
       pinAsal: pinDariId,
       keId,
@@ -1039,10 +1095,10 @@ void loop() {
         { x: midX, y: p2.y },
       ],
     };
-    setDaftarKabel({
-      ...daftarKabel,
-      [mode]: [...kabelSaatIni, baru],
-    });
+    setDaftarKabel((prev) => ({
+      ...prev,
+      [mode]: [...(prev[mode] || []), baru],
+    }));
     setIdKabelTerpilih(baru.id);
   };
 
@@ -1155,7 +1211,7 @@ void loop() {
             )}
             <div>
               <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded bg-emerald-500 text-slate-950">
-                Database Cloud Sync • Save / Save As • Export &amp; Import JSON
+                Database Cloud Sync • Multi-Wire Jumper • Export &amp; Import JSON
               </span>
               <h3 className="font-black text-base sm:text-lg text-white mt-0.5">
                 {mode === "wokwi"
@@ -1450,7 +1506,7 @@ void loop() {
                 type="text"
                 value={cariKomponen}
                 onChange={(e) => setCariKomponen(e.target.value)}
-                placeholder="Cari PIR, Api, LDR, pH, TDS, Heart, O3, PZEM..."
+                placeholder="Cari NPK, Pompa, RFID, Keypad, PIR, pH..."
                 className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-400"
               />
             </div>
@@ -1474,7 +1530,7 @@ void loop() {
                 }`}
               >
                 {kat === "Sensor"
-                  ? `📡 Sensor (${
+                  ? `Sensor (${
                       paletModeIni.filter((x) => x.kategori === "Sensor").length
                     })`
                   : kat}
@@ -1777,13 +1833,13 @@ void loop() {
                     setIdKomponenTerhubungKeMcuRunning.has(tujuan.id);
 
                   return (
-                    <g key={kbl.id} className="pointer-events-auto">
+                    <g key={kbl.id}>
                       <path
                         d={d}
                         stroke="transparent"
-                        strokeWidth="16"
+                        strokeWidth="10"
                         fill="none"
-                        className="cursor-pointer"
+                        className="cursor-pointer pointer-events-stroke"
                         onClick={(e) => {
                           e.stopPropagation();
                           setIdKabelTerpilih(kbl.id);
@@ -1797,23 +1853,26 @@ void loop() {
                         strokeLinecap="round"
                         fill="none"
                         opacity={kabelDialiriArus ? 1 : 0.4}
-                        className="cursor-pointer"
+                        className="cursor-pointer pointer-events-stroke"
                         onClick={(e) => {
                           e.stopPropagation();
                           setIdKabelTerpilih(kbl.id);
                         }}
                       />
+                      {/* Bulatan ujung kabel diberi pointer-events-none agar TIDAK menutupi klik pada titik Pin! */}
                       <circle
                         cx={koorAsal.x}
                         cy={koorAsal.y}
-                        r="4"
+                        r="3.5"
                         fill={kbl.warna}
+                        className="pointer-events-none"
                       />
                       <circle
                         cx={koorTujuan.x}
                         cy={koorTujuan.y}
-                        r="4"
+                        r="3.5"
                         fill={kbl.warna}
+                        className="pointer-events-none"
                       />
 
                       {apakahTerpilih &&
@@ -1826,7 +1885,7 @@ void loop() {
                             fill="#facc15"
                             stroke="#0f172a"
                             strokeWidth="2.5"
-                            className="cursor-grab active:cursor-grabbing"
+                            className="cursor-grab active:cursor-grabbing pointer-events-auto"
                             onMouseDown={(e) => {
                               e.stopPropagation();
                               simpanSnapshotUndo();
@@ -1872,7 +1931,7 @@ void loop() {
                 >
                   <div className="font-black text-amber-300">
                     ● {hoveredPinInfo.pin.nama} (Pin #
-                    {hoveredPinInfo.pin.nomorPin})
+                    {hoveredPinInfo.pin.nomorPin}) — Klik untuk Cabang Kabel Baru
                   </div>
                   <div className="text-[10px] text-slate-300">
                     {hoveredPinInfo.pin.keterangan}
@@ -1917,7 +1976,7 @@ void loop() {
                       setSedangGeserId(node.id);
                     }}
                     className={`absolute rounded-2xl cursor-move transition-all ${
-                      aktifDipilih ? "ring-2 ring-emerald-400 z-20" : "z-10"
+                      aktifDipilih ? "ring-2 ring-emerald-400 z-30" : "z-25"
                     } ${
                       !terhubungKeRangkaianAktif
                         ? "opacity-65 grayscale-[30%]"
@@ -1979,7 +2038,10 @@ void loop() {
                           nilaiSensor={node.nilaiSensor}
                           nyala={statusNyalaEfektif}
                           ukuran="kanvas"
-                          onInteraksiKomponen={(perubahan: { nyala?: boolean; nilaiSensor?: number }) => updatePropertiKomponen(node.id, perubahan)}
+                          onInteraksiKomponen={(perubahan: {
+                            nyala?: boolean;
+                            nilaiSensor?: number;
+                          }) => updatePropertiKomponen(node.id, perubahan)}
                         />
                       ) : (
                         <VisualKomponenRealistis
@@ -1991,13 +2053,14 @@ void loop() {
                         />
                       )}
 
-                      {/* OVERLAY ANIMASI FISIK (ORANG DI ATAS KUBAH PUTIH PIR, API MEMBARA, CAHAYA LDR, DLL) */}
+                      {/* OVERLAY ANIMASI FISIK */}
                       <ExtendedSensorLiveOverlay
                         tipe={node.tipe}
                         nilaiSensor={node.nilaiSensor}
                         nyala={Boolean(node.nyala)}
                       />
 
+                      {/* TITIK PIN BERADA DI Z-40 AGAR SELALU BISA DIKLIK BERKALI-KALI UNTUK BANYAK CABANG KABEL */}
                       {layout.pins.map((pin) => {
                         const sedangAsal =
                           sedangTarikKabelDariPin?.nodeId === node.id &&
@@ -2057,7 +2120,7 @@ void loop() {
                                 setSedangTarikKabelDariPin(null);
                               }
                             }}
-                            className={`absolute w-[10px] h-[10px] rounded-full border border-slate-950 cursor-crosshair transition-transform hover:scale-175 hover:ring-2 hover:ring-amber-400 z-30 ${
+                            className={`absolute w-[11px] h-[11px] rounded-full border border-slate-950 cursor-crosshair transition-transform hover:scale-175 hover:ring-2 hover:ring-amber-400 z-40 pointer-events-auto ${
                               sedangAsal
                                 ? "scale-175 ring-2 ring-amber-300 animate-ping"
                                 : ""
