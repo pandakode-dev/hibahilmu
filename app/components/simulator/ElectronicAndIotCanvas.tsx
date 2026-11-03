@@ -67,6 +67,12 @@ import {
 } from "./PhysicalRoomsLayer";
 import { ProjectFileManagerToolbar } from "./ProjectFileManagerToolbar";
 import { ComponentInspectorSidebar } from "./ComponentInspectorSidebar";
+import {
+  TAMBAHAN_PALET_SENSOR_LENGKAP,
+  apakahSensorTambahanBaru,
+  VisualChipSensorTambahan,
+  ExtendedSensorLiveOverlay,
+} from "./ExtendedSensorsAndAnimations";
 
 export type { TitikSikuKabel };
 
@@ -160,7 +166,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  const idPemilikAktif = userLogin?.id || "guest_user";
+  const idPemilikAktif = userLogin?.email || userLogin?.id || "guest_user";
   const namaPemilikAktif = userLogin?.nama || "Tamu (Guest)";
   const storageKeyUser = `hibahilmu_iot_projects_${idPemilikAktif}`;
   const draftKeyUser = `hibahilmu_autodraft_v2_${idPemilikAktif}`;
@@ -246,7 +252,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
 
   const [idTabMcuAktif, setIdTabMcuAktif] = useState<string>("p5-esp1");
   const [logSerialMultiMcu, setLogSerialMultiMcu] = useState<string[]>([
-    "[10:30:01] 🚀 Semua Mikrokontroler lolos pemeriksaan Library & sedang RUNNING...",
+    "[10:30:01] Semua Mikrokontroler lolos pemeriksaan Library & sedang RUNNING...",
   ]);
 
   const [kategoriPaletAktif, setKategoriPaletAktif] = useState<string>("Semua");
@@ -285,14 +291,10 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
   const [bukaDashboardIot, setBukaDashboardIot] = useState<boolean>(true);
   const [sudahHydrateDraft, setSudahHydrateDraft] = useState<boolean>(false);
 
-  // ============================================================================
-  // 1. PULIHKAN OTOMATIS PROJECT TERAKHIR DARI DATABASE SERVER & DRAFT LOKAL
-  //    SAAT PC BARU DINYALAKAN / HALAMAN DI-REFRESH!
-  // ============================================================================
+  // PULIHKAN OTOMATIS PROJECT DARI SERVER (/api/iot/projects) & LOKAL
   useEffect(() => {
     let aktif = true;
     async function pulihkanDariServerDanDraft() {
-      // A. Pulihkan dari Auto-Draft Lokal terlebih dahulu secara instan
       try {
         const rawDraft = localStorage.getItem(draftKeyUser);
         if (rawDraft) {
@@ -307,7 +309,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
         }
       } catch {}
 
-      // B. Tarik daftar project tersimpan dari API Database Server (/api/iot/projects)
       try {
         const res = await fetch(
           `/api/iot/projects?userId=${encodeURIComponent(idPemilikAktif)}`
@@ -317,7 +318,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
           if (json.projects.length > 0) {
             setDaftarProjectTersimpan(json.projects);
             localStorage.setItem(storageKeyUser, JSON.stringify(json.projects));
-            // Jika belum ada draft lokal, otomatis buka project terakhir dari server!
+            // Jika di PC baru belum ada localStorage draft, langsung muat dari server!
             if (!localStorage.getItem(draftKeyUser)) {
               terapkanDataProjectKeState(json.projects[0], false);
             }
@@ -335,9 +336,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
   const nodesSaatIni = daftarNode[mode] || [];
   const kabelSaatIni = daftarKabel[mode] || [];
 
-  // ============================================================================
-  // 2. AUTO-SAVE DRAFT SETIAP KALI ADA PERUBAHAN KOMPONEN, KABEL, ATAU KODE
-  // ============================================================================
   useEffect(() => {
     if (!sudahHydrateDraft) return;
     setStatusAutoSave("Menyimpan draft...");
@@ -428,7 +426,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     setRiwayatRedo((prev) => prev.slice(0, -1));
   };
 
-  // Fungsi Menerapkan Data Project (Baik dari Server, LocalStorage, maupun Import File JSON)
   const terapkanDataProjectKeState = (
     prj: ProjectTersimpanAkun,
     simpanUndo = true
@@ -457,9 +454,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     setNamaProjectInput(prj.namaProject || "Project Simulator");
   };
 
-  // ============================================================================
-  // 3. FUNGSI SAVE & SAVE AS KE DATABASE API SERVER (/api/iot/projects) + LOKAL
-  // ============================================================================
   const eksekusiSimpanKeServerDanLokal = async (
     judulFile: string,
     isSaveAs: boolean
@@ -486,7 +480,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     setIdProjectSaatIni(idPrj);
     setNamaProjectInput(judulFile);
 
-    // Update LocalStorage
     const listLama = daftarProjectTersimpan.filter(
       (p) =>
         isSaveAs ||
@@ -500,7 +493,6 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
       localStorage.setItem(draftKeyUser, JSON.stringify(paketSimpan));
     } catch {}
 
-    // Kirim ke Endpoint API Server (/api/iot/projects)
     try {
       const res = await fetch("/api/iot/projects", {
         method: "POST",
@@ -693,7 +685,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
       if (pesanError) {
         setErrorCompilerPerMcu((prev) => ({ ...prev, [mcuId]: pesanError }));
         setStatusRunPerMcu((prev) => ({ ...prev, [mcuId]: false }));
-        setLogSerialMultiMcu((prev) => [`[${jam}] ❌ ${pesanError}`, ...prev]);
+        setLogSerialMultiMcu((prev) => [`[${jam}] ${pesanError}`, ...prev]);
         return;
       }
     }
@@ -701,7 +693,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     setErrorCompilerPerMcu((prev) => ({ ...prev, [mcuId]: null }));
     setStatusRunPerMcu((prev) => ({ ...prev, [mcuId]: jalan }));
     setLogSerialMultiMcu((prev) => [
-      `[${jam}] ${jalan ? "▶️ COMPILED & RUNNING" : "⏹️ STOPPED"}: ${
+      `[${jam}] ${jalan ? "COMPILED & RUNNING" : "STOPPED"}: ${
         mcuObj?.label || mcuId
       }`,
       ...prev,
@@ -717,7 +709,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
       });
       setStatusRunPerMcu(mapStop);
       setLogSerialMultiMcu((prev) => [
-        `[${jam}] ⏹️ STOP ALL: Seluruh mikrokontroler dihentikan.`,
+        `[${jam}] STOP ALL: Seluruh mikrokontroler dihentikan.`,
         ...prev,
       ]);
       return;
@@ -737,11 +729,11 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
       if (err) {
         errMapBaru[m.id] = err;
         mapBaru[m.id] = false;
-        logBaru.push(`[${jam}] ❌ ${err}`);
+        logBaru.push(`[${jam}] ${err}`);
       } else {
         errMapBaru[m.id] = null;
         mapBaru[m.id] = true;
-        logBaru.push(`[${jam}] ✅ ${m.label}: Library Valid -> RUNNING!`);
+        logBaru.push(`[${jam}] ${m.label}: Library Valid -> RUNNING!`);
       }
     });
 
@@ -750,7 +742,17 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     setLogSerialMultiMcu((prev) => [...logBaru, ...prev]);
   };
 
-  const paletModeIni = PALET_KOMPONEN[mode] || [];
+  // GABUNGKAN PALET KOMPONEN ASLI DENGAN 11 SENSOR BARU (TDS, pH, HEART, DO, BOD, COD, O3, PZEM)
+  const paletModeIni = useMemo(() => {
+    const asli = PALET_KOMPONEN[mode] || [];
+    if (mode !== "wokwi") return asli;
+    const tipeAda = new Set(asli.map((x) => x.tipe));
+    const tambahan = TAMBAHAN_PALET_SENSOR_LENGKAP.filter(
+      (x) => !tipeAda.has(x.tipe)
+    );
+    return [...asli, ...tambahan];
+  }, [mode]);
+
   const daftarKategoriUnik = [
     "Semua",
     ...Array.from(new Set(paletModeIni.map((item) => item.kategori))),
@@ -1217,7 +1219,7 @@ void loop() {
           </div>
         </div>
 
-        {/* TOOLBAR FILE MANAGER BARU: SAVE, SAVE AS, EXPORT JSON/CODE, & IMPORT JSON */}
+        {/* TOOLBAR FILE MANAGER: SAVE, SAVE AS, EXPORT JSON/CODE, & IMPORT JSON */}
         <ProjectFileManagerToolbar
           mode={mode}
           idProjectSaatIni={idProjectSaatIni}
@@ -1247,7 +1249,7 @@ void loop() {
           }
         />
 
-<AccountProjectRepositoryDrawer
+        <AccountProjectRepositoryDrawer
           buka={bukaPanelProjectAkun}
           namaPemilikAktif={namaPemilikAktif}
           idPemilikAktif={idPemilikAktif}
@@ -1379,7 +1381,7 @@ void loop() {
           setDaftarRuangan={setDaftarRuanganFisik}
         />
 
-        {/* GUDANG KOMPONEN BERKATEGORI */}
+        {/* GUDANG KOMPONEN BERKATEGORI (ASLI + 11 SENSOR BARU) */}
         <div className="bg-slate-950/90 p-5 rounded-3xl border border-slate-800 space-y-4">
           <div className="flex flex-wrap justify-between items-center gap-3">
             <div className="flex items-center gap-2 text-xs">
@@ -1395,7 +1397,7 @@ void loop() {
                 type="text"
                 value={cariKomponen}
                 onChange={(e) => setCariKomponen(e.target.value)}
-                placeholder="Cari ESP32-C6, GPS, Baterai, DHT22..."
+                placeholder="Cari pH, TDS, Heart, DO, BOD, COD, O3, PZEM..."
                 className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-400"
               />
             </div>
@@ -1422,6 +1424,7 @@ void loop() {
           <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-10 gap-2.5 max-h-48 overflow-y-auto pr-1">
             {komponenPaletTersaring.map((item, idx) => {
               const layoutInfo = ambilLayoutFisikKomponen(item.tipe);
+              const isBaru = apakahSensorTambahanBaru(item.tipe);
               return (
                 <div
                   key={`${item.tipe}-${idx}`}
@@ -1454,13 +1457,22 @@ void loop() {
                   </div>
 
                   <div className="h-11 flex items-center justify-center py-0.5 group-hover:scale-105 transition-transform">
-                    <VisualKomponenRealistis
-                      tipe={item.tipe}
-                      nilaiResistor={item.defaultResistor || 220}
-                      nilaiSensor={item.defaultSensor || 25}
-                      nyala={true}
-                      ukuran="ikon"
-                    />
+                    {isBaru ? (
+                      <VisualChipSensorTambahan
+                        tipe={item.tipe}
+                        nilaiSensor={item.defaultSensor || 25}
+                        nyala={true}
+                        ukuran="ikon"
+                      />
+                    ) : (
+                      <VisualKomponenRealistis
+                        tipe={item.tipe}
+                        nilaiResistor={item.defaultResistor || 220}
+                        nilaiSensor={item.defaultSensor || 25}
+                        nyala={true}
+                        ukuran="ikon"
+                      />
+                    )}
                   </div>
 
                   <div className="font-bold text-[10px] text-white group-hover:text-emerald-300 leading-tight line-clamp-1">
@@ -1598,7 +1610,7 @@ void loop() {
                   onClick={() => hapusKabel(kabelTerpilihObj.id)}
                   className="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-black text-[10px] cursor-pointer"
                 >
-                  ✕ Hapus Kabel
+                  Hapus Kabel
                 </button>
               </div>
             )}
@@ -1787,6 +1799,7 @@ void loop() {
                 const aktifDipilih = komponenTerpilih?.id === node.id;
                 const layout = ambilLayoutFisikKomponen(node.tipe);
                 const adalahMcu = TIPE_MCU_LIST.includes(node.tipe);
+                const isSensorBaru = apakahSensorTambahanBaru(node.tipe);
                 const ruanganNodeIni = cariRuanganTempatKomponen(
                   node.x,
                   node.y,
@@ -1853,13 +1866,13 @@ void loop() {
                         >
                           {adalahMcu
                             ? errorCompilerPerMcu[node.id]
-                              ? "❌ ERR"
+                              ? "ERR"
                               : statusRunPerMcu[node.id]
-                              ? "● RUN"
-                              : "⏹ STOP"
+                              ? "RUN"
+                              : "STOP"
                             : terhubungKeRangkaianAktif
-                            ? "⚡ WIRED"
-                            : "⚠️ UNWIRED"}
+                            ? "WIRED"
+                            : "UNWIRED"}
                         </span>
                       </div>
                     </div>
@@ -1875,12 +1888,28 @@ void loop() {
                           : "bg-slate-950/40"
                       }`}
                     >
-                      <VisualKomponenRealistis
+                      {isSensorBaru ? (
+                        <VisualChipSensorTambahan
+                          tipe={node.tipe}
+                          nilaiSensor={node.nilaiSensor}
+                          nyala={statusNyalaEfektif}
+                          ukuran="kanvas"
+                        />
+                      ) : (
+                        <VisualKomponenRealistis
+                          tipe={node.tipe}
+                          nilaiResistor={node.nilaiResistor}
+                          nyala={statusNyalaEfektif}
+                          nilaiSensor={node.nilaiSensor}
+                          ukuran="kanvas"
+                        />
+                      )}
+
+                      {/* OVERLAY ANIMASI ORANG BERJALAN DI PIR & ULTRASONIK SERTA EFEK SENSOR */}
+                      <ExtendedSensorLiveOverlay
                         tipe={node.tipe}
-                        nilaiResistor={node.nilaiResistor}
-                        nyala={statusNyalaEfektif}
                         nilaiSensor={node.nilaiSensor}
-                        ukuran="kanvas"
+                        nyala={Boolean(node.nyala)}
                       />
 
                       {layout.pins.map((pin) => {

@@ -5,47 +5,34 @@ import path from "path";
 
 const DB_PROJECTS_PATH = path.join(process.cwd(), "iot_projects_cloud.json");
 
-export interface CloudIotProjectItem {
-  id: string;
-  ownerEmail: string;
-  ownerName: string;
-  namaProject: string;
-  updatedAt: string;
-  rooms: any[];
-  nodes: any[];
-  wires: any[];
-  sourceCode: string;
-  bahasa: string;
-}
-
 const globalForProjects = globalThis as unknown as {
-  hibahIlmuIotProjectsDb?: CloudIotProjectItem[];
+  hibahIlmuIotProjectsByUser?: Record<string, any[]>;
 };
 
-function muatDatabaseProject(): CloudIotProjectItem[] {
-  if (globalForProjects.hibahIlmuIotProjectsDb) {
-    return globalForProjects.hibahIlmuIotProjectsDb;
+function muatDatabaseSemuaUser(): Record<string, any[]> {
+  if (globalForProjects.hibahIlmuIotProjectsByUser) {
+    return globalForProjects.hibahIlmuIotProjectsByUser;
   }
   try {
     if (fs.existsSync(DB_PROJECTS_PATH)) {
       const raw = fs.readFileSync(DB_PROJECTS_PATH, "utf-8");
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        globalForProjects.hibahIlmuIotProjectsDb = parsed;
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        globalForProjects.hibahIlmuIotProjectsByUser = parsed;
         return parsed;
       }
     }
   } catch {
     // Fallback serverless memory
   }
-  globalForProjects.hibahIlmuIotProjectsDb = [];
-  return globalForProjects.hibahIlmuIotProjectsDb;
+  globalForProjects.hibahIlmuIotProjectsByUser = {};
+  return globalForProjects.hibahIlmuIotProjectsByUser;
 }
 
-function simpanDatabaseProject(list: CloudIotProjectItem[]) {
-  globalForProjects.hibahIlmuIotProjectsDb = list;
+function simpanDatabaseSemuaUser(db: Record<string, any[]>) {
+  globalForProjects.hibahIlmuIotProjectsByUser = db;
   try {
-    fs.writeFileSync(DB_PROJECTS_PATH, JSON.stringify(list, null, 2), "utf-8");
+    fs.writeFileSync(DB_PROJECTS_PATH, JSON.stringify(db, null, 2), "utf-8");
   } catch {
     // Fallback read-only environment
   }
@@ -53,67 +40,78 @@ function simpanDatabaseProject(list: CloudIotProjectItem[]) {
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const email = (searchParams.get("email") || "").trim().toLowerCase();
-  const db = muatDatabaseProject();
+  const userId = (searchParams.get("userId") || "guest_user").trim();
+  const db = muatDatabaseSemuaUser();
 
-  const daftarMilikUser = email
-    ? db.filter((p) => p.ownerEmail.toLowerCase() === email || p.ownerEmail === "public")
-    : db;
+  const listUser = db[userId] || [];
 
   return NextResponse.json({
     ok: true,
-    total: daftarMilikUser.length,
-    projects: daftarMilikUser,
+    userId,
+    total: listUser.length,
+    projects: listUser,
   });
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const action = body.action || "save";
-    const db = muatDatabaseProject();
+    const action: "save" | "save_as" | "delete" = body.action || "save";
+    const userId: string = (body.userId || "guest_user").trim();
+    const db = muatDatabaseSemuaUser();
 
-    if (action === "save") {
-      const ownerEmail = (body.ownerEmail || "public").trim().toLowerCase();
-      const projectBaru: CloudIotProjectItem = {
-        id: body.id || `prj-${Date.now()}`,
-        ownerEmail,
-        ownerName: body.ownerName || "Maker HibahIlmu",
-        namaProject: body.namaProject || "Rangkaian IoT Tanpa Judul",
-        updatedAt: new Date().toLocaleString("id-ID"),
-        rooms: body.rooms || [],
-        nodes: body.nodes || [],
-        wires: body.wires || [],
-        sourceCode: body.sourceCode || "",
-        bahasa: body.bahasa || "iot_esp32",
-      };
+    if (!db[userId]) {
+      db[userId] = [];
+    }
 
-      const idxLama = db.findIndex((p) => p.id === projectBaru.id);
-      if (idxLama >= 0) {
-        db[idxLama] = projectBaru;
-      } else {
-        db.unshift(projectBaru);
+    if (action === "save" || action === "save_as") {
+      const prj = body.project;
+      if (!prj || !prj.idProject) {
+        return NextResponse.json(
+          { ok: false, message: "Data project tidak lengkap" },
+          { status: 400 }
+        );
       }
 
-      simpanDatabaseProject(db);
+      if (action === "save_as") {
+        db[userId] = [prj, ...db[userId]];
+      } else {
+        const sisa = db[userId].filter(
+          (p) =>
+            p.idProject !== prj.idProject &&
+            (p.namaProject || "").toLowerCase() !==
+              (prj.namaProject || "").toLowerCase()
+        );
+        db[userId] = [prj, ...sisa];
+      }
+
+      simpanDatabaseSemuaUser(db);
 
       return NextResponse.json({
         ok: true,
-        message: "Project berhasil disimpan ke Server Cloud! Bisa dibuka di PC/HP mana saja.",
-        project: projectBaru,
-        projects: db.filter((p) => p.ownerEmail.toLowerCase() === ownerEmail || p.ownerEmail === "public"),
+        message: "Project berhasil disimpan di Server Cloud!",
+        projects: db[userId],
       });
     }
 
     if (action === "delete") {
-      const targetId = body.id;
-      const baru = db.filter((p) => p.id !== targetId);
-      simpanDatabaseProject(baru);
-      return NextResponse.json({ ok: true, projects: baru });
+      const idHapus = body.idProject;
+      db[userId] = db[userId].filter((p) => p.idProject !== idHapus);
+      simpanDatabaseSemuaUser(db);
+      return NextResponse.json({
+        ok: true,
+        projects: db[userId],
+      });
     }
 
-    return NextResponse.json({ ok: false, message: "Action tidak valid" }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, message: "Action tidak dikenali" },
+      { status: 400 }
+    );
   } catch {
-    return NextResponse.json({ ok: false, message: "Gagal memproses JSON project" }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, message: "Format JSON tidak valid" },
+      { status: 400 }
+    );
   }
 }
