@@ -33,7 +33,6 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
   userLogin,
   tambahXP,
 }) => {
-  // Default langsung membuka tab Wokwi IoT Simulator sesuai fokus Anda
   const [kategoriAktif, setKategoriAktif] = useState<KategoriSimulatorId>("wokwi");
   const [daftarModul, setDaftarModul] = useState<ModulSimulatorItem[]>(
     MODUL_PEMBELAJARAN_SIMULATOR_AWAL
@@ -52,11 +51,9 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
   );
   const [modulTuntasIds, setModulTuntasIds] = useState<string[]>([]);
 
-  const [libraryTerpasang, setLibraryTerpasang] = useState<{
+  const [libraryTerpasang] = useState<{
     [kat in KategoriSimulatorId]?: LibrarySimulatorItem[];
   }>({});
-  const [namaLibBaru, setNamaLibBaru] = useState("");
-  const [importLibBaru, setImportLibBaru] = useState("");
 
   const [bukaFormTambahModul, setBukaFormTambahModul] = useState(false);
   const [judulModulBaru, setJudulModulBaru] = useState("");
@@ -92,25 +89,36 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
     setOutputTerminal(m.outputEkspektasi);
   };
 
-  // Validasi Ketat Library pada Simulator Python, Bahasa C, dan Next.js
   const jalankanSimulatorKode = () => {
     const jam = new Date().toLocaleTimeString("id-ID");
 
-    if (kategoriAktif === "python" && kodeEditor.includes("np.") && !kodeEditor.includes("import numpy")) {
+    if (
+      kategoriAktif === "python" &&
+      kodeEditor.includes("np.") &&
+      !kodeEditor.includes("import numpy")
+    ) {
       setOutputTerminal(
-        `[${jam}] ❌ NameError: name 'np' is not defined.\nAnda menggunakan fungsi NumPy (np.), tetapi belum menulis 'import numpy as np' di baris atas!`
+        `[${jam}] NameError: name 'np' is not defined.\nAnda menggunakan fungsi NumPy (np.), tetapi belum menulis 'import numpy as np' di baris atas!`
       );
       return;
     }
-    if (kategoriAktif === "c_cpp" && kodeEditor.includes("printf") && !kodeEditor.includes("#include <stdio.h>")) {
+    if (
+      kategoriAktif === "c_cpp" &&
+      kodeEditor.includes("printf") &&
+      !kodeEditor.includes("#include <stdio.h>")
+    ) {
       setOutputTerminal(
-        `[${jam}] ❌ Compile Error (GCC): implicit declaration of function 'printf'.\nAnda wajib menyertakan library '#include <stdio.h>' di baris paling atas!`
+        `[${jam}] Compile Error (GCC): implicit declaration of function 'printf'.\nAnda wajib menyertakan library '#include <stdio.h>' di baris paling atas!`
       );
       return;
     }
-    if (kategoriAktif === "nextjs" && kodeEditor.includes("useState") && !kodeEditor.includes("import React")) {
+    if (
+      kategoriAktif === "nextjs" &&
+      kodeEditor.includes("useState") &&
+      !kodeEditor.includes("import React")
+    ) {
       setOutputTerminal(
-        `[${jam}] ❌ TypeScript Error: Cannot find name 'useState'.\nAnda wajib mengimpor 'import React, { useState } from "react";'!`
+        `[${jam}] TypeScript Error: Cannot find name 'useState'.\nAnda wajib mengimpor 'import React, { useState } from "react";'!`
       );
       return;
     }
@@ -126,7 +134,7 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
       )
       .map((b) => b.trim());
 
-    const logEksekusi = `[${jam}] $ ${engineSaatIni.perintahJalankan}\n--------------------------------------------------\n${modulAktif.outputEkspektasi}\n\n✓ Library Valid & Eksekusi selesai dalam 24ms (${barisCetak.length} instruksi output).`;
+    const logEksekusi = `[${jam}] $ ${engineSaatIni.perintahJalankan}\n--------------------------------------------------\n${modulAktif.outputEkspektasi}\n\nLibrary Valid & Eksekusi selesai dalam 24ms (${barisCetak.length} instruksi output).`;
     setOutputTerminal(logEksekusi);
 
     if (!modulTuntasIds.includes(modulAktif.id)) {
@@ -151,8 +159,8 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
             Python, C &amp; Next.js
           </h1>
           <p className="text-xs sm:text-sm text-indigo-200 leading-relaxed">
-            Dilengkapi validasi kompilasi *library* nyata, pemrograman multi-mikrokontroler,
-            animasi fisika sensor real-time, serta integrasi dashboard IoT Blynk dan Telegram Bot.
+            Dilengkapi validasi kompilasi library nyata, pemrograman multi-mikrokontroler,
+            animasi fisika sensor real-time, serta integrasi dashboard IoT Blynk dan Cloud Project Sync.
           </p>
         </div>
 
@@ -292,8 +300,7 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
         />
       )}
 
-      {/* WORKSPACE CODE EDITOR STANDAR HANYA TAMPIL UNTUK PYTHON, C, NEXT.JS, EWB, & MATLAB
-          (DIHILANGKAN PADA WOKWI KARENA WOKWI SUDAH MEMILIKI MULTI-MCU IDE DI ATAS!) */}
+      {/* WORKSPACE CODE EDITOR STANDAR UNTUK PYTHON, C, NEXT.JS, EWB, & MATLAB */}
       {kategoriAktif !== "wokwi" && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           <div className="lg:col-span-5 space-y-6">
@@ -334,7 +341,7 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
                 <div className="font-black text-sm text-slate-900">{modulAktif.judulModul}</div>
                 <p className="text-slate-600">{modulAktif.ringkasanTeori}</p>
                 <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-950 font-bold">
-                  🎯 Tantangan Mandiri: {modulAktif.tantanganLatihan}
+                  Tantangan Mandiri: {modulAktif.tantanganLatihan}
                 </div>
               </div>
             </div>

@@ -69,6 +69,8 @@ import { ProjectFileManagerToolbar } from "./ProjectFileManagerToolbar";
 import { ComponentInspectorSidebar } from "./ComponentInspectorSidebar";
 import {
   TAMBAHAN_PALET_SENSOR_LENGKAP,
+  DAFTAR_SUB_KATEGORI_SENSOR,
+  tentukanSubKategoriSensor,
   apakahSensorTambahanBaru,
   VisualChipSensorTambahan,
   ExtendedSensorLiveOverlay,
@@ -166,7 +168,8 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  const idPemilikAktif = userLogin?.email || userLogin?.id || "guest_user";
+  const emailPemilikAktif = (userLogin?.email || "").trim().toLowerCase();
+  const idPemilikAktif = emailPemilikAktif || userLogin?.id || "guest_user";
   const namaPemilikAktif = userLogin?.nama || "Tamu (Guest)";
   const storageKeyUser = `hibahilmu_iot_projects_${idPemilikAktif}`;
   const draftKeyUser = `hibahilmu_autodraft_v2_${idPemilikAktif}`;
@@ -256,6 +259,8 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
   ]);
 
   const [kategoriPaletAktif, setKategoriPaletAktif] = useState<string>("Semua");
+  const [subKategoriSensorAktif, setSubKategoriSensorAktif] =
+    useState<string>("Semua Sensor");
   const [cariKomponen, setCariKomponen] = useState<string>("");
   const [ukuranKanvas, setUkuranKanvas] = useState<
     "kecil" | "sedang" | "besar" | "penuh"
@@ -291,55 +296,64 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
   const [bukaDashboardIot, setBukaDashboardIot] = useState<boolean>(true);
   const [sudahHydrateDraft, setSudahHydrateDraft] = useState<boolean>(false);
 
-  // PULIHKAN OTOMATIS PROJECT DARI SERVER (/api/iot/projects) & LOKAL
+  // ============================================================================
+  // 1. PULIHKAN PROJECT DARI SERVER CLOUD (PRIORITAS UTAMA AGAR PINDAH BROWSER AMAN)
+  // ============================================================================
   useEffect(() => {
     let aktif = true;
     async function pulihkanDariServerDanDraft() {
+      let berhasilDariServer = false;
+
       try {
-        const rawDraft = localStorage.getItem(draftKeyUser);
-        if (rawDraft) {
-          const parsedDraft = JSON.parse(rawDraft) as ProjectTersimpanAkun;
-          if (parsedDraft.nodes && parsedDraft.nodes.length > 0) {
-            terapkanDataProjectKeState(parsedDraft, false);
-          }
-        }
-        const rawList = localStorage.getItem(storageKeyUser);
-        if (rawList) {
-          setDaftarProjectTersimpan(JSON.parse(rawList));
+        const qUserId = encodeURIComponent(userLogin?.id || idPemilikAktif);
+        const qEmail = encodeURIComponent(emailPemilikAktif || idPemilikAktif);
+        const qNama = encodeURIComponent(namaPemilikAktif);
+        const res = await fetch(
+          `/api/iot/projects?userId=${qUserId}&email=${qEmail}&nama=${qNama}`
+        );
+        const json = await res.json();
+        if (aktif && json.ok && Array.isArray(json.projects) && json.projects.length > 0) {
+          berhasilDariServer = true;
+          setDaftarProjectTersimpan(json.projects);
+          localStorage.setItem(storageKeyUser, JSON.stringify(json.projects));
+          terapkanDataProjectKeState(json.projects[0], false);
         }
       } catch {}
 
-      try {
-        const res = await fetch(
-          `/api/iot/projects?userId=${encodeURIComponent(idPemilikAktif)}`
-        );
-        const json = await res.json();
-        if (aktif && json.ok && Array.isArray(json.projects)) {
-          if (json.projects.length > 0) {
-            setDaftarProjectTersimpan(json.projects);
-            localStorage.setItem(storageKeyUser, JSON.stringify(json.projects));
-            // Jika di PC baru belum ada localStorage draft, langsung muat dari server!
-            if (!localStorage.getItem(draftKeyUser)) {
-              terapkanDataProjectKeState(json.projects[0], false);
+      if (!berhasilDariServer && aktif) {
+        try {
+          const rawDraft = localStorage.getItem(draftKeyUser);
+          if (rawDraft) {
+            const parsedDraft = JSON.parse(rawDraft) as ProjectTersimpanAkun;
+            if (parsedDraft.nodes && parsedDraft.nodes.length > 0) {
+              terapkanDataProjectKeState(parsedDraft, false);
             }
           }
-        }
-      } catch {}
+          const rawList = localStorage.getItem(storageKeyUser);
+          if (rawList) {
+            setDaftarProjectTersimpan(JSON.parse(rawList));
+          }
+        } catch {}
+      }
+
       if (aktif) setSudahHydrateDraft(true);
     }
     pulihkanDariServerDanDraft();
     return () => {
       aktif = false;
     };
-  }, [idPemilikAktif]);
+  }, [idPemilikAktif, emailPemilikAktif, namaPemilikAktif]);
 
   const nodesSaatIni = daftarNode[mode] || [];
   const kabelSaatIni = daftarKabel[mode] || [];
 
+  // ============================================================================
+  // 2. AUTO-SAVE KE LOKAL & AUTO-SYNC KE CLOUD SERVER SETIAP PERUBAHAN
+  // ============================================================================
   useEffect(() => {
     if (!sudahHydrateDraft) return;
-    setStatusAutoSave("Menyimpan draft...");
-    const timer = setTimeout(() => {
+    setStatusAutoSave("Menyimpan ke Cloud...");
+    const timer = setTimeout(async () => {
       try {
         const paketDraft: ProjectTersimpanAkun = {
           idProject: idProjectSaatIni,
@@ -356,16 +370,34 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
           ruanganFisik: daftarRuanganFisik,
         };
         localStorage.setItem(draftKeyUser, JSON.stringify(paketDraft));
-        setStatusAutoSave("Draft Tersimpan ✓");
-      } catch {}
-    }, 600);
+
+        // Sinkronkan juga ke server secara otomatis agar pindah browser langsung ada
+        const res = await fetch("/api/iot/projects", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "save",
+            userId: userLogin?.id || idPemilikAktif,
+            email: emailPemilikAktif || idPemilikAktif,
+            project: paketDraft,
+          }),
+        });
+        const json = await res.json();
+        if (json.ok && Array.isArray(json.projects)) {
+          setDaftarProjectTersimpan(json.projects);
+        }
+        setStatusAutoSave("Cloud Synced ✓");
+      } catch {
+        setStatusAutoSave("Draft Lokal ✓");
+      }
+    }, 900);
     return () => clearTimeout(timer);
   }, [
     sudahHydrateDraft,
     nodesSaatIni,
     kabelSaatIni,
     kodePerMcuMap,
-    kodeMicroPythonMap,
+    kodeMicroPythonPerMcu,
     widgetsBlynkSaatIni,
     daftarRuanganFisik,
     namaProjectInput,
@@ -499,7 +531,8 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: isSaveAs ? "save_as" : "save",
-          userId: idPemilikAktif,
+          userId: userLogin?.id || idPemilikAktif,
+          email: emailPemilikAktif || idPemilikAktif,
           project: paketSimpan,
         }),
       });
@@ -532,7 +565,8 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "delete",
-          userId: idPemilikAktif,
+          userId: userLogin?.id || idPemilikAktif,
+          email: emailPemilikAktif || idPemilikAktif,
           idProject: idPrj,
         }),
       });
@@ -742,7 +776,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     setLogSerialMultiMcu((prev) => [...logBaru, ...prev]);
   };
 
-  // GABUNGKAN PALET KOMPONEN ASLI DENGAN 11 SENSOR BARU (TDS, pH, HEART, DO, BOD, COD, O3, PZEM)
+  // GABUNGKAN PALET KOMPONEN ASLI + 11 SENSOR BARU & KATEGORIKAN SEMUA SENSOR KE "Sensor" + SUB-KATEGORI
   const paletModeIni = useMemo(() => {
     const asli = PALET_KOMPONEN[mode] || [];
     if (mode !== "wokwi") return asli;
@@ -750,7 +784,19 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     const tambahan = TAMBAHAN_PALET_SENSOR_LENGKAP.filter(
       (x) => !tipeAda.has(x.tipe)
     );
-    return [...asli, ...tambahan];
+    return [...asli, ...tambahan].map((item) => {
+      const subKat =
+        (item as any).subKategoriSensor ||
+        tentukanSubKategoriSensor(item.tipe, item.label);
+      if (subKat || item.kategori.toLowerCase().includes("sensor")) {
+        return {
+          ...item,
+          kategori: "Sensor",
+          subKategoriSensor: subKat || "Cahaya, Api & Suhu",
+        };
+      }
+      return item;
+    });
   }, [mode]);
 
   const daftarKategoriUnik = [
@@ -761,10 +807,17 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
   const komponenPaletTersaring = paletModeIni.filter((item) => {
     const cocokKategori =
       kategoriPaletAktif === "Semua" || item.kategori === kategoriPaletAktif;
+    const cocokSubKategori =
+      kategoriPaletAktif !== "Sensor" ||
+      subKategoriSensorAktif === "Semua Sensor" ||
+      (item as any).subKategoriSensor === subKategoriSensorAktif;
     const cocokKata =
       item.label.toLowerCase().includes(cariKomponen.toLowerCase()) ||
-      item.kategori.toLowerCase().includes(cariKomponen.toLowerCase());
-    return cocokKategori && cocokKata;
+      item.kategori.toLowerCase().includes(cariKomponen.toLowerCase()) ||
+      ((item as any).subKategoriSensor || "")
+        .toLowerCase()
+        .includes(cariKomponen.toLowerCase());
+    return cocokKategori && cocokSubKategori && cocokKata;
   });
 
   const komponenTerpilih =
@@ -1381,8 +1434,8 @@ void loop() {
           setDaftarRuangan={setDaftarRuanganFisik}
         />
 
-        {/* GUDANG KOMPONEN BERKATEGORI (ASLI + 11 SENSOR BARU) */}
-        <div className="bg-slate-950/90 p-5 rounded-3xl border border-slate-800 space-y-4">
+        {/* GUDANG KOMPONEN BERKATEGORI + SUB-KATEGORI SENSOR RAPI */}
+        <div className="bg-slate-950/90 p-5 rounded-3xl border border-slate-800 space-y-3.5">
           <div className="flex flex-wrap justify-between items-center gap-3">
             <div className="flex items-center gap-2 text-xs">
               <Move className="w-4 h-4 text-amber-400" />
@@ -1397,34 +1450,66 @@ void loop() {
                 type="text"
                 value={cariKomponen}
                 onChange={(e) => setCariKomponen(e.target.value)}
-                placeholder="Cari pH, TDS, Heart, DO, BOD, COD, O3, PZEM..."
+                placeholder="Cari PIR, Api, LDR, pH, TDS, Heart, O3, PZEM..."
                 className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-400"
               />
             </div>
           </div>
 
+          {/* KATEGORI UTAMA */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
             <Filter className="w-3.5 h-3.5 text-indigo-400 shrink-0 mr-1" />
             {daftarKategoriUnik.map((kat) => (
               <button
                 key={kat}
                 type="button"
-                onClick={() => setKategoriPaletAktif(kat)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-black whitespace-nowrap cursor-pointer transition ${
+                onClick={() => {
+                  setKategoriPaletAktif(kat);
+                  if (kat === "Sensor") setSubKategoriSensorAktif("Semua Sensor");
+                }}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-black whitespace-nowrap cursor-pointer transition ${
                   kategoriPaletAktif === kat
                     ? "bg-indigo-600 text-white shadow-sm"
                     : "bg-slate-900 text-slate-400 border border-slate-800 hover:text-white"
                 }`}
               >
-                {kat}
+                {kat === "Sensor"
+                  ? `📡 Sensor (${
+                      paletModeIni.filter((x) => x.kategori === "Sensor").length
+                    })`
+                  : kat}
               </button>
             ))}
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-10 gap-2.5 max-h-48 overflow-y-auto pr-1">
+          {/* SUB-KATEGORI KHUSUS SAAT KATEGORI "Sensor" DIPILIH */}
+          {kategoriPaletAktif === "Sensor" && (
+            <div className="flex items-center gap-1.5 overflow-x-auto bg-slate-900/90 p-2 rounded-2xl border border-emerald-500/30">
+              <span className="text-[10px] font-black uppercase text-emerald-400 px-2 shrink-0">
+                Sub-Kategori Sensor:
+              </span>
+              {DAFTAR_SUB_KATEGORI_SENSOR.map((sub) => (
+                <button
+                  key={sub}
+                  type="button"
+                  onClick={() => setSubKategoriSensorAktif(sub)}
+                  className={`px-3 py-1 rounded-xl text-[11px] font-black whitespace-nowrap cursor-pointer transition ${
+                    subKategoriSensorAktif === sub
+                      ? "bg-emerald-500 text-slate-950 shadow-sm"
+                      : "bg-slate-950 text-slate-300 border border-slate-800 hover:border-emerald-500/50"
+                  }`}
+                >
+                  {sub}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-10 gap-2.5 max-h-52 overflow-y-auto pr-1">
             {komponenPaletTersaring.map((item, idx) => {
               const layoutInfo = ambilLayoutFisikKomponen(item.tipe);
               const isBaru = apakahSensorTambahanBaru(item.tipe);
+              const badgeSub = (item as any).subKategoriSensor;
               return (
                 <div
                   key={`${item.tipe}-${idx}`}
@@ -1449,7 +1534,7 @@ void loop() {
                 >
                   <div className="w-full flex justify-between items-center text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-950 text-indigo-300">
                     <span className="truncate">
-                      {item.kategori.split(" ")[0]}
+                      {badgeSub ? badgeSub.split(" ")[0] : item.kategori.split(" ")[0]}
                     </span>
                     <span className="text-amber-300 shrink-0">
                       {layoutInfo.pins.length}p
@@ -1905,7 +1990,7 @@ void loop() {
                         />
                       )}
 
-                      {/* OVERLAY ANIMASI ORANG BERJALAN DI PIR & ULTRASONIK SERTA EFEK SENSOR */}
+                      {/* OVERLAY ANIMASI FISIK (ORANG DI ATAS KUBAH PUTIH PIR, API MEMBARA, CAHAYA LDR, DLL) */}
                       <ExtendedSensorLiveOverlay
                         tipe={node.tipe}
                         nilaiSensor={node.nilaiSensor}
