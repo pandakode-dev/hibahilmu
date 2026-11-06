@@ -278,7 +278,7 @@ export const TalentMappingAssessmentView: React.FC<Props> = ({
       <style jsx global>{`
         @media print {
           @page {
-            size: A4 portrait;
+            size: ;
             margin: 10mm 10mm 12mm 10mm;
           }
           body {
