@@ -28,6 +28,7 @@ export const Scm114FullVisualMap: React.FC<{
   hasil: HasilLengkapTalentMapping;
 }> = ({ hasil }) => {
   const top5Ids = new Set(hasil.top5PersonalBranding.map((r) => r.id));
+  const ml = hasil.analyticsML;
 
   const klasterMeta: {
     kode: "N" | "H" | "S" | "Gi" | "Te" | "E" | "R" | "T";
@@ -94,9 +95,335 @@ export const Scm114FullVisualMap: React.FC<{
     },
   ];
 
+  // Geometri SVG Radar Chart 8 Sumbu (N, H, S, Gi, Te, E, R, T)
+  const radarData = ml?.radar8Klaster || [];
+  const cx = 140;
+  const cy = 140;
+  const maxR = 92;
+
+  const hitungTitikPolygon = (key: "rataPSP" | "rataPSS") => {
+    if (radarData.length === 0) return "";
+    return radarData
+      .map((item, idx) => {
+        const angle = (Math.PI * 2 * idx) / radarData.length - Math.PI / 2;
+        const r = (Math.max(15, item[key]) / 100) * maxR;
+        const x = (cx + r * Math.cos(angle)).toFixed(1);
+        const y = (cy + r * Math.sin(angle)).toFixed(1);
+        return `${x},${y}`;
+      })
+      .join(" ");
+  };
+
   return (
     <div className="space-y-8 print:space-y-6">
-      {/* 1. 4 PILAR KEUNGGULAN KARIER & BELAJAR (T-A-S-K) */}
+      {/* =================================================================== */}
+      {/* 1. DASHBOARD AI / MACHINE LEARNING: PERSONA, RADAR CHART & VALIDITAS */}
+      {/* =================================================================== */}
+      {ml && (
+        <div className="p-6 rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white border-2 border-amber-400/50 shadow-xl space-y-6 print:bg-slate-50 print:text-slate-900 print:border-slate-300 break-inside-avoid">
+          <div className="flex flex-wrap justify-between items-center gap-3 border-b border-slate-700 print:border-slate-300 pb-4">
+            <div>
+              <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded bg-amber-400 text-slate-950">
+                🧠 Psychometric Machine Learning Analytics (Z-Score Normalized)
+              </span>
+              <h3 className="text-xl font-black text-white print:text-slate-900 mt-1">
+                {ml.archetypePersona.judul}
+              </h3>
+              <p className="text-xs text-amber-300 print:text-indigo-800 font-bold">
+                {ml.archetypePersona.subjudul}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="px-3.5 py-2 rounded-2xl bg-slate-950 print:bg-white border border-emerald-500/50 text-right">
+                <div className="text-[9px] font-black uppercase text-slate-400 print:text-slate-500">
+                  Skor Validitas &amp; Konsistensi
+                </div>
+                <div className="text-sm font-black text-emerald-400 print:text-emerald-700">
+                  {ml.skorValiditasKonsistensi}% ({ml.labelValiditas})
+                </div>
+              </div>
+              <div className="px-3.5 py-2 rounded-2xl bg-slate-950 print:bg-white border border-sky-500/50 text-right">
+                <div className="text-[9px] font-black uppercase text-slate-400 print:text-slate-500">
+                  Ketajaman Profil
+                </div>
+                <div className="text-sm font-black text-sky-400 print:text-sky-700">
+                  {ml.indeksDiferensiasi}% Distinct
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Grid Radar Chart SVG 8 Klaster + Gaya Belajar & Partner Ideal */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center print:grid-cols-12">
+            {/* Radar / Spider Chart 8 Klaster SCM */}
+            <div className="lg:col-span-5 print:col-span-5 bg-slate-950/90 print:bg-white p-4 rounded-3xl border border-slate-800 print:border-slate-300 flex flex-col items-center">
+              <div className="text-[11px] font-black uppercase text-amber-300 print:text-slate-800 mb-1">
+                🕸️ Spider Radar 8 Klaster (PSP vs PSS)
+              </div>
+              <svg viewBox="0 0 280 280" className="w-60 h-60 overflow-visible">
+                {/* Jaring Lingkaran Konsentris */}
+                {[0.25, 0.5, 0.75, 1].map((step, sIdx) => (
+                  <circle
+                    key={sIdx}
+                    cx={cx}
+                    cy={cy}
+                    r={maxR * step}
+                    fill="none"
+                    stroke="#334155"
+                    strokeDasharray="2 2"
+                    strokeWidth="1"
+                  />
+                ))}
+
+                {/* Garis Sumbu 8 Arah & Label Klaster */}
+                {radarData.map((item, idx) => {
+                  const angle =
+                    (Math.PI * 2 * idx) / radarData.length - Math.PI / 2;
+                  const x2 = cx + maxR * Math.cos(angle);
+                  const y2 = cy + maxR * Math.sin(angle);
+                  const lx = cx + (maxR + 24) * Math.cos(angle);
+                  const ly = cy + (maxR + 20) * Math.sin(angle);
+                  return (
+                    <g key={item.kode}>
+                      <line
+                        x1={cx}
+                        y1={cy}
+                        x2={x2}
+                        y2={y2}
+                        stroke="#475569"
+                        strokeWidth="1"
+                      />
+                      <text
+                        x={lx}
+                        y={ly}
+                        fill="#38bdf8"
+                        fontSize="8.5"
+                        fontWeight="bold"
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                      >
+                        {item.kode} ({item.skorGabungan}%)
+                      </text>
+                    </g>
+                  );
+                })}
+
+                {/* Kurva Poligon PSS (Minat Sesi 2 - Kuning Emas) */}
+                <polygon
+                  points={hitungTitikPolygon("rataPSS")}
+                  fill="rgba(250, 204, 21, 0.22)"
+                  stroke="#facc15"
+                  strokeWidth="2"
+                />
+
+                {/* Kurva Poligon PSP (Potensi Bakat Sesi 1 - Merah Rose) */}
+                <polygon
+                  points={hitungTitikPolygon("rataPSP")}
+                  fill="rgba(244, 63, 94, 0.32)"
+                  stroke="#f43f5e"
+                  strokeWidth="2.5"
+                />
+              </svg>
+
+              <div className="flex items-center gap-4 text-[10px] font-black mt-1">
+                <span className="flex items-center gap-1 text-rose-400 print:text-rose-700">
+                  <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block" />
+                  Bakat Alami (PSP)
+                </span>
+                <span className="flex items-center gap-1 text-amber-300 print:text-amber-700">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block" />
+                  Minat Aktivitas (PSS)
+                </span>
+              </div>
+            </div>
+
+            {/* Detail Persona, Gaya Belajar & Partner Kolaborasi */}
+            <div className="lg:col-span-7 print:col-span-7 space-y-3 text-xs">
+              <div className="p-3.5 rounded-2xl bg-slate-950/80 print:bg-white border border-slate-800 print:border-slate-300">
+                <div className="font-black text-amber-400 print:text-amber-800 uppercase text-[10px]">
+                  ✨ Moto &amp; Jati Diri Produktif:
+                </div>
+                <p className="text-sm font-black italic text-white print:text-slate-900 mt-0.5">
+                  {ml.archetypePersona.motoHidup}
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-slate-950/80 print:bg-white border border-slate-800 print:border-slate-300 space-y-1.5">
+                <div className="font-black text-emerald-400 print:text-emerald-800 uppercase text-[10px]">
+                  📚 Cara Belajar &amp; Berkarya Paling Ampuh Buatmu:
+                </div>
+                <ul className="list-disc list-inside space-y-1 text-slate-200 print:text-slate-700">
+                  {ml.archetypePersona.gayaBelajarEfektif.map((g, i) => (
+                    <li key={i}>{g}</li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-slate-950/80 print:bg-white border border-slate-800 print:border-slate-300 space-y-1">
+                <div className="font-black text-sky-400 print:text-sky-800 uppercase text-[10px]">
+                  🤝 Partner Kolaborasi Tim Paling Cocok (Saling Melengkapi):
+                </div>
+                <p className="text-slate-200 print:text-slate-700 leading-relaxed">
+                  {ml.archetypePersona.partnerKolaborasiIdeal}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Matriks 3 Kuadran Keselarasan Bakat vs Minat */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 print:grid-cols-3 pt-2">
+            <div className="p-3.5 rounded-2xl bg-rose-950/50 print:bg-rose-50 border border-rose-500/40 space-y-1.5 break-inside-avoid">
+              <div className="font-black text-xs text-rose-300 print:text-rose-900">
+                🌟 Sweet Spot (Bakat Kuat + Sangat Disukai)
+              </div>
+              <p className="text-[10px] text-slate-300 print:text-slate-600">
+                Aktivitas emas di mana bakat alamimu didukung penuh oleh minatmu:
+              </p>
+              <div className="flex flex-wrap gap-1 pt-1">
+                {ml.kuadranAktivitas.sweetSpots.map((a) => (
+                  <span
+                    key={a.no}
+                    className="px-2 py-0.5 rounded-lg bg-rose-600 text-white text-[10px] font-black"
+                  >
+                    {a.kodeAktivitas}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-amber-950/40 print:bg-amber-50 border border-amber-500/40 space-y-1.5 break-inside-avoid">
+              <div className="font-black text-xs text-amber-300 print:text-amber-900">
+                💎 Hidden Gem / Bakat Terpendam (Bakat Kuat + Minat Belum Tinggi)
+              </div>
+              <p className="text-[10px] text-slate-300 print:text-slate-600">
+                Kamu sebenarnya sangat berbakat di sini, cobalah lebih percaya diri:
+              </p>
+              <div className="flex flex-wrap gap-1 pt-1">
+                {ml.kuadranAktivitas.hiddenGems.length > 0 ? (
+                  ml.kuadranAktivitas.hiddenGems.map((a) => (
+                    <span
+                      key={a.no}
+                      className="px-2 py-0.5 rounded-lg bg-amber-400 text-slate-950 text-[10px] font-black"
+                    >
+                      {a.kodeAktivitas}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-[10px] text-emerald-300 print:text-emerald-700 font-bold">
+                    ✓ Semua bakat kuatmu sudah selaras dengan minatmu!
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-sky-950/40 print:bg-sky-50 border border-sky-500/40 space-y-1.5 break-inside-avoid">
+              <div className="font-black text-xs text-sky-300 print:text-sky-900">
+                🚀 Aspirational Hobby (Minat Tinggi + Butuh Latihan Ekstra)
+              </div>
+              <p className="text-[10px] text-slate-300 print:text-slate-600">
+                Kamu menyukai aktivitas ini; perbanyak latihan Skill agar makin mahir:
+              </p>
+              <div className="flex flex-wrap gap-1 pt-1">
+                {ml.kuadranAktivitas.aspirational.length > 0 ? (
+                  ml.kuadranAktivitas.aspirational.map((a) => (
+                    <span
+                      key={a.no}
+                      className="px-2 py-0.5 rounded-lg bg-sky-500 text-white text-[10px] font-black"
+                    >
+                      {a.kodeAktivitas}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-[10px] text-sky-300 print:text-sky-700 font-bold">
+                    ✓ Minatmu fokus penuh pada area kekuatan utamamu!
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =================================================================== */}
+      {/* 2. REKOMENDASI JURUSAN SEKOLAH/KULIAH & PROFESI MASA DEPAN          */}
+      {/* =================================================================== */}
+      {ml && (
+        <div className="p-5 rounded-3xl bg-white border-2 border-emerald-500/40 space-y-4 break-inside-avoid">
+          <div className="border-b pb-2 flex flex-wrap justify-between items-center gap-2">
+            <div>
+              <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded bg-emerald-100 text-emerald-900">
+                Peta Masa Depan • Jurusan Pendidikan &amp; Profesi Terbaik
+              </span>
+              <h3 className="text-base sm:text-lg font-black text-slate-900 mt-0.5">
+                Rekomendasi Jurusan Studi &amp; Karier Masa Depan — {hasil.namaPeserta}
+              </h3>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 print:grid-cols-3">
+            {ml.rekomendasiJurusanDanKarier.slice(0, 3).map((rek, idx) => (
+              <div
+                key={rek.bidang}
+                className={`p-4 rounded-2xl border-2 space-y-2.5 break-inside-avoid ${
+                  idx === 0
+                    ? "bg-emerald-50/70 border-emerald-500"
+                    : "bg-slate-50 border-slate-200"
+                }`}
+              >
+                <div className="flex justify-between items-start gap-2">
+                  <div className="font-black text-xs sm:text-sm text-slate-900">
+                    {rek.ikon} #{idx + 1}. {rek.bidang}
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-700 text-white text-[10px] font-black shrink-0">
+                    {rek.skorMatch}% Match
+                  </span>
+                </div>
+
+                <p className="text-[11px] text-slate-600 leading-snug">
+                  {rek.alasanKecocokan}
+                </p>
+
+                <div className="space-y-1">
+                  <div className="text-[10px] font-black uppercase text-indigo-800">
+                    🎓 Jurusan Studi yang Cocok:
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {rek.jurusanSekolahKuliah.map((jur) => (
+                      <span
+                        key={jur}
+                        className="px-2 py-0.5 rounded-md bg-white border border-slate-300 text-[10px] font-bold text-slate-800"
+                      >
+                        {jur}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="text-[10px] font-black uppercase text-rose-800">
+                    💼 Profesi &amp; Karier Masa Depan:
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {rek.profesiMasaDepan.map((prof) => (
+                      <span
+                        key={prof}
+                        className="px-2 py-0.5 rounded-md bg-rose-100/80 border border-rose-200 text-[10px] font-bold text-rose-950"
+                      >
+                        {prof}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* =================================================================== */}
+      {/* 3. 4 PILAR KEUNGGULAN KARIER & BELAJAR (T-A-S-K)                    */}
+      {/* =================================================================== */}
       <div className="p-5 rounded-3xl bg-slate-50 border-2 border-slate-200 space-y-4 break-inside-avoid">
         <div className="flex flex-wrap justify-between items-center gap-2 border-b pb-3">
           <div>
@@ -126,11 +453,6 @@ export const Scm114FullVisualMap: React.FC<{
             </span>
           </div>
         </div>
-
-        <p className="text-xs text-slate-700 leading-relaxed">
-          Agar bakat alamimu benar-benar menjadi prestasi yang membanggakan, gabungkan{" "}
-          <strong>4 elemen T-A-S-K</strong> di bawah ini secara seimbang:
-        </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {[
@@ -181,7 +503,9 @@ export const Scm114FullVisualMap: React.FC<{
         </div>
       </div>
 
-      {/* 2. MATRIKS LENGKAP 30 STRENGTH TYPOLOGY (PERSONAL BRANDING PERAN) */}
+      {/* =================================================================== */}
+      {/* 4. MATRIKS LENGKAP 30 STRENGTH TYPOLOGY (PERSONAL BRANDING PERAN)   */}
+      {/* =================================================================== */}
       <div className="p-5 rounded-3xl bg-white border-2 border-slate-200 space-y-4 break-inside-avoid">
         <div className="border-b pb-2">
           <h3 className="text-base sm:text-lg font-black uppercase text-slate-900">
@@ -240,7 +564,9 @@ export const Scm114FullVisualMap: React.FC<{
         </div>
       </div>
 
-      {/* 3. PETA LENGKAP POTENSI KEKUATAN 114 AKTIVITAS (STRENGTH CLUSTER MAP) */}
+      {/* =================================================================== */}
+      {/* 5. PETA LENGKAP POTENSI KEKUATAN 114 AKTIVITAS (STRENGTH CLUSTER MAP) */}
+      {/* =================================================================== */}
       <div className="p-5 rounded-3xl bg-slate-900 text-white border-2 border-indigo-500/40 space-y-5 print:bg-white print:text-slate-900 print:border-slate-300 print:break-before-page">
         <div className="flex flex-wrap justify-between items-start gap-4 border-b border-slate-800 print:border-slate-300 pb-3 break-inside-avoid">
           <div className="space-y-1 max-w-3xl">
@@ -290,7 +616,7 @@ export const Scm114FullVisualMap: React.FC<{
           })}
         </div>
 
-        {/* DETAIL LENGKAP 114 AKTIVITAS PER KLASTER (ANTI-TERPOTONG SAAT PRINT PDF) */}
+        {/* DETAIL LENGKAP 114 AKTIVITAS PER KLASTER */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 print:grid-cols-2">
           {klasterMeta.map((km) => {
             const listAkt = hasil.petaLengkap114SCM.filter(
