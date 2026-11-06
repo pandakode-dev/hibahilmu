@@ -3,9 +3,10 @@
 export type TalentDomain = "Thinking" | "Striving" | "Relating" | "Influencing";
 
 export interface TalentDefinition {
-  slotIndex: number; // 0..33 (Rumus Sesi 1: (noSoal - 1) % 34 === slotIndex)
+  slotIndex: number;
   id: string;
   nama: string;
+  julukanRemaja: string;
   domain: TalentDomain;
   deskripsiKuat: string;
   saranLemah: string;
@@ -14,481 +15,516 @@ export interface TalentDefinition {
 }
 
 export interface ActivityClusterItem {
-  no: number; // 1..114 (Urutan Soal Sesi 2)
+  no: number;
   kodeAktivitas: string;
   klaster: "N" | "H" | "S" | "Gi" | "Te" | "E" | "R" | "T";
   namaKlaster: string;
   pernyataan: string;
   deskripsiSingkat: string;
-  bobotBakatIds: string[]; // Bakat Sesi 1 yang menyusun PSP (Personal Strength Potential)
+  bobotBakatIds: string[];
   typology: string;
 }
 
 export interface PersonalBrandingRole {
   id: string;
   nama: string;
+  julukan: string;
   kategori: string;
   deskripsi: string;
 }
 
 // ============================================================================
-// 1. DEFINISI 34 BAKAT (SESUAI URUTAN MODULO-34 PADA EXCEL 1-170 & PDF)
+// 1. DEFINISI 34 BAKAT (NARASI ORISINAL PANDA HIBAHILMU - RAMAH REMAJA & UMUM)
 // ============================================================================
 export const DAFTAR_34_BAKAT: TalentDefinition[] = [
   {
-    slotIndex: 0, // Soal 1, 35, 69, 103, 137
+    slotIndex: 0,
     id: "communication",
     nama: "Communication",
+    julukanRemaja: "Si Jago Cerita & Presentasi",
     domain: "Influencing",
     deskripsiKuat:
-      "Pribadi yang senang berkomunikasi. Cerdas dalam memilih kata yang tepat untuk mengungkapkan suatu pemikiran atau perasaan. Sangat potensial dalam aktivitas komunikasi lisan maupun tulisan, mampu membuat perbincangan menjadi menarik dan mudah dimengerti.",
+      "Kamu punya bakat alami mengubah ide yang biasa saja menjadi cerita atau penjelasan yang seru, jelas, dan enak didengar. Saat bicara di depan kelas, rapat, atau menulis konten, orang lain mudah langsung paham maksudmu.",
     saranLemah:
-      "Gunakan media tertulis atau poin-poin terstruktur saat harus menyampaikan gagasan kompleks di depan umum.",
+      "Kalau merasa kurang lancar bicara spontan di depan banyak orang, siapkan catatan poin-poin singkat atau bantuan slide visual agar pesanmu tetap tersampaikan dengan rapi.",
     aktivitasTerkait: ["COMMUNICATING", "PUBLICIZING", "PRESENTING", "INFORMING"],
     typologyTerkait: ["COMMUNICATOR", "AMBASADOR", "JOURNALIST"],
   },
   {
-    slotIndex: 1, // Soal 2, 36, 70, 104, 138
+    slotIndex: 1,
     id: "empathy",
     nama: "Empathy",
+    julukanRemaja: "Si Peka Perasaan Teman",
     domain: "Relating",
     deskripsiKuat:
-      "Mampu merasakan emosi dan memahami sudut pandang orang lain seolah-olah mengalaminya sendiri. Sangat peka menangkap pesan tersirat dan suasana hati orang-orang di sekitarnya.",
+      "Kamu punya radar hati yang tajam! Tanpa orang lain perlu bercerita panjang lebar, kamu bisa merasakan apakah temanmu sedang sedih, cemas, atau bahagia. Itu membuatmu jadi tempat curhat yang nyaman.",
     saranLemah:
-      "Latih kebiasaan mendengarkan aktif (active listening) dan konfirmasi perasaan rekan kerja sebelum mengambil keputusan yang berdampak pada manusia.",
+      "Jika kamu tipe yang lebih fokus pada logika daripada perasaan, biasakan bertanya kabar teman satu tim sebelum langsung membahas tugas berat.",
     aktivitasTerkait: ["CARING", "COUNSELING", "SERVING", "SUPPORTING"],
     typologyTerkait: ["CARETAKER", "SERVER", "MEDIATOR"],
   },
   {
-    slotIndex: 2, // Soal 3, 37, 71, 105, 139
+    slotIndex: 2,
     id: "harmony",
     nama: "Harmony",
+    julukanRemaja: "Si Cinta Damai & Penengah",
     domain: "Relating",
     deskripsiKuat:
-      "Selalu mencari titik temu dan kesepakatan bersama. Menghindari konflik yang tidak produktif dan berupaya mendamaikan perbedaan pandangan agar tercipta suasana kerja yang kondusif.",
+      "Kamu paling tidak suka melihat perdebatan yang membuang energi. Saat teman-temanmu beda pendapat, kamu pintar mencari jalan tengah yang adil supaya suasana kembali rukun dan kompak.",
     saranLemah:
-      "Ketika menghadapi perbedaan pendapat, fokuslah pada tujuan bersama yang disepakati sebelum membahas detail perbedaan.",
+      "Saat menghadapi situasi beda pendapat yang panas, tarik napas dulu dan ajak semua pihak fokus ke tujuan bersama yang sudah disepakati.",
     aktivitasTerkait: ["MEDIATING", "COOPERATING", "SUPPORTING"],
     typologyTerkait: ["MEDIATOR", "SERVER"],
   },
   {
-    slotIndex: 3, // Soal 4, 38, 72, 106, 140
+    slotIndex: 3,
     id: "includer",
     nama: "Includer",
+    julukanRemaja: "Si Perangkul Semua Teman",
     domain: "Relating",
     deskripsiKuat:
-      "Pribadi inklusif yang senang merangkul semua orang tanpa membedakan latar belakang. Tidak ingin ada satu orang pun yang merasa terabaikan atau tersisihkan di dalam kelompok.",
+      "Hatimu sangat terbuka! Kamu tidak suka melihat ada teman yang sendirian atau dikucilkan. Kamu selalu berusaha mengajak siapa saja ikut bergabung tanpa membeda-bedakan latar belakang mereka.",
     saranLemah:
-      "Pastikan setiap anggota tim mendapat kesempatan bicara yang setara dalam rapat atau proyek kolaboratif.",
+      "Kamu mungkin lebih nyaman dengan lingkaran pertemanan yang kecil, namun tetaplah menyapa anggota baru di kelompokmu agar mereka merasa diterima.",
     aktivitasTerkait: ["GREETING", "COOPERATING", "VOLUNTEERING"],
     typologyTerkait: ["AMBASADOR", "NETWORKING"],
   },
   {
-    slotIndex: 4, // Soal 5, 39, 73, 107, 141
+    slotIndex: 4,
     id: "individualization",
     nama: "Individualization",
+    julukanRemaja: "Si Pengamat Keunikan Orang",
     domain: "Relating",
     deskripsiKuat:
-      "Sangat tertarik dan peka terhadap keunikan masing-masing individu. Mampu dengan tepat mengenali kekuatan, gaya belajar, dan pendekatan paling efektif untuk setiap orang secara spesifik.",
+      "Di matamu, setiap orang itu punya keunikan masing-masing. Kamu cepat sekali tahu kelebihan tiap temanmu dan cara paling pas untuk mengobrol atau membagi tugas sesuai karakter mereka.",
     saranLemah:
-      "Hindari menyamaratakan cara memotivasi anggota tim; tanyakan preferensi kerja masing-masing rekan.",
+      "Hindari menyamaratakan cara kerja semua orang. Tanyakan langsung ke rekan timmu tugas apa yang paling cocok dengan gaya kerja mereka.",
     aktivitasTerkait: ["COACHING", "ADVISING", "RECRUITING", "GUIDING"],
     typologyTerkait: ["EDUCATOR", "SELECTOR", "MOTIVATOR"],
   },
   {
-    slotIndex: 5, // Soal 6, 40, 74, 108, 142
+    slotIndex: 5,
     id: "relator",
     nama: "Relator",
+    julukanRemaja: "Si Setia Kawan & Sahabat Dekat",
     domain: "Relating",
     deskripsiKuat:
-      "Sangat menikmati hubungan yang dekat dengan orang lain, seperti kemitraan, persahabatan atau persaudaraan. Mendapat rasa nyaman dan kepuasan saat bisa bekerja sama dengan orang-orang yang telah dikenali baik dalam jangka panjang.",
+      "Kamu lebih memilih punya sahabat dekat yang benar-benar tulus dan saling percaya daripada sekadar kenal banyak orang di permukaan. Bekerja bareng sahabat membuat energimu berlipat ganda.",
     saranLemah:
-      "Bangun kepercayaan bertahap melalui kolaborasi kecil yang konsisten dengan rekan kerja baru.",
+      "Bangun keakraban dengan rekan baru secara bertahap lewat obrolan ringan atau kerja bareng di proyek kecil.",
     aktivitasTerkait: ["RELATING", "ADVISING", "MENTORING"],
     typologyTerkait: ["EDUCATOR", "MEDIATOR"],
   },
   {
-    slotIndex: 6, // Soal 7, 41, 75, 109, 143
+    slotIndex: 6,
     id: "responsibility",
     nama: "Responsibility",
+    julukanRemaja: "Si Pemegang Janji & Amanah",
     domain: "Striving",
     deskripsiKuat:
-      "Pribadi dengan rasa memiliki yang kuat atas komitmen atau tanggung jawabnya. Selalu bersungguh-sungguh memenuhi janji dan menyelesaikan tugas hingga tuntas dengan kualitas terbaik.",
+      "Sekali kamu bilang 'Siap!', kamu akan berusaha keras menuntaskannya sampai selesai. Bagi kamu, menjaga amanah dan menepati janji adalah kehormatan diri yang tidak boleh dilanggar.",
     saranLemah:
-      "Gunakan daftar cek (checklist) komitmen dan jangan mengambil janji melebihi kapasitas waktu yang tersedia.",
+      "Catat setiap janji atau tugas di pengingat HP, dan jangan ragu menolak dengan sopan jika beban tugasmu sudah terlalu penuh.",
     aktivitasTerkait: ["COMPLIANCING", "SAFEKEEPING", "SERVING"],
     typologyTerkait: ["SERVER", "SAFEKEEPER", "ADMINISTRATOR"],
   },
   {
-    slotIndex: 7, // Soal 8, 42, 76, 110, 144
+    slotIndex: 7,
     id: "command",
     nama: "Command",
+    julukanRemaja: "Si Pemimpin Tegas & Berani",
     domain: "Influencing",
     deskripsiKuat:
-      "Memiliki kehadiran kepemimpinan yang tegas, berani mengambil kendali situasi, dan tidak ragu mengemukakan argumen atau melakukan konfrontasi langsung demi kejelasan arah keputusan.",
+      "Kamu punya jiwa kepemimpinan yang berani dan tegas. Saat keadaan sedang bingung atau darurat, kamu berani maju mengambil keputusan dan mengarahkan teman-temanmu dengan lugas.",
     saranLemah:
-      "Saat dibutuhkan ketegasan, bersandarlah pada data objektif atau aturan resmi organisasi untuk mengambil keputusan.",
+      "Jika kamu kurang nyaman bersikap keras atau mendominasi, gunakan aturan tertulis atau data fakta saat harus mengingatkan rekan satu tim.",
     aktivitasTerkait: ["CONTROLLING", "DISPATCHING", "NEGOTIATING"],
     typologyTerkait: ["COMMANDER", "HEADMAN"],
   },
   {
-    slotIndex: 8, // Soal 9, 43, 77, 111, 145
+    slotIndex: 8,
     id: "competition",
     nama: "Competition",
+    julukanRemaja: "Si Semangat Juara",
     domain: "Influencing",
     deskripsiKuat:
-      "Terdorong untuk selalu menjadi yang terbaik dan memenangkan kompetisi. Kehadiran pesaing dan tolok ukur peringkat memicu adrenalin serta performa tertingginya.",
+      "Adanya lomba, peringkat, atau skor membuat semangatmu langsung menyala! Kamu selalu ingin memberikan performa terbaik agar bisa unggul dan menjadi pemenang.",
     saranLemah:
-      "Tidak suka perbandingan, maka hindari cara membandingkan. Bisa membangun dan meraih standar yang tinggi namun bukan karena melihat orang lain. Cari sumber motivasi lain untuk memacu diri belajar lebih baik.",
+      "Kamu tidak suka dibanding-bandingkan dengan orang lain, dan itu sangat wajar! Jadikan pencapaian dirimu kemarin sebagai target yang ingin kamu lampaui hari ini.",
     aktivitasTerkait: ["SELLING", "INFLUENCING", "SPORT"],
     typologyTerkait: ["SELLER", "MARKETER"],
   },
   {
-    slotIndex: 9, // Soal 10, 44, 78, 112, 146
+    slotIndex: 9,
     id: "developer",
     nama: "Developer",
+    julukanRemaja: "Si Pembimbing yang Sabar",
     domain: "Relating",
     deskripsiKuat:
-      "Dapat melihat potensi yang dimiliki orang lain dan selalu senang untuk membantu orang lain mengembangkan potensinya tersebut. Mampu melihat kemajuan-kemajuan kecil dalam proses belajar dan mendapat kepuasan dari adanya kemajuan tersebut. Senang mengajar, melatih, atau mendidik.",
+      "Kamu paling bahagia saat melihat orang lain bertumbuh menjadi lebih pintar dan bisa! Kamu telaten mengajari teman, menghargai kemajuan sekecil apa pun, dan cocok jadi mentor atau pelatih.",
     saranLemah:
-      "Bermitralah dengan rekan mentor/trainer ketika tim membutuhkan pembinaan bertahap jangka panjang.",
+      "Saat ada anggota tim yang butuh dibimbing dari nol secara perlahan, kamu bisa berkolaborasi dengan teman yang hobi mengajar.",
     aktivitasTerkait: ["TRAINING", "MENTORING", "GUIDING", "TEACHING", "DEVELOPING"],
     typologyTerkait: ["EDUCATOR", "MOTIVATOR"],
   },
   {
-    slotIndex: 10, // Soal 11, 45, 79, 113, 147
+    slotIndex: 10,
     id: "maximizer",
     nama: "Maximizer",
+    julukanRemaja: "Si Pengjar Kualitas Terbaik",
     domain: "Influencing",
     deskripsiKuat:
-      "Fokus pada kekuatan untuk mengubah sesuatu yang sudah baik menjadi luar biasa dan sempurna (excellent). Sangat mengutamakan kualitas tinggi dibanding sekadar memperbaiki kelemahan.",
+      "Kamu tidak puas dengan hasil yang sekadar 'cukup'. Kamu gemar memoles hal yang sudah bagus menjadi karya yang keren, berkualitas tinggi, dan membanggakan.",
     saranLemah:
-      "Tetapkan standar kualitas minimum yang jelas agar pekerjaan tetap selesai tepat waktu tanpa terjebak perfeksionisme.",
+      "Tentukan batas standar selesai sejak awal agar kamu tetap bisa mengumpulkan tugas tepat waktu tanpa terlalu lama mengutak-atik detail kecil.",
     aktivitasTerkait: ["COACHING", "DEVELOPING", "BEAUTIFYING", "FINISHING"],
     typologyTerkait: ["QUALITY CONTROLLER", "MOTIVATOR"],
   },
   {
-    slotIndex: 11, // Soal 12, 46, 80, 114, 148
+    slotIndex: 11,
     id: "positivity",
     nama: "Positivity",
+    julukanRemaja: "Si Penyebar Semangat & Ceria",
     domain: "Relating",
     deskripsiKuat:
-      "Memiliki antusiasme yang menular, optimis, ceria, dan mampu mencairkan suasana tegang menjadi penuh semangat dan kegembiraan.",
+      "Kehadiranmu seperti baterai penyemangat bagi sekitarmu! Kamu mudah melihat sisi baik dari setiap kejadian, suka memuji keberhasilan teman, dan pandai mencairkan suasana yang kaku.",
     saranLemah:
-      "Sadarilah bahwa sikap tenang dan realistis Anda tetap berharga; berikan apresiasi sederhana secara berkala kepada rekan kerja.",
+      "Sikapmu yang tenang dan serius punya kelebihan tersendiri. Cukup berikan senyuman dan ucapan terima kasih sederhana untuk menyemangati rekanmu.",
     aktivitasTerkait: ["MOTIVATING", "ENTERTAINING", "GREETING"],
     typologyTerkait: ["MOTIVATOR", "AMBASADOR"],
   },
   {
-    slotIndex: 12, // Soal 13, 47, 81, 115, 149
+    slotIndex: 12,
     id: "woo",
     nama: "Woo",
+    julukanRemaja: "Si Mudah Akrab & Luwes Bergaul",
     domain: "Influencing",
     deskripsiKuat:
-      "Winning Others Over — Sangat menikmati tantangan bertemu orang baru dan mengubah rasa asing menjadi akrab. Sangat puas ketika bisa memecah kekakuan dan berhasil menciptakan keakraban. Selalu percaya diri memulai percakapan, nyaris tidak pernah kehabisan bahan obrolan.",
+      "Bertemu orang baru bukanlah hal yang menakutkan buatmu, justru seru! Kamu pintar membuka obrolan, cepat mencairkan suasana, dan bisa langsung akrab dengan kenalan baru dalam hitungan menit.",
     saranLemah:
-      "Fokuslah pada jejaring mendalam dengan orang-orang yang sudah Anda kenal baik tanpa harus memaksakan diri di keramaian baru.",
+      "Kamu tidak harus memaksakan diri menjadi pusat perhatian di keramaian asing; fokuslah membangun obrolan berkualitas satu per satu.",
     aktivitasTerkait: ["GREETING", "LIAISING", "PUBLICIZING", "REPRESENTING"],
     typologyTerkait: ["AMBASADOR", "COMMUNICATOR", "SELLER"],
   },
   {
-    slotIndex: 13, // Soal 14, 48, 82, 116, 150
+    slotIndex: 13,
     id: "achiever",
     nama: "Achiever",
+    julukanRemaja: "Si Pekerja Keras Anti Mager",
     domain: "Striving",
     deskripsiKuat:
-      "Memiliki stamina tinggi dan dorongan internal yang kuat untuk bekerja keras serta menghasilkan pencapaian nyata setiap harinya.",
+      "Kamu punya energi kerja yang luar biasa! Rasanya ada yang kurang kalau sehari saja belum mencentang daftar tugas yang selesai. Kamu produktif dan tahan bekerja tuntas.",
     saranLemah:
-      "Umumnya stamina terbatas ketika menanggung kesibukan yang padat. Untuk itu produktivitas tidak perlu dipadatkan dalam hitungan hari. Temukan laju kerja Anda sendiri dan ciptakan produktivitas dengan komposisi bakat Anda sendiri.",
+      "Stamina tiap orang berbeda, jadi jangan memaksakan bekerja terus-menerus tanpa istirahat. Atur ritme kerjamu sendiri dan sisihkan waktu istirahat agar tetap segar.",
     aktivitasTerkait: ["PRODUCING", "OPERATING", "DELIVERING"],
     typologyTerkait: ["PRODUCER", "OPERATOR"],
   },
   {
-    slotIndex: 14, // Soal 15, 49, 83, 117, 151
+    slotIndex: 14,
     id: "activator",
     nama: "Activator",
+    julukanRemaja: "Si Gercep Langsung Eksekusi",
     domain: "Influencing",
     deskripsiKuat:
-      "Tidak sabar untuk segera mengubah gagasan atau keputusan menjadi tindakan nyata. Percaya bahwa pembelajaran terbaik datang dari eksekusi langsung.",
+      "Begitu ada ide bagus atau keputusan rapat, kamu ingin langsung mulai bergerak saat itu juga! Bagimu, mencoba langsung di lapangan jauh lebih seru daripada hanya rapat berjam-jam.",
     saranLemah:
-      "Tidak ada dorongan untuk langsung bertindak jika memiliki rencana, ide, atau melihat peluang. Buat tenggat waktu awal (kick-off) yang konkret atau berkolaborasi dengan rekan eksekutor.",
+      "Kamu cenderung berhati-hati dan berpikir matang sebelum mulai bergerak. Agar tidak menunda terlalu lama, tetapkan langkah kecil pertama yang harus dimulai hari ini.",
     aktivitasTerkait: ["DISPATCHING", "INFLUENCING", "MOBILIZING"],
     typologyTerkait: ["COMMANDER", "MARKETER"],
   },
   {
-    slotIndex: 15, // Soal 16, 50, 84, 118, 152
+    slotIndex: 15,
     id: "adaptability",
     nama: "Adaptability",
+    julukanRemaja: "Si Fleksibel & Tahan Kejutan",
     domain: "Relating",
     deskripsiKuat:
-      "Pribadi yang sangat menyukai kehidupan dinamis, mengalir mengikuti arus yang kadang tidak terduga. Fokus pada saat ini. Sangat mampu menyesuaikan diri dengan perubahan dan situasi mendadak, mampu memilih respon dengan cepat dan tepat untuk setiap keadaan.",
+      "Saat rencana tiba-tiba berubah mendadak, kamu tidak gampang panik! Kamu luwes menyesuaikan diri dengan situasi baru dan sigap mencari jalan keluar di saat itu juga.",
     saranLemah:
-      "Siapkan rencana cadangan (Plan B) tertulis agar Anda tidak stres ketika terjadi perubahan mendadak di luar jadwal.",
+      "Karena kamu lebih nyaman dengan rencana yang pasti, siapkan satu rencana cadangan (Plan B) agar hati tetap tenang jika ada perubahan mendadak.",
     aktivitasTerkait: ["ASSISTING", "SERVING", "SUPPORTING", "MEDIATING"],
     typologyTerkait: ["SERVER", "CARETAKER"],
   },
   {
-    slotIndex: 16, // Soal 17, 51, 85, 119, 153
+    slotIndex: 16,
     id: "belief",
     nama: "Belief",
+    julukanRemaja: "Si Berprinsip Mulia & Tulus Melayani",
     domain: "Striving",
     deskripsiKuat:
-      "Pribadi yang digerakkan oleh keyakinannya atas nilai-nilai hidup. Seorang idealis. Senang melayani, membantu, dan berkorban bagi orang lain. Baginya kesuksesan itu ketika mampu mewujudkan nilai-nilai yang diyakini dalam kehidupan nyata, dan menjadi pribadi yang bermanfaat bagi orang lain secara tulus.",
+      "Kamu bekerja bukan sekadar mengejar pujian atau materi, tapi karena nilai kebaikan dan ketulusan hati. Kamu senang membantu sesama dan ingin hidupmu membawa manfaat nyata bagi banyak orang.",
     saranLemah:
-      "Selaraskan pekerjaan harian Anda dengan manfaat praktis atau tujuan organisasi agar tetap bermakna.",
+      "Temukan manfaat positif dari setiap tugas yang kamu kerjakan agar kamu selalu punya alasan kuat untuk bersemangat.",
     aktivitasTerkait: ["SERVING", "VOLUNTEERING", "SPIRITUALIZING", "GUIDING"],
     typologyTerkait: ["SERVER", "CARETAKER", "EDUCATOR"],
   },
   {
-    slotIndex: 17, // Soal 18, 52, 86, 120, 154
+    slotIndex: 17,
     id: "discipline",
     nama: "Discipline",
+    julukanRemaja: "Si Rapi, Terjadwal & Teratur",
     domain: "Striving",
     deskripsiKuat:
-      "Menyukai keteraturan, struktur, jadwal yang rapi, dan sistem prosedur yang terencana dengan presisi sejak awal.",
+      "Kamu suka segala sesuatu yang tertata rapi, punya jadwal jelas, dan terorganisir. Dengan jadwal dan tahapan yang terstruktur, kamu bisa menyelesaikan pekerjaan dengan sangat presisi.",
     saranLemah:
-      "Sulit untuk teratur dan tertata, tidak menikmati jadwal. Latih diri menghormati jadwal yang telah ditentukan. Pahami bahwa ketidakteraturan dapat mengganggu kinerja tim. Gunakan aplikasi kalender/pengingat otomatis.",
+      "Kamu mungkin kurang suka dikekang oleh jadwal yang kaku. Gunakan bantuan alarm HP atau tabel to-do list sederhana agar tugas tim tetap selesai tepat waktu.",
     aktivitasTerkait: ["SCHEDULING", "FILING", "ORGANIZING", "BOOKKEEPING"],
     typologyTerkait: ["ADMINISTRATOR", "TREASURER"],
   },
   {
-    slotIndex: 18, // Soal 19, 53, 87, 121, 155
+    slotIndex: 18,
     id: "focus",
     nama: "Focus",
+    julukanRemaja: "Si Konsentrasi Tinggi Kejar Target",
     domain: "Striving",
     deskripsiKuat:
-      "Mampu menetapkan arah tujuan yang jelas, menyeleksi prioritas utama, dan bertahan di jalur sasaran tanpa mudah teralihkan oleh gangguan.",
+      "Kalau sudah punya satu target jelas, kamu seperti punya kacamata kuda yang fokus lurus ke depan! Kamu tidak mudah terdistraksi oleh hal-hal yang tidak berhubungan dengan tujuan utamamu.",
     saranLemah:
-      "Mudah lelah jika terkait urusan dan target panjang. Mudah teralihkan begitu ada hal lain yang lebih menarik. Pecahlah target jangka panjang menjadi target jangka pendek (milestone kecil), sehingga mudah Anda menelusuri progres Anda.",
+      "Jika mudah bosan pada proyek yang terlalu panjang, pecahlah target besar itu menjadi target-target mingguan yang pendek supaya kamu tetap semangat mencapainya.",
     aktivitasTerkait: ["PLANNING", "MONITORING", "FINISHING"],
     typologyTerkait: ["STRATEGIST", "PRODUCER"],
   },
   {
-    slotIndex: 19, // Soal 20, 54, 88, 122, 156
+    slotIndex: 19,
     id: "restorative",
     nama: "Restorative",
+    julukanRemaja: "Si Pemecah Masalah & Montir Solusi",
     domain: "Striving",
     deskripsiKuat:
-      "Sangat terampil dan bersemangat dalam memecahkan masalah (troubleshooting), mendiagnosa kerusakan, dan memperbaiki sesuatu hingga kembali berfungsi normal.",
+      "Melihat ada alat yang error, kode program yang bug, atau masalah yang macet justru membuatmu tertantang! Kamu pintar mencari letak kerusakannya dan memperbaikinya sampai normal kembali.",
     saranLemah:
-      "Jangan ragu mendelegasikan perbaikan teknis yang rumit kepada spesialis troubleshooting di tim Anda.",
+      "Saat menemukan masalah teknis yang rumit, jangan ragu meminta bantuan teman yang memang hobi mengutak-atik dan memperbaiki kesalahan.",
     aktivitasTerkait: ["RESTORING", "DIAGNOSING", "MAINTAINING", "THERAPIES"],
     typologyTerkait: ["RESTORER", "QUALITY CONTROLLER"],
   },
   {
-    slotIndex: 20, // Soal 21, 55, 89, 123, 157
+    slotIndex: 20,
     id: "self_assurance",
     nama: "Self-Assurance",
+    julukanRemaja: "Si Percaya Diri & Mandiri",
     domain: "Influencing",
     deskripsiKuat:
-      "Memiliki kompas internal dan kepercayaan diri yang kokoh terhadap kemampuan serta keputusannya sendiri, bahkan di tengah ketidakpastian risiko.",
+      "Kamu punya rasa percaya diri yang kuat dari dalam hatimu. Walau situasi sedang sulit, kamu yakin pada kemampuanmu sendiri dan berani mengambil keputusan tanpa mudah goyah.",
     saranLemah:
-      "Kumpulkan data pendukung atau mintalah second opinion dari mentor terpercaya untuk memperkuat keyakinan keputusan Anda.",
+      "Saat merasa ragu mengambil keputusan besar sendirian, diskusikan pilihanmu dengan mentor atau sahabat yang kamu percaya.",
     aktivitasTerkait: ["INFLUENCING", "VISIONING", "NEGOTIATING"],
     typologyTerkait: ["COMMANDER", "VISIONARY"],
   },
   {
-    slotIndex: 21, // Soal 22, 56, 90, 124, 158
+    slotIndex: 21,
     id: "significance",
     nama: "Significance",
+    julukanRemaja: "Si Ingin Berkarya Hebat & Dikenal",
     domain: "Influencing",
     deskripsiKuat:
-      "Ingin memberikan dampak besar yang diakui, dihargai, dan menonjol secara profesional serta bereputasi tinggi di mata publik.",
+      "Kamu punya cita-cita tinggi untuk menghasilkan karya yang berdampak besar, diakui kualitasnya, dan meninggalkan jejak prestasi yang membanggakan.",
     saranLemah:
-      "Tidak merasa nyaman menjadi sorotan, apalagi dalam audience besar. Alihkan perhatian pada karya Anda dan produktivitas yang Anda kerjakan. Bisa memilih kerja di balik layar dan temukan arti penting pesan yang Anda sampaikan.",
+      "Kamu lebih nyaman bekerja tenang di balik layar daripada tampil menjadi pusat sorotan panggung. Biarkan hasil karyamu yang berbicara mewakili kehebatanmu!",
     aktivitasTerkait: ["PRESENTING", "REPRESENTING", "ACTING"],
     typologyTerkait: ["AMBASADOR", "COMMUNICATOR"],
   },
   {
-    slotIndex: 22, // Soal 23, 57, 91, 125, 159
+    slotIndex: 22,
     id: "analytical",
     nama: "Analytical",
+    julukanRemaja: "Si Detektif Data & Logika",
     domain: "Thinking",
     deskripsiKuat:
-      "Berpikir logis, objektif, dan berbasis bukti data. Senang mengurai pola, mencari hubungan sebab-akibat, serta menguji keakuratan fakta secara tajam.",
+      "Kamu tidak mudah percaya kabar burung sebelum melihat data dan buktinya! Kamu suka mengamati angka, mencari sebab-akibat secara logis, dan membuktikan kebenaran suatu informasi.",
     saranLemah:
-      "Gunakan template analisis data atau berkolaborasi dengan rekan analis saat harus mengolah angka/statistik yang kompleks.",
+      "Gunakan bantuan grafik visual atau berpasanganlah dengan teman yang teliti menghitung data saat harus mengolah angka yang rumit.",
     aktivitasTerkait: ["ANALYSING", "AUDITING", "VERIFYING", "RESEARCHING"],
     typologyTerkait: ["ANALYST", "EVALUATOR", "TREASURER"],
   },
   {
-    slotIndex: 23, // Soal 24, 58, 92, 126, 160
+    slotIndex: 23,
     id: "arranger",
     nama: "Arranger",
+    julukanRemaja: "Si Koordinator Serba Bisa",
     domain: "Striving",
     deskripsiKuat:
-      "Piawai mengoordinasikan banyak variabel, sumber daya, dan personel secara fleksibel dan paralel untuk mencapai konfigurasi kerja paling efisien.",
+      "Bagaikan dirigen orkestra, kamu pintar mengatur banyak kegiatan dan membagi tugas ke banyak orang secara bersamaan agar semuanya berjalan kompak dan efisien.",
     saranLemah:
-      "Tangani proyek satu per satu secara berurutan agar tidak kewalahan oleh terlalu banyak perubahan mendadak.",
+      "Selesaikan satu pekerjaan dulu baru pindah ke pekerjaan berikutnya agar pikiranmu tidak kewalahan mengurus terlalu banyak hal sekaligus.",
     aktivitasTerkait: ["COORDINATING", "ORGANIZING", "DISPATCHING"],
     typologyTerkait: ["ARRANGER", "HEADMAN", "DISTRIBUTOR"],
   },
   {
-    slotIndex: 24, // Soal 25, 59, 93, 127, 161
+    slotIndex: 24,
     id: "connectedness",
     nama: "Connectedness",
+    julukanRemaja: "Si Pencari Makna & Hikmah",
     domain: "Relating",
     deskripsiKuat:
-      "Meyakini bahwa segala sesuatu terjadi karena suatu alasan dan saling terhubung secara spiritual maupun kemanusiaan. Sangat menjaga etika agar tidak merugikan sesama.",
+      "Kamu percaya bahwa setiap kejadian di dunia ini saling terhubung dan pasti ada hikmahnya. Kamu sangat menjaga sikap agar perbuatanmu membawa kebaikan bagi lingkungan dan sesama.",
     saranLemah:
-      "Bangun jembatan komunikasi yang konkret untuk menjelaskan keterkaitan pekerjaan tim dengan dampak sosial yang lebih luas.",
+      "Bantu teman-temanmu memahami bagaimana tugas kecil yang mereka kerjakan punya dampak besar bagi kesuksesan bersama.",
     aktivitasTerkait: ["SPIRITUALIZING", "COUNSELING", "CONSERVING", "ADVISING"],
     typologyTerkait: ["CARETAKER", "MEDIATOR"],
   },
   {
-    slotIndex: 25, // Soal 26, 60, 94, 128, 162
+    slotIndex: 25,
     id: "consistency",
     nama: "Consistency",
+    julukanRemaja: "Si Adil & Taat Aturan",
     domain: "Striving",
     deskripsiKuat:
-      "Pribadi yang meyakini bahwa semua orang harus diperlakukan secara sama sesuai dengan aturan yang berlaku. Tidak suka berpihak atau berat sebelah. Menjadikan aturan sebagai panduan dalam berperilaku, dan merasa senang serta tenang jika bisa mentaati aturan tersebut.",
+      "Kamu sangat menjunjung tinggi keadilan! Menurutmu, aturan dibuat supaya semua orang diperlakukan setara tanpa pilih kasih. Kamu merasa tenang saat bekerja di lingkungan yang tertib dan jelas SOP-nya.",
     saranLemah:
-      "Pastikan Anda memahami SOP standar organisasi agar tetap adil saat menangani pengecualian kasus.",
+      "Sambil tetap menjaga aturan dasar, berikan sedikit ruang fleksibilitas jika ada teman yang memiliki kondisi khusus yang darurat.",
     aktivitasTerkait: ["COMPLIANCING", "INSPECTING", "MONITORING", "POLICING"],
     typologyTerkait: ["QUALITY CONTROLLER", "SAFEKEEPER", "ADMINISTRATOR"],
   },
   {
-    slotIndex: 26, // Soal 27, 61, 95, 129, 163
+    slotIndex: 26,
     id: "context",
     nama: "Context",
+    julukanRemaja: "Si Pembelajar Sejarah & Latar Belakang",
     domain: "Thinking",
     deskripsiKuat:
-      "Memahami masa kini dengan menelusuri sejarah, latar belakang, dan rekaman jejak masa lalu. Sangat menghargai pembelajaran dari studi kasus historis.",
+      "Supaya paham kondisi sekarang, kamu suka menelusuri bagaimana sejarah dan asal-usulnya di masa lalu. Mempelajari kisah sukses dan pengalaman terdahulu membuat keputusanmu lebih bijak.",
     saranLemah:
-      "Tidak tertarik dengan masa lalu dari sesuatu/seseorang. Cari partner yang bisa Anda percayai dalam memeriksa track record dari sesuatu. Gunakan bakat lain untuk mengenali kredibilitas dari hal yang sedang Anda tangani.",
+      "Karena kamu lebih suka langsung menatap masa depan daripada menoleh ke masa lalu, ajaklah rekan tim yang rajin mencatat dokumentasi untuk memeriksa rekam jejak proyek.",
     aktivitasTerkait: ["REPORTING", "TRANSCRIBING", "ARCHIVING", "RESEARCHING"],
     typologyTerkait: ["JOURNALIST", "ADMINISTRATOR"],
   },
   {
-    slotIndex: 27, // Soal 28, 62, 96, 130, 164
+    slotIndex: 27,
     id: "deliberative",
     nama: "Deliberative",
+    julukanRemaja: "Si Hati-Hati & Penakar Risiko",
     domain: "Striving",
     deskripsiKuat:
-      "Pribadi yang teliti dan penuh kehati-hatian. Sebelum mengambil keputusan/pilihan terlebih dahulu mempertimbangkan semua kemungkinan risiko, hambatan, dan kemungkinan gagal. Dalam beraktivitas juga selalu peka terhadap hal-hal yang bisa mendatangkan risiko.",
+      "Kamu tidak suka asal melangkah! Sebelum mengambil keputusan, kamu sudah memikirkan kemungkinan risiko atau hambatan di depan serta menyiapkan pengamanannya dengan cermat.",
     saranLemah:
-      "Lakukan pengecekan risiko dasar sebelum mengeksekusi proyek besar agar terhindar dari kesalahan fatal.",
+      "Biasakan mengecek ulang hal-hal penting sebelum mengambil keputusan besar agar terhindar dari kesalahan yang tidak perlu.",
     aktivitasTerkait: ["PURCHASING", "AUDITING", "INSPECTING", "SECURING"],
     typologyTerkait: ["EVALUATOR", "SAFEKEEPER", "QUALITY CONTROLLER"],
   },
   {
-    slotIndex: 28, // Soal 29, 63, 97, 131, 165
+    slotIndex: 28,
     id: "futuristic",
     nama: "Futuristic",
+    julukanRemaja: "Si Visioner Masa Depan",
     domain: "Thinking",
     deskripsiKuat:
-      "Senang memikirkan masa depan. Pikirannya selalu terinspirasi oleh ruang dan kemungkinan yang tersedia di masa depan. Selalu melihat sesuatu (pribadi, organisasi, trend, dll) lengkap dengan wujudnya di masa depan. Memiliki kemampuan untuk menginspirasi orang lain dengan visinya.",
+      "Imajinasimu sering melompat jauh ke masa depan! Kamu senang membayangkan teknologi, impian, dan peluang-peluang keren di tahun-tahun mendatang serta membuat orang lain ikut bersemangat.",
     saranLemah:
-      "Gunakan tren data saat ini atau berdiskusilah dengan rekan visioner ketika merumuskan peta jalan jangka panjang.",
+      "Jika kamu lebih fokus pada tugas hari ini, sesekali ngobrollah dengan teman yang visioner untuk menyusun cita-cita jangka panjangmu.",
     aktivitasTerkait: ["VISIONING", "PLANNING", "DESIGNING"],
     typologyTerkait: ["VISIONARY", "STRATEGIST", "CREATOR"],
   },
   {
-    slotIndex: 29, // Soal 30, 64, 98, 132, 166
+    slotIndex: 29,
     id: "ideation",
     nama: "Ideation",
+    julukanRemaja: "Si Gudang Ide Kreatif",
     domain: "Thinking",
     deskripsiKuat:
-      "Pikirannya sangat aktif dan kreatif memunculkan berbagai gagasan. Mampu dengan cepat menghubungkan hal-hal yang tampaknya tidak berhubungan menjadi sebuah ide atau rancangan yang utuh. Selalu bisa menciptakan sudut pandang baru terhadap sesuatu sehingga timbul ide, konsep, dan imajinasi-imajinasi baru.",
+      "Otakmu tidak pernah kehabisan ide-ide segar dan kreatif! Kamu pintar menggabungkan hal-hal unik menjadi terobosan baru yang belum pernah terpikirkan oleh orang lain sebelumnya.",
     saranLemah:
-      "Gunakan metode brainstorming terstruktur (seperti SCAMPER atau Mind Mapping) saat membutuhkan solusi kreatif.",
+      "Saat membutuhkan ide baru, kamu bisa mencari referensi dari internet atau melakukan diskusi curah pendapat (brainstorming) bersama teman.",
     aktivitasTerkait: ["IDEATING", "CREATING", "DESIGNING", "SYNTHESIZING", "CONCEPTUALIZING"],
     typologyTerkait: ["CREATOR", "DESIGNER", "SYNTHESIZER"],
   },
   {
-    slotIndex: 30, // Soal 31, 65, 99, 133, 167
+    slotIndex: 30,
     id: "input",
     nama: "Input",
+    julukanRemaja: "Si Kolektor Ilmu & Informasi",
     domain: "Thinking",
     deskripsiKuat:
-      "Memiliki rasa ingin tahu yang tinggi dan gemar mengumpulkan berbagai informasi, fakta, referensi, wawasan, atau koleksi benda yang bermanfaat sebagai perbendaharaan pengetahuan.",
+      "Rasa ingin tahumu sangat besar! Kamu suka membaca, menyimpan artikel menarik, mengumpulkan buku, data, atau benda-benda unik karena yakin suatu saat pasti akan berguna.",
     saranLemah:
-      "Bangun sistem folder referensi digital yang ringkas agar mudah mencari informasi saat dibutuhkan.",
+      "Simpan dokumen atau tautan materi penting di satu folder khusus supaya mudah ditemukan kembali saat kamu membutuhkannya.",
     aktivitasTerkait: ["COLLECTING", "OBSERVING", "SURVEYING", "INFORMING"],
     typologyTerkait: ["EXPLORER", "JOURNALIST"],
   },
   {
-    slotIndex: 31, // Soal 32, 66, 100, 134, 168
+    slotIndex: 31,
     id: "intellection",
     nama: "Intellection",
+    julukanRemaja: "Si Pemikir Mendalam & Filosofis",
     domain: "Thinking",
     deskripsiKuat:
-      "Seorang pemikir yang ingin memahami sesuatu sampai ke intinya. Ia menikmati perenungan dalam situasi sendiri dan tenang. Cenderung introspektif, sangat menghargai perbincangan intelektual yang berkualitas. Pemikirannya menjadi sangat produktif saat bekerja dalam ketenangan seperti ini.",
+      "Kamu senang merenung dan memikirkan suatu topik sampai benar-benar paham ke akarnya. Suasana yang tenang membuat pikiranmu sangat tajam dan melahirkan pemikiran yang berbobot.",
     saranLemah:
-      "Luangkan waktu hening sejenak sebelum mengambil keputusan strategis agar kajian Anda lebih mendalam.",
+      "Luangkan waktu tenang 10–15 menit untuk memikirkan dampak jangka panjang sebelum terburu-buru menyetujui sesuatu.",
     aktivitasTerkait: ["CONCEPTUALIZING", "RESEARCHING", "WRITING"],
     typologyTerkait: ["ANALYST", "EXPLORER", "CREATOR"],
   },
   {
-    slotIndex: 32, // Soal 33, 67, 101, 135, 169
+    slotIndex: 32,
     id: "learner",
     nama: "Learner",
+    julukanRemaja: "Si Pembelajar Cepat & Haus Ilmu",
     domain: "Thinking",
     deskripsiKuat:
-      "Pribadi yang sangat senang belajar, dan ingin terus belajar untuk meningkatkan kualitas dirinya. Merasakan proses belajar sebagai hal yang lebih menarik dan lebih penting daripada subjek yang dipelajari atau hasil dari proses belajar tersebut.",
+      "Belajar hal baru adalah kesukaanmu! Kamu sangat menikmati proses dari yang awalnya belum tahu menjadi mahir, baik itu belajar koding, bahasa asing, alat musik, maupun keterampilan baru lainnya.",
     saranLemah:
-      "Pilih metode belajar praktis berbasis proyek (learning by doing) agar tetap termotivasi menguasai keahlian baru.",
+      "Pilih cara belajar yang seru seperti menonton video tutorial singkat atau langsung praktik agar kamu tidak cepat bosan.",
     aktivitasTerkait: ["TEACHING", "TRAINING", "PROGRAMMING", "RESEARCHING"],
     typologyTerkait: ["EDUCATOR", "EXPLORER"],
   },
   {
-    slotIndex: 33, // Soal 34, 68, 102, 136, 170
+    slotIndex: 33,
     id: "strategic",
     nama: "Strategic",
+    julukanRemaja: "Si Perancang Taktik & Jalan Pintas Terbaik",
     domain: "Thinking",
     deskripsiKuat:
-      "Pribadi yang cerdas dalam mengembangkan berbagai alternatif langkah dan proses, serta mampu cepat menilai berbagai alternatif tersebut untuk menemukan pilihan atau solusi terbaik. Selalu memahami situasi dengan melihat gambaran besarnya, dan senang melibatkan diri dalam pengambilan keputusan yang intuitif.",
+      "Saat menghadapi masalah yang rumit, kamu seperti pemain catur handal! Kamu cepat melihat gambaran besarnya dan langsung menemukan beberapa jalur alternatif paling cerdas untuk mencapai tujuan.",
     saranLemah:
-      "Biasakan membuat minimal 2 opsi alternatif sebelum menetapkan langkah penyelesaian masalah.",
+      "Biasakan menuliskan 2 pilihan cara sebelum memulai proyek besar agar kamu punya rute cadangan jika jalan pertama macet.",
     aktivitasTerkait: ["STRATEGIZING", "PLANNING", "SYNTHESIZING", "GUIDING"],
     typologyTerkait: ["STRATEGIST", "SYNTHESIZER", "VISIONARY"],
   },
 ];
 
 // ============================================================================
-// 2. DEFINISI 30 STRENGTH TYPOLOGY (PERSONAL BRANDING & KESIMPULAN PERAN)
+// 2. DEFINISI 30 STRENGTH TYPOLOGY (BAHASA SEGAR & MUDAH DIPAHAMI REMAJA/UMUM)
 // ============================================================================
 export const DAFTAR_30_PERSONAL_BRANDING: PersonalBrandingRole[] = [
-  { id: "ARRANGER", nama: "ARRANGER", kategori: "HEADMAN", deskripsi: "Anda seorang pengatur sumber daya dan manusia yang luwes, mampu mengoordinasikan banyak aktivitas secara paralel dan efisien." },
-  { id: "COMMANDER", nama: "COMMANDER", kategori: "HEADMAN", deskripsi: "Anda seorang pemimpin tegas yang berani mengambil kendali, memberi komando jelas, dan memastikan target tercapai." },
-  { id: "MEDIATOR", nama: "MEDIATOR", kategori: "HEADMAN", deskripsi: "Anda seorang penengah yang objektif dan bijaksana dalam menjembatani perbedaan serta menyelesaikan konflik antarpihak." },
-  { id: "SELLER", nama: "SELLER", kategori: "HEADMAN", deskripsi: "Anda seorang negosiator dan pemasar persuasif yang piawai meyakinkan orang lain untuk mencapai kesepakatan bernilai tinggi." },
-  { id: "SELECTOR", nama: "SELECTOR", kategori: "HEADMAN", deskripsi: "Anda memiliki kepekaan tajam dalam menyeleksi, merekrut, dan menempatkan orang yang tepat sesuai keunikan potensinya." },
+  { id: "ARRANGER", nama: "ARRANGER", julukan: "Pengatur Tim & Sumber Daya", kategori: "HEADMAN", deskripsi: "Kamu pintar mengatur pembagian tugas, peralatan, dan jadwal banyak orang secara luwes agar proyek selesai dengan kompak." },
+  { id: "COMMANDER", nama: "COMMANDER", julukan: "Kapten Pengambil Keputusan", kategori: "HEADMAN", deskripsi: "Kamu berani memimpin di depan, memberi arahan yang jelas saat situasi genting, dan memastikan tim mencapai target." },
+  { id: "MEDIATOR", nama: "MEDIATOR", julukan: "Juru Damai yang Adil", kategori: "HEADMAN", deskripsi: "Kamu bijaksana dalam menengahi perbedaan pendapat dan mendamaikan teman atau pihak yang sedang berselisih." },
+  { id: "SELLER", nama: "SELLER", julukan: "Negosiator & Pemasar Ulung", kategori: "HEADMAN", deskripsi: "Kamu jago meyakinkan orang lain tentang keunggulan sebuah karya, ide, atau produk hingga mereka tertarik bekerja sama." },
+  { id: "SELECTOR", nama: "SELECTOR", julukan: "Pencari Bakat Terbaik", kategori: "HEADMAN", deskripsi: "Kamu punya kepekaan tajam dalam memilih dan menempatkan teman satu tim di posisi yang paling pas dengan keahlian mereka." },
 
-  { id: "AMBASADOR", nama: "AMBASADOR", kategori: "NETWORKING", deskripsi: "Anda seorang duta jejaring yang ramah, mudah mencairkan suasana, dan piawai membangun kemitraan baru bagi organisasi." },
-  { id: "COMMUNICATOR", nama: "COMMUNICATOR", kategori: "NETWORKING", deskripsi: "Anda seorang yang senang menerangkan sesuatu secara jelas dan menarik, baik itu dalam bentuk lisan ataupun tulisan." },
-  { id: "EDUCATOR", nama: "EDUCATOR", kategori: "NETWORKING", deskripsi: "Anda seorang yang sabar dan telaten dalam memberikan penjelasan dan bimbingan kepada orang lain sesuai dengan karakteristik unik masing-masing." },
-  { id: "MOTIVATOR", nama: "MOTIVATOR", kategori: "NETWORKING", deskripsi: "Anda seorang yang suka membuat orang lain maju dan berkembang sesuai dengan potensi uniknya masing-masing, dengan cara memberi semangat, inspirasi atau contoh yang baik." },
+  { id: "AMBASADOR", nama: "AMBASADOR", julukan: "Duta Persahabatan & Jejaring", kategori: "NETWORKING", deskripsi: "Kamu ramah, mudah akrab dengan orang baru, dan cocok mewakili sekolah, kampus, atau organisasi di acara luar." },
+  { id: "COMMUNICATOR", nama: "COMMUNICATOR", julukan: "Bintang Komunikasi & Presentasi", kategori: "NETWORKING", deskripsi: "Kamu pandai menjelaskan topik yang rumit menjadi obrolan, presentasi, atau tulisan yang seru dan mudah dimengerti siapa saja." },
+  { id: "EDUCATOR", nama: "EDUCATOR", julukan: "Pendidik & Pembimbing Sabar", kategori: "NETWORKING", deskripsi: "Kamu telaten dan sabar mengajari orang lain sampai mereka benar-benar paham dan berkembang sesuai gaya belajar mereka." },
+  { id: "MOTIVATOR", nama: "MOTIVATOR", julukan: "Penyulut Semangat & Inspirasi", kategori: "NETWORKING", deskripsi: "Kamu senang menyemangati teman-temanmu agar percaya diri dan berani mengeluarkan kemampuan terbaik mereka." },
 
-  { id: "CARETAKER", nama: "CARETAKER", kategori: "SERVICING", deskripsi: "Anda seorang yang penuh empati dan kepedulian dalam merawat, mendampingi, serta memulihkan kesejahteraan fisik maupun psikologis sesama." },
-  { id: "SERVER", nama: "SERVER", kategori: "SERVICING", deskripsi: "Anda seorang yang memiliki jiwa pelayanan yang tinggi, selalu siap membantu, bertanggung jawab dan senang berinteraksi dengan orang lain." },
+  { id: "CARETAKER", nama: "CARETAKER", julukan: "Sahabat Peduli & Penolong", kategori: "SERVICING", deskripsi: "Kamu penuh empati, tulus merawat, dan selalu sigap mendampingi orang lain yang sedang membutuhkan bantuan fisik maupun hati." },
+  { id: "SERVER", nama: "SERVER", julukan: "Pelayan Terbaik & Amanah", kategori: "SERVICING", deskripsi: "Kamu punya hati yang tulus untuk membantu, melayani kebutuhan banyak orang dengan ramah, dan sangat bertanggung jawab." },
 
-  { id: "CREATOR", nama: "CREATOR", kategori: "GENERATING IDEA", deskripsi: "Anda adalah seorang yang punya banyak ide, yang belum pernah terpikirkan sebelumnya, dan Anda tahu benar cara mewujudkan ide Anda tersebut." },
-  { id: "DESIGNER", nama: "DESIGNER", kategori: "GENERATING IDEA", deskripsi: "Anda seorang perancang konsep dan cetak biru visual maupun sistem yang memadukan imajinasi kreatif dengan presisi teknis." },
-  { id: "MARKETER", nama: "MARKETER", kategori: "GENERATING IDEA", deskripsi: "Anda seorang perumus strategi pemasaran dan kampanye komunikasi yang mampu mengemas keunggulan produk agar diminati publik." },
-  { id: "STRATEGIST", nama: "STRATEGIST", kategori: "GENERATING IDEA", deskripsi: "Anda seorang pemikir strategis yang mampu melihat gambaran besar dan merancang rute alternatif terbaik menuju sasaran masa depan." },
-  { id: "SYNTHESIZER", nama: "SYNTHESIZER", kategori: "GENERATING IDEA", deskripsi: "Anda piawai memadukan berbagai konsep, tren, dan gagasan yang terpisah menjadi sebuah sintesis solusi baru yang utuh." },
-  { id: "VISIONARY", nama: "VISIONARY", kategori: "GENERATING IDEA", deskripsi: "Anda seorang pemimpi masa depan yang mampu memproyeksikan peluang jangka panjang dan menginspirasi perubahan besar." },
+  { id: "CREATOR", nama: "CREATOR", julukan: "Pencipta Ide & Karya Baru", kategori: "GENERATING IDEA", deskripsi: "Kepalamu penuh dengan ide kreatif dan imajinasi segar untuk menciptakan karya atau terobosan yang belum pernah ada." },
+  { id: "DESIGNER", nama: "DESIGNER", julukan: "Perancang Desain & Sistem", kategori: "GENERATING IDEA", deskripsi: "Kamu ahli memadukan keindahan visual dengan rancangan teknis untuk membuat sketsa, cetak biru, atau desain aplikasi." },
+  { id: "MARKETER", nama: "MARKETER", julukan: "Perancang Strategi Promosi", kategori: "GENERATING IDEA", deskripsi: "Kamu pintar meracik strategi kreatif supaya sebuah kegiatan, produk, atau karya dikenal luas dan disukai banyak orang." },
+  { id: "STRATEGIST", nama: "STRATEGIST", julukan: "Arsitek Taktik & Strategi", kategori: "GENERATING IDEA", deskripsi: "Kamu mampu melihat gambaran besar masalah dan menyusun langkah-langkah paling cerdas untuk mencapai cita-cita." },
+  { id: "SYNTHESIZER", nama: "SYNTHESIZER", julukan: "Peramu Berbagai Gagasan", kategori: "GENERATING IDEA", deskripsi: "Kamu pandai menggabungkan berbagai informasi dan ide yang terpisah-pisah menjadi satu kesimpulan baru yang utuh." },
+  { id: "VISIONARY", nama: "VISIONARY", julukan: "Penatap Masa Depan", kategori: "GENERATING IDEA", deskripsi: "Kamu mampu melihat peluang masa depan lebih awal dan menginspirasi teman-temanmu untuk mengejar impian besar." },
 
-  { id: "ANALYST", nama: "ANALYST", kategori: "THINKING", deskripsi: "Anda seorang pemikir analitis dan objektif yang gemar mengurai data, struktur logika, serta pola sebab-akibat secara mendalam." },
-  { id: "TREASURER", nama: "TREASURER", kategori: "THINKING", deskripsi: "Anda seorang pengelola anggaran, akuntansi, dan perbendaharaan keuangan yang cermat, terstruktur, dan berintegritas." },
-  { id: "EVALUATOR", nama: "EVALUATOR", kategori: "THINKING", deskripsi: "Anda seorang penguji dan auditor yang teliti dalam menakar risiko, memverifikasi keabsahan data, dan menjaga mutu standar." },
-  { id: "EXPLORER", nama: "EXPLORER", kategori: "THINKING", deskripsi: "Anda seorang peneliti dan pembelajar sejati yang selalu haus menggali pengetahuan baru, observasi ilmiah, dan eksplorasi fakta." },
-  { id: "RESTORER", nama: "RESTORER", kategori: "THINKING", deskripsi: "Anda seorang pemecah masalah (troubleshooter) yang handal dalam mendiagnosa akar kerusakan dan memulihkannya hingga normal." },
+  { id: "ANALYST", nama: "ANALYST", julukan: "Pembedah Data & Logika", kategori: "THINKING", deskripsi: "Kamu suka mengolah data, mencari pola logika, dan mengupas tuntas penyebab suatu kejadian secara objektif." },
+  { id: "TREASURER", nama: "TREASURER", julukan: "Bendahara & Pengelola Dana", kategori: "THINKING", deskripsi: "Kamu teliti, jujur, dan rapi dalam mencatat keluar-masuknya uang serta menyusun rencana anggaran biaya." },
+  { id: "EVALUATOR", nama: "EVALUATOR", julukan: "Pemeriksa Mutu & Akurasi", kategori: "THINKING", deskripsi: "Kamu cermat menilai kualitas suatu pekerjaan, mengecek kebenaran data, dan menakar risiko sebelum bertindak." },
+  { id: "EXPLORER", nama: "EXPLORER", julukan: "Peneliti & Penjelajah Ilmu", kategori: "THINKING", deskripsi: "Kamu punya rasa ingin tahu yang tinggi untuk terus belajar, mengamati fenomena, dan melakukan riset mendalam." },
+  { id: "RESTORER", nama: "RESTORER", julukan: "Ahli Pemulihan & Troubleshooting", kategori: "THINKING", deskripsi: "Kamu tangguh mencari letak kerusakan pada alat, program, atau sistem kerja dan memperbaikinya sampai lancar kembali." },
 
-  { id: "ADMINISTRATOR", nama: "ADMINISTRATOR", kategori: "ELEMENTARY", deskripsi: "Anda seorang penata tata kelola administrasi, kepatuhan aturan, dan penjadwalan organisasi yang rapi, taat, dan sistematis." },
-  { id: "INTERPRETER", nama: "INTERPRETER", kategori: "ELEMENTARY", deskripsi: "Anda seorang penerjemah dan pengurai pesan lintas bahasa maupun lintas konsep agar mudah dipahami oleh berbagai kalangan." },
-  { id: "JOURNALIST", nama: "JOURNALIST", kategori: "ELEMENTARY", deskripsi: "Anda seorang penyusun laporan, penulis naskah, dan pendokumentasi informasi yang terstruktur dan komunikatif." },
+  { id: "ADMINISTRATOR", nama: "ADMINISTRATOR", julukan: "Penata Dokumen & Aturan", kategori: "ELEMENTARY", deskripsi: "Kamu rapi dalam mengurus arsip, jadwal kegiatan, dan memastikan semua prosedur berjalan tertib sesuai aturan." },
+  { id: "INTERPRETER", nama: "INTERPRETER", julukan: "Penerjemah Bahasa & Makna", kategori: "ELEMENTARY", deskripsi: "Kamu terampil menerjemahkan bahasa maupun menguraikan istilah sulit agar mudah dipahami oleh semua kalangan." },
+  { id: "JOURNALIST", nama: "JOURNALIST", julukan: "Penulis Berita & Dokumentasi", kategori: "ELEMENTARY", deskripsi: "Kamu cekatan menulis laporan, menyunting naskah, dan mendokumentasikan peristiwa secara menarik dan akurat." },
 
-  { id: "DISTRIBUTOR", nama: "DISTRIBUTOR", kategori: "TECHNICAL", deskripsi: "Anda seorang pelaksana distribusi dan penyaluran logistik maupun informasi secara tepat sasaran dan tepat waktu." },
-  { id: "OPERATOR", nama: "OPERATOR", kategori: "TECHNICAL", deskripsi: "Anda seorang pengendali peralatan teknis, mesin, dan prosedur operasional lapangan yang tangguh dan konsisten." },
-  { id: "PRODUCER", nama: "PRODUCER", kategori: "TECHNICAL", deskripsi: "Anda seorang pekerja keras berorientasi output yang mampu merakit, membangun, dan memproduksi karya nyata hingga tuntas." },
-  { id: "QUALITY CONTROLLER", nama: "QUALITY CONTROLLER", kategori: "TECHNICAL", deskripsi: "Anda seorang penjaga standar mutu dan kepatuhan yang memastikan setiap hasil kerja bebas dari cacat dan sesuai aturan." },
-  { id: "SAFEKEEPER", nama: "SAFEKEEPER", kategori: "TECHNICAL", deskripsi: "Anda seorang pelindung keamanan aset, keselamatan kerja, dan ketertiban lingkungan yang penuh kewaspadaan dan tanggung jawab." },
+  { id: "DISTRIBUTOR", nama: "DISTRIBUTOR", julukan: "Penyalur Logistik & Informasi", kategori: "TECHNICAL", deskripsi: "Kamu sigap mengatur pengiriman dan pembagian barang, perlengkapan, atau informasi agar sampai tepat waktu." },
+  { id: "OPERATOR", nama: "OPERATOR", julukan: "Pengendali Alat & Mesin", kategori: "TECHNICAL", deskripsi: "Kamu terampil mengoperasikan perangkat keras, mesin, atau peralatan teknis di lapangan dengan stabil dan aman." },
+  { id: "PRODUCER", nama: "PRODUCER", julukan: "Pembangun & Penghasil Karya Nyata", kategori: "TECHNICAL", deskripsi: "Kamu senang bekerja praktik merakit, membangun, dan menghasilkan produk nyata sampai benar-benar siap dipakai." },
+  { id: "QUALITY CONTROLLER", nama: "QUALITY CONTROLLER", julukan: "Penjaga Standar Kualitas", kategori: "TECHNICAL", deskripsi: "Kamu teliti memeriksa hasil akhir pekerjaan dan menguji alat agar berfungsi sempurna tanpa cacat." },
+  { id: "SAFEKEEPER", nama: "SAFEKEEPER", julukan: "Pelindung Keamanan & Keselamatan", kategori: "TECHNICAL", deskripsi: "Kamu waspada dan bertanggung jawab menjaga keselamatan teman, keamanan lingkungan, serta keutuhan inventaris." },
 ];
 
 // ============================================================================
-// 3. DAFTAR 170 SOAL SESI 1 (MODIFIKASI BEBAS HAK CIPTA DARI EXCEL 1-170)
+// 3. DAFTAR 170 SOAL SESI 1 (MODIFIKASI BEBAS HAK CIPTA)
 // ============================================================================
 export const SOAL_SESI_1_170: { no: number; pernyataan: string; slotIndex: number }[] = [
   { no: 1, slotIndex: 0, pernyataan: "Saya memiliki kemampuan membawakan presentasi yang memikat audiens." },
@@ -664,121 +700,121 @@ export const SOAL_SESI_1_170: { no: number; pernyataan: string; slotIndex: numbe
 ];
 
 // ============================================================================
-// 4. DAFTAR 114 AKTIVITAS SESI 2 (SCM MAP: E, Te, Gi, S, H, N, T, R)
+// 4. DAFTAR 114 AKTIVITAS SESI 2 (BAHASA DESKRIPSI SEGAR & MUDAH DIPAHAMI)
 // ============================================================================
 export const SOAL_SESI_2_114_SCM: ActivityClusterItem[] = [
-  { no: 1, kodeAktivitas: "CONCEPTUALIZING", klaster: "R", namaKlaster: "Reasoning", pernyataan: "Merancang acuan dan garis besar langkah masa depan berdasarkan pengamatan, pengalaman, serta keyakinan pribadi.", deskripsiSingkat: "Merumuskan konsep dasar dan kerangka acuan pemikiran", bobotBakatIds: ["ideation", "intellection", "strategic"], typology: "CREATOR" },
-  { no: 2, kodeAktivitas: "EDITING", klaster: "E", namaKlaster: "Elementary", pernyataan: "Mengedit dan menyempurnakan karangan naskah sebelum dipublikasikan ke publik.", deskripsiSingkat: "Menyunting dan memperbaiki kualitas naskah tulisan", bobotBakatIds: ["communication", "maximizer", "discipline"], typology: "JOURNALIST" },
-  { no: 3, kodeAktivitas: "REDACTING", klaster: "E", namaKlaster: "Elementary", pernyataan: "Menentukan pokok gagasan serta merestrukturisasi berkas tulisan yang siap diedarkan.", deskripsiSingkat: "Menyusun redaksi dan struktur naskah publikasi", bobotBakatIds: ["communication", "input", "arranger"], typology: "JOURNALIST" },
-  { no: 4, kodeAktivitas: "REPORTING", klaster: "E", namaKlaster: "Elementary", pernyataan: "Melaporkan dan mengomunikasikan perkembangan situasi yang sedang atau telah berlangsung secara lisan maupun tertulis.", deskripsiSingkat: "Melaporkan fakta dan perkembangan peristiwa secara akurat", bobotBakatIds: ["communication", "context", "responsibility"], typology: "JOURNALIST" },
-  { no: 5, kodeAktivitas: "WRITING", klaster: "E", namaKlaster: "Elementary", pernyataan: "Menyusun karya tulis, materi edukasi, cerita, maupun gagasan konseptual.", deskripsiSingkat: "Menuangkan gagasan dan pengetahuan ke dalam karya tulis", bobotBakatIds: ["communication", "ideation", "intellection"], typology: "JOURNALIST" },
-  { no: 6, kodeAktivitas: "INTERPRETING", klaster: "E", namaKlaster: "Elementary", pernyataan: "Menerangkan dan menguraikan substansi serta makna mendasar dari suatu topik.", deskripsiSingkat: "Menafsirkan dan menjelaskan makna dari suatu informasi", bobotBakatIds: ["communication", "intellection", "individualization"], typology: "INTERPRETER" },
-  { no: 7, kodeAktivitas: "TRANSCRIBING", klaster: "E", namaKlaster: "Elementary", pernyataan: "Menyadur ulang isi ringkasan atau naskah steno secara terperinci dan rinci.", deskripsiSingkat: "Menyalin dan mendokumentasikan rekaman percakapan secara rinci", bobotBakatIds: ["discipline", "context", "responsibility"], typology: "ADMINISTRATOR" },
-  { no: 8, kodeAktivitas: "TRANSLATING", klaster: "E", namaKlaster: "Elementary", pernyataan: "Mengalihbahasakan pesan lisan maupun tertulis agar mudah dimengerti audiens dari latar bahasa berbeda.", deskripsiSingkat: "Menerjemahkan bahasa secara akurat dan mudah dipahami", bobotBakatIds: ["communication", "learner", "input"], typology: "INTERPRETER" },
-  { no: 9, kodeAktivitas: "COMPLIANCING", klaster: "E", namaKlaster: "Elementary", pernyataan: "Menjalankan serta menegakkan kedisiplinan sesuai ketentuan dan regulasi baku.", deskripsiSingkat: "Menjalankan dan menjaga kepatuhan serta ketaatan terhadap aturan yang berlaku", bobotBakatIds: ["consistency", "responsibility", "deliberative", "belief"], typology: "ADMINISTRATOR" },
-  { no: 10, kodeAktivitas: "FILING", klaster: "E", namaKlaster: "Elementary", pernyataan: "Mengarsip berkas pada tempat yang tepat agar mempermudah proses pencarian ulang.", deskripsiSingkat: "Menata dan mengarsipkan dokumen secara sistematis", bobotBakatIds: ["discipline", "consistency", "input"], typology: "ADMINISTRATOR" },
-  { no: 11, kodeAktivitas: "HOUSEKEEPING", klaster: "E", namaKlaster: "Elementary", pernyataan: "Menata, membersihkan, serta merapikan sarana kerja maupun area ruangan.", deskripsiSingkat: "Menjaga kerapian, kebersihan, dan kenyamanan fasilitas", bobotBakatIds: ["discipline", "responsibility", "service"], typology: "SERVER" },
-  { no: 12, kodeAktivitas: "ORGANISING", klaster: "E", namaKlaster: "Elementary", pernyataan: "Merancang dan mengoordinasikan susunan acara, tata kerja, serta mekanisme prosedur.", deskripsiSingkat: "Mengorganisir alur kerja dan tata laksana kegiatan", bobotBakatIds: ["arranger", "discipline", "responsibility"], typology: "ADMINISTRATOR" },
-  { no: 13, kodeAktivitas: "SCHEDULING", klaster: "E", namaKlaster: "Elementary", pernyataan: "Menyusun urutan prioritas tindakan untuk periode waktu tertentu.", deskripsiSingkat: "Menyusun jadwal dan alokasi waktu kegiatan secara teratur", bobotBakatIds: ["discipline", "focus", "arranger"], typology: "ADMINISTRATOR" },
-  { no: 14, kodeAktivitas: "TYPEWRITING", klaster: "E", namaKlaster: "Elementary", pernyataan: "Menginput data dan mengetik dokumen untuk menghasilkan laporan atau artikel.", deskripsiSingkat: "Mengetik dan mengolah dokumen administrasi dengan cepat", bobotBakatIds: ["discipline", "achiever", "consistency"], typology: "ADMINISTRATOR" },
-  { no: 15, kodeAktivitas: "ASSEMBLING", klaster: "Te", namaKlaster: "Technical", pernyataan: "Merakit berbagai elemen komponen menjadi kesatuan produk utuh yang siap difungsikan.", deskripsiSingkat: "Merakit komponen-komponen teknis menjadi produk utuh", bobotBakatIds: ["arranger", "achiever", "restorative"], typology: "PRODUCER" },
-  { no: 16, kodeAktivitas: "BUILDING", klaster: "Te", namaKlaster: "Technical", pernyataan: "Mengonstruksi fasilitas fisik seperti hunian, gedung, jembatan, atau infrastruktur bangunan.", deskripsiSingkat: "Membangun konstruksi fisik dan infrastruktur", bobotBakatIds: ["achiever", "focus", "responsibility"], typology: "PRODUCER" },
-  { no: 17, kodeAktivitas: "INSTALLING", klaster: "Te", namaKlaster: "Technical", pernyataan: "Memasang dan memasangkan komponen mekanis (seperti baut/mur) agar mesin beroperasi sempurna.", deskripsiSingkat: "Memasang perangkat keras dan instalasi peralatan teknis", bobotBakatIds: ["restorative", "discipline", "achiever"], typology: "OPERATOR" },
-  { no: 18, kodeAktivitas: "PRODUCING", klaster: "Te", namaKlaster: "Technical", pernyataan: "Memproduksi barang setengah jadi maupun produk akhir secara nyata.", deskripsiSingkat: "Menghasilkan produk secara konsisten sesuai target produksi", bobotBakatIds: ["achiever", "focus", "consistency"], typology: "PRODUCER" },
-  { no: 19, kodeAktivitas: "FINISHING", klaster: "Te", namaKlaster: "Technical", pernyataan: "Mengeksekusi penyelesaian tahap akhir (finishing) dari rangkaian proyek atau manufaktur.", deskripsiSingkat: "Menyempurnakan detail akhir dari suatu pekerjaan atau produk", bobotBakatIds: ["maximizer", "responsibility", "focus"], typology: "QUALITY CONTROLLER" },
-  { no: 20, kodeAktivitas: "TESTING", klaster: "Te", namaKlaster: "Technical", pernyataan: "Menguji coba kinerja sistem atau alat untuk memastikan fungsi operasionalnya sesuai standar.", deskripsiSingkat: "Menguji fungsi dan keandalan suatu sistem atau produk", bobotBakatIds: ["deliberative", "analytical", "restorative"], typology: "QUALITY CONTROLLER" },
-  { no: 21, kodeAktivitas: "DELIVERING", klaster: "Te", namaKlaster: "Technical", pernyataan: "Mengirimkan paket, dokumen, atau pesanan barang ke alamat tujuan dengan tepat.", deskripsiSingkat: "Mengantarkan barang atau penugasan sampai ke tujuan dengan aman", bobotBakatIds: ["responsibility", "adaptability", "achiever"], typology: "DISTRIBUTOR" },
-  { no: 22, kodeAktivitas: "DISTRIBUTING", klaster: "Te", namaKlaster: "Technical", pernyataan: "Mendistribusikan berkas, materi, atau informasi secara serentak ke berbagai wilayah tujuan.", deskripsiSingkat: "Menyalurkan logistik atau informasi ke berbagai titik penerima", bobotBakatIds: ["arranger", "consistency", "responsibility"], typology: "DISTRIBUTOR" },
-  { no: 23, kodeAktivitas: "MAINTAINING", klaster: "Te", namaKlaster: "Technical", pernyataan: "Melakukan perawatan rutin untuk menjaga keandalan fasilitas, mesin, atau sarana fisik.", deskripsiSingkat: "Merawat peralatan dan sistem agar tetap berfungsi optimal", bobotBakatIds: ["restorative", "responsibility", "consistency"], typology: "OPERATOR" },
-  { no: 24, kodeAktivitas: "OPERATING", klaster: "Te", namaKlaster: "Technical", pernyataan: "Mengoperasikan serta mengendalikan peralatan mekanis, mesin, atau alur proses operasional.", deskripsiSingkat: "Mengoperasikan mesin atau sistem kerja teknis secara handal", bobotBakatIds: ["adaptability", "consistency", "focus"], typology: "OPERATOR" },
-  { no: 25, kodeAktivitas: "RESTORING", klaster: "R", namaKlaster: "Reasoning", pernyataan: "Memperbaiki dan merestorasi alat atau kondisi seseorang agar kembali berfungsi normal.", deskripsiSingkat: "Memulihkan fungsi peralatan atau sistem yang mengalami gangguan", bobotBakatIds: ["restorative", "analytical", "problem_solving"], typology: "RESTORER" },
-  { no: 26, kodeAktivitas: "TENDING ANIMAL", klaster: "Te", namaKlaster: "Technical", pernyataan: "Merawat, memelihara, melatih, serta membudidayakan hewan ternak atau peliharaan.", deskripsiSingkat: "Memelihara dan merawat kesehatan serta pertumbuhan satwa", bobotBakatIds: ["empathy", "developer", "responsibility"], typology: "CARETAKER" },
-  { no: 27, kodeAktivitas: "SPORT", klaster: "Te", namaKlaster: "Technical", pernyataan: "Berpartisipasi aktif dalam kegiatan cabang olahraga hingga meraih pencapaian dan prestasi.", deskripsiSingkat: "Menjalankan aktivitas ketangkasan fisik dan keolahragaan", bobotBakatIds: ["competition", "achiever", "focus"], typology: "PRODUCER" },
-  { no: 28, kodeAktivitas: "PLANTING", klaster: "Te", namaKlaster: "Technical", pernyataan: "Bercocok tanam, mengolah media tanam, serta memelihara pertumbuhan tanaman.", deskripsiSingkat: "Membudidayakan dan merawat tanaman hingga tumbuh subur", bobotBakatIds: ["developer", "connectedness", "responsibility"], typology: "CARETAKER" },
-  { no: 29, kodeAktivitas: "PHYSICAL SKILL", klaster: "Te", namaKlaster: "Technical", pernyataan: "Menggunakan ketangkasan dan koordinasi motorik tubuh dalam menangani peralatan atau aktivitas fisik berat.", deskripsiSingkat: "Mengandalkan kekuatan dan koordinasi fisik dalam bekerja", bobotBakatIds: ["achiever", "adaptability", "activator"], typology: "OPERATOR" },
-  { no: 30, kodeAktivitas: "MANUAL SKILL", klaster: "Te", namaKlaster: "Technical", pernyataan: "Mengerjakan tugas-tugas yang mengandalkan keahlian manual serta kerajinan tangan.", deskripsiSingkat: "Menggunakan keterampilan tangan secara teliti dan terampil", bobotBakatIds: ["maximizer", "focus", "deliberative"], typology: "PRODUCER" },
-  { no: 31, kodeAktivitas: "VISUAL ART", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Mengembangkan karya seni visual seperti lukisan, ilustrasi, patung, atau rancangan grafis.", deskripsiSingkat: "Menciptakan karya estetika seni rupa dan desain visual", bobotBakatIds: ["ideation", "maximizer", "futuristic"], typology: "DESIGNER" },
-  { no: 32, kodeAktivitas: "SINGING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Menampilkan pertunjukan olah vokal atau bernyanyi di hadapan khalayak umum.", deskripsiSingkat: "Mengekspresikan keindahan suara melalui seni tarik suara", bobotBakatIds: ["communication", "significance", "positivity"], typology: "AMBASADOR" },
-  { no: 33, kodeAktivitas: "MUSICAL ART", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Mengarang lagu, memainkan instrumen, atau berkarya di bidang seni musik.", deskripsiSingkat: "Menggubah harmoni nada dan memainkan instrumen musik", bobotBakatIds: ["ideation", "empathy", "harmony"], typology: "CREATOR" },
-  { no: 34, kodeAktivitas: "MODELLING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Peran memperagakan busana dan menjadi peraga mode (fashion model).", deskripsiSingkat: "Mempresentasikan karya busana atau prototipe di depan publik", bobotBakatIds: ["significance", "woo", "self_assurance"], typology: "AMBASADOR" },
-  { no: 35, kodeAktivitas: "DRAMATIZING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Mengemas ulang narasi atau cerita agar terasa lebih emosional dan memikat pendengar.", deskripsiSingkat: "Menghidupkan alur cerita agar menyentuh emosi audiens", bobotBakatIds: ["communication", "empathy", "ideation"], typology: "COMMUNICATOR" },
-  { no: 36, kodeAktivitas: "DANCING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Mengekspresikan seni gerak tari yang indah dan harmonis sesuai irama musik.", deskripsiSingkat: "Menyelaraskan gerak tubuh dengan irama secara artistik", bobotBakatIds: ["adaptability", "positivity", "harmony"], typology: "CREATOR" },
-  { no: 37, kodeAktivitas: "COOKING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Mengolah bahan masakan dan menciptakan produk seni kuliner.", deskripsiSingkat: "Meracik bahan pangan menjadi hidangan kuliner berkualitas", bobotBakatIds: ["ideation", "arranger", "serving"], typology: "CREATOR" },
-  { no: 38, kodeAktivitas: "CONSERVING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Melestarikan warisan budaya serta kelestarian alam dari ancaman kerusakan atau kepunahan.", deskripsiSingkat: "Menjaga kelestarian lingkungan alam dan nilai warisan budaya", bobotBakatIds: ["connectedness", "belief", "context"], typology: "SAFEKEEPER" },
-  { no: 39, kodeAktivitas: "BEAUTIFYING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Memoles serta memperindah estetika tampilan visual objek atau penampilan seseorang.", deskripsiSingkat: "Meningkatkan keindahan estetika suatu ruang, objek, atau tampilan", bobotBakatIds: ["maximizer", "ideation", "individualization"], typology: "DESIGNER" },
-  { no: 40, kodeAktivitas: "ACTING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Memerankan watak atau karakter yang berbeda dari kepribadian asli di panggung/pentas.", deskripsiSingkat: "Menjiwai dan menampilkan peran karakter di hadapan audiens", bobotBakatIds: ["significance", "communication", "empathy"], typology: "COMMUNICATOR" },
-  { no: 41, kodeAktivitas: "VISIONING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Memproyeksikan kecenderungan masa depan serta menetapkan target sasaran secara presisi.", deskripsiSingkat: "Merumuskan visi jauh ke depan dan menginspirasi arah perubahan", bobotBakatIds: ["futuristic", "strategic", "ideation"], typology: "VISIONARY" },
-  { no: 42, kodeAktivitas: "STRATEGIZING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Merumuskan strategi dan opsi rute terbaik menuju sasaran yang belum terpikirkan pihak lain.", deskripsiSingkat: "Menyusun skenario dan alternatif langkah strategis terbaik", bobotBakatIds: ["strategic", "ideation", "futuristic"], typology: "STRATEGIST" },
-  { no: 43, kodeAktivitas: "PLANNING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Merancang rencana kerja, mengonstruksi skedul prioritas, serta mengevaluasi kebijakan organisasi.", deskripsiSingkat: "Merencanakan tahapan program dan alokasi sumber daya", bobotBakatIds: ["strategic", "deliberative", "focus"], typology: "STRATEGIST" },
-  { no: 44, kodeAktivitas: "PUBLICIZING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Mengomunikasikan keunggulan produk atau informasi agar dikenal dan diminati khalayak luas.", deskripsiSingkat: "Mengumumkan atau memberitakan sesuatu dengan cara yang mudah dipahami agar diketahui banyak orang", bobotBakatIds: ["communication", "woo", "ideation"], typology: "COMMUNICATOR" },
-  { no: 45, kodeAktivitas: "MARKETING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Merancang strategi pemasaran komprehensif agar calon konsumen tertarik membeli produk/jasa secara berkelanjutan.", deskripsiSingkat: "Membangun daya tarik pasar dan strategi pemasaran produk/jasa", bobotBakatIds: ["strategic", "communication", "ideation", "woo"], typology: "MARKETER" },
-  { no: 46, kodeAktivitas: "DEVELOPING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Mendorong pembaruan untuk mengubah kondisi sesuatu/seseorang menjadi lebih berkembang, kuat, dan maju.", deskripsiSingkat: "Mengembangkan kapasitas sistem, produk, atau potensi manusia", bobotBakatIds: ["developer", "ideation", "futuristic"], typology: "MOTIVATOR" },
-  { no: 47, kodeAktivitas: "ADVERTISING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Menyusun kampanye promosi di media massa guna menggenjot daya tarik jasa atau produk.", deskripsiSingkat: "Merancang materi periklanan yang kreatif dan memikat publik", bobotBakatIds: ["ideation", "communication", "woo"], typology: "MARKETER" },
-  { no: 48, kodeAktivitas: "SYNTHESIZING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Mengombinasikan ragam konsep dan gagasan terpisah menjadi inovasi baru yang utuh.", deskripsiSingkat: "Memadukan berbagai elemen ide menjadi satu kesatuan konsep baru", bobotBakatIds: ["ideation", "strategic", "intellection"], typology: "SYNTHESIZER" },
-  { no: 49, kodeAktivitas: "IDEATING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Mencetuskan ide-ide segar dan memberikan sumbang saran pemikiran pada berbagai kesempatan.", deskripsiSingkat: "Memiliki gagasan kreatif terhadap berbagai hal", bobotBakatIds: ["ideation", "futuristic", "strategic", "learner"], typology: "CREATOR" },
-  { no: 50, kodeAktivitas: "CREATING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Mengayunkan daya imajinasi untuk merancang penemuan produk, layanan, atau desain baru.", deskripsiSingkat: "Menciptakan terobosan atau karya orisinal yang belum pernah ada", bobotBakatIds: ["ideation", "futuristic", "intellection"], typology: "CREATOR" },
-  { no: 51, kodeAktivitas: "ANIMATING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Mengolah deretan gambar diam menjadi tayangan animasi dinamis yang tampak bergerak.", deskripsiSingkat: "Membuat visualisasi animasi dan karya multimedia bergerak", bobotBakatIds: ["ideation", "learner", "communication"], typology: "DESIGNER" },
-  { no: 52, kodeAktivitas: "DRAFTING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Merancang sketsa dan visualisasi gambar teknik (technical drawing).", deskripsiSingkat: "Menyusun rancangan draf dan sketsa teknis", bobotBakatIds: ["ideation", "deliberative", "analytical"], typology: "DESIGNER" },
-  { no: 53, kodeAktivitas: "DESIGNING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Membuat gambar cetak biru (blueprint) desain secara rinci beserta spesifikasi detailnya.", deskripsiSingkat: "Merancang arsitektur sistem, produk, atau antarmuka secara utuh", bobotBakatIds: ["ideation", "strategic", "futuristic"], typology: "DESIGNER" },
-  { no: 54, kodeAktivitas: "SERVING", klaster: "S", namaKlaster: "Serving", pernyataan: "Menyediakan pelayanan bagi sesama secara tulus sebagai bentuk pengabdian yang bernilai mulia.", deskripsiSingkat: "Melayani orang lain dengan tulus dan profesional", bobotBakatIds: ["belief", "developer", "adaptability", "responsibility"], typology: "SERVER" },
-  { no: 55, kodeAktivitas: "INFORMING", klaster: "S", namaKlaster: "Serving", pernyataan: "Membagikan wawasan, berita, atau materi pengetahuan kepada pihak lain.", deskripsiSingkat: "Menyampaikan informasi, kabar, atau pengetahuan kepada orang lain", bobotBakatIds: ["communication", "woo", "input", "developer"], typology: "COMMUNICATOR" },
-  { no: 56, kodeAktivitas: "GREETING", klaster: "S", namaKlaster: "Serving", pernyataan: "Menyapa dan menyambut orang lain secara ramah dan sopan, baik kenalan maupun orang baru.", deskripsiSingkat: "Memberikan sapaan yang santun kepada orang lain, baik yang sudah dikenalnya maupun yang belum", bobotBakatIds: ["woo", "communication", "includer", "adaptability"], typology: "AMBASADOR" },
-  { no: 57, kodeAktivitas: "ASSISTING", klaster: "S", namaKlaster: "Serving", pernyataan: "Mendukung dan membantu penyelesaian tugas atasan atau rekan kerja dari posisi pendukung.", deskripsiSingkat: "Membantu seseorang menyelesaikan tugasnya dengan menempatkan diri sebagai mitra pendukung", bobotBakatIds: ["adaptability", "belief", "responsibility", "developer"], typology: "SERVER" },
-  { no: 58, kodeAktivitas: "VOLUNTEERING", klaster: "S", namaKlaster: "Serving", pernyataan: "Melakukan aksi kerelawanan dan bakti sosial tanpa memikirkan pamrih imbalan.", deskripsiSingkat: "Terjun sukarela membantu kegiatan kemanusiaan dan sosial", bobotBakatIds: ["belief", "includer", "responsibility"], typology: "CARETAKER" },
-  { no: 59, kodeAktivitas: "THERAPIES", klaster: "S", namaKlaster: "Serving", pernyataan: "Menjalankan tindakan pemulihan dan rehabilitasi kondisi fisik, mental, atau perilaku seseorang.", deskripsiSingkat: "Memberikan terapi pemulihan bagi individu yang membutuhkan", bobotBakatIds: ["restorative", "empathy", "developer"], typology: "CARETAKER" },
-  { no: 60, kodeAktivitas: "SPIRITUALIZING", klaster: "S", namaKlaster: "Serving", pernyataan: "Melakoni ibadah, pembinaan spiritual, kontemplasi, serta memberikan teladan atau nasihat keagamaan.", deskripsiSingkat: "Membina nilai-nilai spiritualitas, etika, dan keteladanan hidup", bobotBakatIds: ["belief", "connectedness", "intellection"], typology: "EDUCATOR" },
-  { no: 61, kodeAktivitas: "COUNSELING", klaster: "S", namaKlaster: "Serving", pernyataan: "Membantu individu mengurai persoalan pribadi maupun kendala psikologis yang dihadapi.", deskripsiSingkat: "Mendampingi dan memberikan konseling pemecahan masalah personal", bobotBakatIds: ["empathy", "developer", "relator", "belief"], typology: "CARETAKER" },
-  { no: 62, kodeAktivitas: "CARING", klaster: "S", namaKlaster: "Serving", pernyataan: "Memberikan perhatian, layanan kesehatan, atau bantuan kesejahteraan bagi masyarakat.", deskripsiSingkat: "Merawat dan memberikan kepedulian tulus kepada sesama", bobotBakatIds: ["empathy", "belief", "responsibility"], typology: "CARETAKER" },
-  { no: 63, kodeAktivitas: "INTERVIEWING", klaster: "H", namaKlaster: "Headman", pernyataan: "Menerapkan teknik penggalian pertanyaan untuk mengumpulkan informasi berharga.", deskripsiSingkat: "Mewawancarai narasumber atau kandidat untuk menggali profil mendalam", bobotBakatIds: ["communication", "individualization", "input"], typology: "SELECTOR" },
-  { no: 64, kodeAktivitas: "RECRUITING", klaster: "H", namaKlaster: "Headman", pernyataan: "Melakukan seleksi dan merekrut calon anggota atau karyawan yang sesuai kualifikasi.", deskripsiSingkat: "Menyeleksi dan menempatkan talenta terbaik ke dalam organisasi", bobotBakatIds: ["individualization", "woo", "deliberative"], typology: "SELECTOR" },
-  { no: 65, kodeAktivitas: "SELLING", klaster: "H", namaKlaster: "Headman", pernyataan: "Melakukan aktivitas penjualan produk/jasa dengan pendekatan persuasif kepada calon pembeli.", deskripsiSingkat: "Meyakinkan calon klien/pembeli hingga terjadi transaksi", bobotBakatIds: ["woo", "communication", "competition"], typology: "SELLER" },
-  { no: 66, kodeAktivitas: "INFLUENCING", klaster: "H", namaKlaster: "Headman", pernyataan: "Mempengaruhi sudut pandang orang lain agar bersedia mengikuti pemikiran atau saran kita.", deskripsiSingkat: "Menggerakkan audiens atau rekan agar mendukung suatu gagasan", bobotBakatIds: ["communication", "woo", "command"], typology: "MOTIVATOR" },
-  { no: 67, kodeAktivitas: "ENTERTAINING", klaster: "N", namaKlaster: "Networking", pernyataan: "Menghibur dan menceriakan suasana bagi seseorang atau kelompok khalayak.", deskripsiSingkat: "Menciptakan suasana hangat, ceria, dan menghibur bagi audiens", bobotBakatIds: ["woo", "positivity", "communication"], typology: "AMBASADOR" },
-  { no: 68, kodeAktivitas: "BROKERING", klaster: "H", namaKlaster: "Headman", pernyataan: "Menjadi fasilitator penghubung (mediator/broker) dalam merealisasikan transaksi bisnis.", deskripsiSingkat: "Menghubungkan berbagai pihak untuk menciptakan peluang kerja sama", bobotBakatIds: ["woo", "arranger", "strategic"], typology: "SELLER" },
-  { no: 69, kodeAktivitas: "PURCHASING", klaster: "H", namaKlaster: "Headman", pernyataan: "Mengupayakan perolehan nilai/manfaat maksimal saat bertransaksi pembelian barang/jasa.", deskripsiSingkat: "Membeli sesuatu untuk mendapatkan nilai ekonomis terbaik melalui usaha yang cermat dan teliti", bobotBakatIds: ["deliberative", "strategic", "consistency", "responsibility"], typology: "EVALUATOR" },
-  { no: 70, kodeAktivitas: "NEGOTIATING", klaster: "H", namaKlaster: "Headman", pernyataan: "Melakukan negosiasi untuk mencapai titik temu dan kesepakatan yang menguntungkan kedua pihak.", deskripsiSingkat: "Berunding mencari kesepakatan strategis yang saling menguntungkan", bobotBakatIds: ["strategic", "communication", "harmony"], typology: "MEDIATOR" },
-  { no: 71, kodeAktivitas: "INVESTIGATING", klaster: "R", namaKlaster: "Reasoning", pernyataan: "Menyelidiki serta mengumpulkan fakta lapangan secara detail demi menyingkap kebenaran suatu kasus.", deskripsiSingkat: "Menelusuri jejak bukti dan fakta untuk mengungkap suatu persoalan", bobotBakatIds: ["analytical", "deliberative", "input"], typology: "ANALYST" },
-  { no: 72, kodeAktivitas: "INTERROGATING", klaster: "H", namaKlaster: "Headman", pernyataan: "Mengajukan pertanyaan tajam dan mendalam untuk membongkar kronologi fakta peristiwa.", deskripsiSingkat: "Menguji kebenaran keterangan melalui pertanyaan kritis", bobotBakatIds: ["command", "analytical", "deliberative"], typology: "COMMANDER" },
-  { no: 73, kodeAktivitas: "CONTROLLING", klaster: "H", namaKlaster: "Headman", pernyataan: "Menggunakan wewenang kepemimpinan untuk mengarahkan serta memantau kinerja tim.", deskripsiSingkat: "Mengendalikan jalannya operasional agar sesuai sasaran organisasi", bobotBakatIds: ["command", "responsibility", "consistency"], typology: "COMMANDER" },
-  { no: 74, kodeAktivitas: "COLLECTING", klaster: "H", namaKlaster: "Headman", pernyataan: "Menagih kewajiban pembayaran sesuai kesepakatan klausul kontrak kerja sama.", deskripsiSingkat: "Mengumpulkan pemenuhan kewajiban atau sumber daya yang menjadi hak organisasi", bobotBakatIds: ["consistency", "responsibility", "command"], typology: "TREASURER" },
-  { no: 75, kodeAktivitas: "MEDIATING", klaster: "H", namaKlaster: "Headman", pernyataan: "Turun tangan dalam memediasi dan menyelesaikan pertikaian atau konflik yang terjadi.", deskripsiSingkat: "Menjadi penengah yang adil dalam menyelesaikan perselisihan", bobotBakatIds: ["harmony", "consistency", "adaptability"], typology: "MEDIATOR" },
-  { no: 76, kodeAktivitas: "DISPATCHING", klaster: "H", namaKlaster: "Headman", pernyataan: "Menginduksi dan mengutus personel untuk melaksanakan misi tugas di tempat tujuan.", deskripsiSingkat: "Menugaskan dan mengerahkan anggota tim ke titik penugasan", bobotBakatIds: ["arranger", "command", "activator"], typology: "ARRANGER" },
-  { no: 77, kodeAktivitas: "COORDINATING", klaster: "H", namaKlaster: "Headman", pernyataan: "Membagi-bagikan porsi pekerjaan kepada anggota tim agar target bersama tercapai.", deskripsiSingkat: "Menyelaraskan pembagian peran antarbagian agar sinergis", bobotBakatIds: ["arranger", "consistency", "communication"], typology: "ARRANGER" },
-  { no: 78, kodeAktivitas: "COOPERATING", klaster: "N", namaKlaster: "Networking", pernyataan: "Bekerja sama secara aktif dalam tim demi mewujudkan sasaran kelompok yang telah disepakati.", deskripsiSingkat: "Berkolaborasi secara harmonis di dalam kerja kelompok", bobotBakatIds: ["adaptability", "relator", "includer"], typology: "SERVER" },
-  { no: 79, kodeAktivitas: "PRESENTING", klaster: "N", namaKlaster: "Networking", pernyataan: "Menyampaikan penjelasan secara gamblang dan mudah dicerna, baik format formal maupun santai.", deskripsiSingkat: "Memaparkan materi atau gagasan secara meyakinkan di depan audiens", bobotBakatIds: ["communication", "woo", "learner"], typology: "COMMUNICATOR" },
-  { no: 80, kodeAktivitas: "CORRESPONDING", klaster: "N", namaKlaster: "Networking", pernyataan: "Menjalin korespondensi tertulis secara teratur melalui surat elektronik (email) atau pesan resmi.", deskripsiSingkat: "Menjaga komunikasi tertulis yang santun dan berkesinambungan", bobotBakatIds: ["communication", "relator", "responsibility"], typology: "COMMUNICATOR" },
-  { no: 81, kodeAktivitas: "COMMUNICATING", klaster: "N", namaKlaster: "Networking", pernyataan: "Mengungkapkan pemikiran, perasaan, atau instruksi melalui lisan, tulisan, maupun gestur tubuh.", deskripsiSingkat: "Menyampaikan perasaan atau pikiran melalui bahasa lisan, tulisan, atau gerakan tubuh, agar orang lain memahami apa yang disampaikan", bobotBakatIds: ["communication", "woo", "ideation", "adaptability"], typology: "COMMUNICATOR" },
-  { no: 82, kodeAktivitas: "REPRESENTING", klaster: "N", namaKlaster: "Networking", pernyataan: "Bertindak sebagai juru bicara yang mewakili kepentingan pihak atau institusi lain.", deskripsiSingkat: "Mewakili citra dan suara institusi di hadapan pihak eksternal", bobotBakatIds: ["woo", "communication", "belief"], typology: "AMBASADOR" },
-  { no: 83, kodeAktivitas: "RELATING", klaster: "N", namaKlaster: "Networking", pernyataan: "Membangun hubungan jalinan persahabatan atas dasar saling pengertian dan kepedulian.", deskripsiSingkat: "Menjalin keakraban dan kepercayaan interpersonal yang kuat", bobotBakatIds: ["relator", "woo", "developer"], typology: "AMBASADOR" },
-  { no: 84, kodeAktivitas: "LIAISING", klaster: "N", namaKlaster: "Networking", pernyataan: "Menjadi perwakilan organisasi untuk memperluas kemitraan dan membina hubungan baik dengan klien.", deskripsiSingkat: "Menjadi penghubung komunikasi strategis antarlembaga", bobotBakatIds: ["woo", "communication", "relator"], typology: "AMBASADOR" },
-  { no: 85, kodeAktivitas: "GUIDING", klaster: "N", namaKlaster: "Networking", pernyataan: "Mengarahkan dan menuntun langkah pihak lain agar konsisten menuju sasaran yang tepat.", deskripsiSingkat: "Membimbing orang atau pihak lain untuk menemukan sasaran atau jalan yang telah ditetapkan", bobotBakatIds: ["developer", "belief", "strategic", "consistency"], typology: "EDUCATOR" },
-  { no: 86, kodeAktivitas: "MOTIVATING", klaster: "N", namaKlaster: "Networking", pernyataan: "Menyuntikkan motivasi dan optimisme agar orang lain mampu mengeluarkan potensi terbaiknya.", deskripsiSingkat: "Memberikan dorongan semangat dan inspirasi kemajuan bagi orang lain", bobotBakatIds: ["developer", "communication", "futuristic", "belief"], typology: "MOTIVATOR" },
-  { no: 87, kodeAktivitas: "SUPPORTING", klaster: "N", namaKlaster: "Networking", pernyataan: "Memberikan sokongan dan fasilitas agar kelompok kerja dapat beroperasi secara efektif.", deskripsiSingkat: "Mendukung orang atau kelompok lain agar dapat melaksanakan tugasnya secara optimal", bobotBakatIds: ["developer", "adaptability", "belief", "relator"], typology: "SERVER" },
-  { no: 88, kodeAktivitas: "ADVISING", klaster: "N", namaKlaster: "Networking", pernyataan: "Memberikan sumbang saran, konsultasi, dan nasihat konstruktif bagi sesama.", deskripsiSingkat: "Memberikan nasihat atau saran kepada orang lain", bobotBakatIds: ["developer", "strategic", "belief", "intellection"], typology: "EDUCATOR" },
-  { no: 89, kodeAktivitas: "COACHING", klaster: "N", namaKlaster: "Networking", pernyataan: "Bermitra untuk memperjelas visi tujuan dan mengoptimalkan potensi keunggulan rekan kerja.", deskripsiSingkat: "Mendampingi seseorang menggali potensi terbaik untuk mencapai targetnya", bobotBakatIds: ["developer", "maximizer", "individualization"], typology: "MOTIVATOR" },
-  { no: 90, kodeAktivitas: "CONSULTING", klaster: "N", namaKlaster: "Networking", pernyataan: "Merumuskan panduan strategi yang disesuaikan dengan profil dan keunikan masing-masing individu.", deskripsiSingkat: "Memberikan solusi kepakaran untuk menyelesaikan masalah klien/organisasi", bobotBakatIds: ["strategic", "ideation", "developer"], typology: "STRATEGIST" },
-  { no: 91, kodeAktivitas: "MENTORING", klaster: "N", namaKlaster: "Networking", pernyataan: "Mentransfer keterampilan dan membimbing bawahan/anak didik agar berhasil dalam pekerjaannya.", deskripsiSingkat: "Mengajarkan orang lain dengan memberikan contoh dan arahan agar mereka mencapai keberhasilan", bobotBakatIds: ["developer", "learner", "communication", "relator"], typology: "EDUCATOR" },
-  { no: 92, kodeAktivitas: "TEACHING", klaster: "N", namaKlaster: "Networking", pernyataan: "Mengajar serta membagikan wawasan ilmu pengetahuan dengan metode pedagogi yang efektif.", deskripsiSingkat: "Menjelaskan ilmu pengetahuan secara sistematis di ruang belajar", bobotBakatIds: ["developer", "communication", "learner"], typology: "EDUCATOR" },
-  { no: 93, kodeAktivitas: "TRAINING", klaster: "N", namaKlaster: "Networking", pernyataan: "Melatih keahlian teknis dan metode praktis guna menaikkan kompetensi seseorang di bidang khusus.", deskripsiSingkat: "Mengajarkan keterampilan, prosedur, metode, keahlian untuk mengembangkan kemampuan seseorang", bobotBakatIds: ["developer", "learner", "communication", "consistency"], typology: "EDUCATOR" },
-  { no: 94, kodeAktivitas: "ANALYSING", klaster: "T", namaKlaster: "Thinking", pernyataan: "Menelaah sebab-akibat secara mendalam untuk mendeteksi latar belakang fenomena atau proyeksi masa depan.", deskripsiSingkat: "Mengurai permasalahan kompleks menjadi komponen logis yang terukur", bobotBakatIds: ["analytical", "intellection", "strategic"], typology: "ANALYST" },
-  { no: 95, kodeAktivitas: "BOOKKEEPING", klaster: "T", namaKlaster: "Thinking", pernyataan: "Membukukan alur transaksi keuangan (pemasukan/pengeluaran) sesuai kaidah akuntansi baku.", deskripsiSingkat: "Mencatat dan membukukan transaksi keuangan secara tertib", bobotBakatIds: ["consistency", "discipline", "deliberative"], typology: "TREASURER" },
-  { no: 96, kodeAktivitas: "PROGRAMMING", klaster: "T", namaKlaster: "Thinking", pernyataan: "Merancang program aplikasi, arsitektur piranti lunak, atau antarmuka komputasi.", deskripsiSingkat: "Menulis kode algoritma dan membangun sistem perangkat lunak", bobotBakatIds: ["ideation", "learner", "intellection", "strategic"], typology: "CREATOR" },
-  { no: 97, kodeAktivitas: "BUDGETING", klaster: "T", namaKlaster: "Thinking", pernyataan: "Mengelola alokasi, penyimpanan, serta distribusi anggaran keuangan secara teratur.", deskripsiSingkat: "Menyusun rencana anggaran pendapatan dan belanja secara tepat", bobotBakatIds: ["deliberative", "consistency", "strategic"], typology: "TREASURER" },
-  { no: 98, kodeAktivitas: "CASHIERING", klaster: "T", namaKlaster: "Thinking", pernyataan: "Menangani alur penerimaan dan pengeluaran kas sesuai regulasi serta mencatatnya dengan rapi.", deskripsiSingkat: "Melayani transaksi pembayaran kas dengan teliti dan jujur", bobotBakatIds: ["consistency", "responsibility", "deliberative"], typology: "TREASURER" },
-  { no: 99, kodeAktivitas: "COSTING", klaster: "T", namaKlaster: "Thinking", pernyataan: "Memantau dan mengaudit kesesuaian realisasi anggaran belanja proyek terhadap perencanaannya.", deskripsiSingkat: "Menghitung dan mengendalikan komponen biaya produksi/proyek", bobotBakatIds: ["deliberative", "analytical", "consistency"], typology: "TREASURER" },
-  { no: 100, kodeAktivitas: "ESTIMATING", klaster: "T", namaKlaster: "Thinking", pernyataan: "Keahlian menghitung estimasi Rencana Anggaran Biaya (RAB) untuk keperluan tender penawaran.", deskripsiSingkat: "Menaksir kebutuhan biaya, waktu, dan material proyek secara akurat", bobotBakatIds: ["strategic", "deliberative", "analytical"], typology: "EVALUATOR" },
-  { no: 101, kodeAktivitas: "AUDITING", klaster: "T", namaKlaster: "Thinking", pernyataan: "Melakukan audit dan koreksi terhadap kelayakan laporan keuangan berkala.", deskripsiSingkat: "Memeriksa kepatuhan dan akurasi laporan terhadap standar baku", bobotBakatIds: ["consistency", "deliberative", "analytical"], typology: "EVALUATOR" },
-  { no: 102, kodeAktivitas: "INSPECTING", klaster: "T", namaKlaster: "Thinking", pernyataan: "Meneliti rincian pekerjaan secara presisi guna menjamin standar kualitas dan kebenaran.", deskripsiSingkat: "Melakukan inspeksi mutu secara cermat terhadap objek/proses kerja", bobotBakatIds: ["consistency", "deliberative", "responsibility"], typology: "QUALITY CONTROLLER" },
-  { no: 103, kodeAktivitas: "VERIFYING", klaster: "R", namaKlaster: "Reasoning", pernyataan: "Melakukan verifikasi dan komparasi data untuk membuktikan keakuratan informasi.", deskripsiSingkat: "Memastikan kebenaran dan keabsahan data sebelum diputuskan", bobotBakatIds: ["deliberative", "consistency", "analytical"], typology: "EVALUATOR" },
-  { no: 104, kodeAktivitas: "MONITORING", klaster: "Te", namaKlaster: "Technical", pernyataan: "Mengawasi serta mendeteksi potensi penyimpangan atau ketidakseimbangan dalam proses kerja.", deskripsiSingkat: "Memantau indikator jalannya sistem agar tetap berada di batas aman", bobotBakatIds: ["consistency", "deliberative", "responsibility"], typology: "SAFEKEEPER" },
-  { no: 105, kodeAktivitas: "SAFEKEEPING", klaster: "Te", namaKlaster: "Technical", pernyataan: "Menjaga prosedur keselamatan kerja dan melindungi personel/aset dari potensi bahaya kecelakaan.", deskripsiSingkat: "Melindungi keselamatan jiwa, K3, dan keamanan lingkungan kerja", bobotBakatIds: ["responsibility", "deliberative", "consistency"], typology: "SAFEKEEPER" },
-  { no: 106, kodeAktivitas: "SECURING", klaster: "Te", namaKlaster: "Technical", pernyataan: "Mengamankan aset dan inventaris perusahaan dari risiko pencurian, kehilangan, atau kerusakan.", deskripsiSingkat: "Menjaga sistem pengamanan fisik maupun digital dari ancaman", bobotBakatIds: ["deliberative", "responsibility", "consistency"], typology: "SAFEKEEPER" },
-  { no: 107, kodeAktivitas: "DIAGNOSING", klaster: "R", namaKlaster: "Reasoning", pernyataan: "Melakukan diagnosa mendalam untuk menemukan akar penyebab suatu masalah (troubleshooting).", deskripsiSingkat: "Mengidentifikasi gejala dan sumber utama permasalahan", bobotBakatIds: ["restorative", "analytical", "strategic"], typology: "RESTORER" },
-  { no: 108, kodeAktivitas: "IDENTIFYING", klaster: "R", namaKlaster: "Reasoning", pernyataan: "Melakukan verifikasi identitas guna memastikan keabsahan objek atau profil seseorang.", deskripsiSingkat: "Mengenali karakteristik spesifik dari suatu masalah atau subjek", bobotBakatIds: ["deliberative", "individualization", "analytical"], typology: "EVALUATOR" },
-  { no: 109, kodeAktivitas: "APPRAISING", klaster: "R", namaKlaster: "Reasoning", pernyataan: "Melakukan appraisal/penilaian taksiran harga terhadap aset seperti properti, tanah, atau produk.", deskripsiSingkat: "Menilai kelayakan dan nilai ekonomis dari suatu aset", bobotBakatIds: ["deliberative", "analytical", "strategic"], typology: "EVALUATOR" },
-  { no: 110, kodeAktivitas: "EVALUATING", klaster: "T", namaKlaster: "Thinking", pernyataan: "Menimbang dan mengevaluasi kualitas, bobot kepentingan, atau nilai kondisi suatu objek.", deskripsiSingkat: "Menakar efektivitas program serta mengambil kesimpulan evaluasi", bobotBakatIds: ["strategic", "deliberative", "intellection"], typology: "EVALUATOR" },
-  { no: 111, kodeAktivitas: "OBSERVING", klaster: "R", namaKlaster: "Reasoning", pernyataan: "Melakukan pengamatan ilmiah secara cermat terhadap fenomena atau objek studi.", deskripsiSingkat: "Mengamati perilaku atau fenomena secara teliti sebagai bahan kajian", bobotBakatIds: ["intellection", "learner", "input"], typology: "EXPLORER" },
-  { no: 112, kodeAktivitas: "RESEARCHING", klaster: "R", namaKlaster: "Reasoning", pernyataan: "Menjalankan penelitian terstruktur untuk menguji hipotesis, memperbarui teori, atau merumuskan solusi.", deskripsiSingkat: "Melakukan riset mendalam untuk menemukan temuan dan inovasi baru", bobotBakatIds: ["learner", "intellection", "ideation", "strategic"], typology: "EXPLORER" },
-  { no: 113, kodeAktivitas: "SURVEYING", klaster: "R", namaKlaster: "Reasoning", pernyataan: "Menyusun laporan atau evaluasi hasil survei atas pelaksanaan kegiatan yang telah rampung.", deskripsiSingkat: "Mengumpulkan data lapangan melalui pengamatan dan pemetaan survei", bobotBakatIds: ["input", "learner", "consistency"], typology: "EXPLORER" },
-  { no: 114, kodeAktivitas: "REVIEWING", klaster: "R", namaKlaster: "Reasoning", pernyataan: "Mencermati perkembangan situasi/individu secara saksama untuk keperluan penyusunan rekomendasi/opini.", deskripsiSingkat: "Meninjau ulang dokumen atau proses kerja untuk memberikan rekomendasi perbaikan", bobotBakatIds: ["deliberative", "intellection", "strategic"], typology: "EVALUATOR" },
+  { no: 1, kodeAktivitas: "CONCEPTUALIZING", klaster: "R", namaKlaster: "Reasoning", pernyataan: "Merancang acuan dan garis besar langkah masa depan berdasarkan pengamatan, pengalaman, serta keyakinan pribadi.", deskripsiSingkat: "Menyusun konsep dasar dan kerangka berpikir utama dari suatu gagasan", bobotBakatIds: ["ideation", "intellection", "strategic"], typology: "CREATOR" },
+  { no: 2, kodeAktivitas: "EDITING", klaster: "E", namaKlaster: "Elementary", pernyataan: "Mengedit dan menyempurnakan karangan naskah sebelum dipublikasikan ke publik.", deskripsiSingkat: "Memperbaiki dan merapikan naskah tulisan agar enak dibaca", bobotBakatIds: ["communication", "maximizer", "discipline"], typology: "JOURNALIST" },
+  { no: 3, kodeAktivitas: "REDACTING", klaster: "E", namaKlaster: "Elementary", pernyataan: "Menentukan pokok gagasan serta merestrukturisasi berkas tulisan yang siap diedarkan.", deskripsiSingkat: "Menata ulang alur dan pokok pikiran dokumen publikasi", bobotBakatIds: ["communication", "input", "arranger"], typology: "JOURNALIST" },
+  { no: 4, kodeAktivitas: "REPORTING", klaster: "E", namaKlaster: "Elementary", pernyataan: "Melaporkan dan mengomunikasikan perkembangan situasi yang sedang atau telah berlangsung secara lisan maupun tertulis.", deskripsiSingkat: "Menyampaikan laporan kejadian atau progres kegiatan secara jelas", bobotBakatIds: ["communication", "context", "responsibility"], typology: "JOURNALIST" },
+  { no: 5, kodeAktivitas: "WRITING", klaster: "E", namaKlaster: "Elementary", pernyataan: "Menyusun karya tulis, materi edukasi, cerita, maupun gagasan konseptual.", deskripsiSingkat: "Menulis artikel, cerita, modul belajar, atau ide tertulis", bobotBakatIds: ["communication", "ideation", "intellection"], typology: "JOURNALIST" },
+  { no: 6, kodeAktivitas: "INTERPRETING", klaster: "E", namaKlaster: "Elementary", pernyataan: "Menerangkan dan menguraikan substansi serta makna mendasar dari suatu topik.", deskripsiSingkat: "Menguraikan arti penting dari suatu istilah atau topik rumit", bobotBakatIds: ["communication", "intellection", "individualization"], typology: "INTERPRETER" },
+  { no: 7, kodeAktivitas: "TRANSCRIBING", klaster: "E", namaKlaster: "Elementary", pernyataan: "Menyadur ulang isi ringkasan atau naskah steno secara terperinci dan rinci.", deskripsiSingkat: "Mencatat ulang hasil pembicaraan atau rapat secara lengkap", bobotBakatIds: ["discipline", "context", "responsibility"], typology: "ADMINISTRATOR" },
+  { no: 8, kodeAktivitas: "TRANSLATING", klaster: "E", namaKlaster: "Elementary", pernyataan: "Mengalihbahasakan pesan lisan maupun tertulis agar mudah dimengerti audiens dari latar bahasa berbeda.", deskripsiSingkat: "Menerjemahkan bahasa asing agar mudah dipahami", bobotBakatIds: ["communication", "learner", "input"], typology: "INTERPRETER" },
+  { no: 9, kodeAktivitas: "COMPLIANCING", klaster: "E", namaKlaster: "Elementary", pernyataan: "Menjalankan serta menegakkan kedisiplinan sesuai ketentuan dan regulasi baku.", deskripsiSingkat: "Menjaga ketertiban dan memastikan aturan bersama dipatuhi", bobotBakatIds: ["consistency", "responsibility", "deliberative", "belief"], typology: "ADMINISTRATOR" },
+  { no: 10, kodeAktivitas: "FILING", klaster: "E", namaKlaster: "Elementary", pernyataan: "Mengarsip berkas pada tempat yang tepat agar mempermudah proses pencarian ulang.", deskripsiSingkat: "Merapikan penyimpanan file dan dokumen agar mudah dicari", bobotBakatIds: ["discipline", "consistency", "input"], typology: "ADMINISTRATOR" },
+  { no: 11, kodeAktivitas: "HOUSEKEEPING", klaster: "E", namaKlaster: "Elementary", pernyataan: "Menata, membersihkan, serta merapikan sarana kerja maupun area ruangan.", deskripsiSingkat: "Menata kebersihan dan kerapian ruang belajar atau ruang kerja", bobotBakatIds: ["discipline", "responsibility", "belief"], typology: "SERVER" },
+  { no: 12, kodeAktivitas: "ORGANISING", klaster: "E", namaKlaster: "Elementary", pernyataan: "Merancang dan mengoordinasikan susunan acara, tata kerja, serta mekanisme prosedur.", deskripsiSingkat: "Menyusun kepanitiaan, alur acara, dan tata cara kerja", bobotBakatIds: ["arranger", "discipline", "responsibility"], typology: "ADMINISTRATOR" },
+  { no: 13, kodeAktivitas: "SCHEDULING", klaster: "E", namaKlaster: "Elementary", pernyataan: "Menyusun urutan prioritas tindakan untuk periode waktu tertentu.", deskripsiSingkat: "Membuat jadwal kegiatan harian/mingguan yang teratur", bobotBakatIds: ["discipline", "focus", "arranger"], typology: "ADMINISTRATOR" },
+  { no: 14, kodeAktivitas: "TYPEWRITING", klaster: "E", namaKlaster: "Elementary", pernyataan: "Menginput data dan mengetik dokumen untuk menghasilkan laporan atau artikel.", deskripsiSingkat: "Mengetik dokumen dan memasukkan data administrasi dengan rapi", bobotBakatIds: ["discipline", "achiever", "consistency"], typology: "ADMINISTRATOR" },
+  { no: 15, kodeAktivitas: "ASSEMBLING", klaster: "Te", namaKlaster: "Technical", pernyataan: "Merakit berbagai elemen komponen menjadi kesatuan produk utuh yang siap difungsikan.", deskripsiSingkat: "Merakit komponen alat atau perangkat elektronik hingga menyala", bobotBakatIds: ["arranger", "achiever", "restorative"], typology: "PRODUCER" },
+  { no: 16, kodeAktivitas: "BUILDING", klaster: "Te", namaKlaster: "Technical", pernyataan: "Mengonstruksi fasilitas fisik seperti hunian, gedung, jembatan, atau infrastruktur bangunan.", deskripsiSingkat: "Membangun konstruksi bangunan atau karya fisik", bobotBakatIds: ["achiever", "focus", "responsibility"], typology: "PRODUCER" },
+  { no: 17, kodeAktivitas: "INSTALLING", klaster: "Te", namaKlaster: "Technical", pernyataan: "Memasang dan memasangkan komponen mekanis (seperti baut/mur) agar mesin beroperasi sempurna.", deskripsiSingkat: "Memasang perangkat teknis atau instalasi peralatan", bobotBakatIds: ["restorative", "discipline", "achiever"], typology: "OPERATOR" },
+  { no: 18, kodeAktivitas: "PRODUCING", klaster: "Te", namaKlaster: "Technical", pernyataan: "Memproduksi barang setengah jadi maupun produk akhir secara nyata.", deskripsiSingkat: "Menghasilkan produk atau karya nyata secara konsisten", bobotBakatIds: ["achiever", "focus", "consistency"], typology: "PRODUCER" },
+  { no: 19, kodeAktivitas: "FINISHING", klaster: "Te", namaKlaster: "Technical", pernyataan: "Mengeksekusi penyelesaian tahap akhir (finishing) dari rangkaian proyek atau manufaktur.", deskripsiSingkat: "Menyempurnakan sentuhan akhir sebuah karya atau proyek", bobotBakatIds: ["maximizer", "responsibility", "focus"], typology: "QUALITY CONTROLLER" },
+  { no: 20, kodeAktivitas: "TESTING", klaster: "Te", namaKlaster: "Technical", pernyataan: "Menguji coba kinerja sistem atau alat untuk memastikan fungsi operasionalnya sesuai standar.", deskripsiSingkat: "Menguji coba alat atau aplikasi agar bebas dari error", bobotBakatIds: ["deliberative", "analytical", "restorative"], typology: "QUALITY CONTROLLER" },
+  { no: 21, kodeAktivitas: "DELIVERING", klaster: "Te", namaKlaster: "Technical", pernyataan: "Mengirimkan paket, dokumen, atau pesanan barang ke alamat tujuan dengan tepat.", deskripsiSingkat: "Mengantarkan kiriman atau amanah tugas sampai ke tujuan", bobotBakatIds: ["responsibility", "adaptability", "achiever"], typology: "DISTRIBUTOR" },
+  { no: 22, kodeAktivitas: "DISTRIBUTING", klaster: "Te", namaKlaster: "Technical", pernyataan: "Mendistribusikan berkas, materi, atau informasi secara serentak ke berbagai wilayah tujuan.", deskripsiSingkat: "Membagikan perlengkapan atau informasi ke banyak penerima", bobotBakatIds: ["arranger", "consistency", "responsibility"], typology: "DISTRIBUTOR" },
+  { no: 23, kodeAktivitas: "MAINTAINING", klaster: "Te", namaKlaster: "Technical", pernyataan: "Melakukan perawatan rutin untuk menjaga keandalan fasilitas, mesin, atau sarana fisik.", deskripsiSingkat: "Merawat perangkat dan fasilitas agar awet dan siap pakai", bobotBakatIds: ["restorative", "responsibility", "consistency"], typology: "OPERATOR" },
+  { no: 24, kodeAktivitas: "OPERATING", klaster: "Te", namaKlaster: "Technical", pernyataan: "Mengoperasikan serta mengendalikan peralatan mekanis, mesin, atau alur proses operasional.", deskripsiSingkat: "Mengendalikan mesin atau peralatan kerja teknis", bobotBakatIds: ["adaptability", "consistency", "focus"], typology: "OPERATOR" },
+  { no: 25, kodeAktivitas: "RESTORING", klaster: "R", namaKlaster: "Reasoning", pernyataan: "Memperbaiki dan merestorasi alat atau kondisi seseorang agar kembali berfungsi normal.", deskripsiSingkat: "Memperbaiki perangkat atau sistem yang rusak hingga normal", bobotBakatIds: ["restorative", "analytical", "strategic"], typology: "RESTORER" },
+  { no: 26, kodeAktivitas: "TENDING ANIMAL", klaster: "Te", namaKlaster: "Technical", pernyataan: "Merawat, memelihara, melatih, serta membudidayakan hewan ternak atau peliharaan.", deskripsiSingkat: "Menyayangi, melatih, dan merawat hewan peliharaan/ternak", bobotBakatIds: ["empathy", "developer", "responsibility"], typology: "CARETAKER" },
+  { no: 27, kodeAktivitas: "SPORT", klaster: "Te", namaKlaster: "Technical", pernyataan: "Berpartisipasi aktif dalam kegiatan cabang olahraga hingga meraih pencapaian dan prestasi.", deskripsiSingkat: "Berlatih olahraga dan menjaga kebugaran fisik untuk berprestasi", bobotBakatIds: ["competition", "achiever", "focus"], typology: "PRODUCER" },
+  { no: 28, kodeAktivitas: "PLANTING", klaster: "Te", namaKlaster: "Technical", pernyataan: "Bercocok tanam, mengolah media tanam, serta memelihara pertumbuhan tanaman.", deskripsiSingkat: "Menanam dan merawat tumbuhan hingga tumbuh subur", bobotBakatIds: ["developer", "connectedness", "responsibility"], typology: "CARETAKER" },
+  { no: 29, kodeAktivitas: "PHYSICAL SKILL", klaster: "Te", namaKlaster: "Technical", pernyataan: "Menggunakan ketangkasan dan koordinasi motorik tubuh dalam menangani peralatan atau aktivitas fisik berat.", deskripsiSingkat: "Mengandalkan ketangkasan gerak tubuh di lapangan", bobotBakatIds: ["achiever", "adaptability", "activator"], typology: "OPERATOR" },
+  { no: 30, kodeAktivitas: "MANUAL SKILL", klaster: "Te", namaKlaster: "Technical", pernyataan: "Mengerjakan tugas-tugas yang mengandalkan keahlian manual serta kerajinan tangan.", deskripsiSingkat: "Membuat prakarya dan kerajinan tangan dengan terampil", bobotBakatIds: ["maximizer", "focus", "deliberative"], typology: "PRODUCER" },
+  { no: 31, kodeAktivitas: "VISUAL ART", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Mengembangkan karya seni visual seperti lukisan, ilustrasi, patung, atau rancangan grafis.", deskripsiSingkat: "Menggambar ilustrasi, melukis, atau membuat desain grafis", bobotBakatIds: ["ideation", "maximizer", "futuristic"], typology: "DESIGNER" },
+  { no: 32, kodeAktivitas: "SINGING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Menampilkan pertunjukan olah vokal atau bernyanyi di hadapan khalayak umum.", deskripsiSingkat: "Bernyanyi dan menampilkan seni olah suara", bobotBakatIds: ["communication", "significance", "positivity"], typology: "AMBASADOR" },
+  { no: 33, kodeAktivitas: "MUSICAL ART", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Mengarang lagu, memainkan instrumen, atau berkarya di bidang seni musik.", deskripsiSingkat: "Memainkan alat musik atau menciptakan aransemen lagu", bobotBakatIds: ["ideation", "empathy", "harmony"], typology: "CREATOR" },
+  { no: 34, kodeAktivitas: "MODELLING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Peran memperagakan busana dan menjadi peraga mode (fashion model).", deskripsiSingkat: "Tampil percaya diri memperagakan karya busana atau produk", bobotBakatIds: ["significance", "woo", "self_assurance"], typology: "AMBASADOR" },
+  { no: 35, kodeAktivitas: "DRAMATIZING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Mengemas ulang narasi atau cerita agar terasa lebih emosional dan memikat pendengar.", deskripsiSingkat: "Membawakan cerita dengan penuh penghayatan agar menyentuh hati", bobotBakatIds: ["communication", "empathy", "ideation"], typology: "COMMUNICATOR" },
+  { no: 36, kodeAktivitas: "DANCING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Mengekspresikan seni gerak tari yang indah dan harmonis sesuai irama musik.", deskripsiSingkat: "Menampilkan keindahan gerak tari sesuai irama", bobotBakatIds: ["adaptability", "positivity", "harmony"], typology: "CREATOR" },
+  { no: 37, kodeAktivitas: "COOKING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Mengolah bahan masakan dan menciptakan produk seni kuliner.", deskripsiSingkat: "Memasak dan berkreasi membuat hidangan kuliner lezat", bobotBakatIds: ["ideation", "arranger", "belief"], typology: "CREATOR" },
+  { no: 38, kodeAktivitas: "CONSERVING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Melestarikan warisan budaya serta kelestarian alam dari ancaman kerusakan atau kepunahan.", deskripsiSingkat: "Menjaga kelestarian alam, lingkungan hijau, dan budaya", bobotBakatIds: ["connectedness", "belief", "context"], typology: "SAFEKEEPER" },
+  { no: 39, kodeAktivitas: "BEAUTIFYING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Memoles serta memperindah estetika tampilan visual objek atau penampilan seseorang.", deskripsiSingkat: "Menghias dan mempercantik tampilan ruangan, karya, atau objek", bobotBakatIds: ["maximizer", "ideation", "individualization"], typology: "DESIGNER" },
+  { no: 40, kodeAktivitas: "ACTING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Memerankan watak atau karakter yang berbeda dari kepribadian asli di panggung/pentas.", deskripsiSingkat: "Berakting memerankan tokoh di drama, film, atau pentas seni", bobotBakatIds: ["significance", "communication", "empathy"], typology: "COMMUNICATOR" },
+  { no: 41, kodeAktivitas: "VISIONING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Memproyeksikan kecenderungan masa depan serta menetapkan target sasaran secara presisi.", deskripsiSingkat: "Melihat tren masa depan dan menentukan cita-cita jangka panjang", bobotBakatIds: ["futuristic", "strategic", "ideation"], typology: "VISIONARY" },
+  { no: 42, kodeAktivitas: "STRATEGIZING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Merumuskan strategi dan opsi rute terbaik menuju sasaran yang belum terpikirkan pihak lain.", deskripsiSingkat: "Menyusun taktik jitu dan jalur alternatif terbaik menuju target", bobotBakatIds: ["strategic", "ideation", "futuristic"], typology: "STRATEGIST" },
+  { no: 43, kodeAktivitas: "PLANNING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Merancang rencana kerja, mengonstruksi skedul prioritas, serta mengevaluasi kebijakan organisasi.", deskripsiSingkat: "Merencanakan langkah kerja dan persiapan kegiatan secara matang", bobotBakatIds: ["strategic", "deliberative", "focus"], typology: "STRATEGIST" },
+  { no: 44, kodeAktivitas: "PUBLICIZING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Mengomunikasikan keunggulan produk atau informasi agar dikenal dan diminati khalayak luas.", deskripsiSingkat: "Mempublikasikan info penting atau karya agar dikenal luas oleh masyarakat", bobotBakatIds: ["communication", "woo", "ideation"], typology: "COMMUNICATOR" },
+  { no: 45, kodeAktivitas: "MARKETING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Merancang strategi pemasaran komprehensif agar calon konsumen tertarik membeli produk/jasa secara berkelanjutan.", deskripsiSingkat: "Merancang strategi pemasaran agar produk/karya diminati banyak orang", bobotBakatIds: ["strategic", "communication", "ideation", "woo"], typology: "MARKETER" },
+  { no: 46, kodeAktivitas: "DEVELOPING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Mendorong pembaruan untuk mengubah kondisi sesuatu/seseorang menjadi lebih berkembang, kuat, dan maju.", deskripsiSingkat: "Mengembangkan program atau sistem agar makin maju dan meningkat", bobotBakatIds: ["developer", "ideation", "futuristic"], typology: "MOTIVATOR" },
+  { no: 47, kodeAktivitas: "ADVERTISING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Menyusun kampanye promosi di media massa guna menggenjot daya tarik jasa atau produk.", deskripsiSingkat: "Membuat konten poster, video, atau kampanye iklan yang kreatif", bobotBakatIds: ["ideation", "communication", "woo"], typology: "MARKETER" },
+  { no: 48, kodeAktivitas: "SYNTHESIZING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Mengombinasikan ragam konsep dan gagasan terpisah menjadi inovasi baru yang utuh.", deskripsiSingkat: "Menggabungkan berbagai ide bagus menjadi satu solusi baru yang utuh", bobotBakatIds: ["ideation", "strategic", "intellection"], typology: "SYNTHESIZER" },
+  { no: 49, kodeAktivitas: "IDEATING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Mencetuskan ide-ide segar dan memberikan sumbang saran pemikiran pada berbagai kesempatan.", deskripsiSingkat: "Melahirkan ide-ide kreatif dan solusi unik untuk berbagai hal", bobotBakatIds: ["ideation", "futuristic", "strategic", "learner"], typology: "CREATOR" },
+  { no: 50, kodeAktivitas: "CREATING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Mengayunkan daya imajinasi untuk merancang penemuan produk, layanan, atau desain baru.", deskripsiSingkat: "Menciptakan karya orisinal atau penemuan baru yang bermanfaat", bobotBakatIds: ["ideation", "futuristic", "intellection"], typology: "CREATOR" },
+  { no: 51, kodeAktivitas: "ANIMATING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Mengolah deretan gambar diam menjadi tayangan animasi dinamis yang tampak bergerak.", deskripsiSingkat: "Membuat karya animasi bergerak dan multimedia interaktif", bobotBakatIds: ["ideation", "learner", "communication"], typology: "DESIGNER" },
+  { no: 52, kodeAktivitas: "DRAFTING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Merancang sketsa dan visualisasi gambar teknik (technical drawing).", deskripsiSingkat: "Menggambar sketsa awal dan rancangan teknis", bobotBakatIds: ["ideation", "deliberative", "analytical"], typology: "DESIGNER" },
+  { no: 53, kodeAktivitas: "DESIGNING", klaster: "Gi", namaKlaster: "Generating Idea", pernyataan: "Membuat gambar cetak biru (blueprint) desain secara rinci beserta spesifikasi detailnya.", deskripsiSingkat: "Merancang desain tampilan produk, web, atau arsitektur sistem", bobotBakatIds: ["ideation", "strategic", "futuristic"], typology: "DESIGNER" },
+  { no: 54, kodeAktivitas: "SERVING", klaster: "S", namaKlaster: "Serving", pernyataan: "Menyediakan pelayanan bagi sesama secara tulus sebagai bentuk pengabdian yang bernilai mulia.", deskripsiSingkat: "Melayani dan membantu kebutuhan orang lain dengan sepenuh hati", bobotBakatIds: ["belief", "developer", "adaptability", "responsibility"], typology: "SERVER" },
+  { no: 55, kodeAktivitas: "INFORMING", klaster: "S", namaKlaster: "Serving", pernyataan: "Membagikan wawasan, berita, atau materi pengetahuan kepada pihak lain.", deskripsiSingkat: "Membagikan informasi bermanfaat dan pengetahuan baru kepada teman", bobotBakatIds: ["communication", "woo", "input", "developer"], typology: "COMMUNICATOR" },
+  { no: 56, kodeAktivitas: "GREETING", klaster: "S", namaKlaster: "Serving", pernyataan: "Menyapa dan menyambut orang lain secara ramah dan sopan, baik kenalan maupun orang baru.", deskripsiSingkat: "Menyapa dan menyambut tamu atau teman baru dengan hangat dan santun", bobotBakatIds: ["woo", "communication", "includer", "adaptability"], typology: "AMBASADOR" },
+  { no: 57, kodeAktivitas: "ASSISTING", klaster: "S", namaKlaster: "Serving", pernyataan: "Mendukung dan membantu penyelesaian tugas atasan atau rekan kerja dari posisi pendukung.", deskripsiSingkat: "Membantu rekan atau ketua tim menuntaskan pekerjaan bersama", bobotBakatIds: ["adaptability", "belief", "responsibility", "developer"], typology: "SERVER" },
+  { no: 58, kodeAktivitas: "VOLUNTEERING", klaster: "S", namaKlaster: "Serving", pernyataan: "Melakukan aksi kerelawanan dan bakti sosial tanpa memikirkan pamrih imbalan.", deskripsiSingkat: "Menjadi relawan kegiatan sosial dan kemanusiaan secara tulus", bobotBakatIds: ["belief", "includer", "responsibility"], typology: "CARETAKER" },
+  { no: 59, kodeAktivitas: "THERAPIES", klaster: "S", namaKlaster: "Serving", pernyataan: "Menjalankan tindakan pemulihan dan rehabilitasi kondisi fisik, mental, atau perilaku seseorang.", deskripsiSingkat: "Mendampingi pemulihan kesehatan fisik atau semangat seseorang", bobotBakatIds: ["restorative", "empathy", "developer"], typology: "CARETAKER" },
+  { no: 60, kodeAktivitas: "SPIRITUALIZING", klaster: "S", namaKlaster: "Serving", pernyataan: "Melakoni ibadah, pembinaan spiritual, kontemplasi, serta memberikan teladan atau nasihat keagamaan.", deskripsiSingkat: "Menjaga nilai ibadah, akhlak mulia, dan memberikan teladan kebaikan", bobotBakatIds: ["belief", "connectedness", "intellection"], typology: "EDUCATOR" },
+  { no: 61, kodeAktivitas: "COUNSELING", klaster: "S", namaKlaster: "Serving", pernyataan: "Membantu individu mengurai persoalan pribadi maupun kendala psikologis yang dihadapi.", deskripsiSingkat: "Menjadi pendengar yang baik dan membantu teman keluar dari masalahnya", bobotBakatIds: ["empathy", "developer", "relator", "belief"], typology: "CARETAKER" },
+  { no: 62, kodeAktivitas: "CARING", klaster: "S", namaKlaster: "Serving", pernyataan: "Memberikan perhatian, layanan kesehatan, atau bantuan kesejahteraan bagi masyarakat.", deskripsiSingkat: "Memberikan perhatian dan kepedulian nyata kepada sesama", bobotBakatIds: ["empathy", "belief", "responsibility"], typology: "CARETAKER" },
+  { no: 63, kodeAktivitas: "INTERVIEWING", klaster: "H", namaKlaster: "Headman", pernyataan: "Menerapkan teknik penggalian pertanyaan untuk mengumpulkan informasi berharga.", deskripsiSingkat: "Menggali informasi mendalam lewat tanya-jawab dan wawancara", bobotBakatIds: ["communication", "individualization", "input"], typology: "SELECTOR" },
+  { no: 64, kodeAktivitas: "RECRUITING", klaster: "H", namaKlaster: "Headman", pernyataan: "Melakukan seleksi dan merekrut calon anggota atau karyawan yang sesuai kualifikasi.", deskripsiSingkat: "Mengajak dan menyeleksi anggota tim yang tepat untuk bergabung", bobotBakatIds: ["individualization", "woo", "deliberative"], typology: "SELECTOR" },
+  { no: 65, kodeAktivitas: "SELLING", klaster: "H", namaKlaster: "Headman", pernyataan: "Melakukan aktivitas penjualan produk/jasa dengan pendekatan persuasif kepada calon pembeli.", deskripsiSingkat: "Menawarkan karya atau produk dengan ramah hingga orang tertarik membeli", bobotBakatIds: ["woo", "communication", "competition"], typology: "SELLER" },
+  { no: 66, kodeAktivitas: "INFLUENCING", klaster: "H", namaKlaster: "Headman", pernyataan: "Mempengaruhi sudut pandang orang lain agar bersedia mengikuti pemikiran atau saran kita.", deskripsiSingkat: "Meyakinkan orang lain agar mendukung ide atau gerakan positif", bobotBakatIds: ["communication", "woo", "command"], typology: "MOTIVATOR" },
+  { no: 67, kodeAktivitas: "ENTERTAINING", klaster: "N", namaKlaster: "Networking", pernyataan: "Menghibur dan menceriakan suasana bagi seseorang atau kelompok khalayak.", deskripsiSingkat: "Menghibur teman-teman dan membuat suasana acara jadi hidup", bobotBakatIds: ["woo", "positivity", "communication"], typology: "AMBASADOR" },
+  { no: 68, kodeAktivitas: "BROKERING", klaster: "H", namaKlaster: "Headman", pernyataan: "Menjadi fasilitator penghubung (mediator/broker) dalam merealisasikan transaksi bisnis.", deskripsiSingkat: "Menghubungkan dua pihak agar bisa saling bekerja sama", bobotBakatIds: ["woo", "arranger", "strategic"], typology: "SELLER" },
+  { no: 69, kodeAktivitas: "PURCHASING", klaster: "H", namaKlaster: "Headman", pernyataan: "Mengupayakan perolehan nilai/manfaat maksimal saat bertransaksi pembelian barang/jasa.", deskripsiSingkat: "Memilih dan membeli barang berkualitas terbaik dengan harga paling hemat", bobotBakatIds: ["deliberative", "strategic", "consistency", "responsibility"], typology: "EVALUATOR" },
+  { no: 70, kodeAktivitas: "NEGOTIATING", klaster: "H", namaKlaster: "Headman", pernyataan: "Melakukan negosiasi untuk mencapai titik temu dan kesepakatan yang menguntungkan kedua pihak.", deskripsiSingkat: "Berunding mencari kesepakatan yang adil dan menguntungkan semua pihak", bobotBakatIds: ["strategic", "communication", "harmony"], typology: "MEDIATOR" },
+  { no: 71, kodeAktivitas: "INVESTIGATING", klaster: "R", namaKlaster: "Reasoning", pernyataan: "Menyelidiki serta mengumpulkan fakta lapangan secara detail demi menyingkap kebenaran suatu kasus.", deskripsiSingkat: "Menelusuri bukti dan fakta lapangan layaknya detektif", bobotBakatIds: ["analytical", "deliberative", "input"], typology: "ANALYST" },
+  { no: 72, kodeAktivitas: "INTERROGATING", klaster: "H", namaKlaster: "Headman", pernyataan: "Mengajukan pertanyaan tajam dan mendalam untuk membongkar kronologi fakta peristiwa.", deskripsiSingkat: "Mengajukan pertanyaan kritis untuk menguji kebenaran informasi", bobotBakatIds: ["command", "analytical", "deliberative"], typology: "COMMANDER" },
+  { no: 73, kodeAktivitas: "CONTROLLING", klaster: "H", namaKlaster: "Headman", pernyataan: "Menggunakan wewenang kepemimpinan untuk mengarahkan serta memantau kinerja tim.", deskripsiSingkat: "Memimpin dan mengawasi jalannya kegiatan tim agar tetap sesuai target", bobotBakatIds: ["command", "responsibility", "consistency"], typology: "COMMANDER" },
+  { no: 74, kodeAktivitas: "COLLECTING", klaster: "H", namaKlaster: "Headman", pernyataan: "Menagih kewajiban pembayaran sesuai kesepakatan klausul kontrak kerja sama.", deskripsiSingkat: "Mengumpulkan iuran, data, atau komitmen yang sudah disepakati bersama", bobotBakatIds: ["consistency", "responsibility", "command"], typology: "TREASURER" },
+  { no: 75, kodeAktivitas: "MEDIATING", klaster: "H", namaKlaster: "Headman", pernyataan: "Turun tangan dalam memediasi dan menyelesaikan pertikaian atau konflik yang terjadi.", deskripsiSingkat: "Menjadi penengah yang mendamaikan teman yang sedang berselisih", bobotBakatIds: ["harmony", "consistency", "adaptability"], typology: "MEDIATOR" },
+  { no: 76, kodeAktivitas: "DISPATCHING", klaster: "H", namaKlaster: "Headman", pernyataan: "Menginduksi dan mengutus personel untuk melaksanakan misi tugas di tempat tujuan.", deskripsiSingkat: "Mengatur penugasan anggota tim ke lapangan dengan cepat", bobotBakatIds: ["arranger", "command", "activator"], typology: "ARRANGER" },
+  { no: 77, kodeAktivitas: "COORDINATING", klaster: "H", namaKlaster: "Headman", pernyataan: "Membagi-bagikan porsi pekerjaan kepada anggota tim agar target bersama tercapai.", deskripsiSingkat: "Mengatur kerja sama antarbagian agar berjalan kompak", bobotBakatIds: ["arranger", "consistency", "communication"], typology: "ARRANGER" },
+  { no: 78, kodeAktivitas: "COOPERATING", klaster: "N", namaKlaster: "Networking", pernyataan: "Bekerja sama secara aktif dalam tim demi mewujudkan sasaran kelompok yang telah disepakati.", deskripsiSingkat: "Bekerja sama dengan kompak di dalam kelompok", bobotBakatIds: ["adaptability", "relator", "includer"], typology: "SERVER" },
+  { no: 79, kodeAktivitas: "PRESENTING", klaster: "N", namaKlaster: "Networking", pernyataan: "Menyampaikan penjelasan secara gamblang dan mudah dicerna, baik format formal maupun santai.", deskripsiSingkat: "Membawakan presentasi di depan kelas atau forum dengan menarik", bobotBakatIds: ["communication", "woo", "learner"], typology: "COMMUNICATOR" },
+  { no: 80, kodeAktivitas: "CORRESPONDING", klaster: "N", namaKlaster: "Networking", pernyataan: "Menjalin korespondensi tertulis secara teratur melalui surat elektronik (email) atau pesan resmi.", deskripsiSingkat: "Menjaga komunikasi pesan tertulis atau email secara santun", bobotBakatIds: ["communication", "relator", "responsibility"], typology: "COMMUNICATOR" },
+  { no: 81, kodeAktivitas: "COMMUNICATING", klaster: "N", namaKlaster: "Networking", pernyataan: "Mengungkapkan pemikiran, perasaan, atau instruksi melalui lisan, tulisan, maupun gestur tubuh.", deskripsiSingkat: "Menyampaikan ide dan pikiran secara lisan maupun tulisan agar mudah dipahami orang lain", bobotBakatIds: ["communication", "woo", "ideation", "adaptability"], typology: "COMMUNICATOR" },
+  { no: 82, kodeAktivitas: "REPRESENTING", klaster: "N", namaKlaster: "Networking", pernyataan: "Bertindak sebagai juru bicara yang mewakili kepentingan pihak atau institusi lain.", deskripsiSingkat: "Menjadi juru bicara atau duta yang mewakili kelompok/sekolah", bobotBakatIds: ["woo", "communication", "belief"], typology: "AMBASADOR" },
+  { no: 83, kodeAktivitas: "RELATING", klaster: "N", namaKlaster: "Networking", pernyataan: "Membangun hubungan jalinan persahabatan atas dasar saling pengertian dan kepedulian.", deskripsiSingkat: "Menjalin persahabatan yang akrab dan saling percaya", bobotBakatIds: ["relator", "woo", "developer"], typology: "AMBASADOR" },
+  { no: 84, kodeAktivitas: "LIAISING", klaster: "N", namaKlaster: "Networking", pernyataan: "Menjadi perwakilan organisasi untuk memperluas kemitraan dan membina hubungan baik dengan klien.", deskripsiSingkat: "Menjadi penghubung kerja sama dengan komunitas atau lembaga luar", bobotBakatIds: ["woo", "communication", "relator"], typology: "AMBASADOR" },
+  { no: 85, kodeAktivitas: "GUIDING", klaster: "N", namaKlaster: "Networking", pernyataan: "Mengarahkan dan menuntun langkah pihak lain agar konsisten menuju sasaran yang tepat.", deskripsiSingkat: "Menuntun dan mengarahkan teman agar tetap berada di jalur yang benar", bobotBakatIds: ["developer", "belief", "strategic", "consistency"], typology: "EDUCATOR" },
+  { no: 86, kodeAktivitas: "MOTIVATING", klaster: "N", namaKlaster: "Networking", pernyataan: "Menyuntikkan motivasi dan optimisme agar orang lain mampu mengeluarkan potensi terbaiknya.", deskripsiSingkat: "Memberikan semangat agar teman-teman berani maju dan berkembang", bobotBakatIds: ["developer", "communication", "futuristic", "belief"], typology: "MOTIVATOR" },
+  { no: 87, kodeAktivitas: "SUPPORTING", klaster: "N", namaKlaster: "Networking", pernyataan: "Memberikan sokongan dan fasilitas agar kelompok kerja dapat beroperasi secara efektif.", deskripsiSingkat: "Memberikan dukungan agar tim bisa bekerja dengan nyaman dan optimal", bobotBakatIds: ["developer", "adaptability", "belief", "relator"], typology: "SERVER" },
+  { no: 88, kodeAktivitas: "ADVISING", klaster: "N", namaKlaster: "Networking", pernyataan: "Memberikan sumbang saran, konsultasi, dan nasihat konstruktif bagi sesama.", deskripsiSingkat: "Memberikan masukan dan saran bijak yang membangun bagi teman", bobotBakatIds: ["developer", "strategic", "belief", "intellection"], typology: "EDUCATOR" },
+  { no: 89, kodeAktivitas: "COACHING", klaster: "N", namaKlaster: "Networking", pernyataan: "Bermitra untuk memperjelas visi tujuan dan mengoptimalkan potensi keunggulan rekan kerja.", deskripsiSingkat: "Mendampingi teman menggali potensi terbaiknya untuk meraih prestasi", bobotBakatIds: ["developer", "maximizer", "individualization"], typology: "MOTIVATOR" },
+  { no: 90, kodeAktivitas: "CONSULTING", klaster: "N", namaKlaster: "Networking", pernyataan: "Merumuskan panduan strategi yang disesuaikan dengan profil dan keunikan masing-masing individu.", deskripsiSingkat: "Memberikan konsultasi solusi sesuai kebutuhan unik tiap orang", bobotBakatIds: ["strategic", "ideation", "developer"], typology: "STRATEGIST" },
+  { no: 91, kodeAktivitas: "MENTORING", klaster: "N", namaKlaster: "Networking", pernyataan: "Mentransfer keterampilan dan membimbing bawahan/anak didik agar berhasil dalam pekerjaannya.", deskripsiSingkat: "Membimbing adik kelas atau rekan baru dengan memberi contoh nyata", bobotBakatIds: ["developer", "learner", "communication", "relator"], typology: "EDUCATOR" },
+  { no: 92, kodeAktivitas: "TEACHING", klaster: "N", namaKlaster: "Networking", pernyataan: "Mengajar serta membagikan wawasan ilmu pengetahuan dengan metode pedagogi yang efektif.", deskripsiSingkat: "Mengajarkan ilmu pengetahuan dengan cara yang asyik dan mudah dipahami", bobotBakatIds: ["developer", "communication", "learner"], typology: "EDUCATOR" },
+  { no: 93, kodeAktivitas: "TRAINING", klaster: "N", namaKlaster: "Networking", pernyataan: "Melatih keahlian teknis dan metode praktis guna menaikkan kompetensi seseorang di bidang khusus.", deskripsiSingkat: "Melatih keterampilan praktik secara bertahap sampai seseorang mahir", bobotBakatIds: ["developer", "learner", "communication", "consistency"], typology: "EDUCATOR" },
+  { no: 94, kodeAktivitas: "ANALYSING", klaster: "T", namaKlaster: "Thinking", pernyataan: "Menelaah sebab-akibat secara mendalam untuk mendeteksi latar belakang fenomena atau proyeksi masa depan.", deskripsiSingkat: "Menganalisis data dan hubungan sebab-akibat secara logis", bobotBakatIds: ["analytical", "intellection", "strategic"], typology: "ANALYST" },
+  { no: 95, kodeAktivitas: "BOOKKEEPING", klaster: "T", namaKlaster: "Thinking", pernyataan: "Membukukan alur transaksi keuangan (pemasukan/pengeluaran) sesuai kaidah akuntansi baku.", deskripsiSingkat: "Mencatat pembukuan uang masuk dan keluar dengan rapi", bobotBakatIds: ["consistency", "discipline", "deliberative"], typology: "TREASURER" },
+  { no: 96, kodeAktivitas: "PROGRAMMING", klaster: "T", namaKlaster: "Thinking", pernyataan: "Merancang program aplikasi, arsitektur piranti lunak, atau antarmuka komputasi.", deskripsiSingkat: "Menulis kode pemrograman (coding) dan membuat aplikasi", bobotBakatIds: ["ideation", "learner", "intellection", "strategic"], typology: "CREATOR" },
+  { no: 97, kodeAktivitas: "BUDGETING", klaster: "T", namaKlaster: "Thinking", pernyataan: "Mengelola alokasi, penyimpanan, serta distribusi anggaran keuangan secara teratur.", deskripsiSingkat: "Mengatur rencana anggaran dan pembagian dana kegiatan", bobotBakatIds: ["deliberative", "consistency", "strategic"], typology: "TREASURER" },
+  { no: 98, kodeAktivitas: "CASHIERING", klaster: "T", namaKlaster: "Thinking", pernyataan: "Menangani alur penerimaan dan pengeluaran kas sesuai regulasi serta mencatatnya dengan rapi.", deskripsiSingkat: "Mengelola kas keuangan dengan jujur dan teliti", bobotBakatIds: ["consistency", "responsibility", "deliberative"], typology: "TREASURER" },
+  { no: 99, kodeAktivitas: "COSTING", klaster: "T", namaKlaster: "Thinking", pernyataan: "Memantau dan mengaudit kesesuaian realisasi anggaran belanja proyek terhadap perencanaannya.", deskripsiSingkat: "Menghitung rincian biaya agar pengeluaran tetap hemat dan sesuai rencana", bobotBakatIds: ["deliberative", "analytical", "consistency"], typology: "TREASURER" },
+  { no: 100, kodeAktivitas: "ESTIMATING", klaster: "T", namaKlaster: "Thinking", pernyataan: "Keahlian menghitung estimasi Rencana Anggaran Biaya (RAB) untuk keperluan tender penawaran.", deskripsiSingkat: "Memperkirakan kebutuhan biaya, waktu, dan bahan sebelum proyek dimulai", bobotBakatIds: ["strategic", "deliberative", "analytical"], typology: "EVALUATOR" },
+  { no: 101, kodeAktivitas: "AUDITING", klaster: "T", namaKlaster: "Thinking", pernyataan: "Melakukan audit dan koreksi terhadap kelayakan laporan keuangan berkala.", deskripsiSingkat: "Memeriksa ketepatan laporan keuangan dan kepatuhan aturan", bobotBakatIds: ["consistency", "deliberative", "analytical"], typology: "EVALUATOR" },
+  { no: 102, kodeAktivitas: "INSPECTING", klaster: "T", namaKlaster: "Thinking", pernyataan: "Meneliti rincian pekerjaan secara presisi guna menjamin standar kualitas dan kebenaran.", deskripsiSingkat: "Memeriksa detail hasil kerja dengan teliti agar sesuai standar mutu", bobotBakatIds: ["consistency", "deliberative", "responsibility"], typology: "QUALITY CONTROLLER" },
+  { no: 103, kodeAktivitas: "VERIFYING", klaster: "R", namaKlaster: "Reasoning", pernyataan: "Melakukan verifikasi dan komparasi data untuk membuktikan keakuratan informasi.", deskripsiSingkat: "Mengecek ulang kebenaran data dan fakta sebelum dipublikasikan", bobotBakatIds: ["deliberative", "consistency", "analytical"], typology: "EVALUATOR" },
+  { no: 104, kodeAktivitas: "MONITORING", klaster: "Te", namaKlaster: "Technical", pernyataan: "Mengawasi serta mendeteksi potensi penyimpangan atau ketidakseimbangan dalam proses kerja.", deskripsiSingkat: "Memantau jalannya sistem atau kegiatan agar tetap aman dan lancar", bobotBakatIds: ["consistency", "deliberative", "responsibility"], typology: "SAFEKEEPER" },
+  { no: 105, kodeAktivitas: "SAFEKEEPING", klaster: "Te", namaKlaster: "Technical", pernyataan: "Menjaga prosedur keselamatan kerja dan melindungi personel/aset dari potensi bahaya kecelakaan.", deskripsiSingkat: "Menjaga keselamatan bersama dan mencegah terjadinya bahaya", bobotBakatIds: ["responsibility", "deliberative", "consistency"], typology: "SAFEKEEPER" },
+  { no: 106, kodeAktivitas: "SECURING", klaster: "Te", namaKlaster: "Technical", pernyataan: "Mengamankan aset dan inventaris perusahaan dari risiko pencurian, kehilangan, atau kerusakan.", deskripsiSingkat: "Mengamankan barang inventaris dan sistem dari risiko kehilangan/kerusakan", bobotBakatIds: ["deliberative", "responsibility", "consistency"], typology: "SAFEKEEPER" },
+  { no: 107, kodeAktivitas: "DIAGNOSING", klaster: "R", namaKlaster: "Reasoning", pernyataan: "Melakukan diagnosa mendalam untuk menemukan akar penyebab suatu masalah (troubleshooting).", deskripsiSingkat: "Menemukan sumber penyebab utama dari sebuah kendala atau penyakit sistem", bobotBakatIds: ["restorative", "analytical", "strategic"], typology: "RESTORER" },
+  { no: 108, kodeAktivitas: "IDENTIFYING", klaster: "R", namaKlaster: "Reasoning", pernyataan: "Melakukan verifikasi identitas guna memastikan keabsahan objek atau profil seseorang.", deskripsiSingkat: "Mengenali ciri-ciri khusus dan keaslian suatu data atau objek", bobotBakatIds: ["deliberative", "individualization", "analytical"], typology: "EVALUATOR" },
+  { no: 109, kodeAktivitas: "APPRAISING", klaster: "R", namaKlaster: "Reasoning", pernyataan: "Melakukan appraisal/penilaian taksiran harga terhadap aset seperti properti, tanah, atau produk.", deskripsiSingkat: "Menaksir nilai atau kualitas suatu barang dan karya secara tepat", bobotBakatIds: ["deliberative", "analytical", "strategic"], typology: "EVALUATOR" },
+  { no: 110, kodeAktivitas: "EVALUATING", klaster: "T", namaKlaster: "Thinking", pernyataan: "Menimbang dan mengevaluasi kualitas, bobot kepentingan, atau nilai kondisi suatu objek.", deskripsiSingkat: "Mengevaluasi kelebihan dan kekurangan suatu kegiatan secara bijak", bobotBakatIds: ["strategic", "deliberative", "intellection"], typology: "EVALUATOR" },
+  { no: 111, kodeAktivitas: "OBSERVING", klaster: "R", namaKlaster: "Reasoning", pernyataan: "Melakukan pengamatan ilmiah secara cermat terhadap fenomena atau objek studi.", deskripsiSingkat: "Mengamati kejadian alam atau lingkungan sekitar secara saksama", bobotBakatIds: ["intellection", "learner", "input"], typology: "EXPLORER" },
+  { no: 112, kodeAktivitas: "RESEARCHING", klaster: "R", namaKlaster: "Reasoning", pernyataan: "Menjalankan penelitian terstruktur untuk menguji hipotesis, memperbarui teori, atau merumuskan solusi.", deskripsiSingkat: "Melakukan eksperimen dan penelitian ilmiah untuk menemukan solusi baru", bobotBakatIds: ["learner", "intellection", "ideation", "strategic"], typology: "EXPLORER" },
+  { no: 113, kodeAktivitas: "SURVEYING", klaster: "R", namaKlaster: "Reasoning", pernyataan: "Menyusun laporan atau evaluasi hasil survei atas pelaksanaan kegiatan yang telah rampung.", deskripsiSingkat: "Mengumpulkan pendapat atau data lapangan melalui kegiatan survei", bobotBakatIds: ["input", "learner", "consistency"], typology: "EXPLORER" },
+  { no: 114, kodeAktivitas: "REVIEWING", klaster: "R", namaKlaster: "Reasoning", pernyataan: "Mencermati perkembangan situasi/individu secara saksama untuk keperluan penyusunan rekomendasi/opini.", deskripsiSingkat: "Meninjau ulang hasil kerja dan memberikan saran peningkatan", bobotBakatIds: ["deliberative", "intellection", "strategic"], typology: "EVALUATOR" },
 ];

@@ -29,7 +29,6 @@ export const Scm114FullVisualMap: React.FC<{
 }> = ({ hasil }) => {
   const top5Ids = new Set(hasil.top5PersonalBranding.map((r) => r.id));
 
-  // Kelompokkan 114 Aktivitas berdasarkan 8 Klaster SCM (N, H, S, Gi, Te, E, R, T)
   const klasterMeta: {
     kode: "N" | "H" | "S" | "Gi" | "Te" | "E" | "R" | "T";
     nama: string;
@@ -95,38 +94,21 @@ export const Scm114FullVisualMap: React.FC<{
     },
   ];
 
-  // Bagi 114 aktivitas menjadi 4 sisi bingkai persegi SCM (Atas: 29, Kanan: 28, Bawah: 29, Kiri: 28)
-  const sisiAtas = hasil.petaLengkap114SCM.filter((x) =>
-    ["H", "S"].includes(x.klaster)
-  );
-  const sisiKanan = hasil.petaLengkap114SCM.filter((x) =>
-    ["Gi"].includes(x.klaster)
-  );
-  const sisiBawah = hasil.petaLengkap114SCM.filter((x) =>
-    ["E", "Te"].includes(x.klaster)
-  );
-  const sisiKiri = hasil.petaLengkap114SCM.filter((x) =>
-    ["N", "T", "R"].includes(x.klaster)
-  );
-
   return (
-    <div className="space-y-10">
-      {/* =================================================================== */}
-      {/* 1. DIAGRAM CABANG 4 DOMAIN BAKAT & FRAMEWORK T-A-S-K GALLUP         */}
-      {/* =================================================================== */}
-      <div className="p-6 rounded-3xl bg-slate-50 border-2 border-slate-200 space-y-6">
+    <div className="space-y-8 print:space-y-6">
+      {/* 1. 4 PILAR KEUNGGULAN KARIER & BELAJAR (T-A-S-K) */}
+      <div className="p-5 rounded-3xl bg-slate-50 border-2 border-slate-200 space-y-4 break-inside-avoid">
         <div className="flex flex-wrap justify-between items-center gap-2 border-b pb-3">
           <div>
             <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded bg-emerald-100 text-emerald-900">
-              Visual Mind-Map 4 Domain &amp; Strength-Based Framework
+              Panduan Pengembangan Diri Panda HibahIlmu
             </span>
-            <h3 className="text-lg font-black text-slate-900 mt-0.5">
-              Peta Cabang 34 Bakat &amp; 4 Elemen Kinerja Unggul (T-A-S-K)
+            <h3 className="text-base sm:text-lg font-black text-slate-900 mt-0.5">
+              4 Kunci Sukses Belajar &amp; Berkarier (Rumus T-A-S-K)
             </h3>
           </div>
 
-          {/* Legenda 5 Warna Kekuatan */}
-          <div className="flex flex-wrap items-center gap-2 text-[10px] font-black">
+          <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-black">
             <span className="px-2 py-0.5 rounded bg-rose-600 text-white">
               ● Merah: Sangat Kuat (1–7)
             </span>
@@ -134,51 +116,55 @@ export const Scm114FullVisualMap: React.FC<{
               ● Kuning: Kuat (8–14)
             </span>
             <span className="px-2 py-0.5 rounded bg-white text-slate-900 border border-slate-400">
-              ○ Putih: Netral (15–21)
+              ○ Putih: Sedang (15–21)
             </span>
             <span className="px-2 py-0.5 rounded bg-slate-400 text-white">
               ● Abu: Rendah (22–27)
             </span>
             <span className="px-2 py-0.5 rounded bg-slate-900 text-white">
-              ● Hitam: Lemah (28–34)
+              ● Hitam: Perlu Kolaborasi (28–34)
             </span>
           </div>
         </div>
 
-        {/* 4 Elemen T-A-S-K sesuai Halaman 4 PDF */}
+        <p className="text-xs text-slate-700 leading-relaxed">
+          Agar bakat alamimu benar-benar menjadi prestasi yang membanggakan, gabungkan{" "}
+          <strong>4 elemen T-A-S-K</strong> di bawah ini secara seimbang:
+        </p>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {[
             {
               huruf: "T",
               judul: "Talents (Bakat Alami)",
               warna: "bg-rose-600",
-              ket: "Pola pikir, perasaan, dan perilaku yang telah terbentuk alami, konsisten, dan dapat digunakan untuk produktivitas.",
+              ket: "Sifat, cara berpikir, dan kebiasaan positif yang sudah ada secara alami di dalam dirimu.",
             },
             {
               huruf: "A",
-              judul: "Attitude (Sikap Kerja)",
+              judul: "Attitude (Sikap & Semangat)",
               warna: "bg-amber-500",
-              ket: "Ekspresi atau respons suka atau tidak suka terhadap sesuatu (orang, benda, tempat, aktivitas, dan sebagainya).",
+              ket: "Sikap antusias, sopan santun, pantang menyerah, dan rasa suka terhadap bidang yang kamu tekuni.",
             },
             {
               huruf: "S",
-              judul: "Skill (Keterampilan)",
+              judul: "Skill (Keterampilan Praktik)",
               warna: "bg-emerald-600",
-              ket: "Kemampuan teknis maupun praktis untuk melakukan sesuatu atau serangkaian cara bertindak dengan benar.",
+              ket: "Kemampuan praktik yang terus kamu latih berulang-ulang sampai tangan dan pikiranmu terampil.",
             },
             {
               huruf: "K",
-              judul: "Knowledge (Pengetahuan)",
+              judul: "Knowledge (Ilmu & Wawasan)",
               warna: "bg-indigo-600",
-              ket: "Serangkaian informasi tentang sesuatu: deskripsi, data, teori, konsep, prosedur, dan prinsip terkait bidang karier.",
+              ket: "Pengetahuan, teori pelajaran, informasi, dan wawasan yang kamu pelajari dari buku, guru, atau internet.",
             },
           ].map((el) => (
             <div
               key={el.huruf}
-              className="p-3.5 rounded-2xl bg-white border border-slate-200 flex items-start gap-3 shadow-xs"
+              className="p-3 rounded-2xl bg-white border border-slate-200 flex items-start gap-2.5 shadow-xs break-inside-avoid"
             >
               <div
-                className={`w-10 h-10 rounded-2xl ${el.warna} text-white font-black text-lg flex items-center justify-center shrink-0 shadow`}
+                className={`w-9 h-9 rounded-xl ${el.warna} text-white font-black text-base flex items-center justify-center shrink-0`}
               >
                 {el.huruf}
               </div>
@@ -195,24 +181,21 @@ export const Scm114FullVisualMap: React.FC<{
         </div>
       </div>
 
-      {/* =================================================================== */}
-      {/* 2. MATRIKS LENGKAP 30 STRENGTH TYPOLOGY (PERSONAL BRANDING PERAN)   */}
-      {/* =================================================================== */}
-      <div className="p-6 rounded-3xl bg-white border-2 border-slate-200 space-y-4">
-        <div className="border-b pb-2 flex flex-wrap justify-between items-center gap-2">
-          <div>
-            <h3 className="text-lg font-black uppercase text-slate-900">
-              Peta 30 Strength Typology (Personal Branding &amp; Kesimpulan Peran)
-            </h3>
-            <p className="text-xs text-slate-600">
-              114 Aktivitas SCM dikelompokkan menjadi 30 Strength Typology. Kotak
-              berwarna <strong>Merah Menyala</strong> menunjukkan 5 Peran Personal
-              Branding Paling Potensial bagi <strong>{hasil.namaPeserta}</strong>.
-            </p>
-          </div>
+      {/* 2. MATRIKS LENGKAP 30 STRENGTH TYPOLOGY (PERSONAL BRANDING PERAN) */}
+      <div className="p-5 rounded-3xl bg-white border-2 border-slate-200 space-y-4 break-inside-avoid">
+        <div className="border-b pb-2">
+          <h3 className="text-base sm:text-lg font-black uppercase text-slate-900">
+            Peta 30 Peran Unggulan (Personal Branding) — {hasil.namaPeserta}
+          </h3>
+          <p className="text-xs text-slate-600">
+            Dari 30 jenis peran di bawah ini, lencana berwarna{" "}
+            <strong className="text-rose-600">★ Merah Menyala</strong> adalah{" "}
+            <strong>5 Peran Paling Cocok</strong> untuk dikembangkan oleh{" "}
+            <strong>{hasil.namaPeserta}</strong>.
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {[
             "HEADMAN",
             "NETWORKING",
@@ -228,10 +211,10 @@ export const Scm114FullVisualMap: React.FC<{
             return (
               <div
                 key={kat}
-                className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2"
+                className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 break-inside-avoid"
               >
-                <div className="text-[11px] font-black uppercase px-2.5 py-1 rounded-lg bg-slate-900 text-amber-300">
-                  Cluster Role: {kat}
+                <div className="text-[10px] font-black uppercase px-2.5 py-1 rounded-lg bg-slate-900 text-amber-300">
+                  Kelompok: {kat}
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {listPeran.map((r) => {
@@ -239,9 +222,10 @@ export const Scm114FullVisualMap: React.FC<{
                     return (
                       <span
                         key={r.id}
-                        className={`px-2.5 py-1 rounded-xl text-[11px] font-black border transition ${
+                        title={r.julukan}
+                        className={`px-2 py-0.5 rounded-lg text-[10px] font-black border ${
                           isTop5
-                            ? "bg-rose-600 text-white border-amber-300 shadow-md scale-105"
+                            ? "bg-rose-600 text-white border-amber-300 shadow-xs"
                             : "bg-white text-slate-600 border-slate-200"
                         }`}
                       >
@@ -256,83 +240,58 @@ export const Scm114FullVisualMap: React.FC<{
         </div>
       </div>
 
-      {/* =================================================================== */}
       {/* 3. PETA LENGKAP POTENSI KEKUATAN 114 AKTIVITAS (STRENGTH CLUSTER MAP) */}
-      {/* =================================================================== */}
-      <div className="p-6 rounded-3xl bg-slate-900 text-white border-2 border-indigo-500/40 space-y-6">
-        <div className="flex flex-wrap justify-between items-start gap-4 border-b border-slate-800 pb-4">
+      <div className="p-5 rounded-3xl bg-slate-900 text-white border-2 border-indigo-500/40 space-y-5 print:bg-white print:text-slate-900 print:border-slate-300 print:break-before-page">
+        <div className="flex flex-wrap justify-between items-start gap-4 border-b border-slate-800 print:border-slate-300 pb-3 break-inside-avoid">
           <div className="space-y-1 max-w-3xl">
             <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded bg-amber-400 text-slate-950">
-              Halaman Peta Lengkap • 114 Strength Cluster Map (SCM)
+              Peta Lengkap 114 Aktivitas • 8 Wilayah Kekuatan (SCM)
             </span>
-            <h3 className="text-xl font-black text-white">
-              Peta Lengkap Potensi Kekuatan (PSP vs PSS) — {hasil.namaPeserta}
+            <h3 className="text-lg sm:text-xl font-black text-white print:text-slate-900">
+              Peta Lengkap Potensi (P) &amp; Minat Aktivitas (S) — {hasil.namaPeserta}
             </h3>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              Setiap aktivitas memiliki 2 kotak indikator:{" "}
-              <strong className="text-amber-300">
-                Kotak Dalam [PSP / Personal Strength Potential]
-              </strong>{" "}
-              (dihitung dari komposisi 34 bakat Sesi 1) dan{" "}
-              <strong className="text-sky-300">
-                Kotak Luar [PSS / Personal Strength Statement]
-              </strong>{" "}
-              (dihitung dari pernyataan minat Sesi 2). Urutan warna dari terkuat ke
-              terlemah: <strong>Merah ➔ Kuning ➔ Putih ➔ Abu-abu ➔ Hitam</strong>.
+            <p className="text-xs text-slate-300 print:text-slate-600 leading-relaxed">
+              Setiap aktivitas memiliki 2 kotak warna:{" "}
+              <strong>Kotak [P] = Potensi Bakat Alami (dari Sesi 1)</strong> dan{" "}
+              <strong>Kotak [S] = Minat &amp; Kesukaanmu (dari Sesi 2)</strong>.
+              Fokuslah pada aktivitas yang memiliki kotak <strong>Merah</strong> atau{" "}
+              <strong>Kuning</strong>!
             </p>
           </div>
+        </div>
 
-          {/* Inti Lingkaran 8 Wilayah Klaster SCM (N, H, S, Gi, Te, E, R, T) */}
-          <div className="flex flex-wrap gap-1.5">
-            {klasterMeta.map((km) => (
-              <span
+        {/* RINGKASAN 8 WILAYAH KLASTER SCM */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 break-inside-avoid">
+          {klasterMeta.map((km) => {
+            const itemKlaster = hasil.petaLengkap114SCM.filter(
+              (a) => a.klaster === km.kode
+            );
+            const jmlMerahKuning = itemKlaster.filter(
+              (a) => a.warnaPSP === "Merah" || a.warnaPSP === "Kuning"
+            ).length;
+            return (
+              <div
                 key={km.kode}
-                className={`px-2.5 py-1 rounded-xl text-[10px] font-black ${km.warnaBadge}`}
+                className={`p-2.5 rounded-2xl bg-slate-950 print:bg-slate-50 border-2 ${km.warnaBorder} flex flex-col items-center text-center gap-1 break-inside-avoid`}
               >
-                {km.ikon} {km.kode}: {km.nama.split(" (")[0]}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* VISUALISASI BINGKAI PERSEGI MELINGKAR SCM (SEPERTI HALAMAN 9 PDF) */}
-        <div className="bg-slate-950 p-4 rounded-3xl border border-slate-800 space-y-4">
-          <div className="text-center text-xs font-black text-amber-300 uppercase tracking-wider">
-            Diagram Cincin 8 Wilayah Strength Cluster Map (N • H • S • Gi • Te • E • R • T)
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
-            {klasterMeta.map((km) => {
-              const itemKlaster = hasil.petaLengkap114SCM.filter(
-                (a) => a.klaster === km.kode
-              );
-              const jmlMerahKuning = itemKlaster.filter(
-                (a) => a.warnaPSP === "Merah" || a.warnaPSP === "Kuning"
-              ).length;
-              return (
                 <div
-                  key={km.kode}
-                  className={`p-3 rounded-2xl bg-slate-900 border-2 ${km.warnaBorder} flex flex-col items-center text-center gap-1`}
+                  className={`w-8 h-8 rounded-full ${km.warnaBadge} font-black text-xs flex items-center justify-center`}
                 >
-                  <div
-                    className={`w-10 h-10 rounded-full ${km.warnaBadge} font-black text-sm flex items-center justify-center shadow-lg`}
-                  >
-                    {km.kode}
-                  </div>
-                  <div className="font-black text-[11px] text-white leading-tight mt-1">
-                    {km.nama.split(" (")[0]}
-                  </div>
-                  <div className="text-[10px] text-emerald-400 font-bold">
-                    {jmlMerahKuning}/{itemKlaster.length} Potensi Kuat
-                  </div>
+                  {km.kode}
                 </div>
-              );
-            })}
-          </div>
+                <div className="font-black text-[10px] text-white print:text-slate-900 leading-tight">
+                  {km.nama.split(" (")[0]}
+                </div>
+                <div className="text-[9px] text-emerald-400 print:text-emerald-700 font-bold">
+                  {jmlMerahKuning}/{itemKlaster.length} Kuat
+                </div>
+              </div>
+            );
+          })}
         </div>
 
-        {/* DETAIL LENGKAP 114 AKTIVITAS PER KLASTER DENGAN KOTAK GANDA [PSP | PSS] */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* DETAIL LENGKAP 114 AKTIVITAS PER KLASTER (ANTI-TERPOTONG SAAT PRINT PDF) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 print:grid-cols-2">
           {klasterMeta.map((km) => {
             const listAkt = hasil.petaLengkap114SCM.filter(
               (a) => a.klaster === km.kode
@@ -340,47 +299,44 @@ export const Scm114FullVisualMap: React.FC<{
             return (
               <div
                 key={km.kode}
-                className={`rounded-2xl bg-slate-950 border ${km.warnaBorder} overflow-hidden flex flex-col`}
+                className={`rounded-2xl bg-slate-950 print:bg-white border ${km.warnaBorder} overflow-hidden flex flex-col break-inside-avoid`}
               >
                 <div
-                  className={`${km.warnaBadge} px-3.5 py-2 text-xs font-black flex justify-between items-center`}
+                  className={`${km.warnaBadge} px-3 py-1.5 text-[11px] font-black flex justify-between items-center`}
                 >
                   <span>
                     {km.ikon} [{km.kode}] {km.nama.split(" (")[0]}
                   </span>
-                  <span className="text-[10px] opacity-90">
-                    PSP | PSS
-                  </span>
+                  <span className="text-[9px] opacity-90">P | S</span>
                 </div>
 
-                <div className="p-2.5 space-y-1.5 flex-1">
+                <div className="p-2 space-y-1 flex-1">
                   {listAkt.map((akt: ScmActivityEvaluation) => (
                     <div
                       key={akt.no}
-                      className="px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 flex justify-between items-center gap-2 text-[11px]"
+                      className="px-2 py-1 rounded-lg bg-slate-900 print:bg-slate-50 border border-slate-800 print:border-slate-200 flex justify-between items-center gap-1.5 text-[10px]"
                     >
                       <div className="truncate">
-                        <span className="font-mono text-[9px] text-slate-400 mr-1">
+                        <span className="font-mono text-[8.5px] text-slate-400 print:text-slate-500 mr-1">
                           #{akt.no}
                         </span>
-                        <span className="font-bold text-slate-100">
+                        <span className="font-bold text-slate-100 print:text-slate-900">
                           {akt.kodeAktivitas}
                         </span>
                       </div>
 
-                      {/* Petak Ganda: [PSP (Dalam)] & [PSS (Luar)] */}
                       <div className="flex items-center gap-1 shrink-0">
                         <span
-                          title={`PSP (Potensi Bakat): ${akt.skorPSP} (${akt.warnaPSP})`}
-                          className={`w-6 h-5 rounded text-[9px] font-black border flex items-center justify-center ${kelasWarnaPetak(
+                          title={`Potensi Bakat (PSP): ${akt.warnaPSP}`}
+                          className={`w-5 h-4 rounded text-[8.5px] font-black border flex items-center justify-center ${kelasWarnaPetak(
                             akt.warnaPSP
                           )}`}
                         >
                           P
                         </span>
                         <span
-                          title={`PSS (Minat Sesi 2): ${akt.skorPSS} (${akt.warnaPSS})`}
-                          className={`w-6 h-5 rounded text-[9px] font-black border flex items-center justify-center ${kelasWarnaPetak(
+                          title={`Minat Aktivitas (PSS): ${akt.warnaPSS}`}
+                          className={`w-5 h-4 rounded text-[8.5px] font-black border flex items-center justify-center ${kelasWarnaPetak(
                             akt.warnaPSS
                           )}`}
                         >

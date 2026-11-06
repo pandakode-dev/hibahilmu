@@ -9,16 +9,16 @@ import {
 } from "./talentMappingDatabase";
 
 export interface RankedTalentItem extends TalentDefinition {
-  peringkat: number; // 1..34
-  skorMentah: number; // 5..30
-  persentaseKekuatan: number; // 0..100%
+  peringkat: number;
+  skorMentah: number;
+  persentaseKekuatan: number;
   kategoriKekuatan:
     | "Bakat Utama (1-7)"
     | "Bakat Pendukung (8-14)"
     | "Bakat Netral (15-21)"
     | "Bakat Rendah (22-27)"
     | "Bakat Lemah (28-34)";
-  warnaHex: string; // Merah (#e11d48), Kuning (#f59e0b), Putih (#f8fafc), Abu (#94a3b8), Hitam (#0f172a)
+  warnaHex: string;
 }
 
 export interface ScmActivityEvaluation {
@@ -28,15 +28,16 @@ export interface ScmActivityEvaluation {
   namaKlaster: string;
   deskripsiSingkat: string;
   typology: string;
-  skorPSP: number; // 1..7 (Personal Strength Potential - dari komposisi Bakat Sesi 1)
-  skorPSS: number; // 1..7 (Personal Strength Statement - dari jawaban Sesi 2)
-  skorKombinasi: number; // 0..100
+  skorPSP: number;
+  skorPSS: number;
+  skorKombinasi: number;
   warnaPSP: "Merah" | "Kuning" | "Putih" | "Abu" | "Hitam";
   warnaPSS: "Merah" | "Kuning" | "Putih" | "Abu" | "Hitam";
 }
 
 export interface HasilLengkapTalentMapping {
   idHasil: string;
+  pemilikUserId: string;
   namaPeserta: string;
   emailPeserta: string;
   instansiPeserta: string;
@@ -73,25 +74,25 @@ function tentukanWarnaLimaTingkat(
 }
 
 export function hitungHasilTalentMappingAkurat(params: {
+  pemilikUserId?: string;
   namaPeserta: string;
   emailPeserta: string;
   instansiPeserta?: string;
   jabatanAtauKelas?: string;
-  jawabanSesi1: Record<number, number>; // noSoal (1..170) -> 1..6
-  jawabanSesi2: Record<number, number>; // noSoal (1..114) -> 1..7
+  jawabanSesi1: Record<number, number>;
+  jawabanSesi2: Record<number, number>;
 }): HasilLengkapTalentMapping {
   const {
+    pemilikUserId = "guest",
     namaPeserta,
     emailPeserta,
     instansiPeserta = "HibahIlmu Indonesia",
-    jabatanAtauKelas = "Professional / Akademisi",
+    jabatanAtauKelas = "Pelajar / Mahasiswa / Umum",
     jawabanSesi1,
     jawabanSesi2,
   } = params;
 
-  // ==========================================================================
-  // 1. HITUNG SKOR 34 BAKAT DARI 170 SOAL SESI 1 (MODULO-34)
-  // ==========================================================================
+  // 1. HITUNG SKOR 34 BAKAT DARI 170 SOAL SESI 1
   const skorPerSlot = DAFTAR_34_BAKAT.map((bakat) => {
     let totalSkor = 0;
     for (let k = 0; k < 5; k++) {
@@ -105,16 +106,13 @@ export function hitungHasilTalentMappingAkurat(params: {
     };
   });
 
-  // Urutkan dari skor tertinggi ke terendah
   skorPerSlot.sort((a, b) => b.skorMentah - a.skorMentah);
 
   const mapPeringkatBakat = new Map<string, number>();
-  const mapSkorBakat = new Map<string, number>();
 
   const urutan34Bakat: RankedTalentItem[] = skorPerSlot.map((item, idx) => {
     const peringkat = idx + 1;
     mapPeringkatBakat.set(item.bakat.id, peringkat);
-    mapSkorBakat.set(item.bakat.id, item.skorMentah);
 
     const persentaseKekuatan = Math.round(((item.skorMentah - 5) / 25) * 100);
 
@@ -124,19 +122,19 @@ export function hitungHasilTalentMappingAkurat(params: {
 
     if (peringkat <= 7) {
       kategoriKekuatan = "Bakat Utama (1-7)";
-      warnaHex = "#e11d48"; // Merah Utama
+      warnaHex = "#e11d48";
     } else if (peringkat <= 14) {
       kategoriKekuatan = "Bakat Pendukung (8-14)";
-      warnaHex = "#f59e0b"; // Kuning Pendukung
+      warnaHex = "#f59e0b";
     } else if (peringkat <= 21) {
       kategoriKekuatan = "Bakat Netral (15-21)";
-      warnaHex = "#e2e8f0"; // Putih/Terang
+      warnaHex = "#e2e8f0";
     } else if (peringkat <= 27) {
       kategoriKekuatan = "Bakat Rendah (22-27)";
-      warnaHex = "#64748b"; // Abu-abu
+      warnaHex = "#64748b";
     } else {
       kategoriKekuatan = "Bakat Lemah (28-34)";
-      warnaHex = "#0f172a"; // Hitam
+      warnaHex = "#0f172a";
     }
 
     return {
@@ -153,9 +151,7 @@ export function hitungHasilTalentMappingAkurat(params: {
   const bakatPendukung8_14 = urutan34Bakat.slice(7, 14);
   const bakatLemah28_34 = urutan34Bakat.slice(27, 34);
 
-  // ==========================================================================
-  // 2. ANALISIS DOMINASI 4 DOMAIN PADA 14 BAKAT KUAT (URUTAN 1-14)
-  // ==========================================================================
+  // 2. ANALISIS DOMINASI 4 DOMAIN PADA 14 BAKAT TERKUAT
   const distribusiDomainTop14: Record<TalentDomain, number> = {
     Thinking: 0,
     Striving: 0,
@@ -175,19 +171,22 @@ export function hitungHasilTalentMappingAkurat(params: {
     urutDomain[1][0],
   ];
 
-  const profilProduktivitasNarasi = `Berdasarkan sebaran 14 Bakat Kuat (7 Bakat Utama & 7 Bakat Pendukung), profil produktivitas alami ${namaPeserta} didominasi oleh kekuatan ${duaDomainDominan[0]} Talents (${urutDomain[0][1]} bakat) dan ${duaDomainDominan[1]} Talents (${urutDomain[1][1]} bakat). Kombinasi ini menunjukkan kapasitas unggul dalam merumuskan gagasan bernilai tambah, membangun jejaring kolaborasi yang berempati, serta menjaga standar kualitas dan integritas pelaksanaan tugas.`;
+  const kamusArtiDomain: Record<TalentDomain, string> = {
+    Thinking: "merancang ide kreatif, menganalisis masalah, dan terus belajar hal baru",
+    Relating: "membangun persahabatan yang hangat, peka membantu teman, dan bekerja sama dalam tim",
+    Striving: "bekerja keras dengan penuh tanggung jawab, menjaga aturan, dan menuntaskan target",
+    Influencing: "berbicara di depan umum, menyemangati orang lain, dan memimpin perubahan",
+  };
 
-  // ==========================================================================
+  const profilProduktivitasNarasi = `Dari 14 Bakat Terkuat (7 Bakat Utama & 7 Bakat Pendukung), gaya belajar dan berkarya alami ${namaPeserta} paling bersinar di kelompok ${duaDomainDominan[0]} (${urutDomain[0][1]} bakat) serta ${duaDomainDominan[1]} (${urutDomain[1][1]} bakat). Artinya, ${namaPeserta} punya keunggulan alami dalam ${kamusArtiDomain[duaDomainDominan[0]]}, sekaligus hebat dalam ${kamusArtiDomain[duaDomainDominan[1]]}.`;
+
   // 3. HITUNG PETA 114 AKTIVITAS SCM (PSP DARI SESI 1 & PSS DARI SESI 2)
-  // ==========================================================================
   const evaluasiMentah114 = SOAL_SESI_2_114_SCM.map((akt) => {
     const skorPSS = jawabanSesi2[akt.no] ?? 4;
 
-    // Hitung PSP dari rata-rata kekuatan bakat penyusunnya di Sesi 1
     let totalBobotPSP = 0;
     akt.bobotBakatIds.forEach((bId) => {
       const rank = mapPeringkatBakat.get(bId) ?? 17;
-      // Semakin kecil angka peringkat (mendekati 1), semakin tinggi poin PSP
       const poinRank = ((35 - rank) / 34) * 7;
       totalBobotPSP += poinRank;
     });
@@ -196,8 +195,9 @@ export function hitungHasilTalentMappingAkurat(params: {
         ? totalBobotPSP / akt.bobotBakatIds.length
         : 4;
 
-    // Gabungkan 65% PSP (Potensi Bakat Alami) + 35% PSS (Pernyataan Minat Aktivitas)
-    const skorKombinasi = Math.round(((rataPSP * 0.65 + skorPSS * 0.35) / 7) * 100);
+    const skorKombinasi = Math.round(
+      ((rataPSP * 0.65 + skorPSS * 0.35) / 7) * 100
+    );
 
     return {
       ...akt,
@@ -207,7 +207,6 @@ export function hitungHasilTalentMappingAkurat(params: {
     };
   });
 
-  // Tentukan peringkat PSP dan PSS untuk pewarnaan 5 Tingkat (Merah, Kuning, Putih, Abu, Hitam)
   const urutPSP = [...evaluasiMentah114].sort((a, b) => b.skorPSP - a.skorPSP);
   const rankMapPSP = new Map<number, number>();
   urutPSP.forEach((item, i) => rankMapPSP.set(item.no, i + 1));
@@ -232,14 +231,11 @@ export function hitungHasilTalentMappingAkurat(params: {
     })
   );
 
-  // 14 Prioritas Pengembangan & Penugasan Terbaik
   const prioritas14Aktivitas = [...petaLengkap114SCM]
     .sort((a, b) => b.skorKombinasi - a.skorKombinasi)
     .slice(0, 14);
 
-  // ==========================================================================
-  // 4. HITUNG TOP 5 PERSONAL BRANDING (30 STRENGTH TYPOLOGY)
-  // ==========================================================================
+  // 4. HITUNG TOP 5 PERSONAL BRANDING
   const skorPerTypology = new Map<string, { total: number; count: number }>();
   petaLengkap114SCM.forEach((akt) => {
     const prev = skorPerTypology.get(akt.typology) || { total: 0, count: 0 };
@@ -249,7 +245,6 @@ export function hitungHasilTalentMappingAkurat(params: {
     });
   });
 
-  // Tambahkan bobot langsung dari Top 14 Bakat
   urutan34Bakat.slice(0, 14).forEach((b, idx) => {
     const bonus = (15 - idx) * 2.5;
     b.typologyTerkait.forEach((typ) => {
@@ -274,16 +269,13 @@ export function hitungHasilTalentMappingAkurat(params: {
     .sort((a, b) => b.skorKecocokan - a.skorKecocokan)
     .slice(0, 5);
 
-  // ==========================================================================
-  // 5. REKOMENDASI EKSEKUTIF HRBP, TALENT ACQUISITION, & OD SPECIALIST
-  // ==========================================================================
   const top3NamaBakat = bakatUtama1_7
     .slice(0, 3)
-    .map((b) => b.nama)
+    .map((b) => `${b.nama} (${b.julukanRemaja})`)
     .join(", ");
   const top3Branding = top5PersonalBranding
     .slice(0, 3)
-    .map((r) => r.nama)
+    .map((r) => `${r.nama} (${r.julukan})`)
     .join(", ");
   const top4Aktivitas = prioritas14Aktivitas
     .slice(0, 4)
@@ -291,9 +283,10 @@ export function hitungHasilTalentMappingAkurat(params: {
     .join(", ");
 
   return {
-    idHasil: "TM-" + Date.now(),
+    idHasil: `TM-${emailPeserta.toLowerCase().replace(/[^a-z0-9]/g, "")}-${Date.now()}`,
+    pemilikUserId,
     namaPeserta,
-    emailPeserta,
+    emailPeserta: emailPeserta.trim().toLowerCase(),
     instansiPeserta,
     jabatanAtauKelas,
     tanggalTes: new Date().toLocaleDateString("id-ID", {
@@ -315,66 +308,61 @@ export function hitungHasilTalentMappingAkurat(params: {
     petaLengkap114SCM,
     top5PersonalBranding,
     rekomendasiHRBP: {
-      talentAcquisitionFit: `Kandidat/Individu sangat direkomendasikan untuk posisi strategis yang membutuhkan peran ${top3Branding}, dengan keunggulan alami pada ${top3NamaBakat}.`,
-      peopleDevelopmentPlan: `Fokuskan investasi pelatihan (Skill & Knowledge) pada aktivitas ${top4Aktivitas} sesuai kerangka T-A-S-K (Talents, Attitude, Skill, Knowledge). Hindari memaksakan tugas rutin yang bertumpu pada bakat urutan 28–34 (${bakatLemah28_34
+      talentAcquisitionFit: `Sangat cocok berperan sebagai ${top3Branding}. Kekuatan alaminya paling menonjol pada ${top3NamaBakat}.`,
+      peopleDevelopmentPlan: `Asahlah keterampilan dan ilmu (Skill & Knowledge) pada kegiatan ${top4Aktivitas}. Tidak perlu memaksakan diri pada bakat urutan bawah (${bakatLemah28_34
         .slice(0, 3)
         .map((x) => x.nama)
-        .join(", ")}).`,
-      organizationalPlacement: `Ditempatkan pada unit kerja yang mengedepankan inovasi konsep, edukasi/pengembangan manusia, komunikasi publik, serta kepatuhan standar mutu (Kombinasi ${duaDomainDominan[0]} & ${duaDomainDominan[1]}).`,
+        .join(", ")}), cukup siasati dengan berkolaborasi bersama teman satu tim.`,
+      organizationalPlacement: `Paling berkembang jika ditempatkan di lingkungan belajar/kerja yang memberi ruang untuk kreativitas ide, membimbing sesama, komunikasi aktif, dan kejelasan aturan (${duaDomainDominan[0]} & ${duaDomainDominan[1]}).`,
     },
   };
 }
 
-// ============================================================================
-// PRESET AKURAT SESUAI PDF CONTOH HASIL MUHAMMAD SAPUTRA (UNTUK DEMO INSTAN)
-// ============================================================================
 export function buatPresetJawabanMuhammadSaputra(): {
   jawabanSesi1: Record<number, number>;
   jawabanSesi2: Record<number, number>;
 } {
-  // Urutan persis 34 bakat dari PDF contoh hasil Muhammad Saputra:
   const urutanTargetId = [
-    "ideation", // 1
-    "developer", // 2
-    "consistency", // 3
-    "belief", // 4
-    "adaptability", // 5
-    "woo", // 6
-    "communication", // 7
-    "strategic", // 8
-    "learner", // 9
-    "futuristic", // 10
-    "intellection", // 11
-    "deliberative", // 12
-    "responsibility", // 13
-    "relator", // 14
-    "includer", // 15
-    "connectedness", // 16
-    "restorative", // 17
-    "harmony", // 18
-    "self_assurance", // 19
-    "input", // 20
-    "arranger", // 21
-    "maximizer", // 22
-    "command", // 23
-    "individualization", // 24
-    "positivity", // 25
-    "empathy", // 26
-    "analytical", // 27
-    "discipline", // 28
-    "context", // 29
-    "activator", // 30
-    "achiever", // 31
-    "significance", // 32
-    "focus", // 33
-    "competition", // 34
+    "ideation",
+    "developer",
+    "consistency",
+    "belief",
+    "adaptability",
+    "woo",
+    "communication",
+    "strategic",
+    "learner",
+    "futuristic",
+    "intellection",
+    "deliberative",
+    "responsibility",
+    "relator",
+    "includer",
+    "connectedness",
+    "restorative",
+    "harmony",
+    "self_assurance",
+    "input",
+    "arranger",
+    "maximizer",
+    "command",
+    "individualization",
+    "positivity",
+    "empathy",
+    "analytical",
+    "discipline",
+    "context",
+    "activator",
+    "achiever",
+    "significance",
+    "focus",
+    "competition",
   ];
 
   const jawabanSesi1: Record<number, number> = {};
   DAFTAR_34_BAKAT.forEach((b) => {
     const rankIndex = urutanTargetId.indexOf(b.id);
     const rank = rankIndex >= 0 ? rankIndex + 1 : 17;
-    // Buat total skor untuk 5 soal (antara 30 turun ke 7) secara deterministik sesuai urutan PDF
     const targetTotal = Math.max(6, Math.round(30 - ((rank - 1) / 33) * 23));
     const baseVal = Math.floor(targetTotal / 5);
     const remainder = targetTotal % 5;
@@ -388,7 +376,6 @@ export function buatPresetJawabanMuhammadSaputra(): {
     }
   });
 
-  // Sesi 2: Prioritaskan 14 aktivitas utama pada PDF Muhammad Saputra
   const top14Kode = new Set([
     "COMMUNICATING",
     "COMPLIANCING",
@@ -409,13 +396,11 @@ export function buatPresetJawabanMuhammadSaputra(): {
   const jawabanSesi2: Record<number, number> = {};
   SOAL_SESI_2_114_SCM.forEach((akt) => {
     if (top14Kode.has(akt.kodeAktivitas)) {
-      jawabanSesi2[akt.no] = 7; // Sangat Kuat (14 butir <= batas 22 butir)
-    } else if (
-      ["N", "S", "Gi"].includes(akt.klaster)
-    ) {
-      jawabanSesi2[akt.no] = 6; // Kuat
+      jawabanSesi2[akt.no] = 7;
+    } else if (["N", "S", "Gi"].includes(akt.klaster)) {
+      jawabanSesi2[akt.no] = 6;
     } else {
-      jawabanSesi2[akt.no] = 4; // Netral
+      jawabanSesi2[akt.no] = 4;
     }
   });
 
