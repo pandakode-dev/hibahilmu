@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from "react";
 import {
@@ -74,6 +74,7 @@ import {
 import { DonasiDanBugView } from "./components/DonasiDanBugView";
 import { FiturInovasiHubView } from "./components/FiturInovasiHubView";
 import { SimulatorPemrogramanView } from "./components/simulator/SimulatorPemrogramanView";
+import { TalentMappingAssessmentView } from "./components/talent-mapping/TalentMappingAssessmentView";
 
 const SESSION_STORAGE_KEY = "hibahilmu_active_user_session_v2";
 const SESSION_COOKIE_NAME = "hibahilmu_session_user";
@@ -553,6 +554,7 @@ export default function AplikasiHibahIlmu() {
             {[
               { id: "beranda", label: "Beranda & Kelas" },
               { id: "simulator", label: "Simulator Coding & IoT" },
+              { id: "talent_mapping", label: "?? Tes Talent Mapping" },
               { id: "inovasi", label: "Hub Inovasi" },
               { id: "webinar", label: "Webinar" },
               { id: "tryout", label: "Tryout CBT" },
@@ -570,7 +572,8 @@ export default function AplikasiHibahIlmu() {
                 }}
                 className={`px-3 py-2.5 rounded-xl text-xs font-extrabold transition whitespace-nowrap cursor-pointer flex items-center gap-1 ${
                   menuAktif === tab.id
-                    ? "bg-emerald-600 text-white shadow-sm"
+                    ? tab.id === "talent_mapping" ? "bg-gradient-to-r from-rose-600 to-amber-500 text-white shadow-lg ring-2 ring-amber-300" : "bg-emerald-600 text-white shadow-sm"
+                    : tab.id === "talent_mapping" ? "bg-gradient-to-r from-rose-600 to-amber-500 text-white shadow-md hover:scale-105"
                     : darkMode || kontrasTinggi
                     ? "text-slate-200 hover:bg-slate-800"
                     : "text-slate-700 hover:bg-slate-100"
@@ -866,6 +869,10 @@ export default function AplikasiHibahIlmu() {
                 konfigurasiWeb={konfigurasiWeb}
                 onBukaMenuLain={(menuTujuan: string) => setMenuAktif(menuTujuan)}
               />
+            )}
+
+            {menuAktif === "talent_mapping" && (
+              <TalentMappingAssessmentView userLogin={userLogin} tambahXP={tambahXP} />
             )}
 
             {menuAktif === "simulator" && (
