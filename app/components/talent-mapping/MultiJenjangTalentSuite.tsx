@@ -11,7 +11,6 @@ import {
   Eraser,
   Paintbrush,
   Lock,
-  AlertTriangle,
   ChevronRight,
   ChevronLeft,
   Compass,
@@ -20,6 +19,9 @@ import {
   Target,
   Lightbulb,
   ShieldAlert,
+  Award,
+  Medal,
+  Image as ImageIcon,
 } from "lucide-react";
 
 // ============================================================================
@@ -34,7 +36,10 @@ interface DimensiScoreItem {
   skorMentah: number;
   persen: number;
   peringkat: number;
-  kategori: "Kekuatan Utama" | "Kekuatan Pendukung" | "Area Perlu Stimulasi / Tantangan";
+  kategori:
+    | "Kekuatan Utama"
+    | "Kekuatan Pendukung"
+    | "Area Perlu Stimulasi / Tantangan";
   deskripsiKekuatan: string;
   dampakJikaLemah: string;
   solusiAgarTidakMenghambat: string;
@@ -43,9 +48,42 @@ interface DimensiScoreItem {
   potensiMasaDepan: string[];
 }
 
+type MisiKanvasId = "rumah_pohon" | "robot_bintang" | "taman_satwa" | "bebas";
+
+const DAFTAR_MISI_KANVAS: {
+  id: MisiKanvasId;
+  judul: string;
+  sub: string;
+  dimensiTerkait: string;
+}[] = [
+  {
+    id: "rumah_pohon",
+    judul: "🏡 Kanvas 1: Rumah, Matahari & Pohon",
+    sub: "Mengukur kepekaan ruang, kehangatan keluarga & alam",
+    dimensiTerkait: "alam",
+  },
+  {
+    id: "robot_bintang",
+    judul: "🤖 Kanvas 2: Robot Pintar & Bintang",
+    sub: "Mengukur imajinasi teknologi, logika bentuk & sains",
+    dimensiTerkait: "logika",
+  },
+  {
+    id: "taman_satwa",
+    judul: "🦋 Kanvas 3: Kupu-Kupu & Bunga Taman",
+    sub: "Mengukur ketelitian motorik halus & keindahan warna",
+    dimensiTerkait: "seni",
+  },
+  {
+    id: "bebas",
+    judul: "✨ Kanvas 4: Menggambar Imajinasi Bebas",
+    sub: "Anak bebas menggambar apa saja yang ada di pikirannya",
+    dimensiTerkait: "mandiri",
+  },
+];
+
 // ============================================================================
-// 1. DATABASE LENGKAP JENJANG 1: ANAK USIA 4–8 TAHUN (TK & SD AWAL)
-//    (4 Kanvas Misi + 16 Kartu Visual + 18 Observasi Perkembangan = 38 Indikator)
+// 1. DATABASE LENGKAP JENJANG 1: ANAK USIA 3–8 TAHUN (PAUD, TK & SD AWAL)
 // ============================================================================
 const DEFINISI_8_DIMENSI_ANAK: Record<
   string,
@@ -353,7 +391,7 @@ const KARTU_VISUAL_ANAK_16 = [
     pertanyaan: "8. Saat menonton video atau acara anak, tayangan apa yang paling kamu sukai?",
     opsi: [
       { kode: "logika", ikon: "🤖", teks: "Cara Kerja Robot, Truk, Pesawat & Sains" },
-      { kode: "seni", ikon: "🖌️", teks: "Tutorial Melukis,Origami & Kreasi Mainan" },
+      { kode: "seni", ikon: "🖌️", teks: "Tutorial Melukis, Origami & Kreasi Mainan" },
       { kode: "alam", ikon: "🐬", teks: "Petualangan Dunia Hewan Laut & Hutan" },
       { kode: "bahasa", ikon: "🧚", teks: "Kisah Dongeng Petualangan & Pahlawan" },
     ],
@@ -462,7 +500,7 @@ const OBSERVASI_ORTU_18 = [
 ];
 
 // ============================================================================
-// 2. DATABASE LENGKAP JENJANG 2: SD ATAS & SMP (9–15 TAHUN) — 36 SOAL (2 SESI)
+// 2. DATABASE LENGKAP JENJANG 2: SD ATAS & SMP (9–15 TAHUN) — 36 SOAL
 // ============================================================================
 const DEFINISI_8_BAKAT_SMP: Record<
   string,
@@ -691,7 +729,6 @@ const DEFINISI_8_BAKAT_SMP: Record<
 };
 
 const SOAL_SMP_36 = [
-  // SESI 1: 24 Soal 8 Bakat Remaja SMP (3 soal per dimensi)
   { no: 1, sesi: 1, dimensi: "logika_sains", teks: "Saya senang mencari tahu alasan ilmiah di balik fenomena alam atau cara kerja teknologi/komputer." },
   { no: 2, sesi: 1, dimensi: "bahasa_komunikasi", teks: "Saya mudah merangkai kata-kata saat bercerita, menulis karangan, atau menjelaskan sesuatu ke teman." },
   { no: 3, sesi: 1, dimensi: "visual_desain", teks: "Saya suka menggambar, mendesain poster/slide yang estetik, atau mengedit foto dan video." },
@@ -700,7 +737,6 @@ const SOAL_SMP_36 = [
   { no: 6, sesi: 1, dimensi: "kepemimpinan_sosial", teks: "Saya senang membantu teman yang kesulitan dan berani mengatur pembagian tugas saat kerja kelompok." },
   { no: 7, sesi: 1, dimensi: "keteraturan_disiplin", teks: "Saya terbiasa mencatat jadwal PR dengan rapi dan tidak suka mengumpulkan tugas terlambat." },
   { no: 8, sesi: 1, dimensi: "kemandirian_fokus", teks: "Jika saya sudah menetapkan suatu target nilai atau cita-cita, saya akan fokus mengejarnya sampai berhasil." },
-
   { no: 9, sesi: 1, dimensi: "logika_sains", teks: "Memecahkan soal teka-teki logika, matematika, atau mengutak-atik kode program sangat menantang bagi saya." },
   { no: 10, sesi: 1, dimensi: "bahasa_komunikasi", teks: "Saya tertarik mempelajari bahasa asing (Inggris/Arab/lainnya) dan berani tampil bicara di depan kelas." },
   { no: 11, sesi: 1, dimensi: "visual_desain", teks: "Saya lebih mudah membayangkan sesuatu lewat gambar, peta warna, atau sketsa desain." },
@@ -709,7 +745,6 @@ const SOAL_SMP_36 = [
   { no: 14, sesi: 1, dimensi: "kepemimpinan_sosial", teks: "Saya mudah akrab dengan teman baru dan suka mendamaikan teman yang sedang berselisih paham." },
   { no: 15, sesi: 1, dimensi: "keteraturan_disiplin", teks: "Saya teliti memeriksa kembali jawaban ulangan dan menjaga kerapian buku serta barang-barang saya." },
   { no: 16, sesi: 1, dimensi: "kemandirian_fokus", teks: "Ketika menemui materi pelajaran yang sulit, saya berusaha mencari solusinya sampai paham dan tidak gampang menyerah." },
-
   { no: 17, sesi: 1, dimensi: "logika_sains", teks: "Saya suka mengamati data, tabel, atau melakukan percobaan di laboratorium IPA/komputer." },
   { no: 18, sesi: 1, dimensi: "bahasa_komunikasi", teks: "Saya gemar membaca buku/artikel menarik dan membagikan ceritanya kepada orang lain." },
   { no: 19, sesi: 1, dimensi: "visual_desain", teks: "Saya punya banyak imajinasi untuk menciptakan karya kreatif yang unik dan enak dipandang mata." },
@@ -718,8 +753,6 @@ const SOAL_SMP_36 = [
   { no: 22, sesi: 1, dimensi: "kepemimpinan_sosial", teks: "Saya senang aktif di kegiatan organisasi sekolah (OSIS/Pramuka/Kepanitiaan) dan kegiatan sosial." },
   { no: 23, sesi: 1, dimensi: "keteraturan_disiplin", teks: "Saya merasa tenang apabila aturan main, jadwal kegiatan, dan langkah-langkah tugas sudah jelas sejak awal." },
   { no: 24, sesi: 1, dimensi: "kemandirian_fokus", teks: "Saya mampu belajar mandiri di rumah tanpa harus selalu disuruh-suruh oleh orang tua." },
-
-  // SESI 2: 12 Soal Gaya Belajar VAK (4 Visual, 4 Auditori, 4 Kinestetik)
   { no: 25, sesi: 2, dimensi: "vak_visual", teks: "[Gaya Belajar] Saya paling cepat paham materi guru kalau ditulis di papan tulis disertai gambar/diagram warna." },
   { no: 26, sesi: 2, dimensi: "vak_auditori", teks: "[Gaya Belajar] Saya lebih cepat mengerti kalau mendengarkan penjelasan lisan guru atau berdiskusi tanya-jawab." },
   { no: 27, sesi: 2, dimensi: "vak_kinestetik", teks: "[Gaya Belajar] Saya baru benar-benar paham suatu pelajaran kalau langsung mencoba mempraktikkannya sendiri." },
@@ -912,57 +945,48 @@ const DEFINISI_6_RIASEC_SMA: Record<
 };
 
 const SOAL_SMA_48 = [
-  // SESI 1: 30 Soal Kepribadian Karier RIASEC Holland (5 soal per dimensi)
   { no: 1, sesi: 1, dimensi: "R", teks: "Saya senang merakit perangkat elektronik/IoT, mengutak-atik mesin, atau menggunakan peralatan teknis secara langsung." },
   { no: 2, sesi: 1, dimensi: "I", teks: "Saya antusias memecahkan persoalan sains, matematika lanjut, atau menulis kode algoritma pemrograman." },
   { no: 3, sesi: 1, dimensi: "A", teks: "Saya menikmati kebebasan berkreasi membuat desain visual (UI/UX/Grafis), karya arsitektur, musik, atau konten kreatif." },
   { no: 4, sesi: 1, dimensi: "S", teks: "Saya merasa bahagia saat bisa mengajar, membimbing, atau membantu teman menyelesaikan masalah pribadinya." },
   { no: 5, sesi: 1, dimensi: "E", teks: "Saya menyukai tantangan memimpin organisasi/tim, merintis usaha bisnis, dan meyakinkan orang lain." },
   { no: 6, sesi: 1, dimensi: "C", teks: "Saya teliti dalam menyusun laporan keuangan, mengelola tabel data di komputer, dan menjaga keteraturan arsip." },
-
   { no: 7, sesi: 1, dimensi: "R", teks: "Saya lebih suka kuliah/bekerja yang banyak praktik laboratorium atau terjun ke lapangan daripada hanya membaca teori." },
   { no: 8, sesi: 1, dimensi: "I", teks: "Saya gemar menelusuri jurnal/artikel ilmiah untuk memahami hubungan sebab-akibat dari suatu fenomena atau penyakit." },
   { no: 9, sesi: 1, dimensi: "A", teks: "Saya selalu berusaha menampilkan ide yang orisinal, estetik, dan berbeda dari cara-cara standar yang membosankan." },
   { no: 10, sesi: 1, dimensi: "S", teks: "Saya tertarik mendalami psikologi manusia, cara mengembangkan potensi orang lain (HR/People Development), atau kesehatan." },
   { no: 11, sesi: 1, dimensi: "E", teks: "Saya berani mengambil keputusan penting di situasi mendesak dan menetapkan target prestasi yang tinggi." },
   { no: 12, sesi: 1, dimensi: "C", teks: "Saya merasa nyaman bekerja dengan standar aturan (SOP) yang jelas, jadwal terstruktur, dan perhitungan angka yang akurat." },
-
   { no: 13, sesi: 1, dimensi: "R", teks: "Saya tertarik mempelajari cara kerja infrastruktur bangunan, jaringan telekomunikasi, robotika, atau agroteknologi modern." },
   { no: 14, sesi: 1, dimensi: "I", teks: "Menganalisis kumpulan data besar (Big Data/Statistika) untuk menemukan pola tersembunyi sangat menarik bagi saya." },
   { no: 15, sesi: 1, dimensi: "A", teks: "Saya peka terhadap keindahan tata letak aplikasi, komposisi warna, sinematografi video, atau penulisan naratif." },
   { no: 16, sesi: 1, dimensi: "S", teks: "Dalam kerja kelompok, saya selalu menjaga agar semua anggota merasa dihargai, kompak, dan tidak ada yang terabaikan." },
   { no: 17, sesi: 1, dimensi: "E", teks: "Saya pandai bernegosiasi, memasarkan keunggulan suatu ide/produk, dan membangun jejaring kemitraan luas." },
   { no: 18, sesi: 1, dimensi: "C", teks: "Saya selalu memeriksa ulang detail pekerjaan saya agar bebas dari kesalahan ketik maupun selisih perhitungan." },
-
   { no: 19, sesi: 1, dimensi: "R", teks: "Saya terampil memperbaiki peralatan yang rusak dan menyukai pekerjaan yang menghasilkan produk fisik nyata." },
   { no: 20, sesi: 1, dimensi: "I", teks: "Saya betah berkonsentrasi lama untuk meriset topik rumit seperti kecerdasan buatan (AI), bioteknologi, atau kedokteran." },
   { no: 21, sesi: 1, dimensi: "A", teks: "Saya sering diminta teman untuk mendesain tampilan presentasi, poster acara, atau konsep kreatif kegiatan sekolah." },
   { no: 22, sesi: 1, dimensi: "S", teks: "Cita-cita terbesar saya adalah memiliki karier yang secara langsung menolong, mendidik, atau menyejahterakan sesama." },
   { no: 23, sesi: 1, dimensi: "E", teks: "Saya tertantang mengikuti kompetisi bisnis, debat, atau memimpin proyek besar hingga meraih predikat terbaik." },
   { no: 24, sesi: 1, dimensi: "C", teks: "Saya menyukai bidang akuntansi, audit, perpajakan, aktuaria, atau administrasi sistem yang rapi dan terukur." },
-
   { no: 25, sesi: 1, dimensi: "R", teks: "Saya memiliki koordinasi motorik dan ketahanan fisik yang prima untuk menangani peralatan kerja di lapangan." },
   { no: 26, sesi: 1, dimensi: "I", teks: "Sebelum mempercayai suatu kesimpulan, saya selalu menuntut bukti empiris dan logika yang masuk akal." },
   { no: 27, sesi: 1, dimensi: "A", teks: "Saya mampu mengubah konsep yang kaku menjadi karya visual, cerita, atau desain antarmuka yang memikat." },
   { no: 28, sesi: 1, dimensi: "S", teks: "Saya sabar mendengarkan curhatan orang lain dan mampu memberikan saran yang menenangkan hati mereka." },
   { no: 29, sesi: 1, dimensi: "E", teks: "Saya senang merumuskan strategi jangka panjang dan memotivasi tim untuk mencapai target organisasi." },
   { no: 30, sesi: 1, dimensi: "C", teks: "Mengelola anggaran, mengarsipkan dokumen penting, dan mengawasi kepatuhan mutu adalah keahlian alami saya." },
-
-  // SESI 2: 18 Soal Kesiapan Eksekusi Kuliah & Karier Abad 21 (3 soal per dimensi RIASEC untuk Cross-Validation)
   { no: 31, sesi: 2, dimensi: "I", teks: "[Kesiapan Kuliah] Saya terbiasa belajar mandiri mencari referensi dari jurnal, dokumentasi internet, atau buku teks." },
   { no: 32, sesi: 2, dimensi: "A", teks: "[Kesiapan Kuliah] Saya mampu menghasilkan ide-ide segar (brainstorming) saat tim membutuhkan solusi di luar kebiasaan." },
   { no: 33, sesi: 2, dimensi: "S", teks: "[Kesiapan Kuliah] Saya mudah beradaptasi dan bekerja sama secara harmonis dengan orang-orang dari berbagai latar belakang." },
   { no: 34, sesi: 2, dimensi: "E", teks: "[Kesiapan Kuliah] Saya berani tampil mempresentasikan gagasan saya dengan meyakinkan di hadapan dosen/guru dan audiens." },
   { no: 35, sesi: 2, dimensi: "C", teks: "[Kesiapan Kuliah] Saya disiplin mengatur waktu antara belajar akademik, organisasi, dan istirahat tanpa menunda tugas." },
   { no: 36, sesi: 2, dimensi: "R", teks: "[Kesiapan Kuliah] Saya cepat menguasai penggunaan perangkat keras, instrumen laboratorium, atau software teknis baru." },
-
   { no: 37, sesi: 2, dimensi: "I", teks: "[Kesiapan Karier] Ketika menghadapi masalah yang rumit, saya mengurainya menjadi bagian-bagian logis untuk dicari akar penyebabnya." },
   { no: 38, sesi: 2, dimensi: "A", teks: "[Kesiapan Karier] Saya senang merancang prototipe desain, mockup aplikasi, atau karya kreatif yang punya nilai jual." },
   { no: 39, sesi: 2, dimensi: "S", teks: "[Kesiapan Karier] Saya peka membaca potensi unik tiap anggota tim dan senang membantu mereka berkembang." },
   { no: 40, sesi: 2, dimensi: "E", teks: "[Kesiapan Karier] Saya memiliki inisiatif tinggi untuk memulai langkah nyata tanpa harus selalu menunggu perintah." },
   { no: 41, sesi: 2, dimensi: "C", teks: "[Kesiapan Karier] Saya memegang teguh integritas, kejujuran data, dan tanggung jawab sampai pekerjaan tuntas 100%." },
   { no: 42, sesi: 2, dimensi: "R", teks: "[Kesiapan Karier] Saya tahan banting menguji coba alat/kode program berulang-ulang sampai benar-benar berjalan lancar." },
-
   { no: 43, sesi: 2, dimensi: "I", teks: "[Visi Masa Depan] Saya ingin berkarier di bidang yang terus menuntut pembelajaran ilmu pengetahuan dan teknologi mutakhir." },
   { no: 44, sesi: 2, dimensi: "A", teks: "[Visi Masa Depan] Saya ingin dikenal lewat karya-karya kreatif, inovatif, dan desain yang menginspirasi banyak orang." },
   { no: 45, sesi: 2, dimensi: "S", teks: "[Visi Masa Depan] Saya ingin berkarier di bidang yang berdampak langsung pada pendidikan, kesehatan, atau pengembangan manusia." },
@@ -986,14 +1010,12 @@ export const MultiJenjangTalentSuite: React.FC<{
   setInstansiPeserta,
   emailPeserta = "peserta@hibahilmu.id",
 }) => {
-  // ==========================================================================
-  // STATE UMUM & AUTO-NEXT
-  // ==========================================================================
   const [autoNext, setAutoNext] = useState<boolean>(true);
   const [statusCloud, setStatusCloud] = useState<string>("");
+  const [tampilkanSertifikat, setTampilkanSertifikat] = useState<boolean>(true);
 
   // ==========================================================================
-  // STATE JENJANG 1: ANAK 4–8 TAHUN (4 MISI KANVAS + 16 KARTU + 18 OBSERVASI)
+  // STATE JENJANG 1: ANAK 3–8 TAHUN (DILENGKAPI MEMORI PENYIMPAN GAMBAR KANVAS)
   // ==========================================================================
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [subTahapAnak, setSubTahapAnak] = useState<
@@ -1002,41 +1024,47 @@ export const MultiJenjangTalentSuite: React.FC<{
   const [sedangMenggambar, setSedangMenggambar] = useState<boolean>(false);
   const [warnaKuas, setWarnaKuas] = useState<string>("#e11d48");
   const [ukuranKuas, setUkuranKuas] = useState<number>(10);
-  const [misiKanvasAktif, setMisiKanvasAktif] = useState<
-    "rumah_pohon" | "robot_bintang" | "taman_satwa" | "bebas"
-  >("rumah_pohon");
-  const [misiSelesaiSet, setMisiSelesaiSet] = useState<Set<string>>(
-    new Set(["rumah_pohon"])
-  );
+  const [misiKanvasAktif, setMisiKanvasAktif] =
+    useState<MisiKanvasId>("rumah_pohon");
+
+  // PENYIMPANAN GAMBAR KANVAS PER MISI (AGAR PINDAH TAB TIDAK HILANG!)
+  const [galeriKaryaKanvas, setGaleriKaryaKanvas] = useState<
+     Partial<Record<MisiKanvasId, string>>
+  >({});
+  const [misiPernahDigoresSet, setMisiPernahDigoresSet] = useState<
+    Set<MisiKanvasId>
+  >(new Set());
   const [warnaTerpakaiSet, setWarnaTerpakaiSet] = useState<Set<string>>(
     new Set(["#e11d48"])
   );
   const [jumlahGoresan, setJumlahGoresan] = useState<number>(0);
   const [totalPanjangGoresan, setTotalPanjangGoresan] = useState<number>(0);
 
-  // Semua pilihan kartu & observasi anak dimulai 100% KOSONG ({})
   const [indeksKartuAnak, setIndeksKartuAnak] = useState<number>(0);
-  const [jawabanKartuAnak, setJawabanKartuAnak] = useState<Record<number, string>>({});
-  const [observasiOrtuSkor, setObservasiOrtuSkor] = useState<Record<string, number>>({});
+  const [jawabanKartuAnak, setJawabanKartuAnak] = useState<
+    Record<number, string>
+  >({});
+  const [observasiOrtuSkor, setObservasiOrtuSkor] = useState<
+    Record<string, number>
+  >({});
 
   // ==========================================================================
-  // STATE JENJANG 2: SD ATAS & SMP (36 SOAL — AWAL 100% KOSONG)
+  // STATE JENJANG 2: SD ATAS & SMP (36 SOAL) & JENJANG 3: SMA (48 SOAL)
   // ==========================================================================
-  const [subTahapSmp, setSubTahapSmp] = useState<"sesi1" | "sesi2" | "hasil">("sesi1");
-  const [indeksSoalSmp, setIndeksSoalSmp] = useState<number>(0); // 0..35
+  const [subTahapSmp, setSubTahapSmp] = useState<"sesi1" | "sesi2" | "hasil">(
+    "sesi1"
+  );
+  const [indeksSoalSmp, setIndeksSoalSmp] = useState<number>(0);
   const [jawabanSmp, setJawabanSmp] = useState<Record<number, number>>({});
 
-  // ==========================================================================
-  // STATE JENJANG 3: SMA / SMK (48 SOAL — AWAL 100% KOSONG)
-  // ==========================================================================
-  const [subTahapSma, setSubTahapSma] = useState<"sesi1" | "sesi2" | "hasil">("sesi1");
-  const [indeksSoalSma, setIndeksSoalSma] = useState<number>(0); // 0..47
+  const [subTahapSma, setSubTahapSma] = useState<"sesi1" | "sesi2" | "hasil">(
+    "sesi1"
+  );
+  const [indeksSoalSma, setIndeksSoalSma] = useState<number>(0);
   const [jawabanSma, setJawabanSma] = useState<Record<number, number>>({});
 
-  // Fungsi Gambar Outline 4 Misi Kanvas Anak
-  const gambarOutlineKanvasAnak = (
-    tipe: "rumah_pohon" | "robot_bintang" | "taman_satwa" | "bebas"
-  ) => {
+  // Gambar Outline Dasar Kanvas Anak (Hanya digambar jika belum ada simpanan karya di misi tersebut)
+  const gambarOutlineDasar = (tipe: MisiKanvasId) => {
     const cvs = canvasRef.current;
     if (!cvs) return;
     const ctx = cvs.getContext("2d");
@@ -1077,7 +1105,6 @@ export const MultiJenjangTalentSuite: React.FC<{
       ctx.arc(445, 75, 28, 0, Math.PI * 2);
       ctx.stroke();
     } else if (tipe === "taman_satwa") {
-      // Ikan / Kupu-kupu & Bunga
       ctx.beginPath();
       ctx.arc(150, 120, 35, 0, Math.PI * 2);
       ctx.arc(205, 120, 25, 0, Math.PI * 2);
@@ -1092,11 +1119,48 @@ export const MultiJenjangTalentSuite: React.FC<{
     }
   };
 
+  // Simpan isi kanvas saat ini ke state galeriKaryaKanvas agar tidak pernah hilang saat pindah tab
+  const simpanSnapshotKanvasSaatIni = (misiId: MisiKanvasId = misiKanvasAktif) => {
+    const cvs = canvasRef.current;
+    if (!cvs) return;
+    try {
+      const dataUrl = cvs.toDataURL("image/png");
+      setGaleriKaryaKanvas((prev) => ({
+        ...prev,
+        [misiId]: dataUrl,
+      }));
+    } catch {}
+  };
+
+  // Pulihkan gambar yang sudah diwarnai saat kembali ke tab Kanvas atau ganti Misi
   useEffect(() => {
     if (modeJenjang === "anak_tk_sd" && subTahapAnak === "kanvas") {
-      setTimeout(() => gambarOutlineKanvasAnak(misiKanvasAktif), 60);
+      const timer = setTimeout(() => {
+        const cvs = canvasRef.current;
+        if (!cvs) return;
+        const ctx = cvs.getContext("2d");
+        if (!ctx) return;
+
+        const rekamanLama = galeriKaryaKanvas[misiKanvasAktif];
+        if (rekamanLama) {
+          const img = new Image();
+          img.onload = () => {
+            ctx.clearRect(0, 0, cvs.width, cvs.height);
+            ctx.drawImage(img, 0, 0);
+          };
+          img.src = rekamanLama;
+        } else {
+          gambarOutlineDasar(misiKanvasAktif);
+        }
+      }, 50);
+      return () => clearTimeout(timer);
     }
   }, [modeJenjang, subTahapAnak, misiKanvasAktif]);
+
+  const gantiMisiKanvasDenganAman = (targetMisi: MisiKanvasId) => {
+    simpanSnapshotKanvasSaatIni(misiKanvasAktif);
+    setMisiKanvasAktif(targetMisi);
+  };
 
   const mulaiGoresKanvas = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const cvs = canvasRef.current;
@@ -1110,7 +1174,7 @@ export const MultiJenjangTalentSuite: React.FC<{
     setSedangMenggambar(true);
     setJumlahGoresan((g) => g + 1);
     setWarnaTerpakaiSet((prev) => new Set(prev).add(warnaKuas));
-    setMisiSelesaiSet((prev) => new Set(prev).add(misiKanvasAktif));
+    setMisiPernahDigoresSet((prev) => new Set(prev).add(misiKanvasAktif));
 
     ctx.beginPath();
     ctx.moveTo(x, y);
@@ -1135,7 +1199,27 @@ export const MultiJenjangTalentSuite: React.FC<{
     setTotalPanjangGoresan((p) => p + 1);
   };
 
-  // Simpan laporan jenjang anak/SMP/SMA ke Cloud Server Akun
+  const akhiriGoresKanvas = () => {
+    if (sedangMenggambar) {
+      setSedangMenggambar(false);
+      simpanSnapshotKanvasSaatIni(misiKanvasAktif);
+    }
+  };
+
+  const hapusUlangiKanvasIni = () => {
+    gambarOutlineDasar(misiKanvasAktif);
+    setGaleriKaryaKanvas((prev) => {
+      const salinan = { ...prev };
+      delete salinan[misiKanvasAktif];
+      return salinan;
+    });
+    setMisiPernahDigoresSet((prev) => {
+      const next = new Set(prev);
+      next.delete(misiKanvasAktif);
+      return next;
+    });
+  };
+
   const simpanLaporanMultiJenjangKeCloud = async (
     labelJenjang: string,
     daftarDimensi: DimensiScoreItem[]
@@ -1184,9 +1268,6 @@ export const MultiJenjangTalentSuite: React.FC<{
     }
   };
 
-  // ==========================================================================
-  // KOMPONEN HELPER: SPIDER RADAR CHART SVG MULTI-DIMENSI
-  // ==========================================================================
   const renderSpiderRadarSvg = (items: DimensiScoreItem[]) => {
     const cx = 145;
     const cy = 145;
@@ -1259,7 +1340,164 @@ export const MultiJenjangTalentSuite: React.FC<{
   };
 
   // ==========================================================================
-  // KOMPONEN HELPER: LAPORAN LENGKAP EKSEKUTIF (KEKUATAN, KELEMAHAN, HARUS NGAPAIN SAJA)
+  // KOMPONEN BARU: SERTIFIKAT PENGHARGAAN EMAS PANDA HIBAHILMU + PORTOFOLIO LUKISAN ANAK
+  // ==========================================================================
+  const renderSertifikatPenghargaanResmi = (
+    daftarUrut: DimensiScoreItem[],
+    labelJenjang: string
+  ) => {
+    const top3 = daftarUrut.slice(0, 3);
+    const karyaTersimpanList = Object.entries(galeriKaryaKanvas);
+    const tanggalCetak = new Date().toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+
+    return (
+      <div className="p-1.5 rounded-3xl bg-gradient-to-r from-amber-500 via-yellow-300 to-amber-600 shadow-2xl break-inside-avoid">
+        <div className="bg-gradient-to-b from-[#fffdf5] via-white to-[#fefce8] text-slate-900 p-6 sm:p-8 rounded-[22px] border-4 border-double border-amber-600/80 space-y-6 relative overflow-hidden">
+          {/* Header Sertifikat */}
+          <div className="flex flex-wrap justify-between items-center gap-4 border-b-2 border-amber-300 pb-4">
+            <div className="flex items-center gap-3.5">
+              <img
+                src="/hibahilmu.jpg"
+                alt="Logo Panda HibahIlmu"
+                onError={(e) => {
+                  e.currentTarget.src =
+                    "https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=120&auto=format&fit=crop&q=80";
+                }}
+                className="w-16 h-16 rounded-2xl object-cover border-2 border-amber-500 shadow-md"
+              />
+              <div>
+                <div className="text-[10px] font-black uppercase tracking-widest text-amber-800">
+                  OFFICIAL TALENT CERTIFICATE • PANDA HIBAHILMU INDONESIA
+                </div>
+                <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                  SERTIFIKAT PENGHARGAAN BAKAT &amp; POTENSI EMAS
+                </h3>
+                <div className="text-xs font-bold text-emerald-700">
+                  {labelJenjang}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col items-end">
+              <div className="px-3.5 py-1.5 rounded-full bg-amber-400 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow">
+                <Award className="w-4 h-4" /> TERVERIFIKASI
+              </div>
+              <span className="text-[10px] font-mono text-slate-500 mt-1">
+                Diterbitkan: {tanggalCetak}
+              </span>
+            </div>
+          </div>
+
+          {/* Nama Penerima Sertifikat & Julukan Bintang */}
+          <div className="text-center space-y-2 py-2">
+            <div className="text-xs font-bold uppercase tracking-widest text-slate-500">
+              Diberikan dengan bangga kepada:
+            </div>
+            <div className="text-2xl sm:text-4xl font-black text-slate-900 underline decoration-amber-400 decoration-4 underline-offset-8">
+              {namaPeserta || "Ananda / Siswa Berbakat"}
+            </div>
+            <div className="pt-2">
+              <span className="inline-block px-4 py-1.5 rounded-full bg-gradient-to-r from-rose-600 to-amber-500 text-white font-black text-xs sm:text-sm shadow-md">
+                🌟 Gelar Bakat Utama: &ldquo;{top3[0]?.julukan || "Bintang Masa Depan"}&rdquo;
+              </span>
+            </div>
+            <p className="max-w-2xl mx-auto text-xs text-slate-600 leading-relaxed pt-1">
+              Telah menyelesaikan rangkaian asesmen pemetaan bakat, minat, dan kecerdasan alami di{" "}
+              <strong>HibahIlmu.id</strong> dengan keistimewaan utama pada bidang berikut:
+            </p>
+          </div>
+
+          {/* 3 Medali Emas Bakat Terkuat */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 print:grid-cols-3">
+            {top3.map((item, idx) => (
+              <div
+                key={item.id}
+                className="p-4 rounded-2xl bg-white border-2 border-amber-400 shadow-sm flex flex-col justify-between gap-2"
+              >
+                <div className="flex justify-between items-center">
+                  <span className="text-2xl">{item.ikon}</span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-amber-100 border border-amber-400 text-amber-950 font-black text-[10px]">
+                    🏅 Medali Bakat #{idx + 1} ({item.persen}%)
+                  </span>
+                </div>
+                <div>
+                  <div className="font-black text-xs sm:text-sm text-slate-900">
+                    {item.nama}
+                  </div>
+                  <div className="text-[11px] font-bold text-rose-700">
+                    {item.julukan}
+                  </div>
+                </div>
+                <div className="text-[10px] font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                  Rekomendasi Utama: {item.rekomendasiLesAtauEkskul[0]}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Galeri Bukti Karya Mewarnai/Lukisan Anak (Jika di Jenjang Anak & Ada Kanvas yang Diwarnai) */}
+          {modeJenjang === "anak_tk_sd" && karyaTersimpanList.length > 0 && (
+            <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-300 space-y-2.5">
+              <div className="text-xs font-black uppercase text-amber-900 flex items-center gap-1.5">
+                <ImageIcon className="w-4 h-4 text-rose-600" /> Portofolio Karya Lukisan &amp; Mewarnai Tangan {namaPeserta || "Ananda"} ({karyaTersimpanList.length} Karya):
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {karyaTersimpanList.map(([idMisi, dataUrl]) => {
+                  const infoMisi = DAFTAR_MISI_KANVAS.find((m) => m.id === idMisi);
+                  return (
+                    <div
+                      key={idMisi}
+                      className="bg-white p-2 rounded-xl border border-amber-300 shadow-xs text-center space-y-1"
+                    >
+                      <img
+                        src={dataUrl}
+                        alt={infoMisi?.judul || idMisi}
+                        className="w-full h-24 object-contain rounded-lg border bg-white"
+                      />
+                      <div className="text-[10px] font-black text-slate-700 truncate">
+                        {infoMisi?.judul || idMisi}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Tanda Tangan & Pengesahan Sertifikat */}
+          <div className="pt-3 border-t border-amber-300 flex flex-wrap justify-between items-end gap-4 text-xs">
+            <div className="space-y-0.5">
+              <div className="font-black text-slate-800">
+                Unit Kerja / Sekolah: {instansiPeserta}
+              </div>
+              <div className="text-[10px] text-slate-500">
+                Dokumen Rahasia &amp; Sertifikat Resmi Pengembangan Potensi Anak/Siswa
+              </div>
+            </div>
+
+            <div className="text-right">
+              <div className="text-[10px] font-bold text-slate-500">
+                Disahkan secara digital oleh:
+              </div>
+              <div className="font-black text-sm text-emerald-800 mt-1">
+                Panda HibahIlmu Talent &amp; People Development Center
+              </div>
+              <div className="text-[10px] font-mono text-slate-500">
+                hibahilmu.my.id • Wakaf &amp; Hibah Ilmu Gratis Indonesia
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ==========================================================================
+  // KOMPONEN HELPER: LAPORAN LENGKAP EKSEKUTIF + SERTIFIKAT
   // ==========================================================================
   const renderLaporanEksekutifLengkap = (params: {
     judulLaporan: string;
@@ -1269,16 +1507,33 @@ export const MultiJenjangTalentSuite: React.FC<{
   }) => {
     const { judulLaporan, subjudulJenjang, daftarUrut, infoTambahanAtas } = params;
     const kekuatanUtama = daftarUrut.slice(0, 3);
-    const kekuatanPendukung = daftarUrut.slice(3, Math.max(4, daftarUrut.length - 2));
+    const kekuatanPendukung = daftarUrut.slice(
+      3,
+      Math.max(4, daftarUrut.length - 2)
+    );
     const areaLemah = daftarUrut.slice(-2);
 
     return (
       <div className="space-y-6">
         <div className="print:hidden bg-slate-900 text-white p-4 rounded-2xl flex flex-wrap justify-between items-center gap-3">
           <div className="text-xs font-bold text-emerald-400">
-            ✓ {statusCloud || "Laporan Lengkap Siap Dicetak / Disimpan ke PDF (A4)"}
+            ✓ {statusCloud || "Sertifikat & Laporan Lengkap Siap Dicetak ke PDF (A4)"}
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setTampilkanSertifikat(!tampilkanSertifikat)}
+              className={`px-3.5 py-2 rounded-xl font-black text-xs flex items-center gap-1.5 cursor-pointer border ${
+                tampilkanSertifikat
+                  ? "bg-amber-400 text-slate-950 border-white"
+                  : "bg-slate-800 text-amber-300 border-amber-400/50"
+              }`}
+            >
+              <Medal className="w-4 h-4" />
+              {tampilkanSertifikat
+                ? "Sertifikat Emas: Tampil ✓"
+                : "Tampilkan Sertifikat Emas"}
+            </button>
             <button
               type="button"
               onClick={() =>
@@ -1291,14 +1546,18 @@ export const MultiJenjangTalentSuite: React.FC<{
             <button
               type="button"
               onClick={() => window.print()}
-              className="px-5 py-2 rounded-xl bg-amber-400 text-slate-950 font-black text-xs flex items-center gap-1.5 cursor-pointer shadow-lg"
+              className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs flex items-center gap-1.5 cursor-pointer shadow-lg"
             >
-              <Printer className="w-4 h-4" /> Cetak / Simpan PDF Rapi
+              <Printer className="w-4 h-4" /> Cetak Sertifikat &amp; Laporan PDF
             </button>
           </div>
         </div>
 
-        <div className="bg-white text-slate-900 p-6 sm:p-10 rounded-3xl border-2 border-slate-300 shadow-2xl space-y-8 print:border-none print:shadow-none print:p-0">
+        {/* SERTIFIKAT PENGHARGAAN EMAS (TAMPIL DI HALAMAN ATAS LAPORAN) */}
+        {tampilkanSertifikat &&
+          renderSertifikatPenghargaanResmi(daftarUrut, subjudulJenjang)}
+
+        <div className="bg-white text-slate-900 p-6 sm:p-10 rounded-3xl border-2 border-slate-300 shadow-2xl space-y-8 print:border-none print:shadow-none print:p-0 print:break-before-page">
           {/* KOP SURAT RESMI PANDA HIBAHILMU */}
           <div className="border-b-4 border-emerald-700 pb-5 flex flex-wrap justify-between items-center gap-4 break-inside-avoid">
             <div className="flex items-center gap-4">
@@ -1517,11 +1776,12 @@ export const MultiJenjangTalentSuite: React.FC<{
   };
 
   // ==========================================================================
-  // LOGIKA PERHITUNGAN & TAMPILAN JENJANG 1: ANAK 4–8 TAHUN
+  // LOGIKA PERHITUNGAN & TAMPILAN JENJANG 1: ANAK 3–8 TAHUN
   // ==========================================================================
   if (modeJenjang === "anak_tk_sd") {
     const jmlKartuTerisi = Object.keys(jawabanKartuAnak).length;
     const jmlObservasiTerisi = Object.keys(observasiOrtuSkor).length;
+    const jmlKanvasDiwarnai = Object.keys(galeriKaryaKanvas).length;
 
     const hitungSkorLengkapAnak = (): DimensiScoreItem[] => {
       const skorMap: Record<string, number> = {
@@ -1535,20 +1795,23 @@ export const MultiJenjangTalentSuite: React.FC<{
         mandiri: 25,
       };
 
-      // 1. Kontribusi Telemetri Kanvas Mewarnai & Menggambar Anak
-      skorMap.seni += Math.min(28, warnaTerpakaiSet.size * 3.5 + misiSelesaiSet.size * 4);
+      skorMap.seni += Math.min(
+        28,
+        warnaTerpakaiSet.size * 3.5 + Math.max(1, jmlKanvasDiwarnai) * 4
+      );
       skorMap.fisik += Math.min(22, Math.round(totalPanjangGoresan / 15));
-      skorMap.mandiri += Math.min(20, misiSelesaiSet.size * 5 + Math.min(10, jumlahGoresan));
-      if (misiSelesaiSet.has("robot_bintang")) skorMap.logika += 12;
-      if (misiSelesaiSet.has("taman_satwa") || misiSelesaiSet.has("rumah_pohon"))
-        skorMap.alam += 12;
+      skorMap.mandiri += Math.min(
+        20,
+        Math.max(1, jmlKanvasDiwarnai) * 5 + Math.min(10, jumlahGoresan)
+      );
+      if (misiPernahDigoresSet.has("robot_bintang")) skorMap.logika += 14;
+      if (misiPernahDigoresSet.has("rumah_pohon")) skorMap.alam += 14;
+      if (misiPernahDigoresSet.has("taman_satwa")) skorMap.seni += 12;
 
-      // 2. Kontribusi 16 Kartu Visual Anak (Setiap pilihan memberi +12 poin)
       Object.values(jawabanKartuAnak).forEach((kode) => {
         if (skorMap[kode] !== undefined) skorMap[kode] += 12;
       });
 
-      // 3. Kontribusi 18 Checklist Observasi Orang Tua (Skala 1= jarang, 2= kadang, 3= sering sekali)
       OBSERVASI_ORTU_18.forEach((ob) => {
         const nilai = observasiOrtuSkor[ob.id] || 0;
         if (nilai > 0 && skorMap[ob.kategori] !== undefined) {
@@ -1556,7 +1819,7 @@ export const MultiJenjangTalentSuite: React.FC<{
         }
       });
 
-      const urut = Object.entries(DEFINISI_8_DIMENSI_ANAK)
+      return Object.entries(DEFINISI_8_DIMENSI_ANAK)
         .map(([id, def]) => {
           const mentah = skorMap[id] || 30;
           const persen = Math.min(98, Math.max(38, Math.round(mentah)));
@@ -1579,21 +1842,19 @@ export const MultiJenjangTalentSuite: React.FC<{
               ? ("Kekuatan Pendukung" as const)
               : ("Area Perlu Stimulasi / Tantangan" as const),
         }));
-
-      return urut;
     };
 
     const kartuAktif = KARTU_VISUAL_ANAK_16[indeksKartuAnak];
 
     return (
       <div className="space-y-6">
-        {/* Sub-Navigasi 4 Tahap Asesmen Anak 4–8 Tahun */}
+        {/* Sub-Navigasi 4 Tahap Asesmen Anak (Otomatis Simpan Kanvas Saat Pindah Tab!) */}
         <div className="print:hidden grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             {
               id: "kanvas",
               label: "1. Studio Gambar & Warna",
-              sub: `${misiSelesaiSet.size}/4 Misi Kanvas (${warnaTerpakaiSet.size} Warna)`,
+              sub: `${jmlKanvasDiwarnai} Kanvas Tersimpan (Pilih ≥1 Boleh!)`,
             },
             {
               id: "kartu",
@@ -1607,14 +1868,19 @@ export const MultiJenjangTalentSuite: React.FC<{
             },
             {
               id: "hasil",
-              label: "4. Laporan Lengkap Anak",
-              sub: "Les, Kelemahan & Radar",
+              label: "4. Sertifikat & Laporan Anak",
+              sub: "Les, Kelemahan & Lukisan",
             },
           ].map((tab) => (
             <button
               key={tab.id}
               type="button"
-              onClick={() => setSubTahapAnak(tab.id as any)}
+              onClick={() => {
+                if (subTahapAnak === "kanvas") {
+                  simpanSnapshotKanvasSaatIni(misiKanvasAktif);
+                }
+                setSubTahapAnak(tab.id as any);
+              }}
               className={`p-3.5 rounded-2xl border-2 text-left cursor-pointer transition ${
                 subTahapAnak === tab.id
                   ? "bg-pink-600 text-white border-amber-300 shadow-lg"
@@ -1636,7 +1902,7 @@ export const MultiJenjangTalentSuite: React.FC<{
         {/* Input Identitas Anak */}
         <div className="print:hidden bg-white p-4 rounded-2xl border grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
           <div>
-            <label className="font-black text-slate-700">Nama Lengkap Anak:</label>
+            <label className="font-black text-slate-700">Nama Lengkap Anak (Tercetak di Sertifikat):</label>
             <input
               type="text"
               placeholder="Ketik nama panggilan/lengkap anak..."
@@ -1649,7 +1915,7 @@ export const MultiJenjangTalentSuite: React.FC<{
             <label className="font-black text-slate-700">Usia &amp; Sekolah (PAUD/TK/SD):</label>
             <input
               type="text"
-              placeholder="Contoh: Usia 6 Tahun — TK B / SD Kelas 1"
+              placeholder="Contoh: Usia 4 Tahun — PAUD / TK A"
               value={instansiPeserta}
               onChange={(e) => setInstansiPeserta(e.target.value)}
               className="w-full mt-1 p-2.5 rounded-xl border font-bold"
@@ -1657,54 +1923,75 @@ export const MultiJenjangTalentSuite: React.FC<{
           </div>
         </div>
 
-        {/* SUB-TAHAP 1: 4 MISI STUDIO GAMBAR & MEWARNAI ANAK */}
+        {/* SUB-TAHAP 1: 4 MISI STUDIO GAMBAR & MEWARNAI ANAK (ANTI-HILANG SAAT PINDAH TAB!) */}
         {subTahapAnak === "kanvas" && (
           <div className="bg-white p-6 rounded-3xl border-2 border-amber-300 shadow-xl space-y-4">
             <div className="flex flex-wrap justify-between items-center gap-3 border-b pb-3">
               <div>
-                <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded bg-amber-100 text-amber-900">
-                  Tahap 1 dari 3 • Asesmen Motorik Halus, Kreativitas Warna &amp; Eksplorasi Visual
+                <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded bg-emerald-100 text-emerald-900">
+                  ✓ Boleh Pilih 1 Gambar Saja atau Warnai Semuanya! (Otomatis Tersimpan Saat Pindah Tab)
                 </span>
                 <h3 className="text-lg font-black text-slate-900 mt-0.5">
-                  🎨 Pilih 4 Misi Gambar &amp; Ajak Anak Mewarnai Sesuka Hatinya!
+                  🎨 Ajak Anak Memilih Gambar yang Ia Suka &amp; Mewarnainya!
                 </h3>
+                <p className="text-xs text-slate-600">
+                  Untuk anak usia 3–5 tahun, mewarnai <strong>1 gambar saja sudah cukup</strong>. Setiap goresan otomatis disimpan dan akan tampil di <strong>Sertifikat Emas Ananda</strong>!
+                </p>
               </div>
               <button
                 type="button"
-                onClick={() => setSubTahapAnak("kartu")}
-                className="px-4 py-2.5 rounded-xl bg-pink-600 text-white font-black text-xs cursor-pointer"
+                onClick={() => {
+                  simpanSnapshotKanvasSaatIni(misiKanvasAktif);
+                  setSubTahapAnak("kartu");
+                }}
+                className="px-4 py-2.5 rounded-xl bg-pink-600 text-white font-black text-xs cursor-pointer shadow"
               >
-                Lanjut ke 16 Kartu Bergambar ➔
+                Simpan Gambar &amp; Lanjut ke Kartu ➔
               </button>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-              {[
-                { id: "rumah_pohon", label: "🏡 Misi 1: Rumah & Alam" },
-                { id: "robot_bintang", label: "🤖 Misi 2: Robot & Angkasa" },
-                { id: "taman_satwa", label: "🦋 Misi 3: Satwa & Bunga" },
-                { id: "bebas", label: "✨ Misi 4: Gambar Imajinasi Bebas" },
-              ].map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => setMisiKanvasAktif(m.id as any)}
-                  className={`p-2.5 rounded-xl font-black border cursor-pointer ${
-                    misiKanvasAktif === m.id
-                      ? "bg-indigo-600 text-white border-indigo-700"
-                      : "bg-slate-50 text-slate-700 border-slate-200"
-                  }`}
-                >
-                  {m.label} {misiSelesaiSet.has(m.id) ? "✓" : ""}
-                </button>
-              ))}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs">
+              {DAFTAR_MISI_KANVAS.map((m) => {
+                const aktif = misiKanvasAktif === m.id;
+                const sudahAdaGambar = Boolean(galeriKaryaKanvas[m.id]);
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => gantiMisiKanvasDenganAman(m.id)}
+                    className={`p-3 rounded-2xl text-left border-2 cursor-pointer transition ${
+                      aktif
+                        ? "bg-indigo-600 text-white border-amber-400 shadow-md"
+                        : sudahAdaGambar
+                        ? "bg-emerald-50 text-emerald-950 border-emerald-400"
+                        : "bg-slate-50 text-slate-700 border-slate-200"
+                    }`}
+                  >
+                    <div className="font-black flex justify-between items-center">
+                      <span>{m.judul}</span>
+                      {sudahAdaGambar && (
+                        <span className="px-1.5 py-0.5 rounded bg-emerald-500 text-white text-[9px]">
+                          Tersimpan ✓
+                        </span>
+                      )}
+                    </div>
+                    <div
+                      className={`text-[10px] mt-0.5 ${
+                        aktif ? "text-indigo-100" : "text-slate-500"
+                      }`}
+                    >
+                      {m.sub}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-3 rounded-2xl border">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-black text-slate-700">
                   <Paintbrush className="w-4 h-4 inline text-rose-600 mr-1" />
-                  Pilih Warna:
+                  Pilih Warna Kuas:
                 </span>
                 {[
                   "#e11d48",
@@ -1730,21 +2017,21 @@ export const MultiJenjangTalentSuite: React.FC<{
                 ))}
               </div>
               <div className="flex items-center gap-2 text-xs font-bold">
-                <span>Kuas:</span>
+                <span>Ukuran Kuas:</span>
                 <input
                   type="range"
                   min={4}
-                  max={26}
+                  max={28}
                   value={ukuranKuas}
                   onChange={(e) => setUkuranKuas(Number(e.target.value))}
                   className="w-20"
                 />
                 <button
                   type="button"
-                  onClick={() => gambarOutlineKanvasAnak(misiKanvasAktif)}
-                  className="px-2.5 py-1 rounded-lg bg-rose-100 text-rose-700 font-black cursor-pointer"
+                  onClick={hapusUlangiKanvasIni}
+                  className="px-3 py-1.5 rounded-lg bg-rose-100 text-rose-700 font-black cursor-pointer"
                 >
-                  <Eraser className="w-3.5 h-3.5 inline" /> Ulangi
+                  <Eraser className="w-3.5 h-3.5 inline mr-1" /> Hapus / Ulangi Kanvas Ini
                 </button>
               </div>
             </div>
@@ -1756,15 +2043,15 @@ export const MultiJenjangTalentSuite: React.FC<{
                 height={240}
                 onMouseDown={mulaiGoresKanvas}
                 onMouseMove={lanjutkanGoresKanvas}
-                onMouseUp={() => setSedangMenggambar(false)}
-                onMouseLeave={() => setSedangMenggambar(false)}
+                onMouseUp={akhiriGoresKanvas}
+                onMouseLeave={akhiriGoresKanvas}
                 className="w-full max-w-[540px] h-[240px] bg-white rounded-2xl shadow-inner cursor-crosshair border"
               />
             </div>
           </div>
         )}
 
-        {/* SUB-TAHAP 2: 16 KARTU CERITA VISUAL ANAK (AWAL 100% KOSONG + AUTO-NEXT) */}
+        {/* SUB-TAHAP 2: 16 KARTU CERITA VISUAL ANAK */}
         {subTahapAnak === "kartu" && kartuAktif && (
           <div className="bg-white p-6 rounded-3xl border-2 border-sky-300 shadow-xl space-y-5">
             <div className="flex flex-wrap justify-between items-center gap-3 border-b pb-3">
@@ -1938,16 +2225,16 @@ export const MultiJenjangTalentSuite: React.FC<{
               onClick={() => setSubTahapAnak("hasil")}
               className="w-full py-4 rounded-2xl bg-gradient-to-r from-rose-600 to-amber-500 text-white font-black text-sm shadow-xl cursor-pointer"
             >
-              🎉 Proses Algoritma &amp; Buka Laporan Lengkap Bakat Anak Sekarang!
+              🎉 Terbitkan Sertifikat Emas &amp; Laporan Lengkap Bakat Anak Sekarang!
             </button>
           </div>
         )}
 
-        {/* SUB-TAHAP 4: LAPORAN LENGKAP ANAK USIA 4–8 TAHUN */}
+        {/* SUB-TAHAP 4: SERTIFIKAT EMAS + LAPORAN LENGKAP ANAK USIA 3–8 TAHUN */}
         {subTahapAnak === "hasil" &&
           renderLaporanEksekutifLengkap({
             judulLaporan: "Laporan Komprehensif Bakat, Motorik & Kecerdasan Majemuk Anak",
-            subjudulJenjang: `Jenjang Anak Usia Dini (4–8 Tahun / PAUD–TK–SD) • Analisis Kanvas (${warnaTerpakaiSet.size} Warna, ${jumlahGoresan} Goresan), 16 Kartu Visual & 18 Observasi`,
+            subjudulJenjang: `Jenjang Anak Usia Dini (3–8 Tahun / PAUD–TK–SD) • Analisis Kanvas (${jmlKanvasDiwarnai} Karya, ${warnaTerpakaiSet.size} Warna), 16 Kartu Visual & 18 Observasi`,
             daftarUrut: hitungSkorLengkapAnak(),
           })}
       </div>
@@ -1977,7 +2264,7 @@ export const MultiJenjangTalentSuite: React.FC<{
 
       const daftarUrut: DimensiScoreItem[] = Object.entries(DEFINISI_8_BAKAT_SMP)
         .map(([id, def]) => {
-          const mentah = mapSkor[id] || 9; // 3..15
+          const mentah = mapSkor[id] || 9;
           const persen = Math.min(98, Math.max(35, Math.round((mentah / 15) * 100)));
           return {
             ...def,
@@ -2011,7 +2298,7 @@ export const MultiJenjangTalentSuite: React.FC<{
           {[
             { id: "sesi1", label: "1. Sesi 1: 8 Bakat SMP (Soal 1–24)", sub: "Minat, Akademik & Karakter" },
             { id: "sesi2", label: "2. Sesi 2: Gaya Belajar VAK (Soal 25–36)", sub: "Visual, Auditori, Kinestetik" },
-            { id: "hasil", label: "3. Laporan Lengkap SMP", sub: `Terisi: ${jmlTerisiSmp}/36 Soal` },
+            { id: "hasil", label: "3. Sertifikat & Laporan SMP", sub: `Terisi: ${jmlTerisiSmp}/36 Soal` },
           ].map((t) => (
             <button
               key={t.id}
@@ -2068,7 +2355,7 @@ export const MultiJenjangTalentSuite: React.FC<{
                   onClick={() => setSubTahapSmp("hasil")}
                   className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-black cursor-pointer"
                 >
-                  Lihat Hasil Lengkap ➔
+                  Lihat Sertifikat &amp; Hasil ➔
                 </button>
               </div>
             </div>
@@ -2203,7 +2490,7 @@ export const MultiJenjangTalentSuite: React.FC<{
 
     return Object.entries(DEFINISI_6_RIASEC_SMA)
       .map(([id, def]) => {
-        const mentah = mapSkor[id] || 24; // 8 soal x (1..5) = 8..40
+        const mentah = mapSkor[id] || 24;
         const persen = Math.min(99, Math.max(36, Math.round((mentah / 40) * 100)));
         return {
           ...def,
@@ -2232,7 +2519,7 @@ export const MultiJenjangTalentSuite: React.FC<{
         {[
           { id: "sesi1", label: "1. Sesi 1: Minat RIASEC (Soal 1–30)", sub: "6 Dimensi Karier & Jurusan" },
           { id: "sesi2", label: "2. Sesi 2: Kesiapan Kuliah (Soal 31–48)", sub: "Kompetensi Eksekusi Abad 21" },
-          { id: "hasil", label: "3. Laporan Penjurusan SMA/SMK", sub: `Terisi: ${jmlTerisiSma}/48 Soal` },
+          { id: "hasil", label: "3. Sertifikat & Penjurusan SMA", sub: `Terisi: ${jmlTerisiSma}/48 Soal` },
         ].map((t) => (
           <button
             key={t.id}
@@ -2289,7 +2576,7 @@ export const MultiJenjangTalentSuite: React.FC<{
                 onClick={() => setSubTahapSma("hasil")}
                 className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-black cursor-pointer"
               >
-                Lihat Hasil Penjurusan ➔
+                Lihat Sertifikat &amp; Penjurusan ➔
               </button>
             </div>
           </div>
