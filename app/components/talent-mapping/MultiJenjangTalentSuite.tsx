@@ -11,8 +11,6 @@ import {
   Eraser,
   Paintbrush,
   Lock,
-  ChevronRight,
-  ChevronLeft,
   Compass,
   CloudUpload,
   CheckSquare,
@@ -22,11 +20,9 @@ import {
   Award,
   Medal,
   Image as ImageIcon,
+  FileText,
 } from "lucide-react";
 
-// ============================================================================
-// TIPE DATA LAPORAN KOMPREHENSIF ANAK, SMP, & SMA
-// ============================================================================
 interface DimensiScoreItem {
   id: string;
   nama: string;
@@ -1012,10 +1008,24 @@ export const MultiJenjangTalentSuite: React.FC<{
 }) => {
   const [autoNext, setAutoNext] = useState<boolean>(true);
   const [statusCloud, setStatusCloud] = useState<string>("");
-  const [tampilkanSertifikat, setTampilkanSertifikat] = useState<boolean>(true);
+
+  // Mode Print Terpisah: "sertifikat_saja" (1 Hal A4 Portrait Utuh) atau "laporan_saja" (Detail Hasil)
+  const [modeCetakAktif, setModeCetakAktif] = useState<
+    "semua" | "sertifikat_saja" | "laporan_saja"
+  >("semua");
+
+  const cetakDokumenTerpisah = (
+    pilihan: "sertifikat_saja" | "laporan_saja"
+  ) => {
+    setModeCetakAktif(pilihan);
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => setModeCetakAktif("semua"), 500);
+    }, 180);
+  };
 
   // ==========================================================================
-  // STATE JENJANG 1: ANAK 3–8 TAHUN (DILENGKAPI MEMORI PENYIMPAN GAMBAR KANVAS)
+  // STATE JENJANG 1: ANAK 3–8 TAHUN
   // ==========================================================================
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [subTahapAnak, setSubTahapAnak] = useState<
@@ -1027,9 +1037,8 @@ export const MultiJenjangTalentSuite: React.FC<{
   const [misiKanvasAktif, setMisiKanvasAktif] =
     useState<MisiKanvasId>("rumah_pohon");
 
-  // PENYIMPANAN GAMBAR KANVAS PER MISI (AGAR PINDAH TAB TIDAK HILANG!)
   const [galeriKaryaKanvas, setGaleriKaryaKanvas] = useState<
-     Partial<Record<MisiKanvasId, string>>
+    Partial<Record<MisiKanvasId, string>>
   >({});
   const [misiPernahDigoresSet, setMisiPernahDigoresSet] = useState<
     Set<MisiKanvasId>
@@ -1063,7 +1072,6 @@ export const MultiJenjangTalentSuite: React.FC<{
   const [indeksSoalSma, setIndeksSoalSma] = useState<number>(0);
   const [jawabanSma, setJawabanSma] = useState<Record<number, number>>({});
 
-  // Gambar Outline Dasar Kanvas Anak (Hanya digambar jika belum ada simpanan karya di misi tersebut)
   const gambarOutlineDasar = (tipe: MisiKanvasId) => {
     const cvs = canvasRef.current;
     if (!cvs) return;
@@ -1119,8 +1127,9 @@ export const MultiJenjangTalentSuite: React.FC<{
     }
   };
 
-  // Simpan isi kanvas saat ini ke state galeriKaryaKanvas agar tidak pernah hilang saat pindah tab
-  const simpanSnapshotKanvasSaatIni = (misiId: MisiKanvasId = misiKanvasAktif) => {
+  const simpanSnapshotKanvasSaatIni = (
+    misiId: MisiKanvasId = misiKanvasAktif
+  ) => {
     const cvs = canvasRef.current;
     if (!cvs) return;
     try {
@@ -1132,7 +1141,6 @@ export const MultiJenjangTalentSuite: React.FC<{
     } catch {}
   };
 
-  // Pulihkan gambar yang sudah diwarnai saat kembali ke tab Kanvas atau ganti Misi
   useEffect(() => {
     if (modeJenjang === "anak_tk_sd" && subTahapAnak === "kanvas") {
       const timer = setTimeout(() => {
@@ -1340,7 +1348,7 @@ export const MultiJenjangTalentSuite: React.FC<{
   };
 
   // ==========================================================================
-  // KOMPONEN BARU: SERTIFIKAT PENGHARGAAN EMAS PANDA HIBAHILMU + PORTOFOLIO LUKISAN ANAK
+  // SERTIFIKAT PENGHARGAAN EMAS (DIKALIBRASI PAS 1 HALAMAN A4 PORTRAIT UTUH!)
   // ==========================================================================
   const renderSertifikatPenghargaanResmi = (
     daftarUrut: DimensiScoreItem[],
@@ -1355,11 +1363,11 @@ export const MultiJenjangTalentSuite: React.FC<{
     });
 
     return (
-      <div className="p-1.5 rounded-3xl bg-gradient-to-r from-amber-500 via-yellow-300 to-amber-600 shadow-2xl break-inside-avoid">
-        <div className="bg-gradient-to-b from-[#fffdf5] via-white to-[#fefce8] text-slate-900 p-6 sm:p-8 rounded-[22px] border-4 border-double border-amber-600/80 space-y-6 relative overflow-hidden">
+      <div className="p-1.5 rounded-3xl bg-gradient-to-r from-amber-500 via-yellow-300 to-amber-600 shadow-2xl print:shadow-none break-inside-avoid print:max-h-[268mm] print:overflow-hidden">
+        <div className="bg-gradient-to-b from-[#fffdf5] via-white to-[#fefce8] text-slate-900 p-6 sm:p-7 print:p-5 rounded-[22px] border-4 border-double border-amber-600/80 space-y-4 print:space-y-3 relative">
           {/* Header Sertifikat */}
-          <div className="flex flex-wrap justify-between items-center gap-4 border-b-2 border-amber-300 pb-4">
-            <div className="flex items-center gap-3.5">
+          <div className="flex flex-wrap justify-between items-center gap-3 border-b-2 border-amber-300 pb-3 print:pb-2.5">
+            <div className="flex items-center gap-3">
               <img
                 src="/hibahilmu.jpg"
                 alt="Logo Panda HibahIlmu"
@@ -1367,98 +1375,98 @@ export const MultiJenjangTalentSuite: React.FC<{
                   e.currentTarget.src =
                     "https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=120&auto=format&fit=crop&q=80";
                 }}
-                className="w-16 h-16 rounded-2xl object-cover border-2 border-amber-500 shadow-md"
+                className="w-14 h-14 print:w-12 print:h-12 rounded-2xl object-cover border-2 border-amber-500 shadow-sm"
               />
               <div>
-                <div className="text-[10px] font-black uppercase tracking-widest text-amber-800">
+                <div className="text-[9.5px] font-black uppercase tracking-widest text-amber-800">
                   OFFICIAL TALENT CERTIFICATE • PANDA HIBAHILMU INDONESIA
                 </div>
-                <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                <h3 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
                   SERTIFIKAT PENGHARGAAN BAKAT &amp; POTENSI EMAS
                 </h3>
-                <div className="text-xs font-bold text-emerald-700">
-                  {labelJenjang}
+                <div className="text-[11px] font-bold text-emerald-700">
+                  {labelJenjang.split(" •")[0]}
                 </div>
               </div>
             </div>
 
             <div className="flex flex-col items-end">
-              <div className="px-3.5 py-1.5 rounded-full bg-amber-400 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow">
-                <Award className="w-4 h-4" /> TERVERIFIKASI
+              <div className="px-3 py-1 rounded-full bg-amber-400 text-slate-950 font-black text-[11px] flex items-center gap-1 shadow-xs">
+                <Award className="w-3.5 h-3.5" /> TERVERIFIKASI
               </div>
-              <span className="text-[10px] font-mono text-slate-500 mt-1">
+              <span className="text-[9.5px] font-mono text-slate-500 mt-0.5">
                 Diterbitkan: {tanggalCetak}
               </span>
             </div>
           </div>
 
           {/* Nama Penerima Sertifikat & Julukan Bintang */}
-          <div className="text-center space-y-2 py-2">
-            <div className="text-xs font-bold uppercase tracking-widest text-slate-500">
+          <div className="text-center space-y-1.5 py-1">
+            <div className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
               Diberikan dengan bangga kepada:
             </div>
-            <div className="text-2xl sm:text-4xl font-black text-slate-900 underline decoration-amber-400 decoration-4 underline-offset-8">
+            <div className="text-2xl sm:text-3xl font-black text-slate-900 underline decoration-amber-400 decoration-4 underline-offset-4">
               {namaPeserta || "Ananda / Siswa Berbakat"}
             </div>
-            <div className="pt-2">
-              <span className="inline-block px-4 py-1.5 rounded-full bg-gradient-to-r from-rose-600 to-amber-500 text-white font-black text-xs sm:text-sm shadow-md">
+            <div className="pt-1">
+              <span className="inline-block px-4 py-1 rounded-full bg-gradient-to-r from-rose-600 to-amber-500 text-white font-black text-xs shadow-sm">
                 🌟 Gelar Bakat Utama: &ldquo;{top3[0]?.julukan || "Bintang Masa Depan"}&rdquo;
               </span>
             </div>
-            <p className="max-w-2xl mx-auto text-xs text-slate-600 leading-relaxed pt-1">
+            <p className="max-w-2xl mx-auto text-[11px] text-slate-600 leading-snug pt-0.5">
               Telah menyelesaikan rangkaian asesmen pemetaan bakat, minat, dan kecerdasan alami di{" "}
               <strong>HibahIlmu.id</strong> dengan keistimewaan utama pada bidang berikut:
             </p>
           </div>
 
-          {/* 3 Medali Emas Bakat Terkuat */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 print:grid-cols-3">
+          {/* 3 Medali Emas Bakat Terkuat (Kompak & Rapi Agar Tidak Mendorong Halaman) */}
+          <div className="grid grid-cols-3 gap-2.5 print:grid-cols-3">
             {top3.map((item, idx) => (
               <div
                 key={item.id}
-                className="p-4 rounded-2xl bg-white border-2 border-amber-400 shadow-sm flex flex-col justify-between gap-2"
+                className="p-3 print:p-2.5 rounded-2xl bg-white border-2 border-amber-400 shadow-xs flex flex-col justify-between gap-1.5"
               >
                 <div className="flex justify-between items-center">
-                  <span className="text-2xl">{item.ikon}</span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-amber-100 border border-amber-400 text-amber-950 font-black text-[10px]">
-                    🏅 Medali Bakat #{idx + 1} ({item.persen}%)
+                  <span className="text-xl">{item.ikon}</span>
+                  <span className="px-2 py-0.5 rounded-full bg-amber-100 border border-amber-400 text-amber-950 font-black text-[9.5px]">
+                    🏅 Medali #{idx + 1} ({item.persen}%)
                   </span>
                 </div>
                 <div>
-                  <div className="font-black text-xs sm:text-sm text-slate-900">
+                  <div className="font-black text-xs text-slate-900 leading-tight">
                     {item.nama}
                   </div>
-                  <div className="text-[11px] font-bold text-rose-700">
+                  <div className="text-[10px] font-bold text-rose-700 mt-0.5">
                     {item.julukan}
                   </div>
                 </div>
-                <div className="text-[10px] font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                <div className="text-[9.5px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200 leading-tight">
                   Rekomendasi Utama: {item.rekomendasiLesAtauEkskul[0]}
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Galeri Bukti Karya Mewarnai/Lukisan Anak (Jika di Jenjang Anak & Ada Kanvas yang Diwarnai) */}
+          {/* Galeri Bukti Karya Mewarnai/Lukisan Anak (Tinggi Dikalibrasi h-16 saat Print agar Pas 1 Halaman!) */}
           {modeJenjang === "anak_tk_sd" && karyaTersimpanList.length > 0 && (
-            <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-300 space-y-2.5">
-              <div className="text-xs font-black uppercase text-amber-900 flex items-center gap-1.5">
-                <ImageIcon className="w-4 h-4 text-rose-600" /> Portofolio Karya Lukisan &amp; Mewarnai Tangan {namaPeserta || "Ananda"} ({karyaTersimpanList.length} Karya):
+            <div className="p-3 print:p-2.5 rounded-2xl bg-amber-50/70 border border-amber-300 space-y-1.5">
+              <div className="text-[10.5px] font-black uppercase text-amber-900 flex items-center gap-1.5">
+                <ImageIcon className="w-3.5 h-3.5 text-rose-600" /> Portofolio Karya Lukisan &amp; Mewarnai Tangan {namaPeserta || "Ananda"} ({karyaTersimpanList.length} Karya):
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-4 gap-2">
                 {karyaTersimpanList.map(([idMisi, dataUrl]) => {
                   const infoMisi = DAFTAR_MISI_KANVAS.find((m) => m.id === idMisi);
                   return (
                     <div
                       key={idMisi}
-                      className="bg-white p-2 rounded-xl border border-amber-300 shadow-xs text-center space-y-1"
+                      className="bg-white p-1.5 rounded-xl border border-amber-300 shadow-xs text-center space-y-0.5"
                     >
                       <img
                         src={dataUrl}
                         alt={infoMisi?.judul || idMisi}
-                        className="w-full h-24 object-contain rounded-lg border bg-white"
+                        className="w-full h-20 print:h-16 object-contain rounded border bg-white"
                       />
-                      <div className="text-[10px] font-black text-slate-700 truncate">
+                      <div className="text-[9px] font-black text-slate-700 truncate">
                         {infoMisi?.judul || idMisi}
                       </div>
                     </div>
@@ -1468,25 +1476,25 @@ export const MultiJenjangTalentSuite: React.FC<{
             </div>
           )}
 
-          {/* Tanda Tangan & Pengesahan Sertifikat */}
-          <div className="pt-3 border-t border-amber-300 flex flex-wrap justify-between items-end gap-4 text-xs">
+          {/* Tanda Tangan & Pengesahan Sertifikat (Selalu Utuh di Halaman yang Sama!) */}
+          <div className="pt-2.5 border-t border-amber-300 flex justify-between items-end gap-4 text-xs">
             <div className="space-y-0.5">
-              <div className="font-black text-slate-800">
+              <div className="font-black text-xs text-slate-800">
                 Unit Kerja / Sekolah: {instansiPeserta}
               </div>
-              <div className="text-[10px] text-slate-500">
+              <div className="text-[9.5px] text-slate-500">
                 Dokumen Rahasia &amp; Sertifikat Resmi Pengembangan Potensi Anak/Siswa
               </div>
             </div>
 
             <div className="text-right">
-              <div className="text-[10px] font-bold text-slate-500">
+              <div className="text-[9.5px] font-bold text-slate-500">
                 Disahkan secara digital oleh:
               </div>
-              <div className="font-black text-sm text-emerald-800 mt-1">
+              <div className="font-black text-xs sm:text-sm text-emerald-800 mt-0.5">
                 Panda HibahIlmu Talent &amp; People Development Center
               </div>
-              <div className="text-[10px] font-mono text-slate-500">
+              <div className="text-[9.5px] font-mono text-slate-500">
                 hibahilmu.my.id • Wakaf &amp; Hibah Ilmu Gratis Indonesia
               </div>
             </div>
@@ -1497,7 +1505,7 @@ export const MultiJenjangTalentSuite: React.FC<{
   };
 
   // ==========================================================================
-  // KOMPONEN HELPER: LAPORAN LENGKAP EKSEKUTIF + SERTIFIKAT
+  // LAPORAN LENGKAP DENGAN 2 TOMBOL PRINT TERPISAH (SERTIFIKAT SAJA vs LAPORAN SAJA)
   // ==========================================================================
   const renderLaporanEksekutifLengkap = (params: {
     judulLaporan: string;
@@ -1514,50 +1522,60 @@ export const MultiJenjangTalentSuite: React.FC<{
     const areaLemah = daftarUrut.slice(-2);
 
     return (
-      <div className="space-y-6">
-        <div className="print:hidden bg-slate-900 text-white p-4 rounded-2xl flex flex-wrap justify-between items-center gap-3">
+      <div className="space-y-6 print:space-y-0">
+        {/* TOOLBAR 2 PILIHAN CETAK TERPISAH */}
+        <div className="print:hidden bg-slate-900 text-white p-4 rounded-2xl border border-slate-700 flex flex-wrap justify-between items-center gap-3">
           <div className="text-xs font-bold text-emerald-400">
-            ✓ {statusCloud || "Sertifikat & Laporan Lengkap Siap Dicetak ke PDF (A4)"}
+            ✓ {statusCloud || "Pilih Cetak Sertifikat Saja (1 Hal Portrait) atau Cetak Laporan Hasil:"}
           </div>
           <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setTampilkanSertifikat(!tampilkanSertifikat)}
-              className={`px-3.5 py-2 rounded-xl font-black text-xs flex items-center gap-1.5 cursor-pointer border ${
-                tampilkanSertifikat
-                  ? "bg-amber-400 text-slate-950 border-white"
-                  : "bg-slate-800 text-amber-300 border-amber-400/50"
-              }`}
-            >
-              <Medal className="w-4 h-4" />
-              {tampilkanSertifikat
-                ? "Sertifikat Emas: Tampil ✓"
-                : "Tampilkan Sertifikat Emas"}
-            </button>
             <button
               type="button"
               onClick={() =>
                 simpanLaporanMultiJenjangKeCloud(subjudulJenjang, daftarUrut)
               }
-              className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-black text-xs flex items-center gap-1.5 cursor-pointer"
+              className="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-1.5 cursor-pointer"
             >
               <CloudUpload className="w-4 h-4" /> Simpan ke Akun Cloud
             </button>
+
+            {/* TOMBOL 1: PRINT SERTIFIKAT SAJA (PORTRAIT 1 HALAMAN UTUH) */}
             <button
               type="button"
-              onClick={() => window.print()}
-              className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs flex items-center gap-1.5 cursor-pointer shadow-lg"
+              onClick={() => cetakDokumenTerpisah("sertifikat_saja")}
+              className="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center gap-1.5 cursor-pointer shadow-lg"
             >
-              <Printer className="w-4 h-4" /> Cetak Sertifikat &amp; Laporan PDF
+              <Medal className="w-4 h-4" /> 1. Print Sertifikat Saja (Portrait 1 Hal)
+            </button>
+
+            {/* TOMBOL 2: PRINT LAPORAN HASIL SAJA (TERPISAH DARI SERTIFIKAT) */}
+            <button
+              type="button"
+              onClick={() => cetakDokumenTerpisah("laporan_saja")}
+              className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs flex items-center gap-1.5 cursor-pointer shadow-lg"
+            >
+              <FileText className="w-4 h-4" /> 2. Print Laporan Hasil Saja (PDF)
             </button>
           </div>
         </div>
 
-        {/* SERTIFIKAT PENGHARGAAN EMAS (TAMPIL DI HALAMAN ATAS LAPORAN) */}
-        {tampilkanSertifikat &&
-          renderSertifikatPenghargaanResmi(daftarUrut, subjudulJenjang)}
+        {/* BLOK 1: SERTIFIKAT PENGHARGAAN EMAS (SEMBUNYIKAN JIKA SEDANG CETAK LAPORAN SAJA) */}
+        <div
+          className={
+            modeCetakAktif === "laporan_saja" ? "hidden print:hidden" : "block"
+          }
+        >
+          {renderSertifikatPenghargaanResmi(daftarUrut, subjudulJenjang)}
+        </div>
 
-        <div className="bg-white text-slate-900 p-6 sm:p-10 rounded-3xl border-2 border-slate-300 shadow-2xl space-y-8 print:border-none print:shadow-none print:p-0 print:break-before-page">
+        {/* BLOK 2: LAPORAN ANALISIS LENGKAP (SEMBUNYIKAN JIKA SEDANG CETAK SERTIFIKAT SAJA) */}
+        <div
+          className={
+            modeCetakAktif === "sertifikat_saja"
+              ? "hidden print:hidden"
+              : "bg-white text-slate-900 p-6 sm:p-10 rounded-3xl border-2 border-slate-300 shadow-2xl space-y-8 print:border-none print:shadow-none print:p-0"
+          }
+        >
           {/* KOP SURAT RESMI PANDA HIBAHILMU */}
           <div className="border-b-4 border-emerald-700 pb-5 flex flex-wrap justify-between items-center gap-4 break-inside-avoid">
             <div className="flex items-center gap-4">
@@ -1722,7 +1740,7 @@ export const MultiJenjangTalentSuite: React.FC<{
             </div>
           </div>
 
-          {/* BAGIAN 4: BEDAH KELEMAHAN / BLINDSPOT & CARA MENYIASATI AGAR TIDAK MENGHAMBAT */}
+          {/* BAGIAN 4: BEDAH KELEMAHAN & CARA MENYIASATI AGAR TIDAK MENGHAMBAT */}
           <div className="space-y-4 break-inside-avoid">
             <div className="border-b-2 border-slate-800 pb-1.5">
               <h3 className="text-base sm:text-lg font-black uppercase text-slate-900 flex items-center gap-2">
@@ -1776,7 +1794,7 @@ export const MultiJenjangTalentSuite: React.FC<{
   };
 
   // ==========================================================================
-  // LOGIKA PERHITUNGAN & TAMPILAN JENJANG 1: ANAK 3–8 TAHUN
+  // RENDER JENJANG 1: ANAK 3–8 TAHUN
   // ==========================================================================
   if (modeJenjang === "anak_tk_sd") {
     const jmlKartuTerisi = Object.keys(jawabanKartuAnak).length;
@@ -1847,8 +1865,7 @@ export const MultiJenjangTalentSuite: React.FC<{
     const kartuAktif = KARTU_VISUAL_ANAK_16[indeksKartuAnak];
 
     return (
-      <div className="space-y-6">
-        {/* Sub-Navigasi 4 Tahap Asesmen Anak (Otomatis Simpan Kanvas Saat Pindah Tab!) */}
+      <div className="space-y-6 print:space-y-0">
         <div className="print:hidden grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             {
@@ -1899,10 +1916,11 @@ export const MultiJenjangTalentSuite: React.FC<{
           ))}
         </div>
 
-        {/* Input Identitas Anak */}
         <div className="print:hidden bg-white p-4 rounded-2xl border grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
           <div>
-            <label className="font-black text-slate-700">Nama Lengkap Anak (Tercetak di Sertifikat):</label>
+            <label className="font-black text-slate-700">
+              Nama Lengkap Anak (Tercetak di Sertifikat):
+            </label>
             <input
               type="text"
               placeholder="Ketik nama panggilan/lengkap anak..."
@@ -1912,7 +1930,9 @@ export const MultiJenjangTalentSuite: React.FC<{
             />
           </div>
           <div>
-            <label className="font-black text-slate-700">Usia &amp; Sekolah (PAUD/TK/SD):</label>
+            <label className="font-black text-slate-700">
+              Usia &amp; Sekolah (PAUD/TK/SD):
+            </label>
             <input
               type="text"
               placeholder="Contoh: Usia 4 Tahun — PAUD / TK A"
@@ -1923,7 +1943,6 @@ export const MultiJenjangTalentSuite: React.FC<{
           </div>
         </div>
 
-        {/* SUB-TAHAP 1: 4 MISI STUDIO GAMBAR & MEWARNAI ANAK (ANTI-HILANG SAAT PINDAH TAB!) */}
         {subTahapAnak === "kanvas" && (
           <div className="bg-white p-6 rounded-3xl border-2 border-amber-300 shadow-xl space-y-4">
             <div className="flex flex-wrap justify-between items-center gap-3 border-b pb-3">
@@ -1935,7 +1954,9 @@ export const MultiJenjangTalentSuite: React.FC<{
                   🎨 Ajak Anak Memilih Gambar yang Ia Suka &amp; Mewarnainya!
                 </h3>
                 <p className="text-xs text-slate-600">
-                  Untuk anak usia 3–5 tahun, mewarnai <strong>1 gambar saja sudah cukup</strong>. Setiap goresan otomatis disimpan dan akan tampil di <strong>Sertifikat Emas Ananda</strong>!
+                  Untuk anak usia 3–5 tahun, mewarnai{" "}
+                  <strong>1 gambar saja sudah cukup</strong>. Setiap goresan otomatis
+                  disimpan dan akan tampil di <strong>Sertifikat Emas Ananda</strong>!
                 </p>
               </div>
               <button
@@ -2051,7 +2072,6 @@ export const MultiJenjangTalentSuite: React.FC<{
           </div>
         )}
 
-        {/* SUB-TAHAP 2: 16 KARTU CERITA VISUAL ANAK */}
         {subTahapAnak === "kartu" && kartuAktif && (
           <div className="bg-white p-6 rounded-3xl border-2 border-sky-300 shadow-xl space-y-5">
             <div className="flex flex-wrap justify-between items-center gap-3 border-b pb-3">
@@ -2158,7 +2178,6 @@ export const MultiJenjangTalentSuite: React.FC<{
           </div>
         )}
 
-        {/* SUB-TAHAP 3: 18 CHECKLIST OBSERVASI PERILAKU ANAK OLEH ORANG TUA / GURU */}
         {subTahapAnak === "observasi" && (
           <div className="bg-white p-6 rounded-3xl border-2 border-emerald-300 shadow-xl space-y-5">
             <div className="flex flex-wrap justify-between items-center gap-3 border-b pb-3">
@@ -2230,7 +2249,6 @@ export const MultiJenjangTalentSuite: React.FC<{
           </div>
         )}
 
-        {/* SUB-TAHAP 4: SERTIFIKAT EMAS + LAPORAN LENGKAP ANAK USIA 3–8 TAHUN */}
         {subTahapAnak === "hasil" &&
           renderLaporanEksekutifLengkap({
             judulLaporan: "Laporan Komprehensif Bakat, Motorik & Kecerdasan Majemuk Anak",
@@ -2242,7 +2260,7 @@ export const MultiJenjangTalentSuite: React.FC<{
   }
 
   // ==========================================================================
-  // LOGIKA PERHITUNGAN & TAMPILAN JENJANG 2: SD ATAS & SMP (36 SOAL)
+  // RENDER JENJANG 2: SD ATAS & SMP (36 SOAL)
   // ==========================================================================
   if (modeJenjang === "smp") {
     const jmlTerisiSmp = Object.keys(jawabanSmp).length;
@@ -2293,7 +2311,7 @@ export const MultiJenjangTalentSuite: React.FC<{
     const hasilSmp = hitungSkorLengkapSmp();
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 print:space-y-0">
         <div className="print:hidden grid grid-cols-3 gap-3">
           {[
             { id: "sesi1", label: "1. Sesi 1: 8 Bakat SMP (Soal 1–24)", sub: "Minat, Akademik & Karakter" },
@@ -2476,7 +2494,7 @@ export const MultiJenjangTalentSuite: React.FC<{
   }
 
   // ==========================================================================
-  // LOGIKA PERHITUNGAN & TAMPILAN JENJANG 3: REMAJA SMA / SMK (48 SOAL)
+  // RENDER JENJANG 3: REMAJA SMA / SMK (48 SOAL)
   // ==========================================================================
   const jmlTerisiSma = Object.keys(jawabanSma).length;
   const soalSmaAktif = SOAL_SMA_48[indeksSoalSma];
@@ -2514,7 +2532,7 @@ export const MultiJenjangTalentSuite: React.FC<{
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 print:space-y-0">
       <div className="print:hidden grid grid-cols-3 gap-3">
         {[
           { id: "sesi1", label: "1. Sesi 1: Minat RIASEC (Soal 1–30)", sub: "6 Dimensi Karier & Jurusan" },
@@ -2533,8 +2551,8 @@ export const MultiJenjangTalentSuite: React.FC<{
               subTahapSma === t.id
                 ? "bg-purple-800 text-white border-amber-300 shadow-lg"
                 : "bg-white text-slate-800 border-slate-200"
-            }`}
-          >
+              }`}
+            >
             <div className="font-black text-xs sm:text-sm">{t.label}</div>
             <div className="text-[10px] opacity-80">{t.sub}</div>
           </button>
