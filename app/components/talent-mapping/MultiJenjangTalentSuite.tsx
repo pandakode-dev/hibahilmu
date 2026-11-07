@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Eraser, Paintbrush, PaintBucket, Sparkles } from "lucide-react";
+import { Eraser, Paintbrush, PaintBucket } from "lucide-react";
 import {
   DAFTAR_8_MISI_KANVAS,
   MisiKanvasId,
@@ -27,6 +27,7 @@ export const MultiJenjangTalentSuite: React.FC<{
   instansiPeserta: string;
   setInstansiPeserta: (v: string) => void;
   emailPeserta?: string;
+  onSimpanKeDatabasePusat?: (recordLengkap: any) => void;
 }> = ({
   modeJenjang,
   namaPeserta,
@@ -34,11 +35,11 @@ export const MultiJenjangTalentSuite: React.FC<{
   instansiPeserta,
   setInstansiPeserta,
   emailPeserta = "peserta@hibahilmu.id",
+  onSimpanKeDatabasePusat,
 }) => {
   const [autoNext, setAutoNext] = useState<boolean>(true);
   const [statusCloud, setStatusCloud] = useState<string>("");
 
-  // State Jenjang 1: Anak 3–8 Tahun (Mendukung Mode Cat Tumpah 🪣, Kuas Stylus 🖌️ & Penghapus 🧼)
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [subTahapAnak, setSubTahapAnak] = useState<
     "kanvas" | "kartu" | "observasi" | "hasil"
@@ -47,7 +48,7 @@ export const MultiJenjangTalentSuite: React.FC<{
     "cat_tumpah" | "kuas_stylus" | "penghapus"
   >("cat_tumpah");
   const [sedangMenggambar, setSedangMenggambar] = useState<boolean>(false);
-  const [warnaKuas, setWarnaKuas] = useState<string>("#e11d48");
+  const [warnaKuas, setWarnaKuas] = useState<string>("#ef4444");
   const [ukuranKuas, setUkuranKuas] = useState<number>(12);
   const [misiKanvasAktif, setMisiKanvasAktif] =
     useState<MisiKanvasId>("rumah_pohon");
@@ -59,7 +60,7 @@ export const MultiJenjangTalentSuite: React.FC<{
     Set<MisiKanvasId>
   >(new Set());
   const [warnaTerpakaiSet, setWarnaTerpakaiSet] = useState<Set<string>>(
-    new Set(["#e11d48"])
+    new Set(["#ef4444"])
   );
   const [jumlahGoresan, setJumlahGoresan] = useState<number>(0);
   const [totalPanjangGoresan, setTotalPanjangGoresan] = useState<number>(0);
@@ -72,7 +73,6 @@ export const MultiJenjangTalentSuite: React.FC<{
     Record<string, number>
   >({});
 
-  // State Jenjang 2: SMP (36 Soal) & Jenjang 3: SMA (48 Soal)
   const [subTahapSmp, setSubTahapSmp] = useState<"sesi1" | "sesi2" | "hasil">(
     "sesi1"
   );
@@ -135,9 +135,6 @@ export const MultiJenjangTalentSuite: React.FC<{
     setMisiKanvasAktif(targetMisi);
   };
 
-  // ==========================================================================
-  // HANDLER POINTER EVENTS (100% KOMPATIBEL STYLUS PEN, JARI TABLET, & MOUSE)
-  // ==========================================================================
   const ambilKoordinatPointer = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const cvs = canvasRef.current!;
     const rect = cvs.getBoundingClientRect();
@@ -155,7 +152,6 @@ export const MultiJenjangTalentSuite: React.FC<{
     const ctx = cvs.getContext("2d");
     if (!ctx) return;
 
-    // Tangkap pointer agar stylus/jari tetap lancar walaupun bergerak cepat
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {}
@@ -166,7 +162,6 @@ export const MultiJenjangTalentSuite: React.FC<{
     setWarnaTerpakaiSet((prev) => new Set(prev).add(warnaKuas));
     setMisiPernahDigoresSet((prev) => new Set(prev).add(misiKanvasAktif));
 
-    // JIKA MODE EMBER CAT TUMPAH (1X SENTUH/KETUK LANGSUNG PENUH WARNA!)
     if (alatWarnaAktif === "cat_tumpah") {
       isiWarnaCatTumpahFloodFill(
         ctx,
@@ -182,7 +177,6 @@ export const MultiJenjangTalentSuite: React.FC<{
       return;
     }
 
-    // JIKA MODE KUAS STYLUS ATAU PENGHAPUS
     setSedangMenggambar(true);
     ctx.beginPath();
     ctx.moveTo(x, y);
@@ -227,7 +221,6 @@ export const MultiJenjangTalentSuite: React.FC<{
       if (cvs) {
         const ctx = cvs.getContext("2d");
         if (ctx) {
-          // Pertahankan ketajaman garis sketsa hitam di atas sapuan kuas/penghapus
           gambarIlustrasiBukuMewarnai(
             ctx,
             cvs.width,
@@ -267,56 +260,74 @@ export const MultiJenjangTalentSuite: React.FC<{
     });
   };
 
+  // ==========================================================================
+  // SIMPAN PAKET LENGKAP (TERMASUK LUKISAN ANAK & SEMUA DIMENSI) KE DATABASE PUSAT
+  // ==========================================================================
   const simpanLaporanMultiJenjangKeCloud = async (
+    judulLaporan: string,
     labelJenjang: string,
     daftarDimensi: DimensiScoreItem[]
   ) => {
-    setStatusCloud("Menyimpan ke Akun Cloud...");
+    setStatusCloud("Menyimpan ke Database Pusat HibahIlmu...");
+    const paketLengkap = {
+      idHasil: `TM-${modeJenjang.toUpperCase()}-${emailPeserta
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "")}-${Date.now()}`,
+      tipeJenjang: modeJenjang,
+      judulLaporanMultiJenjang: judulLaporan,
+      subjudulJenjangMultiJenjang: labelJenjang,
+      namaPeserta: namaPeserta.trim() || "Peserta Asesmen",
+      emailPeserta: emailPeserta.trim().toLowerCase(),
+      instansiPeserta: `${instansiPeserta} (${labelJenjang.split(" •")[0]})`,
+      tanggalTes: new Date().toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      }),
+      nomorDokumenRahasia: `CONF-${modeJenjang.toUpperCase()}-${Math.floor(
+        100000 + Math.random() * 900000
+      )}`,
+      daftarUrutMultiJenjang: daftarDimensi,
+      galeriKaryaKanvas: modeJenjang === "anak_tk_sd" ? galeriKaryaKanvas : {},
+      bakatUtama1_7: daftarDimensi.slice(0, 3).map((d, i) => ({
+        id: d.id,
+        nama: d.nama,
+        julukanRemaja: d.julukan,
+        peringkat: i + 1,
+        domain: "Thinking",
+        deskripsiKuat: d.deskripsiKekuatan,
+      })),
+      top5PersonalBranding: daftarDimensi.slice(0, 3).map((d) => ({
+        id: d.id,
+        nama: d.julukan,
+        julukan: d.nama,
+        kategori: modeJenjang.toUpperCase(),
+        deskripsi: d.deskripsiKekuatan,
+        skorKecocokan: d.persen,
+      })),
+      timestampMs: Date.now(),
+    };
+
     try {
-      await fetch("/api/talent-mapping", {
+      const res = await fetch("/api/talent-mapping", {
         method: "POST",
         cache: "no-store",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "save",
-          result: {
-            idHasil: `TM-${modeJenjang.toUpperCase()}-${Date.now()}`,
-            namaPeserta: namaPeserta || "Peserta Asesmen",
-            emailPeserta,
-            instansiPeserta: `${instansiPeserta} (${labelJenjang})`,
-            tanggalTes: new Date().toLocaleDateString("id-ID", {
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            }),
-            nomorDokumenRahasia: `CONF-${modeJenjang.toUpperCase()}-${Math.floor(
-              100000 + Math.random() * 900000
-            )}`,
-            bakatUtama1_7: daftarDimensi.slice(0, 3).map((d, i) => ({
-              id: d.id,
-              nama: d.nama,
-              peringkat: i + 1,
-              domain: "Thinking",
-              deskripsiKuat: d.deskripsiKekuatan,
-            })),
-            top5PersonalBranding: daftarDimensi.slice(0, 3).map((d) => ({
-              id: d.id,
-              nama: d.julukan,
-              kategori: labelJenjang,
-              deskripsi: d.deskripsiKekuatan,
-              skorKecocokan: d.persen,
-            })),
-          },
+          result: paketLengkap,
         }),
       });
-      setStatusCloud("Tersimpan Permanen di Akun Cloud ✓");
+      await res.json();
+      setStatusCloud("Tersimpan Permanen di Database Pusat Cloud ✓");
+      if (onSimpanKeDatabasePusat) onSimpanKeDatabasePusat(paketLengkap);
     } catch {
-      setStatusCloud("Tersimpan di Browser ✓");
+      setStatusCloud("Tersimpan di Memori Browser ✓");
     }
   };
 
   // ==========================================================================
-  // RENDER JENJANG 1: ANAK 3–8 TAHUN (8 MISI KANVAS + 24 KARTU + 24 OBSERVASI)
+  // RENDER JENJANG 1: ANAK 3–8 TAHUN
   // ==========================================================================
   if (modeJenjang === "anak_tk_sd") {
     const jmlKartuTerisi = Object.keys(jawabanKartuAnak).length;
@@ -391,6 +402,8 @@ export const MultiJenjangTalentSuite: React.FC<{
 
     const kartuAktif = KARTU_VISUAL_ANAK_24[indeksKartuAnak];
     const hasilUrutAnak = hitungSkorLengkapAnak();
+    const judulLapAnak =
+      "Laporan Komprehensif Bakat, Motorik & Kecerdasan Majemuk Anak";
     const labelSubAnak = `Jenjang Anak Usia Dini (3–8 Tahun / PAUD–TK–SD) • Analisis Kanvas (${jmlKanvasDiwarnai} Karya, ${warnaTerpakaiSet.size} Warna), 24 Kartu Visual & 24 Observasi`;
 
     return (
@@ -415,7 +428,7 @@ export const MultiJenjangTalentSuite: React.FC<{
             {
               id: "hasil",
               label: "4. Sertifikat Landscape & Hasil",
-              sub: "2 Tombol Print Terpisah",
+              sub: "Otomatis Masuk Database Pusat",
             },
           ].map((tab) => (
             <button
@@ -427,6 +440,13 @@ export const MultiJenjangTalentSuite: React.FC<{
                   misiPernahDigoresSet.has(misiKanvasAktif)
                 ) {
                   simpanSnapshotKanvasSaatIni(misiKanvasAktif);
+                }
+                if (tab.id === "hasil") {
+                  simpanLaporanMultiJenjangKeCloud(
+                    judulLapAnak,
+                    labelSubAnak,
+                    hasilUrutAnak
+                  );
                 }
                 setSubTahapAnak(tab.id as any);
               }}
@@ -537,7 +557,6 @@ export const MultiJenjangTalentSuite: React.FC<{
               })}
             </div>
 
-            {/* BAR ALAT MEWARNAI: EMBER CAT TUMPAH vs KUAS STYLUS vs PENGHAPUS + 14 WARNA CERIA */}
             <div className="bg-slate-50 p-3.5 rounded-2xl border space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -602,26 +621,25 @@ export const MultiJenjangTalentSuite: React.FC<{
                 </div>
               </div>
 
-              {/* Palet 14 Warna Cat Ceria */}
               <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-200">
                 <span className="text-xs font-black text-slate-700 mr-1">
                   🎨 Pilih Warna Cat:
                 </span>
                 {[
-                  "#ef4444", // Merah Cerah
-                  "#f97316", // Oranye
-                  "#facc15", // Kuning Matahari
-                  "#84cc16", // Hijau Muda Daun
-                  "#22c55e", // Hijau Rumput
-                  "#14b8a6", // Toska Laut
-                  "#38bdf8", // Biru Langit
-                  "#2563eb", // Biru Tua
-                  "#8b5cf6", // Ungu Lavender
-                  "#d946ef", // Magenta
-                  "#f472b6", // Pink Bunga
-                  "#fcd34d", // Krem Kulit/Pasir
-                  "#92400e", // Cokelat Batang Pohon
-                  "#334155", // Abu Gelap
+                  "#ef4444",
+                  "#f97316",
+                  "#facc15",
+                  "#84cc16",
+                  "#22c55e",
+                  "#14b8a6",
+                  "#38bdf8",
+                  "#2563eb",
+                  "#8b5cf6",
+                  "#d946ef",
+                  "#f472b6",
+                  "#fcd34d",
+                  "#92400e",
+                  "#334155",
                 ].map((hex) => (
                   <button
                     key={hex}
@@ -643,7 +661,6 @@ export const MultiJenjangTalentSuite: React.FC<{
               </div>
             </div>
 
-            {/* KANVAS UTAMA DENGAN touchAction: "none" AGAR STYLUS & JARI TABLET 100% RESPONSIF */}
             <div className="flex justify-center bg-slate-100 p-3 rounded-2xl border-2 border-dashed border-slate-300">
               <canvas
                 ref={canvasRef}
@@ -830,10 +847,17 @@ export const MultiJenjangTalentSuite: React.FC<{
 
             <button
               type="button"
-              onClick={() => setSubTahapAnak("hasil")}
+              onClick={() => {
+                simpanLaporanMultiJenjangKeCloud(
+                  judulLapAnak,
+                  labelSubAnak,
+                  hasilUrutAnak
+                );
+                setSubTahapAnak("hasil");
+              }}
               className="w-full py-4 rounded-2xl bg-gradient-to-r from-rose-600 to-amber-500 text-white font-black text-sm shadow-xl cursor-pointer"
             >
-              🎉 Terbitkan Sertifikat Landscape &amp; Laporan Lengkap Bakat Anak Sekarang!
+              🎉 Simpan ke Database Pusat &amp; Terbitkan Sertifikat Landscape Anak!
             </button>
           </div>
         )}
@@ -844,13 +868,17 @@ export const MultiJenjangTalentSuite: React.FC<{
             namaPeserta={namaPeserta}
             instansiPeserta={instansiPeserta}
             emailPeserta={emailPeserta}
-            judulLaporan="Laporan Komprehensif Bakat, Motorik & Kecerdasan Majemuk Anak"
+            judulLaporan={judulLapAnak}
             subjudulJenjang={labelSubAnak}
             daftarUrut={hasilUrutAnak}
             galeriKaryaKanvas={galeriKaryaKanvas}
             statusCloud={statusCloud}
             onSimpanCloud={() =>
-              simpanLaporanMultiJenjangKeCloud(labelSubAnak, hasilUrutAnak)
+              simpanLaporanMultiJenjangKeCloud(
+                judulLapAnak,
+                labelSubAnak,
+                hasilUrutAnak
+              )
             }
           />
         )}
@@ -913,6 +941,8 @@ export const MultiJenjangTalentSuite: React.FC<{
     };
 
     const hasilSmp = hitungSkorLengkapSmp();
+    const judulLapSmp =
+      "Laporan Talent Mapping, Gaya Belajar (VAK) & Arah Minat Siswa SMP";
     const labelSubSmp = `Jenjang SD Atas & SMP (9–15 Tahun) • Gaya Belajar Dominan: ${hasilSmp.vakDominan.toUpperCase()}`;
 
     return (
@@ -939,6 +969,13 @@ export const MultiJenjangTalentSuite: React.FC<{
               key={t.id}
               type="button"
               onClick={() => {
+                if (t.id === "hasil") {
+                  simpanLaporanMultiJenjangKeCloud(
+                    judulLapSmp,
+                    labelSubSmp,
+                    hasilSmp.daftarUrut
+                  );
+                }
                 setSubTahapSmp(t.id as any);
                 if (t.id === "sesi1") setIndeksSoalSmp(0);
                 if (t.id === "sesi2") setIndeksSoalSmp(24);
@@ -989,10 +1026,17 @@ export const MultiJenjangTalentSuite: React.FC<{
                   </button>
                   <button
                     type="button"
-                    onClick={() => setSubTahapSmp("hasil")}
+                    onClick={() => {
+                      simpanLaporanMultiJenjangKeCloud(
+                        judulLapSmp,
+                        labelSubSmp,
+                        hasilSmp.daftarUrut
+                      );
+                      setSubTahapSmp("hasil");
+                    }}
                     className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-black cursor-pointer"
                   >
-                    Lihat Sertifikat &amp; Hasil ➔
+                    Simpan &amp; Lihat Hasil ➔
                   </button>
                 </div>
               </div>
@@ -1080,12 +1124,13 @@ export const MultiJenjangTalentSuite: React.FC<{
             namaPeserta={namaPeserta}
             instansiPeserta={instansiPeserta}
             emailPeserta={emailPeserta}
-            judulLaporan="Laporan Talent Mapping, Gaya Belajar (VAK) & Arah Minat Siswa SMP"
+            judulLaporan={judulLapSmp}
             subjudulJenjang={labelSubSmp}
             daftarUrut={hasilSmp.daftarUrut}
             statusCloud={statusCloud}
             onSimpanCloud={() =>
               simpanLaporanMultiJenjangKeCloud(
+                judulLapSmp,
                 labelSubSmp,
                 hasilSmp.daftarUrut
               )
@@ -1179,6 +1224,8 @@ export const MultiJenjangTalentSuite: React.FC<{
   };
 
   const hasilUrutSma = hitungSkorLengkapSma();
+  const judulLapSma =
+    "Laporan Eksekutif Penjurusan Kuliah (SNBP/SNBT), Mapel Pilihan & Karier SMA/SMK";
   const labelSubSma =
     "Jenjang Remaja SMA / SMK / MA (15–18 Tahun) • 48 Indikator RIASEC Holland & Kesiapan Kuliah Abad 21";
 
@@ -1206,6 +1253,13 @@ export const MultiJenjangTalentSuite: React.FC<{
             key={t.id}
             type="button"
             onClick={() => {
+              if (t.id === "hasil") {
+                simpanLaporanMultiJenjangKeCloud(
+                  judulLapSma,
+                  labelSubSma,
+                  hasilUrutSma
+                );
+              }
               setSubTahapSma(t.id as any);
               if (t.id === "sesi1") setIndeksSoalSma(0);
               if (t.id === "sesi2") setIndeksSoalSma(30);
@@ -1255,10 +1309,17 @@ export const MultiJenjangTalentSuite: React.FC<{
               </button>
               <button
                 type="button"
-                onClick={() => setSubTahapSma("hasil")}
+                onClick={() => {
+                  simpanLaporanMultiJenjangKeCloud(
+                    judulLapSma,
+                    labelSubSma,
+                    hasilUrutSma
+                  );
+                  setSubTahapSma("hasil");
+                }}
                 className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-black cursor-pointer"
               >
-                Lihat Sertifikat &amp; Penjurusan ➔
+                Simpan &amp; Lihat Hasil ➔
               </button>
             </div>
           </div>
@@ -1348,12 +1409,16 @@ export const MultiJenjangTalentSuite: React.FC<{
           namaPeserta={namaPeserta}
           instansiPeserta={instansiPeserta}
           emailPeserta={emailPeserta}
-          judulLaporan="Laporan Eksekutif Penjurusan Kuliah (SNBP/SNBT), Mapel Pilihan & Karier SMA/SMK"
+          judulLaporan={judulLapSma}
           subjudulJenjang={labelSubSma}
           daftarUrut={hasilUrutSma}
           statusCloud={statusCloud}
           onSimpanCloud={() =>
-            simpanLaporanMultiJenjangKeCloud(labelSubSma, hasilUrutSma)
+            simpanLaporanMultiJenjangKeCloud(
+              judulLapSma,
+              labelSubSma,
+              hasilUrutSma
+            )
           }
         />
       )}

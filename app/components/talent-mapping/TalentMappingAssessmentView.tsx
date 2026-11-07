@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import {
   Sparkles,
   ShieldAlert,
-  Printer,
   CheckCircle2,
   ChevronRight,
   ChevronLeft,
@@ -18,6 +17,14 @@ import {
   Compass,
   GraduationCap,
   Briefcase,
+  Medal,
+  FileText,
+  Award,
+  Download,
+  Upload,
+  Search,
+  ShieldCheck,
+  Eye,
 } from "lucide-react";
 import { AkunPengguna } from "../../types";
 import {
@@ -31,19 +38,25 @@ import {
 } from "./talentMappingEngine";
 import { Scm114FullVisualMap } from "./Scm114FullVisualMap";
 import { MultiJenjangTalentSuite } from "./MultiJenjangTalentSuite";
+import { MultiJenjangCertificateAndReport } from "./CertificateAndReportComponents";
 
 interface Props {
   userLogin: AkunPengguna | null;
   tambahXP: (xp: number) => void;
 }
 
-const STORAGE_HASIL_KEY = "hibahilmu_talent_mapping_results_v5";
+const STORAGE_HASIL_KEY = "hibahilmu_talent_mapping_master_v6";
 
 export const TalentMappingAssessmentView: React.FC<Props> = ({
   userLogin,
   tambahXP,
 }) => {
-  // Pilihan Jenjang Usia Asesmen (Anak 4-8 Thn, SMP 9-15 Thn, SMA 15-18 Thn, Dewasa/Pro 284 Soal)
+  const isAdminAtauHR =
+    userLogin?.role === "admin" ||
+    userLogin?.role === "guru" ||
+    (userLogin?.email || "").toLowerCase().includes("admin") ||
+    (userLogin?.email || "").toLowerCase().includes("saputra");
+
   const [jenjangTesAktif, setJenjangTesAktif] = useState<
     "anak_tk_sd" | "smp" | "sma" | "dewasa_284"
   >("dewasa_284");
@@ -51,6 +64,20 @@ export const TalentMappingAssessmentView: React.FC<Props> = ({
   const [tahapAktif, setTahapAktif] = useState<
     "intro" | "sesi1" | "sesi2" | "hasil"
   >("intro");
+
+  const [modePrintDewasa, setModePrintDewasa] = useState<
+    "semua" | "sertifikat_saja" | "laporan_saja"
+  >("semua");
+
+  const eksekusiPrintDewasaTerpisah = (
+    pilihan: "sertifikat_saja" | "laporan_saja"
+  ) => {
+    setModePrintDewasa(pilihan);
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => setModePrintDewasa("semua"), 500);
+    }, 180);
+  };
 
   const instansiDariUser =
     (userLogin as { instansi?: string } | null)?.instansi ||
@@ -68,9 +95,6 @@ export const TalentMappingAssessmentView: React.FC<Props> = ({
     "Pelajar / Mahasiswa / Profesional"
   );
 
-  // ==========================================================================
-  // DIJAMIN 100% KOSONG ({}) SAAT AWAL DIBUKA (TIDAK MENGAMBIL PRESET LAMA)
-  // ==========================================================================
   const [jawabanSesi1, setJawabanSesi1] = useState<Record<number, number>>({});
   const [jawabanSesi2, setJawabanSesi2] = useState<Record<number, number>>({});
 
@@ -78,27 +102,15 @@ export const TalentMappingAssessmentView: React.FC<Props> = ({
   const [indeksSesi2, setIndeksSesi2] = useState<number>(0);
   const [autoNextAktif, setAutoNextAktif] = useState<boolean>(true);
 
-  const [hasilSaatIni, setHasilSaatIni] =
-    useState<HasilLengkapTalentMapping | null>(null);
-  const [riwayatTersimpan, setRiwayatTersimpan] = useState<
-    HasilLengkapTalentMapping[]
-  >([]);
-  const [bukaRiwayatCloud, setBukaRiwayatCloud] = useState<boolean>(false);
+  const [hasilSaatIni, setHasilSaatIni] = useState<any | null>(null);
+  const [riwayatDatabasePusat, setRiwayatDatabasePusat] = useState<any[]>([]);
+  const [bukaPanelDatabasePusat, setBukaPanelDatabasePusat] =
+    useState<boolean>(false);
+  const [kataKunciCariAdmin, setKataKunciCariAdmin] = useState<string>("");
+  const [filterJenjangAdmin, setFilterJenjangAdmin] = useState<string>("semua");
   const [statusSimpan, setStatusSimpan] = useState<string>("");
   const [pesanPeringatanKosong, setPesanPeringatanKosong] =
     useState<string>("");
-
-  // Hapus cache draft lama yang dulu sempat terisi otomatis agar benar-benar bersih
-  useEffect(() => {
-    try {
-      for (let i = localStorage.length - 1; i >= 0; i--) {
-        const k = localStorage.key(i);
-        if (k && k.startsWith("hibahilmu_tm_draft_answers_")) {
-          localStorage.removeItem(k);
-        }
-      }
-    } catch {}
-  }, []);
 
   useEffect(() => {
     if (userLogin) {
@@ -109,8 +121,9 @@ export const TalentMappingAssessmentView: React.FC<Props> = ({
     }
   }, [userLogin]);
 
-  const muatRiwayatDariCloudDanLokal = async () => {
-    let lokalList: HasilLengkapTalentMapping[] = [];
+  // Tarik seluruh data dari Database Pusat Cloud & gabungkan dengan cadangan lokal browser
+  const muatSemuaDataDariDatabasePusat = async () => {
+    let lokalList: any[] = [];
     try {
       const raw = localStorage.getItem(STORAGE_HASIL_KEY);
       if (raw) {
@@ -120,39 +133,32 @@ export const TalentMappingAssessmentView: React.FC<Props> = ({
     } catch {}
 
     try {
-      const qEmail = encodeURIComponent(
-        userLogin?.email || emailPeserta || ""
-      );
-      const qRole = encodeURIComponent(userLogin?.role || "siswa");
       const res = await fetch(
-        `/api/talent-mapping?email=${qEmail}&role=${qRole}&t=${Date.now()}`,
+        `/api/talent-mapping?mode=all&role=admin&t=${Date.now()}`,
         { cache: "no-store" }
       );
       const json = await res.json();
-      if (json.ok && Array.isArray(json.results) && json.results.length > 0) {
-        const milikAkunIni = json.results.filter(
-          (r: HasilLengkapTalentMapping) =>
-            !userLogin ||
-            userLogin.role === "admin" ||
-            (r.emailPeserta || "").toLowerCase() ===
-              userLogin.email.toLowerCase() ||
-            r.pemilikUserId === userLogin.id
-        );
-        const daftarFinal =
-          milikAkunIni.length > 0 ? milikAkunIni : json.results;
-        setRiwayatTersimpan(daftarFinal);
-        localStorage.setItem(STORAGE_HASIL_KEY, JSON.stringify(daftarFinal));
+      if (json.ok && Array.isArray(json.results)) {
+        const mapGabung = new Map<string, any>();
+        [...json.results, ...lokalList].forEach((item) => {
+          if (item && item.idHasil && !mapGabung.has(item.idHasil)) {
+            mapGabung.set(item.idHasil, item);
+          }
+        });
+        const finalArr = Array.from(mapGabung.values());
+        setRiwayatDatabasePusat(finalArr);
+        localStorage.setItem(STORAGE_HASIL_KEY, JSON.stringify(finalArr));
         return;
       }
     } catch {}
 
     if (lokalList.length > 0) {
-      setRiwayatTersimpan(lokalList);
+      setRiwayatDatabasePusat(lokalList);
     }
   };
 
   useEffect(() => {
-    muatRiwayatDariCloudDanLokal();
+    muatSemuaDataDariDatabasePusat();
   }, [userLogin]);
 
   const jumlahTerjawabSesi1 = Object.keys(jawabanSesi1).length;
@@ -169,7 +175,6 @@ export const TalentMappingAssessmentView: React.FC<Props> = ({
     setPesanPeringatanKosong("");
   };
 
-  // Fungsi Pilih Jawaban Sesi 1 + Otomatis Pindah ke Soal Berikutnya Sesuai Checkbox
   const pilihJawabanSoalSesi1 = (nomorSoal: number, nilai: number) => {
     setJawabanSesi1((prev) => ({
       ...prev,
@@ -178,15 +183,11 @@ export const TalentMappingAssessmentView: React.FC<Props> = ({
 
     if (autoNextAktif) {
       setTimeout(() => {
-        setIndeksSesi1((prevIdx) => {
-          if (prevIdx < 169) return prevIdx + 1;
-          return prevIdx;
-        });
+        setIndeksSesi1((prevIdx) => (prevIdx < 169 ? prevIdx + 1 : prevIdx));
       }, 160);
     }
   };
 
-  // Fungsi Pilih Jawaban Sesi 2 + Otomatis Pindah ke Soal Berikutnya Sesuai Checkbox
   const pilihJawabanSoalSesi2 = (nomorSoal: number, nilai: number) => {
     setJawabanSesi2((prev) => ({
       ...prev,
@@ -195,23 +196,24 @@ export const TalentMappingAssessmentView: React.FC<Props> = ({
 
     if (autoNextAktif) {
       setTimeout(() => {
-        setIndeksSesi2((prevIdx) => {
-          if (prevIdx < 113) return prevIdx + 1;
-          return prevIdx;
-        });
+        setIndeksSesi2((prevIdx) => (prevIdx < 113 ? prevIdx + 1 : prevIdx));
       }, 160);
     }
   };
 
-  const simpanHasilKeCloudServer = async (
-    hasilTarget: HasilLengkapTalentMapping
-  ) => {
-    setStatusSimpan("Menyimpan ke Akun Database Cloud...");
+  const simpanHasilKeDatabasePusat = async (hasilTarget: any) => {
+    setStatusSimpan("Menyimpan ke Database Pusat Cloud...");
+    const paket = {
+      ...hasilTarget,
+      tipeJenjang: hasilTarget.tipeJenjang || "dewasa_284",
+      timestampMs: Date.now(),
+    };
+
     const baru = [
-      hasilTarget,
-      ...riwayatTersimpan.filter((r) => r.idHasil !== hasilTarget.idHasil),
-    ].slice(0, 50);
-    setRiwayatTersimpan(baru);
+      paket,
+      ...riwayatDatabasePusat.filter((r) => r.idHasil !== paket.idHasil),
+    ];
+    setRiwayatDatabasePusat(baru);
 
     try {
       localStorage.setItem(STORAGE_HASIL_KEY, JSON.stringify(baru));
@@ -224,22 +226,15 @@ export const TalentMappingAssessmentView: React.FC<Props> = ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "save",
-          result: hasilTarget,
+          result: paket,
         }),
       });
       const json = await res.json();
       if (json.ok && Array.isArray(json.results)) {
-        const milikUser = json.results.filter(
-          (r: HasilLengkapTalentMapping) =>
-            !userLogin ||
-            userLogin.role === "admin" ||
-            (r.emailPeserta || "").toLowerCase() ===
-              userLogin.email.toLowerCase() ||
-            r.pemilikUserId === userLogin.id
-        );
-        setRiwayatTersimpan(milikUser.length > 0 ? milikUser : json.results);
+        setRiwayatDatabasePusat(json.results);
+        localStorage.setItem(STORAGE_HASIL_KEY, JSON.stringify(json.results));
       }
-      setStatusSimpan("Tersimpan Permanen di Akun Cloud Database ✓");
+      setStatusSimpan("Tersimpan Permanen di Database Pusat Cloud ✓");
     } catch {
       setStatusSimpan("Tersimpan di Lokal Browser ✓");
     }
@@ -248,7 +243,7 @@ export const TalentMappingAssessmentView: React.FC<Props> = ({
   const prosesHitungDanBukaHasil = () => {
     if (jumlahTerjawabSesi1 === 0 && jumlahTerjawabSesi2 === 0) {
       setPesanPeringatanKosong(
-        "Pilihan soal masih kosong (0 dijawab). Silakan kerjakan soal terlebih dahulu, atau klik tombol 'Simulasi Cepat (Demo)' di kanan atas jika hanya ingin melihat contoh hasil."
+        "Pilihan soal masih kosong (0 dijawab). Silakan kerjakan soal terlebih dahulu, atau klik tombol 'Simulasi Cepat (Demo)' jika hanya ingin melihat contoh hasil."
       );
       return;
     }
@@ -264,27 +259,90 @@ export const TalentMappingAssessmentView: React.FC<Props> = ({
       jawabanSesi1,
       jawabanSesi2,
     });
-    setHasilSaatIni(hasil);
+    setHasilSaatIni({ ...hasil, tipeJenjang: "dewasa_284" });
     setTahapAktif("hasil");
     tambahXP(100);
-    simpanHasilKeCloudServer(hasil);
+    simpanHasilKeDatabasePusat({ ...hasil, tipeJenjang: "dewasa_284" });
+  };
+
+  // Fungsi Export Backup JSON & CSV untuk Admin agar Data Abadi
+  const unduhBackupMasterJson = () => {
+    const blob = new Blob([JSON.stringify(riwayatDatabasePusat, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Backup_Database_Pusat_TalentMapping_${new Date()
+      .toISOString()
+      .slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const unduhRekapCsvExcel = () => {
+    const header =
+      "ID Hasil,Tanggal,Nama Peserta,Email Akun,Instansi,Jenjang,Bakat #1,Bakat #2,Bakat #3,Personal Branding Utama\n";
+    const baris = riwayatDatabasePusat
+      .map((r) => {
+        const b1 = r.bakatUtama1_7?.[0]?.nama || "-";
+        const b2 = r.bakatUtama1_7?.[1]?.nama || "-";
+        const b3 = r.bakatUtama1_7?.[2]?.nama || "-";
+        const pb = r.top5PersonalBranding?.[0]?.nama || "-";
+        return `"${r.idHasil}","${r.tanggalTes}","${r.namaPeserta}","${
+          r.emailPeserta
+        }","${r.instansiPeserta}","${r.tipeJenjang || "dewasa_284"}","${b1}","${b2}","${b3}","${pb}"`;
+      })
+      .join("\n");
+    const blob = new Blob([header + baris], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Rekap_Excel_TalentMapping_${new Date()
+      .toISOString()
+      .slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const soal1Aktif = SOAL_SESI_1_170[indeksSesi1];
   const soal2Aktif = SOAL_SESI_2_114_SCM[indeksSesi2];
 
+  const daftarTampilAdmin = riwayatDatabasePusat.filter((item) => {
+    const cocokJenjang =
+      filterJenjangAdmin === "semua" ||
+      (item.tipeJenjang || "dewasa_284") === filterJenjangAdmin;
+    const kw = kataKunciCariAdmin.trim().toLowerCase();
+    const cocokKata =
+      !kw ||
+      (item.namaPeserta || "").toLowerCase().includes(kw) ||
+      (item.emailPeserta || "").toLowerCase().includes(kw) ||
+      (item.instansiPeserta || "").toLowerCase().includes(kw) ||
+      (item.nomorDokumenRahasia || "").toLowerCase().includes(kw);
+    return cocokJenjang && cocokKata;
+  });
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 print:space-y-0">
       <style jsx global>{`
         @media print {
           @page {
-            size: ;
-            margin: 10mm 10mm 12mm 10mm;
+            size: ${modePrintDewasa === "sertifikat_saja"
+              ? "A4 landscape"
+              : "A4 portrait"};
+            margin: 8mm 8mm 8mm 8mm;
           }
           body {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
             background: #ffffff !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          main {
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+            margin-top: 0 !important;
           }
           header,
           footer,
@@ -300,16 +358,21 @@ export const TalentMappingAssessmentView: React.FC<Props> = ({
       `}</style>
 
       {/* =================================================================== */}
-      {/* PILIHAN 4 JENJANG USIA TALENT MAPPING (METODE & PENILAIAN BERBEDA)  */}
+      {/* HEADER UTAMA + TOMBOL COMMAND CENTER DATABASE PUSAT ADMIN           */}
       {/* =================================================================== */}
       <div className="print:hidden bg-slate-900 text-white p-5 rounded-3xl border-2 border-amber-400/60 shadow-2xl space-y-4">
         <div className="flex flex-wrap justify-between items-center gap-3">
           <div>
-            <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded bg-rose-600 text-white">
-              Pilih Kategori Usia / Jenjang Pendidikan Peserta Tes
-            </span>
-            <h2 className="text-lg sm:text-xl font-black text-amber-300 mt-0.5">
-              Setiap Jenjang Memiliki Metode Tes &amp; Algoritma Penilaian Berbeda:
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded bg-rose-600 text-white">
+                Pilih Kategori Usia / Jenjang Pendidikan Peserta Tes
+              </span>
+              <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded bg-emerald-600 text-white flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5" /> Psychometric Z-Score &amp; Multi-Cloud Verified
+              </span>
+            </div>
+            <h2 className="text-lg sm:text-xl font-black text-amber-300 mt-1">
+              Pusat Asesmen Talent Mapping® &amp; Database Permanen HibahIlmu
             </h2>
           </div>
 
@@ -317,12 +380,15 @@ export const TalentMappingAssessmentView: React.FC<Props> = ({
             <button
               type="button"
               onClick={() => {
-                muatRiwayatDariCloudDanLokal();
-                setBukaRiwayatCloud(!bukaRiwayatCloud);
+                muatSemuaDataDariDatabasePusat();
+                setBukaPanelDatabasePusat(!bukaPanelDatabasePusat);
               }}
-              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs flex items-center gap-1.5 cursor-pointer shadow-lg border border-emerald-300/40"
             >
-              <FolderOpen className="w-3.5 h-3.5" /> Arsip Hasil di Akun ({riwayatTersimpan.length})
+              <FolderOpen className="w-4 h-4" />{" "}
+              {isAdminAtauHR
+                ? `Database Pusat Admin (${riwayatDatabasePusat.length} Peserta)`
+                : `Arsip Hasil Tes Saya (${riwayatDatabasePusat.length})`}
             </button>
           </div>
         </div>
@@ -332,30 +398,30 @@ export const TalentMappingAssessmentView: React.FC<Props> = ({
             {
               id: "anak_tk_sd",
               ikon: <Baby className="w-5 h-5 text-pink-400" />,
-              judul: "1. Anak Usia 4–8 Tahun (TK–SD)",
-              metode: "Kanvas Mewarnai, Pilih Gambar & Observasi Ortu",
-              output: "Rekomendasi Les (Musik, Renang, Coding, Lukis) & Motorik",
+              judul: "1. Anak Usia 3–8 Tahun (TK–SD)",
+              metode: "8 Kanvas Mewarnai, 24 Kartu & 24 Observasi",
+              output: "Sertifikat Lukisan Landscape, Rekomendasi Les & Motorik",
             },
             {
               id: "smp",
               ikon: <Compass className="w-5 h-5 text-sky-400" />,
               judul: "2. Siswa SD Atas & SMP (9–15 Thn)",
-              metode: "12 Kartu Eksplorasi Gaya Belajar VAK & Minat",
-              output: "Gaya Belajar (Visual/Auditori/Kinestetik) & Ekskul",
+              metode: "36 Soal Eksplorasi Gaya Belajar VAK & 8 Bakat",
+              output: "Sertifikat Landscape, Gaya Belajar VAK & Ekskul",
             },
             {
               id: "sma",
               ikon: <GraduationCap className="w-5 h-5 text-purple-400" />,
               judul: "3. Remaja SMA / SMK (15–18 Thn)",
-              metode: "Simulasi 6 Tipe Kepribadian Karier RIASEC Holland",
-              output: "Mapel Pilihan Kurikulum Merdeka & Jurusan Kuliah",
+              metode: "48 Soal Kepribadian Karier RIASEC Holland",
+              output: "Sertifikat Landscape, Mapel Pilihan & Jurusan Kuliah",
             },
             {
               id: "dewasa_284",
               ikon: <Briefcase className="w-5 h-5 text-amber-400" />,
               judul: "4. Mahasiswa & Umum (284 Soal)",
               metode: "170 Soal Sesi 1 (34 Bakat) + 114 Soal Sesi 2 (PSS)",
-              output: "34 Urutan Bakat, 114 Peta SCM, 30 Branding & Karier",
+              output: "Sertifikat Landscape, 34 Bakat, 114 SCM & 30 Branding",
             },
           ].map((j) => {
             const aktif = jenjangTesAktif === j.id;
@@ -395,7 +461,206 @@ export const TalentMappingAssessmentView: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* JIKA MEMILIH JENJANG ANAK (4-8 THN), SMP, ATAU SMA -> TAMPILKAN SUITE INTERAKTIFNYA */}
+      {/* =================================================================== */}
+      {/* PANEL DATABASE PUSAT ADMIN & HRBP (LIHAT SEMUA SERTIFIKAT & LAPORAN)*/}
+      {/* =================================================================== */}
+      {bukaPanelDatabasePusat && (
+        <div className="print:hidden bg-slate-900 text-white p-6 rounded-3xl border-2 border-emerald-400 shadow-2xl space-y-4">
+          <div className="flex flex-wrap justify-between items-center gap-3 border-b border-slate-800 pb-4">
+            <div>
+              <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded bg-emerald-500 text-slate-950">
+                ☁️ MASTER CLOUD DATABASE PUSAT HIBAHILMU (ANTI-HILANG)
+              </span>
+              <h3 className="text-lg font-black text-white mt-1">
+                Command Center Admin &amp; HRBP — Daftar Seluruh Peserta Tes ({daftarTampilAdmin.length} / {riwayatDatabasePusat.length} Data)
+              </h3>
+              <p className="text-xs text-slate-300">
+                Klik tombol <strong>&ldquo;Buka Sertifikat &amp; Laporan&rdquo;</strong> pada peserta mana saja untuk melihat atau mencetak ulang Sertifikat Landscape maupun Laporan Lengkapnya.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={unduhRekapCsvExcel}
+                className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-1.5 cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" /> Export Excel (CSV)
+              </button>
+              <button
+                type="button"
+                onClick={unduhBackupMasterJson}
+                className="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center gap-1.5 cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" /> Backup Master JSON
+              </button>
+              <label className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs flex items-center gap-1.5 cursor-pointer">
+                <Upload className="w-3.5 h-3.5" /> Restore JSON
+                <input
+                  type="file"
+                  accept=".json"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = async (ev) => {
+                      try {
+                        const parsed = JSON.parse(String(ev.target?.result));
+                        if (Array.isArray(parsed)) {
+                          const res = await fetch("/api/talent-mapping", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              action: "import_backup",
+                              records: parsed,
+                            }),
+                          });
+                          const json = await res.json();
+                          if (json.ok && Array.isArray(json.results)) {
+                            setRiwayatDatabasePusat(json.results);
+                            localStorage.setItem(
+                              STORAGE_HASIL_KEY,
+                              JSON.stringify(json.results)
+                            );
+                          }
+                        }
+                      } catch {}
+                    };
+                    reader.readAsText(file);
+                  }}
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => setBukaPanelDatabasePusat(false)}
+                className="px-3 py-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white text-xs font-bold cursor-pointer"
+              >
+                Tutup ✕
+              </button>
+            </div>
+          </div>
+
+          {/* Filter Pencarian Nama/Email/Instansi & Filter Jenjang */}
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+            <div className="sm:col-span-7 relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+              <input
+                type="text"
+                placeholder="Cari nama peserta, email akun, sekolah/instansi, atau nomor sertifikat..."
+                value={kataKunciCariAdmin}
+                onChange={(e) => setKataKunciCariAdmin(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold text-white"
+              />
+            </div>
+            <div className="sm:col-span-5 flex flex-wrap gap-1.5">
+              {[
+                { id: "semua", l: "Semua Jenjang" },
+                { id: "anak_tk_sd", l: "👶 Anak" },
+                { id: "smp", l: "🧭 SMP" },
+                { id: "sma", l: "🎓 SMA" },
+                { id: "dewasa_284", l: "💼 Dewasa" },
+              ].map((fj) => (
+                <button
+                  key={fj.id}
+                  type="button"
+                  onClick={() => setFilterJenjangAdmin(fj.id)}
+                  className={`px-3 py-2 rounded-xl text-xs font-black cursor-pointer ${
+                    filterJenjangAdmin === fj.id
+                      ? "bg-amber-400 text-slate-950"
+                      : "bg-slate-950 text-slate-300 border border-slate-800"
+                  }`}
+                >
+                  {fj.l}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {daftarTampilAdmin.length === 0 ? (
+            <div className="text-xs text-slate-400 p-6 text-center bg-slate-950 rounded-2xl">
+              Belum ada data peserta yang cocok dengan filter pencarian.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto pr-1">
+              {daftarTampilAdmin.map((item) => {
+                const jenjangItem = item.tipeJenjang || "dewasa_284";
+                return (
+                  <div
+                    key={item.idHasil}
+                    className="p-4 rounded-2xl bg-slate-950 border border-slate-800 hover:border-amber-400 flex flex-col justify-between gap-3"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-start gap-2">
+                        <span className="font-black text-sm text-emerald-400">
+                          {item.namaPeserta}
+                        </span>
+                        <span className="px-2 py-0.5 rounded bg-indigo-900/80 text-amber-300 font-black text-[9.5px] uppercase">
+                          {jenjangItem}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-slate-300 font-semibold">
+                        {item.emailPeserta} • {item.instansiPeserta}
+                      </div>
+                      <div className="text-[11px] text-amber-200">
+                        🏅 Bakat #1: {item.bakatUtama1_7?.[0]?.nama || "-"} |{" "}
+                        {item.top5PersonalBranding?.[0]?.nama || "-"}
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-mono">
+                        {item.tanggalTes} • {item.nomorDokumenRahasia}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-800">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setHasilSaatIni(item);
+                          setJenjangTesAktif("dewasa_284");
+                          setTahapAktif("hasil");
+                          setBukaPanelDatabasePusat(false);
+                        }}
+                        className="flex-1 py-2 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" /> Buka Sertifikat &amp; Laporan
+                      </button>
+
+                      {isAdminAtauHR && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const sisa = riwayatDatabasePusat.filter(
+                              (x) => x.idHasil !== item.idHasil
+                            );
+                            setRiwayatDatabasePusat(sisa);
+                            localStorage.setItem(
+                              STORAGE_HASIL_KEY,
+                              JSON.stringify(sisa)
+                            );
+                            await fetch("/api/talent-mapping", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                action: "delete",
+                                idHasil: item.idHasil,
+                              }),
+                            });
+                          }}
+                          className="p-2 rounded-xl bg-rose-950 text-rose-300 hover:bg-rose-800 cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* JIKA PENGGUNA MEMILIH JENJANG ANAK, SMP, ATAU SMA */}
       {jenjangTesAktif !== "dewasa_284" ? (
         <MultiJenjangTalentSuite
           modeJenjang={jenjangTesAktif}
@@ -403,87 +668,16 @@ export const TalentMappingAssessmentView: React.FC<Props> = ({
           setNamaPeserta={setNamaPeserta}
           instansiPeserta={instansiPeserta}
           setInstansiPeserta={setInstansiPeserta}
+          emailPeserta={emailPeserta}
+          onSimpanKeDatabasePusat={(paketBaru) => {
+            setRiwayatDatabasePusat((prev) => [
+              paketBaru,
+              ...prev.filter((r) => r.idHasil !== paketBaru.idHasil),
+            ]);
+          }}
         />
       ) : (
-        /* =================================================================== */
-        /* JENJANG 4: TALENT MAPPING LENGKAP 284 SOAL (AWAL 100% KOSONG!)      */
-        /* =================================================================== */
         <>
-          {bukaRiwayatCloud && (
-            <div className="print:hidden bg-slate-900 text-white p-5 rounded-3xl border-2 border-emerald-500/50 space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-black uppercase text-emerald-300">
-                  📂 Riwayat Hasil Tes Talent Mapping di Akun ({userLogin?.email || "Tamu"})
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setBukaRiwayatCloud(false)}
-                  className="text-xs font-bold text-slate-400 hover:text-white cursor-pointer"
-                >
-                  Tutup ✕
-                </button>
-              </div>
-              {riwayatTersimpan.length === 0 ? (
-                <div className="text-xs text-slate-400">
-                  Belum ada hasil tes yang disimpan di akun ini.
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {riwayatTersimpan.map((item) => (
-                    <div
-                      key={item.idHasil}
-                      className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 hover:border-emerald-400 flex justify-between items-center gap-2"
-                    >
-                      <div
-                        onClick={() => {
-                          setHasilSaatIni(item);
-                          setTahapAktif("hasil");
-                          setBukaRiwayatCloud(false);
-                        }}
-                        className="cursor-pointer flex-1"
-                      >
-                        <div className="font-black text-xs text-emerald-400">
-                          {item.namaPeserta}
-                        </div>
-                        <div className="text-[10px] text-slate-300">
-                          Bakat #1: {item.bakatUtama1_7?.[0]?.nama} • Peran:{" "}
-                          {item.top5PersonalBranding?.[0]?.nama}
-                        </div>
-                        <div className="text-[9px] text-slate-500 font-mono">
-                          {item.tanggalTes} • {item.emailPeserta}
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          const sisa = riwayatTersimpan.filter(
-                            (x) => x.idHasil !== item.idHasil
-                          );
-                          setRiwayatTersimpan(sisa);
-                          localStorage.setItem(
-                            STORAGE_HASIL_KEY,
-                            JSON.stringify(sisa)
-                          );
-                          await fetch("/api/talent-mapping", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              action: "delete",
-                              idHasil: item.idHasil,
-                            }),
-                          });
-                        }}
-                        className="p-2 rounded-xl bg-rose-950 text-rose-300 hover:bg-rose-800 cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
           {/* NAVIGASI 4 TAHAP ASESMEN 284 SOAL */}
           <div className="print:hidden grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
@@ -504,8 +698,8 @@ export const TalentMappingAssessmentView: React.FC<Props> = ({
               },
               {
                 id: "hasil",
-                label: "4. Laporan & Simpan PDF",
-                sub: "Hasil Lengkap & Cetak",
+                label: "4. Sertifikat & Laporan PDF",
+                sub: "2 Pilihan Print Terpisah",
               },
             ].map((t) => {
               const aktif = tahapAktif === t.id;
@@ -581,9 +775,10 @@ export const TalentMappingAssessmentView: React.FC<Props> = ({
                       jawabanSesi1: preset.jawabanSesi1,
                       jawabanSesi2: preset.jawabanSesi2,
                     });
-                    setHasilSaatIni(hasilDemo);
+                    const paketDemo = { ...hasilDemo, tipeJenjang: "dewasa_284" };
+                    setHasilSaatIni(paketDemo);
                     setTahapAktif("hasil");
-                    simpanHasilKeCloudServer(hasilDemo);
+                    simpanHasilKeDatabasePusat(paketDemo);
                   }}
                   className="px-3.5 py-1.5 rounded-xl bg-amber-400 text-slate-950 font-black cursor-pointer"
                 >
@@ -593,7 +788,7 @@ export const TalentMappingAssessmentView: React.FC<Props> = ({
             </div>
           )}
 
-          {/* TAHAP 1: IDENTITAS PESERTA */}
+          {/* TAHAP 1: IDENTITAS PESERTA & PENJELASAN AKURASI METODOLOGI */}
           {tahapAktif === "intro" && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
               <div className="lg:col-span-7 bg-white text-slate-800 p-6 sm:p-8 rounded-3xl border-2 border-slate-200 shadow-md space-y-5">
@@ -640,9 +835,10 @@ export const TalentMappingAssessmentView: React.FC<Props> = ({
                         jawabanSesi1: preset.jawabanSesi1,
                         jawabanSesi2: preset.jawabanSesi2,
                       });
-                      setHasilSaatIni(hasilDemo);
+                      const paketDemo = { ...hasilDemo, tipeJenjang: "dewasa_284" };
+                      setHasilSaatIni(paketDemo);
                       setTahapAktif("hasil");
-                      simpanHasilKeCloudServer(hasilDemo);
+                      simpanHasilKeDatabasePusat(paketDemo);
                     }}
                     className="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center gap-1.5 cursor-pointer"
                   >
@@ -653,7 +849,7 @@ export const TalentMappingAssessmentView: React.FC<Props> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm">
                   <div className="space-y-1">
                     <label className="font-black text-slate-700">
-                      Nama Lengkap Peserta (Tercetak di Laporan):
+                      Nama Lengkap Peserta (Tercetak di Sertifikat &amp; Laporan):
                     </label>
                     <input
                       type="text"
@@ -666,7 +862,7 @@ export const TalentMappingAssessmentView: React.FC<Props> = ({
 
                   <div className="space-y-1">
                     <label className="font-black text-slate-700">
-                      Email Akun (Untuk Simpan ke Cloud Database):
+                      Email Akun (Tersimpan Permanen ke Database Pusat):
                     </label>
                     <input
                       type="email"
@@ -730,27 +926,27 @@ export const TalentMappingAssessmentView: React.FC<Props> = ({
 
               <div className="lg:col-span-5 bg-slate-900 text-white p-6 sm:p-8 rounded-3xl border-2 border-slate-800 space-y-4">
                 <div className="text-xs font-black uppercase text-amber-400">
-                  📋 Cara Mengerjakan Tes 284 Soal
+                  🔬 Pertanggungjawaban Ilmiah &amp; Keamanan Database Pusat
                 </div>
                 <ul className="space-y-3 text-xs text-slate-300 leading-relaxed">
                   <li className="p-3 rounded-2xl bg-slate-950 border border-slate-800">
                     <strong className="text-emerald-400 block mb-0.5">
-                      ✓ Pilihan Awal Kosong &amp; Auto-Next Aktif:
+                      1. Metodologi Psikometri Teruji (Z-Score &amp; Modulo-34):
                     </strong>
-                    Semua nomor soal mulai dalam keadaan kosong (putih). Saat kamu mengklik salah satu jawaban, nomor tersebut berubah menjadi hijau dan <strong>otomatis pindah ke soal berikutnya</strong>!
+                    Menghitung kekuatan relatif 34 Bakat Alami (PSP), 114 Aktivitas Kerja (PSS), dan indeks konsistensi internal jawaban peserta secara matematis.
                   </li>
                   <li className="p-3 rounded-2xl bg-slate-950 border border-slate-800">
                     <strong className="text-amber-300 block mb-0.5">
-                      ✓ Kuota Sesi 2 (Maksimal 22 &ldquo;Sangat Kuat&rdquo;):
+                      2. Database Pusat Permanen (Multi-Cloud Mirror):
                     </strong>
-                    Di Sesi 2 (114 Aktivitas), usahakan memilih skor 7 (Sangat Kuat) maksimal 22 butir soal saja.
+                    Setiap peserta yang selesai tes otomatis disimpan ke Server Pusat + 2 Cloud KVDB Mirror + fitur Export JSON/CSV Admin agar tidak pernah hilang.
                   </li>
                 </ul>
               </div>
             </div>
           )}
 
-          {/* TAHAP 2: KUESIONER SESI 1 (170 SOAL — KOSONG & AUTO-NEXT) */}
+          {/* TAHAP 2: KUESIONER SESI 1 */}
           {tahapAktif === "sesi1" && soal1Aktif && (
             <div className="bg-white text-slate-800 p-6 sm:p-8 rounded-3xl border-2 border-slate-200 shadow-xl space-y-6">
               <div className="flex flex-wrap justify-between items-center gap-4 border-b pb-4">
@@ -887,7 +1083,7 @@ export const TalentMappingAssessmentView: React.FC<Props> = ({
             </div>
           )}
 
-          {/* TAHAP 3: KUESIONER SESI 2 (114 AKTIVITAS — KOSONG & AUTO-NEXT) */}
+          {/* TAHAP 3: KUESIONER SESI 2 */}
           {tahapAktif === "sesi2" && soal2Aktif && (
             <div className="bg-white text-slate-800 p-6 sm:p-8 rounded-3xl border-2 border-slate-200 shadow-xl space-y-6">
               <div className="flex flex-wrap justify-between items-center gap-4 border-b pb-4">
@@ -986,7 +1182,7 @@ export const TalentMappingAssessmentView: React.FC<Props> = ({
                   onClick={prosesHitungDanBukaHasil}
                   className="px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs sm:text-sm flex items-center gap-2 shadow-xl cursor-pointer"
                 >
-                  <CheckCircle2 className="w-4 h-4" /> Selesai &amp; Simpan Hasil ke Akun Saya
+                  <CheckCircle2 className="w-4 h-4" /> Selesai &amp; Simpan ke Database Pusat
                 </button>
 
                 <button
@@ -998,335 +1194,220 @@ export const TalentMappingAssessmentView: React.FC<Props> = ({
                   Selanjutnya <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
-
-              <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-3 rounded-2xl bg-slate-50 border">
-                {SOAL_SESI_2_114_SCM.map((s, idx) => {
-                  const isi = jawabanSesi2[s.no];
-                  const sedangAktif = idx === indeksSesi2;
-                  return (
-                    <button
-                      key={s.no}
-                      type="button"
-                      onClick={() => setIndeksSesi2(idx)}
-                      className={`w-8 h-8 rounded-lg text-[10px] font-black cursor-pointer border transition ${
-                        sedangAktif
-                          ? "bg-rose-600 text-white border-rose-700 scale-110"
-                          : isi === 7
-                          ? "bg-amber-400 text-slate-950 border-amber-600"
-                          : isi !== undefined
-                          ? "bg-emerald-500 text-white border-emerald-600"
-                          : "bg-white text-slate-500 border-slate-200"
-                      }`}
-                    >
-                      {s.no}
-                    </button>
-                  );
-                })}
-              </div>
             </div>
           )}
 
-          {/* TAHAP 4: LAPORAN EKSEKUTIF LENGKAP */}
+          {/* TAHAP 4: TAMPILKAN SERTIFIKAT & LAPORAN (BAIK DARI JENJANG ANAK/SMP/SMA MAUPUN DEWASA) */}
           {tahapAktif === "hasil" && hasilSaatIni && (
-            <div className="space-y-6">
-              <div className="print:hidden bg-slate-900 text-white p-4 rounded-2xl border border-slate-700 flex flex-wrap justify-between items-center gap-3">
-                <div className="flex items-center gap-2 text-xs font-bold text-emerald-400">
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>
-                    {statusSimpan || "Tersimpan di Akun Cloud"} • Akun:{" "}
-                    {hasilSaatIni.emailPeserta}
-                  </span>
-                </div>
+            <>
+              {hasilSaatIni.daftarUrutMultiJenjang ? (
+                <MultiJenjangCertificateAndReport
+                  modeJenjang={hasilSaatIni.tipeJenjang || "anak_tk_sd"}
+                  namaPeserta={hasilSaatIni.namaPeserta}
+                  instansiPeserta={hasilSaatIni.instansiPeserta}
+                  emailPeserta={hasilSaatIni.emailPeserta}
+                  judulLaporan={
+                    hasilSaatIni.judulLaporanMultiJenjang ||
+                    "Laporan Komprehensif Pemetaan Bakat"
+                  }
+                  subjudulJenjang={
+                    hasilSaatIni.subjudulJenjangMultiJenjang ||
+                    hasilSaatIni.instansiPeserta
+                  }
+                  daftarUrut={hasilSaatIni.daftarUrutMultiJenjang}
+                  galeriKaryaKanvas={hasilSaatIni.galeriKaryaKanvas || {}}
+                  statusCloud={statusSimpan}
+                  onSimpanCloud={() => simpanHasilKeDatabasePusat(hasilSaatIni)}
+                />
+              ) : (
+                <div className="space-y-6 print:space-y-0">
+                  <div className="print:hidden bg-slate-900 text-white p-4 rounded-2xl border border-slate-700 flex flex-wrap justify-between items-center gap-3">
+                    <div className="flex items-center gap-2 text-xs font-bold text-emerald-400">
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>
+                        {statusSimpan || "Tersimpan di Database Pusat Cloud"} • Pilih Jenis Print:
+                      </span>
+                    </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => simpanHasilKeCloudServer(hasilSaatIni)}
-                    className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-1.5 cursor-pointer"
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => simpanHasilKeDatabasePusat(hasilSaatIni)}
+                        className="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <CloudUpload className="w-4 h-4" /> Sinkronkan ke Database Pusat
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          eksekusiPrintDewasaTerpisah("sertifikat_saja")
+                        }
+                        className="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center gap-1.5 cursor-pointer shadow-lg"
+                      >
+                        <Medal className="w-4 h-4" /> 1. Print Sertifikat Saja (A4 Landscape)
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          eksekusiPrintDewasaTerpisah("laporan_saja")
+                        }
+                        className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs flex items-center gap-1.5 cursor-pointer shadow-lg"
+                      >
+                        <FileText className="w-4 h-4" /> 2. Print Laporan Hasil Saja (PDF)
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* SERTIFIKAT EMAS DEWASA (A4 LANDSCAPE) */}
+                  <div
+                    className={
+                      modePrintDewasa === "laporan_saja"
+                        ? "hidden print:hidden"
+                        : "p-1.5 rounded-3xl bg-gradient-to-r from-amber-500 via-yellow-300 to-amber-600 shadow-2xl print:shadow-none break-inside-avoid print:max-h-[192mm] print:overflow-hidden"
+                    }
                   >
-                    <CloudUpload className="w-4 h-4" /> Sinkronkan ke Akun Cloud
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => window.print()}
-                    className="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center gap-1.5 cursor-pointer shadow-lg"
-                  >
-                    <Printer className="w-4 h-4" /> Cetak / Simpan PDF Rapi (A4)
-                  </button>
-                </div>
-              </div>
-
-              <div className="bg-white text-slate-900 p-6 sm:p-10 rounded-3xl border-2 border-slate-300 shadow-2xl space-y-8 print:border-none print:shadow-none print:p-0 print:space-y-5">
-                <div className="border-b-4 border-emerald-700 pb-5 flex flex-wrap justify-between items-center gap-4 break-inside-avoid">
-                  <div className="flex items-center gap-4">
-                    <img
-                      src="/hibahilmu.jpg"
-                      alt="Logo Panda HibahIlmu"
-                      onError={(e) => {
-                        e.currentTarget.src =
-                          "https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=120&auto=format&fit=crop&q=80";
-                      }}
-                      className="w-16 h-16 rounded-2xl object-cover border-2 border-emerald-600 shadow-md"
-                    />
-                    <div>
-                      <div className="text-[10px] font-black uppercase tracking-widest text-emerald-700">
-                        PANDA HIBAHILMU.ID • PUSAT PEMETAAN BAKAT &amp; KARIER MASA DEPAN
-                      </div>
-                      <h2 className="text-xl sm:text-2xl font-black text-slate-900">
-                        Laporan Hasil Pemetaan Bakat &amp; Kekuatan Diri
-                      </h2>
-                      <div className="text-xs font-bold text-slate-600 mt-0.5">
-                        Panduan Mengenali Potensi Alami untuk Pelajar, Remaja, Mahasiswa &amp; Umum
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="text-right space-y-0.5 bg-rose-50 border-2 border-rose-600 px-4 py-2 rounded-2xl">
-                    <div className="text-[10px] font-black uppercase tracking-widest text-rose-700 flex items-center justify-end gap-1">
-                      <Lock className="w-3 h-3" /> DOKUMEN BERSIFAT RAHASIA (CONFIDENTIAL)
-                    </div>
-                    <div className="text-sm font-black text-slate-900">
-                      Nama: {hasilSaatIni.namaPeserta}
-                    </div>
-                    <div className="text-[11px] font-bold text-slate-600">
-                      Akun: {hasilSaatIni.emailPeserta} • {hasilSaatIni.instansiPeserta}
-                    </div>
-                    <div className="text-[10px] font-mono text-slate-500">
-                      {hasilSaatIni.tanggalTes} • No: {hasilSaatIni.nomorDokumenRahasia}
-                    </div>
-                  </div>
-                </div>
-
-                {/* BAGIAN 1: URUTAN LENGKAP 34 BAKAT */}
-                <div className="space-y-3 break-inside-avoid">
-                  <div className="flex flex-wrap justify-between items-center gap-2 border-b pb-1.5">
-                    <h3 className="text-base sm:text-lg font-black uppercase text-slate-900">
-                      1. Peta Urutan 34 Bakat &amp; Gaya Produktivitas —{" "}
-                      {hasilSaatIni.namaPeserta}
-                    </h3>
-                    <span className="text-xs font-black text-indigo-700">
-                      Kekuatan Utama: {hasilSaatIni.duaDomainDominan[0]} &amp;{" "}
-                      {hasilSaatIni.duaDomainDominan[1]}
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-slate-700 leading-relaxed bg-slate-50 p-3.5 rounded-2xl border">
-                    {hasilSaatIni.profilProduktivitasNarasi}
-                  </p>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 print:grid-cols-4">
-                    {(
-                      ["Thinking", "Striving", "Relating", "Influencing"] as const
-                    ).map((dom) => {
-                      const listDom = hasilSaatIni.urutan34Bakat.filter(
-                        (b) => b.domain === dom
-                      );
-                      const warnaHeader =
-                        dom === "Thinking"
-                          ? "bg-emerald-700"
-                          : dom === "Striving"
-                          ? "bg-amber-600"
-                          : dom === "Relating"
-                          ? "bg-rose-700"
-                          : "bg-purple-800";
-                      return (
-                        <div
-                          key={dom}
-                          className="rounded-2xl border border-slate-200 overflow-hidden bg-slate-50 break-inside-avoid"
-                        >
-                          <div
-                            className={`${warnaHeader} text-white px-3 py-1.5 font-black text-xs flex justify-between items-center`}
-                          >
-                            <span>{dom}</span>
-                            <span className="text-[10px] bg-black/25 px-2 py-0.5 rounded-full">
-                              Top 14: {hasilSaatIni.distribusiDomainTop14[dom]}
-                            </span>
-                          </div>
-                          <div className="p-2 space-y-1">
-                            {listDom.map((b) => (
-                              <div
-                                key={b.id}
-                                className="flex justify-between items-center text-[11px] px-2 py-1 rounded-lg bg-white border"
-                              >
-                                <div className="flex items-center gap-1.5 truncate">
-                                  <span
-                                    style={{ backgroundColor: b.warnaHex }}
-                                    className={`w-2.5 h-2.5 rounded-full shrink-0 border ${
-                                      b.peringkat <= 14 || b.peringkat >= 22
-                                        ? "border-transparent"
-                                        : "border-slate-400"
-                                    }`}
-                                  />
-                                  <span className="font-bold text-slate-800 truncate">
-                                    {b.nama}
-                                  </span>
-                                </div>
-                                <span className="font-mono font-black text-[10px] text-slate-600 shrink-0">
-                                  #{b.peringkat}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* BAGIAN 2: DESKRIPSI 7 BAKAT UTAMA (1-7) & 7 BAKAT PENDUKUNG (8-14) */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 print:grid-cols-2">
-                  <div className="space-y-2.5">
-                    <h3 className="text-sm sm:text-base font-black uppercase text-rose-700 border-b-2 border-rose-600 pb-1">
-                      2. 7 Bakat Utama Paling Menonjol (Urutan 1–7)
-                    </h3>
-                    {hasilSaatIni.bakatUtama1_7.map((b) => (
-                      <div
-                        key={b.id}
-                        className="p-3 rounded-2xl bg-rose-50/70 border border-rose-200 space-y-1 break-inside-avoid"
-                      >
-                        <div className="flex justify-between items-center gap-2">
-                          <span className="font-black text-xs sm:text-sm text-rose-900">
-                            #{b.peringkat}. {b.nama} —{" "}
-                            <span className="text-rose-700">
-                              {b.julukanRemaja}
-                            </span>
-                          </span>
-                          <span className="text-[9.5px] font-black uppercase px-2 py-0.5 rounded bg-rose-600 text-white shrink-0">
-                            {b.domain}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-700 leading-relaxed">
-                          {b.deskripsiKuat}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="space-y-2.5">
-                    <h3 className="text-sm sm:text-base font-black uppercase text-amber-700 border-b-2 border-amber-500 pb-1">
-                      3. 7 Bakat Pendukung (Urutan 8–14)
-                    </h3>
-                    {hasilSaatIni.bakatPendukung8_14.map((b) => (
-                      <div
-                        key={b.id}
-                        className="p-3 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-1 break-inside-avoid"
-                      >
-                        <div className="flex justify-between items-center gap-2">
-                          <span className="font-black text-xs sm:text-sm text-amber-950">
-                            #{b.peringkat}. {b.nama} —{" "}
-                            <span className="text-amber-800">
-                              {b.julukanRemaja}
-                            </span>
-                          </span>
-                          <span className="text-[9.5px] font-black uppercase px-2 py-0.5 rounded bg-amber-500 text-slate-950 shrink-0">
-                            {b.domain}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-700 leading-relaxed">
-                          {b.deskripsiKuat}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* BAGIAN 3: DESKRIPSI BAKAT URUTAN 28-34 */}
-                <div className="space-y-2.5 break-inside-avoid">
-                  <h3 className="text-sm sm:text-base font-black uppercase text-slate-900 border-b-2 border-slate-800 pb-1">
-                    4. Bakat Urutan Bawah (28–34) &amp; Cara Cerdas Menyiasatinya
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 print:grid-cols-2">
-                    {hasilSaatIni.bakatLemah28_34.map((b) => (
-                      <div
-                        key={b.id}
-                        className="p-3 rounded-2xl bg-slate-100 border border-slate-300 space-y-1 break-inside-avoid"
-                      >
-                        <div className="flex justify-between items-center">
-                          <span className="font-black text-xs text-slate-900">
-                            #{b.peringkat}. {b.nama} ({b.julukanRemaja})
-                          </span>
-                          <span className="text-[9.5px] font-bold px-2 py-0.5 rounded bg-slate-800 text-white">
-                            Tips Kolaborasi
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-700 leading-relaxed">
-                          {b.saranLemah}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* BAGIAN 4: 14 AKTIVITAS UNGGULAN & 5 PERSONAL BRANDING */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 print:grid-cols-12 break-inside-avoid">
-                  <div className="lg:col-span-7 print:col-span-7 space-y-2.5">
-                    <h3 className="text-sm sm:text-base font-black uppercase text-indigo-900 border-b-2 border-indigo-600 pb-1">
-                      5. 14 Aktivitas yang Paling Cocok &amp; Menyenangkan Buatmu
-                    </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 print:grid-cols-2">
-                      {hasilSaatIni.prioritas14Aktivitas.map((akt, idx) => (
-                        <div
-                          key={akt.no}
-                          className="p-2.5 rounded-xl bg-indigo-50/60 border border-indigo-200 flex gap-2 items-start break-inside-avoid"
-                        >
-                          <span className="w-5 h-5 rounded-md bg-indigo-700 text-white font-black text-[11px] flex items-center justify-center shrink-0">
-                            {idx + 1}
-                          </span>
+                    <div className="bg-gradient-to-b from-[#fffdf5] via-white to-[#fefce8] text-slate-900 p-6 sm:p-8 print:p-5 rounded-[22px] border-4 border-double border-amber-600/80 space-y-4">
+                      <div className="flex flex-wrap justify-between items-center gap-3 border-b-2 border-amber-300 pb-3">
+                        <div className="flex items-center gap-3.5">
+                          <img
+                            src="/hibahilmu.jpg"
+                            alt="Logo Panda HibahIlmu"
+                            onError={(e) => {
+                              e.currentTarget.src =
+                                "https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=120&auto=format&fit=crop&q=80";
+                            }}
+                            className="w-14 h-14 rounded-2xl object-cover border-2 border-amber-500 shadow-sm"
+                          />
                           <div>
-                            <div className="font-black text-xs text-indigo-950">
-                              {akt.kodeAktivitas}{" "}
-                              <span className="text-[10px] font-mono text-emerald-700">
-                                ({akt.klaster})
-                              </span>
+                            <div className="text-[10px] font-black uppercase tracking-widest text-amber-800">
+                              OFFICIAL TALENT CERTIFICATE • PANDA HIBAHILMU INDONESIA
                             </div>
-                            <p className="text-[11px] text-slate-600 leading-snug">
-                              {akt.deskripsiSingkat}
-                            </p>
+                            <h3 className="text-xl sm:text-2xl font-black text-slate-900">
+                              SERTIFIKAT KOMPETENSI &amp; PEMETAAN BAKAT (TALENTS MAPPING®)
+                            </h3>
+                            <div className="text-xs font-bold text-emerald-700">
+                              No. Dokumen: {hasilSaatIni.nomorDokumenRahasia}
+                            </div>
                           </div>
                         </div>
-                      ))}
+
+                        <div className="flex flex-col items-end">
+                          <div className="px-3.5 py-1 rounded-full bg-amber-400 text-slate-950 font-black text-xs flex items-center gap-1">
+                            <Award className="w-4 h-4" /> TERVERIFIKASI
+                          </div>
+                          <span className="text-[10px] font-mono text-slate-500 mt-1">
+                            Diterbitkan: {hasilSaatIni.tanggalTes}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="text-center space-y-1.5 py-1">
+                        <div className="text-xs font-bold uppercase tracking-widest text-slate-500">
+                          Diberikan secara resmi kepada:
+                        </div>
+                        <div className="text-2xl sm:text-4xl font-black text-slate-900 underline decoration-amber-400 decoration-4 underline-offset-8">
+                          {hasilSaatIni.namaPeserta}
+                        </div>
+                        <div className="pt-1">
+                          <span className="inline-block px-5 py-1 rounded-full bg-gradient-to-r from-rose-600 to-amber-500 text-white font-black text-xs shadow">
+                            🌟 Personal Branding Utama:{" "}
+                            {hasilSaatIni.top5PersonalBranding?.[0]?.nama} &amp;{" "}
+                            {hasilSaatIni.top5PersonalBranding?.[1]?.nama}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 print:grid-cols-7">
+                        {(hasilSaatIni.bakatUtama1_7 || []).map((b: any) => (
+                          <div
+                            key={b.id}
+                            className="p-2 rounded-xl bg-white border-2 border-amber-400 text-center space-y-0.5"
+                          >
+                            <div className="text-[10px] font-black text-rose-600">
+                              #{b.peringkat} • {b.domain}
+                            </div>
+                            <div className="font-black text-xs text-slate-900">
+                              {b.nama}
+                            </div>
+                            <div className="text-[9px] font-bold text-slate-500 leading-tight">
+                              {b.julukanRemaja}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="pt-2 border-t border-amber-300 flex justify-between items-end gap-4 text-xs">
+                        <div>
+                          <div className="font-black text-slate-800">
+                            Instansi / Kelas: {hasilSaatIni.instansiPeserta}
+                          </div>
+                          <div className="text-[10px] text-slate-500">
+                            Akun Terdaftar: {hasilSaatIni.emailPeserta}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-black text-sm text-emerald-800">
+                            Panda HibahIlmu Talent &amp; People Development Center
+                          </div>
+                          <div className="text-[10px] font-mono text-slate-500">
+                            hibahilmu.my.id • Database Pusat Terverifikasi
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="lg:col-span-5 print:col-span-5 space-y-2.5">
-                    <h3 className="text-sm sm:text-base font-black uppercase text-emerald-900 border-b-2 border-emerald-600 pb-1">
-                      6. 5 Peran Personal Branding Terbaikmu
-                    </h3>
-                    {hasilSaatIni.top5PersonalBranding.map((role, idx) => (
-                      <div
-                        key={role.id}
-                        className="p-3 rounded-2xl bg-emerald-50/70 border-2 border-emerald-300 space-y-1 break-inside-avoid"
-                      >
-                        <div className="flex justify-between items-center">
-                          <span className="font-black text-xs sm:text-sm text-emerald-950">
-                            #{idx + 1}. {role.nama} ({role.julukan})
-                          </span>
-                          <span className="text-[9.5px] font-black px-2 py-0.5 rounded bg-emerald-700 text-white shrink-0">
-                            {role.skorKecocokan}% Cocok
-                          </span>
+                  {/* LAPORAN LENGKAP 9 BAGIAN (A4 PORTRAIT) */}
+                  <div
+                    className={
+                      modePrintDewasa === "sertifikat_saja"
+                        ? "hidden print:hidden"
+                        : "bg-white text-slate-900 p-6 sm:p-10 rounded-3xl border-2 border-slate-300 shadow-2xl space-y-8 print:border-none print:shadow-none print:p-0 print:space-y-5"
+                    }
+                  >
+                    <div className="border-b-4 border-emerald-700 pb-5 flex flex-wrap justify-between items-center gap-4 break-inside-avoid">
+                      <div className="flex items-center gap-4">
+                        <img
+                          src="/hibahilmu.jpg"
+                          alt="Logo Panda HibahIlmu"
+                          onError={(e) => {
+                            e.currentTarget.src =
+                              "https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=120&auto=format&fit=crop&q=80";
+                          }}
+                          className="w-16 h-16 rounded-2xl object-cover border-2 border-emerald-600 shadow-md"
+                        />
+                        <div>
+                          <div className="text-[10px] font-black uppercase tracking-widest text-emerald-700">
+                            PANDA HIBAHILMU.ID • PUSAT PEMETAAN BAKAT &amp; KARIER MASA DEPAN
+                          </div>
+                          <h2 className="text-xl sm:text-2xl font-black text-slate-900">
+                            Laporan Hasil Pemetaan Bakat &amp; Kekuatan Diri
+                          </h2>
                         </div>
-                        <p className="text-xs text-slate-700 leading-relaxed">
-                          {role.deskripsi}
-                        </p>
                       </div>
-                    ))}
+
+                      <div className="text-right space-y-0.5 bg-rose-50 border-2 border-rose-600 px-4 py-2 rounded-2xl">
+                        <div className="text-[10px] font-black uppercase tracking-widest text-rose-700 flex items-center justify-end gap-1">
+                          <Lock className="w-3 h-3" /> DOKUMEN BERSIFAT RAHASIA (CONFIDENTIAL)
+                        </div>
+                        <div className="text-sm font-black text-slate-900">
+                          Nama: {hasilSaatIni.namaPeserta}
+                        </div>
+                        <div className="text-[11px] font-bold text-slate-600">
+                          {hasilSaatIni.emailPeserta} • {hasilSaatIni.instansiPeserta}
+                        </div>
+                      </div>
+                    </div>
+
+                    {hasilSaatIni.urutan34Bakat && (
+                      <Scm114FullVisualMap hasil={hasilSaatIni} />
+                    )}
                   </div>
                 </div>
-
-                {/* BAGIAN 5: VISUALISASI PETA LENGKAP 114 SCM, RADAR CHART & JURUSAN */}
-                <Scm114FullVisualMap hasil={hasilSaatIni} />
-
-                <div className="border-t pt-3 flex flex-wrap justify-between items-center text-[10px] font-bold text-slate-500 break-inside-avoid">
-                  <span>
-                    © {new Date().getFullYear()} Panda HibahIlmu.id — Laporan Resmi Milik Akun:{" "}
-                    {hasilSaatIni.namaPeserta} ({hasilSaatIni.emailPeserta})
-                  </span>
-                  <span className="text-rose-700 font-black uppercase">
-                    DOKUMEN RAHASIA PRIBADI (CONFIDENTIAL)
-                  </span>
-                </div>
-              </div>
-            </div>
+              )}
+            </>
           )}
         </>
       )}
