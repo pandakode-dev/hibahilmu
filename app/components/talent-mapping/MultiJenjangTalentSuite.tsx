@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Eraser, Paintbrush } from "lucide-react";
+import { Eraser, Paintbrush, PaintBucket, Sparkles } from "lucide-react";
 import {
   DAFTAR_8_MISI_KANVAS,
   MisiKanvasId,
   gambarIlustrasiBukuMewarnai,
+  isiWarnaCatTumpahFloodFill,
 } from "./kidsCanvasIllustrations";
 import {
   DimensiScoreItem,
@@ -37,14 +38,17 @@ export const MultiJenjangTalentSuite: React.FC<{
   const [autoNext, setAutoNext] = useState<boolean>(true);
   const [statusCloud, setStatusCloud] = useState<string>("");
 
-  // State Jenjang 1: Anak 3–8 Tahun (8 Misi Gambar + 24 Kartu + 24 Observasi)
+  // State Jenjang 1: Anak 3–8 Tahun (Mendukung Mode Cat Tumpah 🪣, Kuas Stylus 🖌️ & Penghapus 🧼)
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [subTahapAnak, setSubTahapAnak] = useState<
     "kanvas" | "kartu" | "observasi" | "hasil"
   >("kanvas");
+  const [alatWarnaAktif, setAlatWarnaAktif] = useState<
+    "cat_tumpah" | "kuas_stylus" | "penghapus"
+  >("cat_tumpah");
   const [sedangMenggambar, setSedangMenggambar] = useState<boolean>(false);
   const [warnaKuas, setWarnaKuas] = useState<string>("#e11d48");
-  const [ukuranKuas, setUkuranKuas] = useState<number>(10);
+  const [ukuranKuas, setUkuranKuas] = useState<number>(12);
   const [misiKanvasAktif, setMisiKanvasAktif] =
     useState<MisiKanvasId>("rumah_pohon");
 
@@ -112,7 +116,12 @@ export const MultiJenjangTalentSuite: React.FC<{
           };
           img.src = rekamanLama;
         } else {
-          gambarIlustrasiBukuMewarnai(ctx, cvs.width, cvs.height, misiKanvasAktif);
+          gambarIlustrasiBukuMewarnai(
+            ctx,
+            cvs.width,
+            cvs.height,
+            misiKanvasAktif
+          );
         }
       }, 50);
       return () => clearTimeout(timer);
@@ -126,46 +135,108 @@ export const MultiJenjangTalentSuite: React.FC<{
     setMisiKanvasAktif(targetMisi);
   };
 
-  const mulaiGoresKanvas = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const cvs = canvasRef.current;
-    if (!cvs) return;
+  // ==========================================================================
+  // HANDLER POINTER EVENTS (100% KOMPATIBEL STYLUS PEN, JARI TABLET, & MOUSE)
+  // ==========================================================================
+  const ambilKoordinatPointer = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const cvs = canvasRef.current!;
     const rect = cvs.getBoundingClientRect();
     const x = (e.clientX - rect.left) * (cvs.width / rect.width);
     const y = (e.clientY - rect.top) * (cvs.height / rect.height);
+    return { x, y };
+  };
+
+  const handlePointerDownKanvas = (
+    e: React.PointerEvent<HTMLCanvasElement>
+  ) => {
+    e.preventDefault();
+    const cvs = canvasRef.current;
+    if (!cvs) return;
     const ctx = cvs.getContext("2d");
     if (!ctx) return;
 
-    setSedangMenggambar(true);
+    // Tangkap pointer agar stylus/jari tetap lancar walaupun bergerak cepat
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
+
+    const { x, y } = ambilKoordinatPointer(e);
+
     setJumlahGoresan((g) => g + 1);
     setWarnaTerpakaiSet((prev) => new Set(prev).add(warnaKuas));
     setMisiPernahDigoresSet((prev) => new Set(prev).add(misiKanvasAktif));
 
+    // JIKA MODE EMBER CAT TUMPAH (1X SENTUH/KETUK LANGSUNG PENUH WARNA!)
+    if (alatWarnaAktif === "cat_tumpah") {
+      isiWarnaCatTumpahFloodFill(
+        ctx,
+        cvs.width,
+        cvs.height,
+        x,
+        y,
+        warnaKuas,
+        misiKanvasAktif
+      );
+      setTotalPanjangGoresan((p) => p + 25);
+      simpanSnapshotKanvasSaatIni(misiKanvasAktif);
+      return;
+    }
+
+    // JIKA MODE KUAS STYLUS ATAU PENGHAPUS
+    setSedangMenggambar(true);
     ctx.beginPath();
     ctx.moveTo(x, y);
+    ctx.lineTo(x + 0.1, y + 0.1);
+    ctx.strokeStyle = alatWarnaAktif === "penghapus" ? "#ffffff" : warnaKuas;
+    ctx.lineWidth =
+      alatWarnaAktif === "penghapus" ? ukuranKuas * 1.8 : ukuranKuas;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.stroke();
   };
 
-  const lanjutkanGoresKanvas = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!sedangMenggambar) return;
+  const handlePointerMoveKanvas = (
+    e: React.PointerEvent<HTMLCanvasElement>
+  ) => {
+    if (!sedangMenggambar || alatWarnaAktif === "cat_tumpah") return;
+    e.preventDefault();
     const cvs = canvasRef.current;
     if (!cvs) return;
-    const rect = cvs.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (cvs.width / rect.width);
-    const y = (e.clientY - rect.top) * (cvs.height / rect.height);
     const ctx = cvs.getContext("2d");
     if (!ctx) return;
 
+    const { x, y } = ambilKoordinatPointer(e);
+
     ctx.lineTo(x, y);
-    ctx.strokeStyle = warnaKuas;
-    ctx.lineWidth = ukuranKuas;
+    ctx.strokeStyle = alatWarnaAktif === "penghapus" ? "#ffffff" : warnaKuas;
+    ctx.lineWidth =
+      alatWarnaAktif === "penghapus" ? ukuranKuas * 1.8 : ukuranKuas;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.stroke();
     setTotalPanjangGoresan((p) => p + 1);
   };
 
-  const akhiriGoresKanvas = () => {
+  const handlePointerUpKanvas = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {}
     if (sedangMenggambar) {
       setSedangMenggambar(false);
+      const cvs = canvasRef.current;
+      if (cvs) {
+        const ctx = cvs.getContext("2d");
+        if (ctx) {
+          // Pertahankan ketajaman garis sketsa hitam di atas sapuan kuas/penghapus
+          gambarIlustrasiBukuMewarnai(
+            ctx,
+            cvs.width,
+            cvs.height,
+            misiKanvasAktif,
+            true
+          );
+        }
+      }
       simpanSnapshotKanvasSaatIni(misiKanvasAktif);
     }
   };
@@ -175,7 +246,13 @@ export const MultiJenjangTalentSuite: React.FC<{
     if (cvs) {
       const ctx = cvs.getContext("2d");
       if (ctx) {
-        gambarIlustrasiBukuMewarnai(ctx, cvs.width, cvs.height, misiKanvasAktif);
+        gambarIlustrasiBukuMewarnai(
+          ctx,
+          cvs.width,
+          cvs.height,
+          misiKanvasAktif,
+          false
+        );
       }
     }
     setGaleriKaryaKanvas((prev) => {
@@ -258,7 +335,6 @@ export const MultiJenjangTalentSuite: React.FC<{
         mandiri: 25,
       };
 
-      // Kontribusi 8 Misi Kanvas Mewarnai
       skorMap.seni += Math.min(
         26,
         warnaTerpakaiSet.size * 3 + Math.max(1, jmlKanvasDiwarnai) * 3.5
@@ -272,16 +348,15 @@ export const MultiJenjangTalentSuite: React.FC<{
       DAFTAR_8_MISI_KANVAS.forEach((m) => {
         if (misiPernahDigoresSet.has(m.id)) {
           skorMap[m.dimensiUtama] = (skorMap[m.dimensiUtama] || 25) + 12;
-          skorMap[m.dimensiPendukung] = (skorMap[m.dimensiPendukung] || 25) + 7;
+          skorMap[m.dimensiPendukung] =
+            (skorMap[m.dimensiPendukung] || 25) + 7;
         }
       });
 
-      // Kontribusi 24 Kartu Cerita Visual
       Object.values(jawabanKartuAnak).forEach((kode) => {
         if (skorMap[kode] !== undefined) skorMap[kode] += 9;
       });
 
-      // Kontribusi 24 Observasi Orang Tua
       OBSERVASI_ORTU_24.forEach((ob) => {
         const nilai = observasiOrtuSkor[ob.id] || 0;
         if (nilai > 0 && skorMap[ob.kategori] !== undefined) {
@@ -325,7 +400,7 @@ export const MultiJenjangTalentSuite: React.FC<{
             {
               id: "kanvas",
               label: "1. Buku Mewarnai (8 Gambar)",
-              sub: `${jmlKanvasDiwarnai} Gambar Diwarnai (Pilih ≥1 Boleh!)`,
+              sub: `${jmlKanvasDiwarnai} Gambar Diwarnai (Touch & Stylus)`,
             },
             {
               id: "kartu",
@@ -405,10 +480,10 @@ export const MultiJenjangTalentSuite: React.FC<{
             <div className="flex flex-wrap justify-between items-center gap-3 border-b pb-3">
               <div>
                 <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded bg-emerald-100 text-emerald-900">
-                  ✓ 8 Ilustrasi Buku Mewarnai Detail • Boleh Pilih 1 Saja atau Warnai Beberapa!
+                  ✓ Mendukung Layar Sentuh (Touchscreen), Stylus Pen Tablet &amp; Ember Cat Tumpah!
                 </span>
                 <h3 className="text-lg font-black text-slate-900 mt-0.5">
-                  🎨 Pilih Tema Gambar di Bawah &amp; Ajak Anak Mewarnainya!
+                  🎨 Pilih Tema Gambar &amp; Warnai dengan Cat Tumpah (1x Ketuk) atau Kuas Stylus!
                 </h3>
               </div>
               <button
@@ -462,65 +537,124 @@ export const MultiJenjangTalentSuite: React.FC<{
               })}
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-3 rounded-2xl border">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-black text-slate-700">
-                  <Paintbrush className="w-4 h-4 inline text-rose-600 mr-1" />
-                  Pilih Warna Kuas:
+            {/* BAR ALAT MEWARNAI: EMBER CAT TUMPAH vs KUAS STYLUS vs PENGHAPUS + 14 WARNA CERIA */}
+            <div className="bg-slate-50 p-3.5 rounded-2xl border space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setAlatWarnaAktif("cat_tumpah")}
+                    className={`px-3.5 py-2 rounded-xl font-black flex items-center gap-1.5 cursor-pointer border-2 transition ${
+                      alatWarnaAktif === "cat_tumpah"
+                        ? "bg-rose-600 text-white border-amber-300 shadow-md scale-105"
+                        : "bg-white text-slate-700 border-slate-300"
+                    }`}
+                  >
+                    <PaintBucket className="w-4 h-4" /> 🪣 Cat Tumpah (1x Ketuk Penuh)
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setAlatWarnaAktif("kuas_stylus")}
+                    className={`px-3.5 py-2 rounded-xl font-black flex items-center gap-1.5 cursor-pointer border-2 transition ${
+                      alatWarnaAktif === "kuas_stylus"
+                        ? "bg-indigo-600 text-white border-amber-300 shadow-md scale-105"
+                        : "bg-white text-slate-700 border-slate-300"
+                    }`}
+                  >
+                    <Paintbrush className="w-4 h-4" /> 🖌️ Kuas Lukis / Stylus Pen
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setAlatWarnaAktif("penghapus")}
+                    className={`px-3 py-2 rounded-xl font-black flex items-center gap-1.5 cursor-pointer border-2 transition ${
+                      alatWarnaAktif === "penghapus"
+                        ? "bg-amber-400 text-slate-950 border-slate-900 shadow-md"
+                        : "bg-white text-slate-700 border-slate-300"
+                    }`}
+                  >
+                    <Eraser className="w-4 h-4" /> 🧼 Penghapus Warna
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2 text-xs font-bold">
+                  {alatWarnaAktif !== "cat_tumpah" && (
+                    <>
+                      <span>Tebal Kuas:</span>
+                      <input
+                        type="range"
+                        min={4}
+                        max={30}
+                        value={ukuranKuas}
+                        onChange={(e) => setUkuranKuas(Number(e.target.value))}
+                        className="w-20"
+                      />
+                    </>
+                  )}
+                  <button
+                    type="button"
+                    onClick={hapusUlangiKanvasIni}
+                    className="px-3 py-2 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-800 font-black cursor-pointer"
+                  >
+                    🔄 Bersihkan Kanvas Ini
+                  </button>
+                </div>
+              </div>
+
+              {/* Palet 14 Warna Cat Ceria */}
+              <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-200">
+                <span className="text-xs font-black text-slate-700 mr-1">
+                  🎨 Pilih Warna Cat:
                 </span>
                 {[
-                  "#e11d48",
-                  "#f97316",
-                  "#facc15",
-                  "#22c55e",
-                  "#06b6d4",
-                  "#2563eb",
-                  "#9333ea",
-                  "#ec4899",
-                  "#78350f",
-                  "#0f172a",
+                  "#ef4444", // Merah Cerah
+                  "#f97316", // Oranye
+                  "#facc15", // Kuning Matahari
+                  "#84cc16", // Hijau Muda Daun
+                  "#22c55e", // Hijau Rumput
+                  "#14b8a6", // Toska Laut
+                  "#38bdf8", // Biru Langit
+                  "#2563eb", // Biru Tua
+                  "#8b5cf6", // Ungu Lavender
+                  "#d946ef", // Magenta
+                  "#f472b6", // Pink Bunga
+                  "#fcd34d", // Krem Kulit/Pasir
+                  "#92400e", // Cokelat Batang Pohon
+                  "#334155", // Abu Gelap
                 ].map((hex) => (
                   <button
                     key={hex}
                     type="button"
-                    onClick={() => setWarnaKuas(hex)}
+                    onClick={() => {
+                      setWarnaKuas(hex);
+                      if (alatWarnaAktif === "penghapus") {
+                        setAlatWarnaAktif("cat_tumpah");
+                      }
+                    }}
                     style={{ backgroundColor: hex }}
-                    className={`w-7 h-7 rounded-full cursor-pointer border-2 ${
-                      warnaKuas === hex ? "scale-125 ring-2 ring-amber-400" : ""
+                    className={`w-8 h-8 rounded-full cursor-pointer border-2 transition ${
+                      warnaKuas === hex
+                        ? "scale-125 ring-4 ring-amber-400 border-white shadow-md"
+                        : "border-slate-300"
                     }`}
                   />
                 ))}
               </div>
-              <div className="flex items-center gap-2 text-xs font-bold">
-                <span>Ukuran Kuas:</span>
-                <input
-                  type="range"
-                  min={4}
-                  max={28}
-                  value={ukuranKuas}
-                  onChange={(e) => setUkuranKuas(Number(e.target.value))}
-                  className="w-20"
-                />
-                <button
-                  type="button"
-                  onClick={hapusUlangiKanvasIni}
-                  className="px-3 py-1.5 rounded-lg bg-rose-100 text-rose-700 font-black cursor-pointer"
-                >
-                  <Eraser className="w-3.5 h-3.5 inline mr-1" /> Bersihkan Kanvas Ini
-                </button>
-              </div>
             </div>
 
+            {/* KANVAS UTAMA DENGAN touchAction: "none" AGAR STYLUS & JARI TABLET 100% RESPONSIF */}
             <div className="flex justify-center bg-slate-100 p-3 rounded-2xl border-2 border-dashed border-slate-300">
               <canvas
                 ref={canvasRef}
                 width={540}
                 height={240}
-                onMouseDown={mulaiGoresKanvas}
-                onMouseMove={lanjutkanGoresKanvas}
-                onMouseUp={akhiriGoresKanvas}
-                onMouseLeave={akhiriGoresKanvas}
-                className="w-full max-w-[540px] h-[240px] bg-white rounded-2xl shadow-inner cursor-crosshair border"
+                style={{ touchAction: "none" }}
+                onPointerDown={handlePointerDownKanvas}
+                onPointerMove={handlePointerMoveKanvas}
+                onPointerUp={handlePointerUpKanvas}
+                onPointerCancel={handlePointerUpKanvas}
+                className="w-full max-w-[540px] h-[240px] bg-white rounded-2xl shadow-inner cursor-crosshair border select-none"
               />
             </div>
           </div>
