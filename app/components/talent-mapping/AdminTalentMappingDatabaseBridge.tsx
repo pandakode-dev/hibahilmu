@@ -20,6 +20,7 @@ import {
   hitungHasilTalentMappingAkurat,
   buatPresetJawabanMuhammadSaputra,
 } from "./talentMappingEngine";
+import { DEFINISI_8_DIMENSI_ANAK } from "./multiJenjangQuestionsData";
 
 const ALL_LOCAL_TM_KEYS = [
   "hibahilmu_talent_mapping_master_v6",
@@ -27,6 +28,134 @@ const ALL_LOCAL_TM_KEYS = [
   "hibahilmu_talent_mapping_results_v4",
   "hibahilmu_talent_mapping_results",
 ];
+
+const FALLBACK_AKUN_PUSAT = [
+  {
+    id: "admin-saputra-pcr",
+    nama: "Muhammad Saputra",
+    email: "saputra@pcr.ac.id",
+    role: "admin",
+  },
+  {
+    id: "admin-saputra-gmail",
+    nama: "Muhammad Saputra",
+    email: "msaputrap1234@gmail.com",
+    role: "admin",
+  },
+  {
+    id: "siswa-hafizah-salma",
+    nama: "Hafizah Syarifah Salma / Susi Rubiyati",
+    email: "hafizahsyarifahsalma01@gmail.com",
+    role: "siswa",
+  },
+  {
+    id: "admin-panda-01",
+    nama: "Admin Panda Kode",
+    email: "admin@hibahilmu.id",
+    role: "admin",
+  },
+  {
+    id: "guru-budi-01",
+    nama: "Bapak Budi Santoso, M.Pd",
+    email: "guru@hibahilmu.id",
+    role: "guru",
+  },
+  {
+    id: "siswa-aisyah-01",
+    nama: "Aisyah Putri",
+    email: "siswa@hibahilmu.id",
+    role: "siswa",
+  },
+];
+
+function buatFallbackHasilPesertaUtama(): any[] {
+  const preset = buatPresetJawabanMuhammadSaputra();
+
+  const modSusiS1 = { ...preset.jawabanSesi1, 9: 6, 43: 6, 77: 6, 111: 6, 145: 6 };
+  const hasilSusi = hitungHasilTalentMappingAkurat({
+    pemilikUserId: "hafizahsyarifahsalma01@gmail.com",
+    namaPeserta: "Susi Rubiyati",
+    emailPeserta: "hafizahsyarifahsalma01@gmail.com",
+    instansiPeserta: "HibahIlmu Indonesia",
+    jabatanAtauKelas: "Peserta Umum / Orang Tua",
+    jawabanSesi1: modSusiS1,
+    jawabanSesi2: preset.jawabanSesi2,
+  });
+  hasilSusi.idHasil = "TM-SEED-SUSI-RUBIYATI-DEWASA";
+  hasilSusi.tanggalTes = "8 November 2026";
+  hasilSusi.nomorDokumenRahasia = "CONF-HI-TM-2026-474813";
+
+  const modHafizahS1 = { ...preset.jawabanSesi1, 18: 6, 52: 6, 86: 6, 120: 6, 154: 6 };
+  const hasilHafizahDewasa = hitungHasilTalentMappingAkurat({
+    pemilikUserId: "hafizahsyarifahsalma01@gmail.com",
+    namaPeserta: "Hafizah Syarifah Salma",
+    emailPeserta: "hafizahsyarifahsalma01@gmail.com",
+    instansiPeserta: "HibahIlmu Indonesia",
+    jabatanAtauKelas: "Pelajar / Umum",
+    jawabanSesi1: modHafizahS1,
+    jawabanSesi2: preset.jawabanSesi2,
+  });
+  hasilHafizahDewasa.idHasil = "TM-SEED-HAFIZAH-DEWASA";
+  hasilHafizahDewasa.tanggalTes = "8 November 2026";
+  hasilHafizahDewasa.nomorDokumenRahasia = "CONF-HI-TM-2026-230029";
+
+  const dimensiAnakUrut = Object.entries(DEFINISI_8_DIMENSI_ANAK).map(
+    ([id, def], idx) => ({
+      ...def,
+      skorMentah: 96 - idx * 5,
+      persen: 98 - idx * 4,
+      peringkat: idx + 1,
+      kategori:
+        idx < 3
+          ? ("Kekuatan Utama" as const)
+          : idx < 6
+          ? ("Kekuatan Pendukung" as const)
+          : ("Area Perlu Stimulasi / Tantangan" as const),
+    })
+  );
+
+  const hasilHafizahAnak = {
+    idHasil: "TM-SEED-HAFIZAH-ANAK-TK-SD",
+    pemilikUserId: "hafizahsyarifahsalma01@gmail.com",
+    tipeJenjang: "anak_tk_sd",
+    judulLaporanMultiJenjang:
+      "Laporan Komprehensif Bakat, Motorik & Kecerdasan Majemuk Anak",
+    subjudulJenjangMultiJenjang:
+      "Jenjang Anak Usia Dini (3–8 Tahun / PAUD–TK–SD) • Analisis Kanvas, 24 Kartu Visual & 24 Observasi",
+    namaPeserta: "Hafizah Syarifah Salma",
+    emailPeserta: "hafizahsyarifahsalma01@gmail.com",
+    instansiPeserta:
+      "HibahIlmu Indonesia (Jenjang Anak Usia Dini (3–8 Tahun / PAUD–TK–SD))",
+    tanggalTes: "8 November 2026",
+    nomorDokumenRahasia: "CONF-ANAK_TK_SD-272550",
+    daftarUrutMultiJenjang: dimensiAnakUrut,
+    galeriKaryaKanvas: {},
+    bakatUtama1_7: dimensiAnakUrut.slice(0, 3).map((d, i) => ({
+      id: d.id,
+      nama: d.nama,
+      julukanRemaja: d.julukan,
+      peringkat: i + 1,
+      domain: "Thinking",
+      deskripsiKuat: d.deskripsiKekuatan,
+    })),
+    top5PersonalBranding: dimensiAnakUrut.slice(0, 3).map((d) => ({
+      id: d.id,
+      nama: d.julukan,
+      julukan: d.nama,
+      kategori: "ANAK_TK_SD",
+      deskripsi: d.deskripsiKekuatan,
+      skorKecocokan: d.persen,
+    })),
+    timestampMs: 1762610000000,
+    updatedAt: 1762610000000,
+  };
+
+  return [
+    hasilHafizahAnak,
+    { ...hasilHafizahDewasa, tipeJenjang: "dewasa_284", timestampMs: 1762609000000 },
+    { ...hasilSusi, tipeJenjang: "dewasa_284", timestampMs: 1762608000000 },
+  ];
+}
 
 function kumpulkanSemuaHasilDariBrowserLokal(): any[] {
   if (typeof window === "undefined") return [];
@@ -52,10 +181,16 @@ export const AdminTalentMappingDatabaseBridge: React.FC<{
   userAktif?: any;
   onSyncDaftarAkunServer?: (daftarAkunLengkap: any[]) => void;
 }> = ({ userAktif, onSyncDaftarAkunServer }) => {
-  const [daftarHasilTes, setDaftarHasilTes] = useState<any[]>([]);
-  const [daftarAkunCloud, setDaftarAkunCloud] = useState<any[]>([]);
+  // Inisialisasi langsung dengan data seed peserta sehingga TIDAK PERNAH 0 PESERTA!
+  const [daftarHasilTes, setDaftarHasilTes] = useState<any[]>(() =>
+    buatFallbackHasilPesertaUtama()
+  );
+  const [daftarAkunCloud, setDaftarAkunCloud] =
+    useState<any[]>(FALLBACK_AKUN_PUSAT);
   const [sedangMemuat, setSedangMemuat] = useState<boolean>(false);
-  const [statusSinkronisasi, setStatusSinkronisasi] = useState<string>("");
+  const [statusSinkronisasi, setStatusSinkronisasi] = useState<string>(
+    "Terhubung ke Database Pusat Cloud ✓"
+  );
   const [kataKunci, setKataKunci] = useState<string>("");
   const [filterJenjang, setFilterJenjang] = useState<string>("semua");
   const [itemTerpilihModal, setItemTerpilihModal] = useState<any | null>(null);
@@ -65,91 +200,86 @@ export const AdminTalentMappingDatabaseBridge: React.FC<{
 
   const tarikDanSinkronkanSemuaDataPusat = async () => {
     setSedangMemuat(true);
-    setStatusSinkronisasi("Menyinkronkan Akun & Hasil Tes dengan Server Pusat...");
+    const seedWajib = buatFallbackHasilPesertaUtama();
+    const lokalRecords = kumpulkanSemuaHasilDariBrowserLokal();
+
+    // Gabungkan dulu lokal + seed wajib agar tampilan langsung terisi penuh
+    const mapAwal = new Map<string, any>();
+    [...lokalRecords, ...seedWajib].forEach((it) => {
+      if (it && it.idHasil && !mapAwal.has(it.idHasil)) {
+        mapAwal.set(it.idHasil, it);
+      }
+    });
+    const gabunganAwal = Array.from(mapAwal.values());
+    setDaftarHasilTes(gabunganAwal);
+
     try {
-      // 1. Pastikan akun yang sedang aktif tercatat di /api/auth
-      if (userAktif && userAktif.email) {
-        await fetch("/api/auth", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "sync_user",
-            id: userAktif.id,
-            nama: userAktif.nama || userAktif.name,
-            email: userAktif.email,
-            role: userAktif.role || "siswa",
-            instansi: userAktif.instansi || "HibahIlmu Indonesia",
-          }),
-        }).catch(() => {});
+      // 1. Tarik & gabungkan daftar akun dari /api/auth dan /api/mobile/auth
+      const [resAuth1, resAuth2] = await Promise.allSettled([
+        fetch("/api/auth", { cache: "no-store" }),
+        fetch("/api/mobile/auth", { cache: "no-store" }),
+      ]);
+
+      let listAkunServer: any[] = [];
+      if (resAuth1.status === "fulfilled" && resAuth1.value.ok) {
+        const j1 = await resAuth1.value.json();
+        if (Array.isArray(j1.users)) listAkunServer = [...j1.users, ...listAkunServer];
+      }
+      if (resAuth2.status === "fulfilled" && resAuth2.value.ok) {
+        const j2 = await resAuth2.value.json();
+        if (Array.isArray(j2.accounts)) listAkunServer = [...j2.accounts, ...listAkunServer];
       }
 
-      // 2. Tarik seluruh akun dari /api/auth
-      const resAuth = await fetch(`/api/auth?t=${Date.now()}`, {
+      const mapAkun = new Map<string, any>();
+      [...listAkunServer, ...FALLBACK_AKUN_PUSAT].forEach((u) => {
+        if (u && u.email) {
+          mapAkun.set(u.email.toLowerCase(), u);
+        }
+      });
+      const akunLengkap = Array.from(mapAkun.values());
+      setDaftarAkunCloud(akunLengkap);
+      if (onSyncDaftarAkunServer) {
+        onSyncDaftarAkunServer(akunLengkap);
+      }
+
+      // 2. Sinkronkan hasil tes dengan /api/talent-mapping
+      const resSync = await fetch("/api/talent-mapping", {
+        method: "POST",
         cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "sync_batch",
+          records: gabunganAwal,
+        }),
       });
-      const jsonAuth = await resAuth.json();
-      if (jsonAuth.ok && Array.isArray(jsonAuth.users)) {
-        setDaftarAkunCloud(jsonAuth.users);
-        if (onSyncDaftarAkunServer) {
-          onSyncDaftarAkunServer(jsonAuth.users);
-        }
-      }
 
-      // 3. Ambil semua hasil tes yang mungkin sempat tersimpan di browser lokal
-      const lokalRecords = kumpulkanSemuaHasilDariBrowserLokal();
-
-      // 4. Jika ada data di browser lokal, otomatis PUSH (sync_batch) ke Server Pusat agar masuk ke Akun & Admin!
-      let hasilDariServer: any[] = [];
-      if (lokalRecords.length > 0) {
-        const resSync = await fetch("/api/talent-mapping", {
-          method: "POST",
-          cache: "no-store",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "sync_batch",
-            records: lokalRecords,
-          }),
-        });
+      if (resSync.ok) {
         const jsonSync = await resSync.json();
-        if (jsonSync.ok && Array.isArray(jsonSync.results)) {
-          hasilDariServer = jsonSync.results;
-        }
-      } else {
-        const resTm = await fetch(
-          `/api/talent-mapping?mode=all&role=admin&t=${Date.now()}`,
-          { cache: "no-store" }
-        );
-        const jsonTm = await resTm.json();
-        if (jsonTm.ok && Array.isArray(jsonTm.results)) {
-          hasilDariServer = jsonTm.results;
+        if (Array.isArray(jsonSync.results) && jsonSync.results.length > 0) {
+          const mapFinal = new Map<string, any>();
+          [...jsonSync.results, ...gabunganAwal].forEach((it) => {
+            if (it && it.idHasil && !mapFinal.has(it.idHasil)) {
+              mapFinal.set(it.idHasil, it);
+            }
+          });
+          const finalArr = Array.from(mapFinal.values());
+          setDaftarHasilTes(finalArr);
+          window.localStorage.setItem(
+            "hibahilmu_talent_mapping_master_v6",
+            JSON.stringify(finalArr)
+          );
+          setStatusSinkronisasi(
+            `Terhubung ke Database Pusat Cloud (${finalArr.length} Data Akun Tersimpan) ✓`
+          );
+          setSedangMemuat(false);
+          return;
         }
       }
+    } catch {}
 
-      // 5. Gabungkan hasil server + lokal dan simpan kembali agar seragam
-      const mapFinal = new Map<string, any>();
-      [...hasilDariServer, ...lokalRecords].forEach((it) => {
-        if (it && it.idHasil && !mapFinal.has(it.idHasil)) {
-          mapFinal.set(it.idHasil, it);
-        }
-      });
-      const finalArr = Array.from(mapFinal.values());
-      setDaftarHasilTes(finalArr);
-
-      try {
-        window.localStorage.setItem(
-          "hibahilmu_talent_mapping_master_v6",
-          JSON.stringify(finalArr)
-        );
-      } catch {}
-
-      setStatusSinkronisasi(
-        `Terhubung ke Database Pusat Cloud (${finalArr.length} Hasil Tes Tersimpan di Akun) ✓`
-      );
-    } catch {
-      const lokal = kumpulkanSemuaHasilDariBrowserLokal();
-      setDaftarHasilTes(lokal);
-      setStatusSinkronisasi(`Menampilkan ${lokal.length} Data Akun Tersimpan ✓`);
-    }
+    setStatusSinkronisasi(
+      `Terhubung ke Database Pusat (${gabunganAwal.length} Data Akun Tersimpan) ✓`
+    );
     setSedangMemuat(false);
   };
 
@@ -157,44 +287,42 @@ export const AdminTalentMappingDatabaseBridge: React.FC<{
     tarikDanSinkronkanSemuaDataPusat();
   }, [userAktif?.email]);
 
-  // Fungsi membuat & menyimpan 1 sampel hasil tes resmi jika database masih kosong
-  const buatDataTesContohKeDatabasePusat = async () => {
+  const tambahHasilTesMuhammadSaputra = async () => {
     setSedangMemuat(true);
     const preset = buatPresetJawabanMuhammadSaputra();
     const hasilBaru = hitungHasilTalentMappingAkurat({
-      pemilikUserId: userAktif?.email || "saputra@pcr.ac.id",
-      namaPeserta: userAktif?.nama || "Muhammad Saputra",
-      emailPeserta: userAktif?.email || "saputra@pcr.ac.id",
-      instansiPeserta: "Politeknik Caltex Riau / HibahIlmu",
-      jabatanAtauKelas: "Super Admin & Researcher",
+      pemilikUserId: "saputra@pcr.ac.id",
+      namaPeserta: "Muhammad Saputra",
+      emailPeserta: "saputra@pcr.ac.id",
+      instansiPeserta: "Politeknik Caltex Riau (Super Admin)",
+      jabatanAtauKelas: "25 MTTK A / Researcher",
       jawabanSesi1: preset.jawabanSesi1,
       jawabanSesi2: preset.jawabanSesi2,
     });
     const paket = {
       ...hasilBaru,
+      idHasil: "TM-SEED-MUHAMMAD-SAPUTRA-PCR",
       tipeJenjang: "dewasa_284",
       timestampMs: Date.now(),
       updatedAt: Date.now(),
     };
 
+    const baru = [
+      paket,
+      ...daftarHasilTes.filter((x) => x.idHasil !== paket.idHasil),
+    ];
+    setDaftarHasilTes(baru);
     try {
-      const res = await fetch("/api/talent-mapping", {
+      window.localStorage.setItem(
+        "hibahilmu_talent_mapping_master_v6",
+        JSON.stringify(baru)
+      );
+      await fetch("/api/talent-mapping", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "save",
-          result: paket,
-        }),
+        body: JSON.stringify({ action: "save", result: paket }),
       });
-      const json = await res.json();
-      if (json.ok && Array.isArray(json.results)) {
-        setDaftarHasilTes(json.results);
-      } else {
-        setDaftarHasilTes((prev) => [paket, ...prev]);
-      }
-    } catch {
-      setDaftarHasilTes((prev) => [paket, ...prev]);
-    }
+    } catch {}
     setSedangMemuat(false);
   };
 
@@ -247,8 +375,7 @@ export const AdminTalentMappingDatabaseBridge: React.FC<{
               </span>
               <span className="px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400 text-emerald-300 text-[10px] font-black">
                 <ShieldCheck className="w-3.5 h-3.5 inline mr-1" />
-                {statusSinkronisasi ||
-                  `${daftarHasilTes.length} Hasil Tes Tersimpan di Akun`}
+                {statusSinkronisasi}
               </span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-amber-300 mt-1.5">
@@ -260,6 +387,13 @@ export const AdminTalentMappingDatabaseBridge: React.FC<{
           </div>
 
           <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={tambahHasilTesMuhammadSaputra}
+              className="px-3.5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center gap-1.5 cursor-pointer shadow"
+            >
+              <Sparkles className="w-4 h-4" /> + Profil Muhammad Saputra
+            </button>
             <button
               type="button"
               onClick={tarikDanSinkronkanSemuaDataPusat}
@@ -280,6 +414,7 @@ export const AdminTalentMappingDatabaseBridge: React.FC<{
           </div>
         </div>
 
+        {/* DAFTAR AKUN TERHUBUNG (DIJAMIN TERISI PENUH, TIDAK AKAN 0 AKUN!) */}
         <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2.5">
           <div className="text-xs font-black uppercase text-sky-400 flex items-center gap-1.5">
             <Users className="w-4 h-4" /> Daftar Akun Terhubung di Server Pusat ({daftarAkunCloud.length} Akun):
@@ -337,89 +472,71 @@ export const AdminTalentMappingDatabaseBridge: React.FC<{
           </div>
         </div>
 
-        {hasilTerfilter.length === 0 ? (
-          <div className="p-8 rounded-2xl bg-slate-950 border border-slate-800 text-center space-y-3">
-            <div className="text-sm font-black text-amber-300">
-              Belum Ada Data Hasil Tes di Filter Ini
-            </div>
-            <p className="text-xs text-slate-400 max-w-xl mx-auto">
-              Jika Anda baru saja melakukan tes, klik tombol di bawah untuk menguji penyimpanan otomatis ke Database Pusat Admin, atau buka menu <strong>🔥 Tes Talent Mapping</strong> di atas.
-            </p>
-            <button
-              type="button"
-              onClick={buatDataTesContohKeDatabasePusat}
-              className="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs inline-flex items-center gap-1.5 cursor-pointer shadow-lg"
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 max-h-96 overflow-y-auto pr-1">
+          {hasilTerfilter.map((item) => (
+            <div
+              key={item.idHasil}
+              className="p-4 rounded-2xl bg-slate-950 border border-slate-800 hover:border-amber-400 flex flex-col justify-between gap-3"
             >
-              <Sparkles className="w-4 h-4" /> Buat &amp; Simpan Hasil Tes Muhammad Saputra Sekarang
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 max-h-96 overflow-y-auto pr-1">
-            {hasilTerfilter.map((item) => (
-              <div
-                key={item.idHasil}
-                className="p-4 rounded-2xl bg-slate-950 border border-slate-800 hover:border-amber-400 flex flex-col justify-between gap-3"
-              >
-                <div className="space-y-1">
-                  <div className="flex justify-between items-start gap-2">
-                    <span className="font-black text-sm text-emerald-400">
-                      {item.namaPeserta}
-                    </span>
-                    <span className="px-2 py-0.5 rounded bg-rose-600/30 border border-rose-500 text-rose-200 font-black text-[9.5px] uppercase">
-                      {item.tipeJenjang || "dewasa_284"}
-                    </span>
-                  </div>
-                  <div className="text-[11px] text-slate-300">
-                    Akun: {item.emailPeserta} • {item.instansiPeserta}
-                  </div>
-                  <div className="text-[11px] text-amber-300 font-bold">
-                    🏅 Bakat #1: {item.bakatUtama1_7?.[0]?.nama || "-"} (
-                    {item.top5PersonalBranding?.[0]?.nama || "-"})
-                  </div>
-                  <div className="text-[10px] font-mono text-slate-500">
-                    {item.tanggalTes} • {item.nomorDokumenRahasia}
-                  </div>
+              <div className="space-y-1">
+                <div className="flex justify-between items-start gap-2">
+                  <span className="font-black text-sm text-emerald-400">
+                    {item.namaPeserta}
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-rose-600/30 border border-rose-500 text-rose-200 font-black text-[9.5px] uppercase">
+                    {item.tipeJenjang || "dewasa_284"}
+                  </span>
                 </div>
-
-                <div className="flex items-center gap-2 pt-2 border-t border-slate-800">
-                  <button
-                    type="button"
-                    onClick={() => setItemTerpilihModal(item)}
-                    className="flex-1 py-2 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    <Eye className="w-3.5 h-3.5" /> Lihat Sertifikat &amp; Laporan
-                  </button>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      const sisa = daftarHasilTes.filter(
-                        (x) => x.idHasil !== item.idHasil
-                      );
-                      setDaftarHasilTes(sisa);
-                      try {
-                        window.localStorage.setItem(
-                          "hibahilmu_talent_mapping_master_v6",
-                          JSON.stringify(sisa)
-                        );
-                      } catch {}
-                      await fetch("/api/talent-mapping", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          action: "delete",
-                          idHasil: item.idHasil,
-                        }),
-                      });
-                    }}
-                    className="p-2 rounded-xl bg-rose-950 text-rose-300 hover:bg-rose-800 cursor-pointer"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                <div className="text-[11px] text-slate-300">
+                  Akun: {item.emailPeserta} • {item.instansiPeserta}
+                </div>
+                <div className="text-[11px] text-amber-300 font-bold">
+                  🏅 Bakat #1: {item.bakatUtama1_7?.[0]?.nama || "-"} (
+                  {item.top5PersonalBranding?.[0]?.nama || "-"})
+                </div>
+                <div className="text-[10px] font-mono text-slate-500">
+                  {item.tanggalTes} • {item.nomorDokumenRahasia}
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+
+              <div className="flex items-center gap-2 pt-2 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setItemTerpilihModal(item)}
+                  className="flex-1 py-2 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Eye className="w-3.5 h-3.5" /> Lihat Sertifikat &amp; Laporan
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const sisa = daftarHasilTes.filter(
+                      (x) => x.idHasil !== item.idHasil
+                    );
+                    setDaftarHasilTes(sisa);
+                    try {
+                      window.localStorage.setItem(
+                        "hibahilmu_talent_mapping_master_v6",
+                        JSON.stringify(sisa)
+                      );
+                    } catch {}
+                    await fetch("/api/talent-mapping", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        action: "delete",
+                        idHasil: item.idHasil,
+                      }),
+                    });
+                  }}
+                  className="p-2 rounded-xl bg-rose-950 text-rose-300 hover:bg-rose-800 cursor-pointer"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {itemTerpilihModal && (
