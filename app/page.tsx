@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from "react";
 import {
@@ -155,7 +155,7 @@ function gabungkanDaftarAkunUnik(lists: any[][]): AkunPengguna[] {
 function bacaSesiTersimpanSinkron(): AkunPengguna | null {
   if (typeof window === "undefined") return null;
   try {
-    const kunciSesi Kandidat = [
+    const kunciSesiKandidat = [
       SESSION_STORAGE_KEY,
       "hibahilmu_user_session",
       "hibahilmu_logged_user",
@@ -667,7 +667,7 @@ export default function AplikasiHibahIlmu() {
             {[
               { id: "beranda", label: "Beranda & Kelas" },
               { id: "simulator", label: "Simulator Coding & IoT" },
-              { id: "talent_mapping", label: "🔥 Tes Talent Mapping" },
+              { id: "talent_mapping", label: "?? Tes Talent Mapping" },
               { id: "inovasi", label: "Hub Inovasi" },
               { id: "webinar", label: "Webinar" },
               { id: "tryout", label: "Tryout CBT" },
