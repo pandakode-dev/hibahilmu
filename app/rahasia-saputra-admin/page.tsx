@@ -12,32 +12,48 @@ import {
   ArrowRight,
   Copy,
   Sparkles,
+  Zap,
 } from "lucide-react";
 
+const AKUN_SAPUTRA_PCR = {
+  id: "admin-saputra-pcr",
+  nama: "Muhammad Saputra",
+  email: "saputra@pcr.ac.id",
+  password: "humairoh26",
+  role: "admin",
+  status: "aktif",
+  instansi: "Politeknik Caltex Riau (Super Admin)",
+  xp: 99999,
+};
+
 export default function HalamanRahasiaRegistrasiAdmin() {
-  const [secretPin, setSecretPin] = useState<string>("");
+  const [secretPin, setSecretPin] = useState<string>("2556102007");
   const [unlocked, setUnlocked] = useState<boolean>(false);
 
   const [namaAdmin, setNamaAdmin] = useState<string>("Muhammad Saputra");
-  const [emailAdmin, setEmailAdmin] = useState<string>("saputra.admin@hibahilmu.id");
-  const [passwordAdmin, setPasswordAdmin] = useState<string>("SaputraAdmin2026!");
+  const [emailAdmin, setEmailAdmin] = useState<string>("saputra@pcr.ac.id");
+  const [passwordAdmin, setPasswordAdmin] = useState<string>("humairoh26");
   const [instansiAdmin, setInstansiAdmin] = useState<string>(
-    "Founder & Super Admin HibahIlmu.id"
+    "Politeknik Caltex Riau (Super Admin)"
   );
 
   const [lihatPassword, setLihatPassword] = useState<boolean>(true);
-  const [daftarAkunServer, setDaftarAkunServer] = useState<any[]>([]);
+  const [daftarAkunServer, setDaftarAkunServer] = useState<any[]>([
+    AKUN_SAPUTRA_PCR,
+  ]);
   const [pesanStatus, setPesanStatus] = useState<string>("");
   const [pesanError, setPesanError] = useState<string>("");
   const [sedangProses, setSedangProses] = useState<boolean>(false);
 
-  // Kunci sesi Admin langsung ke semua kemungkinan key localStorage yang dipakai aplikasi utama
-  const suntikkanSesiAdminKeBrowser = (akun: any) => {
+  // Fungsi menyuntikkan sesi login Admin langsung ke penyimpanan browser & redirect ke Beranda
+  const suntikkanSesiAdminKeBrowser = (akun: any, langsungRedirect = false) => {
     try {
       const kemungkinanKeys = [
         "hibahilmu_user_session",
         "hibahilmu_logged_user",
         "hibahilmu_active_user",
+        "hibahilmu_session_v1",
+        "hibahilmu_current_user",
         "userLogin",
         "hibahilmu_user",
       ];
@@ -45,17 +61,54 @@ export default function HalamanRahasiaRegistrasiAdmin() {
         localStorage.setItem(k, JSON.stringify(akun));
       });
 
-      // Tambahkan juga ke daftar akun lokal di browser jika aplikasi membacanya dari localStorage
-      const rawUsers = localStorage.getItem("hibahilmu_users_db");
-      const listLama = rawUsers ? JSON.parse(rawUsers) : [];
-      const listBaru = [
-        akun,
-        ...(Array.isArray(listLama)
-          ? listLama.filter((x: any) => x.email !== akun.email)
-          : []),
+      // Simpan juga ke semua kemungkinan daftar user lokal di localStorage agar form login frontend mengenali
+      const kemungkinanDbKeys = [
+        "hibahilmu_users_db",
+        "hibahilmu_accounts",
+        "hibahilmu_registered_users",
+        "daftarAkun",
       ];
-      localStorage.setItem("hibahilmu_users_db", JSON.stringify(listBaru));
+      kemungkinanDbKeys.forEach((dbKey) => {
+        const raw = localStorage.getItem(dbKey);
+        let listLama: any[] = [];
+        try {
+          if (raw) listLama = JSON.parse(raw);
+        } catch {}
+        const listBaru = [
+          akun,
+          ...(Array.isArray(listLama)
+            ? listLama.filter(
+                (x: any) =>
+                  (x?.email || "").toLowerCase() !== akun.email.toLowerCase()
+              )
+            : []),
+        ];
+        localStorage.setItem(dbKey, JSON.stringify(listBaru));
+      });
+
+      if (langsungRedirect) {
+        window.location.href = "/";
+      }
     } catch {}
+  };
+
+  const loginKilatSatuKlikSaputraPcr = async () => {
+    setSedangProses(true);
+    try {
+      await fetch("/api/secret-admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          secretPin: "2556102007",
+          action: "create_or_update_admin",
+          nama: AKUN_SAPUTRA_PCR.nama,
+          email: AKUN_SAPUTRA_PCR.email,
+          password: AKUN_SAPUTRA_PCR.password,
+          instansi: AKUN_SAPUTRA_PCR.instansi,
+        }),
+      });
+    } catch {}
+    suntikkanSesiAdminKeBrowser(AKUN_SAPUTRA_PCR, true);
   };
 
   const bukaBrankasDenganPin = async (e: React.FormEvent) => {
@@ -74,8 +127,9 @@ export default function HalamanRahasiaRegistrasiAdmin() {
       const json = await res.json();
       if (json.ok) {
         setUnlocked(true);
-        setDaftarAkunServer(json.accounts || []);
+        setDaftarAkunServer(json.accounts || [AKUN_SAPUTRA_PCR]);
         setPesanStatus(json.message);
+        suntikkanSesiAdminKeBrowser(AKUN_SAPUTRA_PCR, false);
       } else {
         setPesanError(json.message || "PIN Master Rahasia tidak valid!");
       }
@@ -109,7 +163,7 @@ export default function HalamanRahasiaRegistrasiAdmin() {
         setPesanStatus(json.message);
         setDaftarAkunServer(json.accounts || []);
         if (json.adminAccount) {
-          suntikkanSesiAdminKeBrowser(json.adminAccount);
+          suntikkanSesiAdminKeBrowser(json.adminAccount, false);
         }
       } else {
         setPesanError(json.message || "Gagal mendaftarkan admin.");
@@ -131,24 +185,49 @@ export default function HalamanRahasiaRegistrasiAdmin() {
             </div>
             <div>
               <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded bg-amber-400 text-slate-950">
-                🔒 PRIVATE VAULT • HANYA MUHAMMAD SAPUTRA
+                🔒 PRIVATE VAULT • MUHAMMAD SAPUTRA (saputra@pcr.ac.id)
               </span>
               <h1 className="text-xl sm:text-2xl font-black text-white mt-1">
-                Gerbang Rahasia Registrasi &amp; Pemulihan Super Admin
+                Akses Cepat Super Admin Muhammad Saputra
               </h1>
               <p className="text-xs text-slate-400">
-                Halaman ini tersembunyi dari publik (`noindex`) dan dikunci dengan PIN Master Anda.
+                Akun <strong>saputra@pcr.ac.id</strong> (Password: <strong>humairoh26</strong>) sudah ditanamkan permanen.
               </p>
             </div>
           </div>
         </div>
 
-        {/* Langkah 1: Kunci PIN Master */}
+        {/* TOMBOL 1-KLIK LANGSUNG MASUK SEBAGAI MUHAMMAD SAPUTRA (saputra@pcr.ac.id) */}
+        <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-950 via-teal-900 to-emerald-950 border-2 border-emerald-400 space-y-3 shadow-xl">
+          <div className="flex flex-wrap justify-between items-center gap-2">
+            <div>
+              <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-emerald-400 text-slate-950">
+                ⚡ JALUR EKSPRES TANPA KETIK ULANG
+              </span>
+              <h2 className="text-base sm:text-lg font-black text-white mt-1">
+                Muhammad Saputra — <span className="text-amber-300 font-mono">saputra@pcr.ac.id</span>
+              </h2>
+              <p className="text-xs text-emerald-200 font-mono">
+                Password: <strong>humairoh26</strong> • Role: <strong>SUPER ADMIN</strong>
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={loginKilatSatuKlikSaputraPcr}
+              className="px-5 py-3.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-lg"
+            >
+              <Zap className="w-4 h-4" /> Aktifkan &amp; Langsung Masuk Dashboard Admin ➔
+            </button>
+          </div>
+        </div>
+
+        {/* Langkah Buka Brankas / Kelola Akun Lain */}
         {!unlocked ? (
           <form onSubmit={bukaBrankasDenganPin} className="space-y-4">
             <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
               <label className="text-xs font-black uppercase text-amber-300 flex items-center gap-1.5">
-                <KeyRound className="w-4 h-4" /> Masukkan PIN Master Rahasia Anda:
+                <KeyRound className="w-4 h-4" /> PIN Master Rahasia (Otomatis Terisi):
               </label>
               <input
                 type="password"
@@ -157,9 +236,6 @@ export default function HalamanRahasiaRegistrasiAdmin() {
                 onChange={(e) => setSecretPin(e.target.value)}
                 className="w-full p-3.5 rounded-xl bg-slate-900 border-2 border-slate-700 focus:border-amber-400 focus:outline-none font-mono text-base font-black text-white"
               />
-              <p className="text-[11px] text-slate-400">
-                *Petunjuk untuk Anda sendiri: Gunakan nomor induk mahasiswa Anda atau kode rahasia pribadi.
-              </p>
             </div>
 
             {pesanError && (
@@ -171,14 +247,13 @@ export default function HalamanRahasiaRegistrasiAdmin() {
             <button
               type="submit"
               disabled={sedangProses}
-              className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-sm flex items-center justify-center gap-2 cursor-pointer shadow-xl"
+              className="w-full py-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-400/40 font-black text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer"
             >
               <Lock className="w-4 h-4" />{" "}
-              {sedangProses ? "Memverifikasi PIN..." : "Buka Brankas Super Admin"}
+              {sedangProses ? "Memverifikasi..." : "Buka Daftar Semua Akun Server"}
             </button>
           </form>
         ) : (
-          /* Langkah 2: Form Pembuatan / Reset Admin & Tabel Kredensial */
           <div className="space-y-6">
             {pesanStatus && (
               <div className="p-4 rounded-2xl bg-emerald-950/90 border-2 border-emerald-500 text-emerald-200 text-xs font-bold flex flex-wrap justify-between items-center gap-3">
@@ -190,7 +265,7 @@ export default function HalamanRahasiaRegistrasiAdmin() {
                   href="/"
                   className="px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 font-black text-xs flex items-center gap-1"
                 >
-                  Masuk ke Dashboard Utama <ArrowRight className="w-3.5 h-3.5" />
+                  Ke Halaman Login / Beranda <ArrowRight className="w-3.5 h-3.5" />
                 </a>
               </div>
             )}
@@ -200,7 +275,7 @@ export default function HalamanRahasiaRegistrasiAdmin() {
               className="p-5 rounded-2xl bg-slate-950 border border-slate-800 space-y-4"
             >
               <div className="text-xs font-black uppercase text-amber-400 flex items-center gap-1.5">
-                <UserPlus className="w-4 h-4" /> Buat Akun Super Admin Baru / Ubah Password Admin
+                <UserPlus className="w-4 h-4" /> Simpan / Perbarui Akun Super Admin
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
@@ -230,7 +305,7 @@ export default function HalamanRahasiaRegistrasiAdmin() {
 
                 <div className="space-y-1">
                   <label className="font-bold text-emerald-400">
-                    Email Login Admin (Bisa Email Pribadi Anda):
+                    Email Login Admin:
                   </label>
                   <input
                     type="email"
@@ -242,7 +317,7 @@ export default function HalamanRahasiaRegistrasiAdmin() {
 
                 <div className="space-y-1">
                   <label className="font-bold text-amber-300">
-                    Password Baru Admin:
+                    Password Admin:
                   </label>
                   <div className="relative">
                     <input
@@ -266,21 +341,18 @@ export default function HalamanRahasiaRegistrasiAdmin() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-3 pt-2">
-                <button
-                  type="submit"
-                  disabled={sedangProses}
-                  className="flex-1 py-3.5 px-5 rounded-2xl bg-gradient-to-r from-rose-600 to-amber-500 hover:from-rose-500 hover:to-amber-400 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg"
-                >
-                  <Sparkles className="w-4 h-4" />{" "}
-                  {sedangProses
-                    ? "Menyimpan ke Server & Cloud..."
-                    : "Daftarkan & Aktifkan Akun Super Admin Ini Sekarang"}
-                </button>
-              </div>
+              <button
+                type="submit"
+                disabled={sedangProses}
+                className="w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-rose-600 to-amber-500 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+              >
+                <Sparkles className="w-4 h-4" />{" "}
+                {sedangProses
+                  ? "Menyimpan ke Server..."
+                  : "Simpan Perubahan Kredensial Admin"}
+              </button>
             </form>
 
-            {/* Daftar Semua Akun & Password yang Ada di Server Saat Ini */}
             <div className="space-y-3">
               <div className="text-xs font-black uppercase text-sky-400">
                 📂 Daftar Kredensial Akun di Database Server Saat Ini ({daftarAkunServer.length} Akun):
@@ -321,7 +393,6 @@ export default function HalamanRahasiaRegistrasiAdmin() {
                         setPesanStatus(`Kredensial ${acc.email} disalin!`);
                       }}
                       className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 cursor-pointer"
-                      title="Salin Email & Password"
                     >
                       <Copy className="w-4 h-4" />
                     </button>
