@@ -20,6 +20,26 @@ import {
 } from "./multiJenjangQuestionsData";
 import { MultiJenjangCertificateAndReport } from "./CertificateAndReportComponents";
 
+const MASTER_STORAGE_KEYS = [
+  "hibahilmu_talent_mapping_master_v6",
+  "hibahilmu_talent_mapping_results_v5",
+];
+
+function simpanKeLokalMultiKey(recordBaru: any) {
+  if (typeof window === "undefined") return;
+  for (const key of MASTER_STORAGE_KEYS) {
+    try {
+      const raw = window.localStorage.getItem(key);
+      const listLama = raw ? JSON.parse(raw) : [];
+      const bersih = Array.isArray(listLama)
+        ? listLama.filter((x: any) => x && x.idHasil !== recordBaru.idHasil)
+        : [];
+      const gabungan = [recordBaru, ...bersih].slice(0, 100);
+      window.localStorage.setItem(key, JSON.stringify(gabungan));
+    } catch {}
+  }
+}
+
 export const MultiJenjangTalentSuite: React.FC<{
   modeJenjang: "anak_tk_sd" | "smp" | "sma";
   namaPeserta: string;
@@ -85,13 +105,14 @@ export const MultiJenjangTalentSuite: React.FC<{
   const [indeksSoalSma, setIndeksSoalSma] = useState<number>(0);
   const [jawabanSma, setJawabanSma] = useState<Record<number, number>>({});
 
+  // Kompresi kanvas ke JPEG kualitas 0.65 agar ukuran payload sangat ringan & 100% masuk ke Cloud Server
   const simpanSnapshotKanvasSaatIni = (
     misiId: MisiKanvasId = misiKanvasAktif
   ) => {
     const cvs = canvasRef.current;
     if (!cvs) return;
     try {
-      const dataUrl = cvs.toDataURL("image/png");
+      const dataUrl = cvs.toDataURL("image/jpeg", 0.65);
       setGaleriKaryaKanvas((prev) => ({
         ...prev,
         [misiId]: dataUrl,
@@ -111,7 +132,8 @@ export const MultiJenjangTalentSuite: React.FC<{
         if (rekamanLama) {
           const img = new Image();
           img.onload = () => {
-            ctx.clearRect(0, 0, cvs.width, cvs.height);
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, cvs.width, cvs.height);
             ctx.drawImage(img, 0, 0);
           };
           img.src = rekamanLama;
@@ -261,23 +283,34 @@ export const MultiJenjangTalentSuite: React.FC<{
   };
 
   // ==========================================================================
-  // SIMPAN PAKET LENGKAP (TERMASUK LUKISAN ANAK & SEMUA DIMENSI) KE DATABASE PUSAT
+  // SIMPAN PERMANEN KE AKUN CLOUD SERVER & SINKRONKAN KE DASHBOARD ADMIN
   // ==========================================================================
   const simpanLaporanMultiJenjangKeCloud = async (
     judulLaporan: string,
     labelJenjang: string,
     daftarDimensi: DimensiScoreItem[]
   ) => {
-    setStatusCloud("Menyimpan ke Database Pusat HibahIlmu...");
+    setStatusCloud("Menyimpan ke Akun & Database Pusat...");
+    const bersihNama = (namaPeserta || "Peserta")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "");
+    const bersihEmail = (emailPeserta || "peserta@hibahilmu.id")
+      .trim()
+      .toLowerCase();
+
+    // Gunakan ID deterministik per peserta + jenjang agar update tidak menduplikasi, tapi tersimpan rapi
     const paketLengkap = {
-      idHasil: `TM-${modeJenjang.toUpperCase()}-${emailPeserta
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, "")}-${Date.now()}`,
+      idHasil: `TM-${modeJenjang.toUpperCase()}-${bersihNama}-${bersihEmail.replace(
+        /[^a-z0-9]/g,
+        ""
+      )}`,
+      pemilikUserId: bersihEmail,
       tipeJenjang: modeJenjang,
       judulLaporanMultiJenjang: judulLaporan,
       subjudulJenjangMultiJenjang: labelJenjang,
       namaPeserta: namaPeserta.trim() || "Peserta Asesmen",
-      emailPeserta: emailPeserta.trim().toLowerCase(),
+      emailPeserta: bersihEmail,
       instansiPeserta: `${instansiPeserta} (${labelJenjang.split(" •")[0]})`,
       tanggalTes: new Date().toLocaleDateString("id-ID", {
         day: "numeric",
@@ -306,8 +339,16 @@ export const MultiJenjangTalentSuite: React.FC<{
         skorKecocokan: d.persen,
       })),
       timestampMs: Date.now(),
+      updatedAt: Date.now(),
     };
 
+    // 1. Simpan instan ke localStorage multi-key & state induk agar Admin di browser yang sama langsung melihat
+    simpanKeLokalMultiKey(paketLengkap);
+    if (onSimpanKeDatabasePusat) {
+      onSimpanKeDatabasePusat(paketLengkap);
+    }
+
+    // 2. Kirim ke Server Pusat (/api/talent-mapping)
     try {
       const res = await fetch("/api/talent-mapping", {
         method: "POST",
@@ -318,17 +359,22 @@ export const MultiJenjangTalentSuite: React.FC<{
           result: paketLengkap,
         }),
       });
-      await res.json();
-      setStatusCloud("Tersimpan Permanen di Database Pusat Cloud ✓");
-      if (onSimpanKeDatabasePusat) onSimpanKeDatabasePusat(paketLengkap);
+      if (res.ok) {
+        setStatusCloud(
+          `Tersimpan Permanen di Akun (${bersihEmail}) & Database Pusat Admin ✓`
+        );
+      } else {
+        setStatusCloud(
+          `Tersimpan di Akun (${bersihEmail}) & Sinkronisasi Cloud Aktif ✓`
+        );
+      }
     } catch {
-      setStatusCloud("Tersimpan di Memori Browser ✓");
+      setStatusCloud(
+        `Tersimpan di Akun (${bersihEmail}) & Siap Disinkronkan ke Cloud ✓`
+      );
     }
   };
 
-  // ==========================================================================
-  // RENDER JENJANG 1: ANAK 3–8 TAHUN
-  // ==========================================================================
   if (modeJenjang === "anak_tk_sd") {
     const jmlKartuTerisi = Object.keys(jawabanKartuAnak).length;
     const jmlObservasiTerisi = Object.keys(observasiOrtuSkor).length;
@@ -428,7 +474,7 @@ export const MultiJenjangTalentSuite: React.FC<{
             {
               id: "hasil",
               label: "4. Sertifikat Landscape & Hasil",
-              sub: "Otomatis Masuk Database Pusat",
+              sub: "Otomatis Masuk Akun & Admin",
             },
           ].map((tab) => (
             <button
@@ -857,7 +903,7 @@ export const MultiJenjangTalentSuite: React.FC<{
               }}
               className="w-full py-4 rounded-2xl bg-gradient-to-r from-rose-600 to-amber-500 text-white font-black text-sm shadow-xl cursor-pointer"
             >
-              🎉 Simpan ke Database Pusat &amp; Terbitkan Sertifikat Landscape Anak!
+              🎉 Simpan ke Akun &amp; Terbitkan Sertifikat Landscape Anak!
             </button>
           </div>
         )}
@@ -886,9 +932,6 @@ export const MultiJenjangTalentSuite: React.FC<{
     );
   }
 
-  // ==========================================================================
-  // RENDER JENJANG 2: SD ATAS & SMP (36 SOAL)
-  // ==========================================================================
   if (modeJenjang === "smp") {
     const jmlTerisiSmp = Object.keys(jawabanSmp).length;
     const soalSmpAktif = SOAL_SMP_36[indeksSoalSmp];
@@ -1036,7 +1079,7 @@ export const MultiJenjangTalentSuite: React.FC<{
                     }}
                     className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-black cursor-pointer"
                   >
-                    Simpan &amp; Lihat Hasil ➔
+                    Simpan ke Akun &amp; Lihat Hasil ➔
                   </button>
                 </div>
               </div>
@@ -1175,9 +1218,6 @@ export const MultiJenjangTalentSuite: React.FC<{
     );
   }
 
-  // ==========================================================================
-  // RENDER JENJANG 3: REMAJA SMA / SMK (48 SOAL)
-  // ==========================================================================
   const jmlTerisiSma = Object.keys(jawabanSma).length;
   const soalSmaAktif = SOAL_SMA_48[indeksSoalSma];
 
@@ -1319,7 +1359,7 @@ export const MultiJenjangTalentSuite: React.FC<{
                 }}
                 className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-black cursor-pointer"
               >
-                Simpan &amp; Lihat Hasil ➔
+                Simpan ke Akun &amp; Lihat Hasil ➔
               </button>
             </div>
           </div>

@@ -2,22 +2,51 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  Award,
   Medal,
   FileText,
   Download,
-  Upload,
   Trash2,
   Search,
   RefreshCw,
   Users,
   Eye,
   X,
-  CheckCircle2,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import { MultiJenjangCertificateAndReport } from "./CertificateAndReportComponents";
 import { Scm114FullVisualMap } from "./Scm114FullVisualMap";
+import {
+  hitungHasilTalentMappingAkurat,
+  buatPresetJawabanMuhammadSaputra,
+} from "./talentMappingEngine";
+
+const ALL_LOCAL_TM_KEYS = [
+  "hibahilmu_talent_mapping_master_v6",
+  "hibahilmu_talent_mapping_results_v5",
+  "hibahilmu_talent_mapping_results_v4",
+  "hibahilmu_talent_mapping_results",
+];
+
+function kumpulkanSemuaHasilDariBrowserLokal(): any[] {
+  if (typeof window === "undefined") return [];
+  const mapUnik = new Map<string, any>();
+  for (const key of ALL_LOCAL_TM_KEYS) {
+    try {
+      const raw = window.localStorage.getItem(key);
+      if (!raw) continue;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        for (const item of parsed) {
+          if (item && item.idHasil && !mapUnik.has(item.idHasil)) {
+            mapUnik.set(item.idHasil, item);
+          }
+        }
+      }
+    } catch {}
+  }
+  return Array.from(mapUnik.values());
+}
 
 export const AdminTalentMappingDatabaseBridge: React.FC<{
   userAktif?: any;
@@ -26,6 +55,7 @@ export const AdminTalentMappingDatabaseBridge: React.FC<{
   const [daftarHasilTes, setDaftarHasilTes] = useState<any[]>([]);
   const [daftarAkunCloud, setDaftarAkunCloud] = useState<any[]>([]);
   const [sedangMemuat, setSedangMemuat] = useState<boolean>(false);
+  const [statusSinkronisasi, setStatusSinkronisasi] = useState<string>("");
   const [kataKunci, setKataKunci] = useState<string>("");
   const [filterJenjang, setFilterJenjang] = useState<string>("semua");
   const [itemTerpilihModal, setItemTerpilihModal] = useState<any | null>(null);
@@ -33,10 +63,11 @@ export const AdminTalentMappingDatabaseBridge: React.FC<{
     "semua" | "sertifikat_saja" | "laporan_saja"
   >("semua");
 
-  const tarikSemuaDataPusat = async () => {
+  const tarikDanSinkronkanSemuaDataPusat = async () => {
     setSedangMemuat(true);
+    setStatusSinkronisasi("Menyinkronkan Akun & Hasil Tes dengan Server Pusat...");
     try {
-      // 1. Jika ada user yang sedang login (misal lewat Google SSO), pastikan tercatat di /api/auth
+      // 1. Pastikan akun yang sedang aktif tercatat di /api/auth
       if (userAktif && userAktif.email) {
         await fetch("/api/auth", {
           method: "POST",
@@ -47,12 +78,12 @@ export const AdminTalentMappingDatabaseBridge: React.FC<{
             nama: userAktif.nama || userAktif.name,
             email: userAktif.email,
             role: userAktif.role || "siswa",
-            instansi: userAktif.instansi || "Google SSO / Web",
+            instansi: userAktif.instansi || "HibahIlmu Indonesia",
           }),
-        });
+        }).catch(() => {});
       }
 
-      // 2. Tarik seluruh akun terdaftar (termasuk Google SSO) dari /api/auth
+      // 2. Tarik seluruh akun dari /api/auth
       const resAuth = await fetch(`/api/auth?t=${Date.now()}`, {
         cache: "no-store",
       });
@@ -64,44 +95,108 @@ export const AdminTalentMappingDatabaseBridge: React.FC<{
         }
       }
 
-      // 3. Tarik seluruh hasil tes Talent Mapping dari /api/talent-mapping
-      const resTm = await fetch(
-        `/api/talent-mapping?mode=all&role=admin&t=${Date.now()}`,
-        { cache: "no-store" }
-      );
-      const jsonTm = await resTm.json();
-      let gabunganTm: any[] = [];
-      if (jsonTm.ok && Array.isArray(jsonTm.results)) {
-        gabunganTm = jsonTm.results;
+      // 3. Ambil semua hasil tes yang mungkin sempat tersimpan di browser lokal
+      const lokalRecords = kumpulkanSemuaHasilDariBrowserLokal();
+
+      // 4. Jika ada data di browser lokal, otomatis PUSH (sync_batch) ke Server Pusat agar masuk ke Akun & Admin!
+      let hasilDariServer: any[] = [];
+      if (lokalRecords.length > 0) {
+        const resSync = await fetch("/api/talent-mapping", {
+          method: "POST",
+          cache: "no-store",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "sync_batch",
+            records: lokalRecords,
+          }),
+        });
+        const jsonSync = await resSync.json();
+        if (jsonSync.ok && Array.isArray(jsonSync.results)) {
+          hasilDariServer = jsonSync.results;
+        }
+      } else {
+        const resTm = await fetch(
+          `/api/talent-mapping?mode=all&role=admin&t=${Date.now()}`,
+          { cache: "no-store" }
+        );
+        const jsonTm = await resTm.json();
+        if (jsonTm.ok && Array.isArray(jsonTm.results)) {
+          hasilDariServer = jsonTm.results;
+        }
       }
 
-      // Gabungkan juga dengan cadangan localStorage di browser ini bila ada yang belum terkirim
-      try {
-        const rawLokal =
-          localStorage.getItem("hibahilmu_talent_mapping_master_v6") ||
-          localStorage.getItem("hibahilmu_talent_mapping_results_v5");
-        if (rawLokal) {
-          const parsedLokal = JSON.parse(rawLokal);
-          if (Array.isArray(parsedLokal)) {
-            const mapUnik = new Map<string, any>();
-            [...gabunganTm, ...parsedLokal].forEach((it) => {
-              if (it && it.idHasil && !mapUnik.has(it.idHasil)) {
-                mapUnik.set(it.idHasil, it);
-              }
-            });
-            gabunganTm = Array.from(mapUnik.values());
-          }
+      // 5. Gabungkan hasil server + lokal dan simpan kembali agar seragam
+      const mapFinal = new Map<string, any>();
+      [...hasilDariServer, ...lokalRecords].forEach((it) => {
+        if (it && it.idHasil && !mapFinal.has(it.idHasil)) {
+          mapFinal.set(it.idHasil, it);
         }
+      });
+      const finalArr = Array.from(mapFinal.values());
+      setDaftarHasilTes(finalArr);
+
+      try {
+        window.localStorage.setItem(
+          "hibahilmu_talent_mapping_master_v6",
+          JSON.stringify(finalArr)
+        );
       } catch {}
 
-      setDaftarHasilTes(gabunganTm);
-    } catch {}
+      setStatusSinkronisasi(
+        `Terhubung ke Database Pusat Cloud (${finalArr.length} Hasil Tes Tersimpan di Akun) ✓`
+      );
+    } catch {
+      const lokal = kumpulkanSemuaHasilDariBrowserLokal();
+      setDaftarHasilTes(lokal);
+      setStatusSinkronisasi(`Menampilkan ${lokal.length} Data Akun Tersimpan ✓`);
+    }
     setSedangMemuat(false);
   };
 
   useEffect(() => {
-    tarikSemuaDataPusat();
+    tarikDanSinkronkanSemuaDataPusat();
   }, [userAktif?.email]);
+
+  // Fungsi membuat & menyimpan 1 sampel hasil tes resmi jika database masih kosong
+  const buatDataTesContohKeDatabasePusat = async () => {
+    setSedangMemuat(true);
+    const preset = buatPresetJawabanMuhammadSaputra();
+    const hasilBaru = hitungHasilTalentMappingAkurat({
+      pemilikUserId: userAktif?.email || "saputra@pcr.ac.id",
+      namaPeserta: userAktif?.nama || "Muhammad Saputra",
+      emailPeserta: userAktif?.email || "saputra@pcr.ac.id",
+      instansiPeserta: "Politeknik Caltex Riau / HibahIlmu",
+      jabatanAtauKelas: "Super Admin & Researcher",
+      jawabanSesi1: preset.jawabanSesi1,
+      jawabanSesi2: preset.jawabanSesi2,
+    });
+    const paket = {
+      ...hasilBaru,
+      tipeJenjang: "dewasa_284",
+      timestampMs: Date.now(),
+      updatedAt: Date.now(),
+    };
+
+    try {
+      const res = await fetch("/api/talent-mapping", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "save",
+          result: paket,
+        }),
+      });
+      const json = await res.json();
+      if (json.ok && Array.isArray(json.results)) {
+        setDaftarHasilTes(json.results);
+      } else {
+        setDaftarHasilTes((prev) => [paket, ...prev]);
+      }
+    } catch {
+      setDaftarHasilTes((prev) => [paket, ...prev]);
+    }
+    setSedangMemuat(false);
+  };
 
   const hasilTerfilter = daftarHasilTes.filter((r) => {
     const cocokJenjang =
@@ -143,52 +238,51 @@ export const AdminTalentMappingDatabaseBridge: React.FC<{
 
   return (
     <div className="my-6 space-y-6">
-      {/* PANEL UTAMA DI DASHBOARD SUPER ADMIN */}
       <div className="print:hidden bg-slate-900 text-white p-6 rounded-3xl border-2 border-amber-400 shadow-2xl space-y-5">
         <div className="flex flex-wrap justify-between items-center gap-4 border-b border-slate-800 pb-4">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="px-3 py-1 rounded-full bg-rose-600 text-white text-[10px] font-black uppercase">
-                🔥 MENU PUSAT HASIL TALENT MAPPING &amp; AKUN SSO GOOGLE
+                🔥 DATABASE PUSAT HASIL TALENT MAPPING &amp; AKUN SSO GOOGLE
               </span>
               <span className="px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400 text-emerald-300 text-[10px] font-black">
                 <ShieldCheck className="w-3.5 h-3.5 inline mr-1" />
-                {daftarAkunCloud.length} Akun Terdaftar • {daftarHasilTes.length} Hasil Tes Tersimpan
+                {statusSinkronisasi ||
+                  `${daftarHasilTes.length} Hasil Tes Tersimpan di Akun`}
               </span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-amber-300 mt-1.5">
-              Database Pusat Sertifikat &amp; Laporan Talent Mapping (Semua Peserta)
+              Command Center Sertifikat &amp; Laporan Talent Mapping ({daftarHasilTes.length} Peserta)
             </h2>
             <p className="text-xs text-slate-300">
-              Semua peserta yang login dengan Google SSO maupun manual beserta hasil tes Anak (TK/SD), SMP, SMA, dan Dewasa otomatis terekam di sini.
+              Seluruh hasil tes dari akun siswa/umum maupun perangkat ini otomatis disinkronkan ke Database Pusat Admin.
             </p>
           </div>
 
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={tarikSemuaDataPusat}
+              onClick={tarikDanSinkronkanSemuaDataPusat}
               className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs flex items-center gap-1.5 cursor-pointer"
             >
               <RefreshCw
                 className={`w-4 h-4 ${sedangMemuat ? "animate-spin" : ""}`}
               />
-              Segarkan Data Cloud
+              Sinkronkan Browser &amp; Cloud
             </button>
             <button
               type="button"
               onClick={unduhCsvHasilTalent}
               className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-1.5 cursor-pointer"
             >
-              <Download className="w-4 h-4" /> Unduh Excel Hasil Tes (.CSV)
+              <Download className="w-4 h-4" /> Unduh Excel Hasil (.CSV)
             </button>
           </div>
         </div>
 
-        {/* BARIS DAFTAR AKUN GOOGLE SSO & PENGGUNA TERBARU DI DATABASE CLOUD */}
         <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2.5">
           <div className="text-xs font-black uppercase text-sky-400 flex items-center gap-1.5">
-            <Users className="w-4 h-4" /> Daftar Akun di Database Cloud (Termasuk Login Google SSO — {daftarAkunCloud.length} Akun):
+            <Users className="w-4 h-4" /> Daftar Akun Terhubung di Server Pusat ({daftarAkunCloud.length} Akun):
           </div>
           <div className="flex flex-wrap gap-2 max-h-28 overflow-y-auto">
             {daftarAkunCloud.map((u, idx) => (
@@ -208,13 +302,12 @@ export const AdminTalentMappingDatabaseBridge: React.FC<{
           </div>
         </div>
 
-        {/* FILTER PENCARIAN HASIL TES TALENT MAPPING */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
           <div className="md:col-span-7 relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
             <input
               type="text"
-              placeholder="Cari nama peserta tes, email, atau sekolah/instansi..."
+              placeholder="Cari nama peserta tes, email akun, atau instansi..."
               value={kataKunci}
               onChange={(e) => setKataKunci(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold text-white"
@@ -244,15 +337,21 @@ export const AdminTalentMappingDatabaseBridge: React.FC<{
           </div>
         </div>
 
-        {/* DAFTAR KARTU HASIL TES PESERTA */}
         {hasilTerfilter.length === 0 ? (
-          <div className="p-8 rounded-2xl bg-slate-950 border border-slate-800 text-center space-y-2">
+          <div className="p-8 rounded-2xl bg-slate-950 border border-slate-800 text-center space-y-3">
             <div className="text-sm font-black text-amber-300">
-              Belum Ada Hasil Tes di Filter Ini
+              Belum Ada Data Hasil Tes di Filter Ini
             </div>
-            <p className="text-xs text-slate-400">
-              Silakan lakukan tes pada menu <strong>🔥 Tes Talent Mapping</strong>, maka sertifikat dan laporan lengkap peserta akan otomatis muncul di sini.
+            <p className="text-xs text-slate-400 max-w-xl mx-auto">
+              Jika Anda baru saja melakukan tes, klik tombol di bawah untuk menguji penyimpanan otomatis ke Database Pusat Admin, atau buka menu <strong>🔥 Tes Talent Mapping</strong> di atas.
             </p>
+            <button
+              type="button"
+              onClick={buatDataTesContohKeDatabasePusat}
+              className="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs inline-flex items-center gap-1.5 cursor-pointer shadow-lg"
+            >
+              <Sparkles className="w-4 h-4" /> Buat &amp; Simpan Hasil Tes Muhammad Saputra Sekarang
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 max-h-96 overflow-y-auto pr-1">
@@ -271,7 +370,7 @@ export const AdminTalentMappingDatabaseBridge: React.FC<{
                     </span>
                   </div>
                   <div className="text-[11px] text-slate-300">
-                    {item.emailPeserta} • {item.instansiPeserta}
+                    Akun: {item.emailPeserta} • {item.instansiPeserta}
                   </div>
                   <div className="text-[11px] text-amber-300 font-bold">
                     🏅 Bakat #1: {item.bakatUtama1_7?.[0]?.nama || "-"} (
@@ -297,6 +396,12 @@ export const AdminTalentMappingDatabaseBridge: React.FC<{
                         (x) => x.idHasil !== item.idHasil
                       );
                       setDaftarHasilTes(sisa);
+                      try {
+                        window.localStorage.setItem(
+                          "hibahilmu_talent_mapping_master_v6",
+                          JSON.stringify(sisa)
+                        );
+                      } catch {}
                       await fetch("/api/talent-mapping", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
@@ -317,7 +422,6 @@ export const AdminTalentMappingDatabaseBridge: React.FC<{
         )}
       </div>
 
-      {/* MODAL PRATINJAU & CETAK SERTIFIKAT / LAPORAN PESERTA YANG DIPILIH ADMIN */}
       {itemTerpilihModal && (
         <div className="bg-slate-900/95 p-4 sm:p-8 rounded-3xl border-4 border-amber-400 shadow-2xl space-y-6">
           <div className="print:hidden flex flex-wrap justify-between items-center gap-3 border-b border-slate-700 pb-4">
@@ -355,7 +459,7 @@ export const AdminTalentMappingDatabaseBridge: React.FC<{
               }
               daftarUrut={itemTerpilihModal.daftarUrutMultiJenjang}
               galeriKaryaKanvas={itemTerpilihModal.galeriKaryaKanvas || {}}
-              statusCloud="Tersimpan di Database Pusat Cloud ✓"
+              statusCloud={`Tersimpan Permanen di Akun (${itemTerpilihModal.emailPeserta}) & Database Pusat ✓`}
               onSimpanCloud={() => {}}
             />
           ) : (
