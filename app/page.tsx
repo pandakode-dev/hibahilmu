@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from "react";
 import {
@@ -75,18 +75,98 @@ import { DonasiDanBugView } from "./components/DonasiDanBugView";
 import { FiturInovasiHubView } from "./components/FiturInovasiHubView";
 import { SimulatorPemrogramanView } from "./components/simulator/SimulatorPemrogramanView";
 import { TalentMappingAssessmentView } from "./components/talent-mapping/TalentMappingAssessmentView";
+import { AdminTalentMappingDatabaseBridge } from "./components/talent-mapping/AdminTalentMappingDatabaseBridge";
 
 const SESSION_STORAGE_KEY = "hibahilmu_active_user_session_v2";
 const SESSION_COOKIE_NAME = "hibahilmu_session_user";
 const LAST_MENU_STORAGE_KEY = "hibahilmu_last_active_menu_v2";
 
+// Akun Super Admin Permanen Muhammad Saputra
+const AKUN_ADMIN_PERMANEN: AkunPengguna[] = [
+  {
+    id: "admin-saputra-pcr",
+    nama: "Muhammad Saputra",
+    email: "saputra@pcr.ac.id",
+    password: "humairoh26",
+    role: "admin",
+    status: "approved",
+    kelasDiampu: ["ALL"],
+    xp: 99999,
+  },
+  {
+    id: "admin-saputra-gmail",
+    nama: "Muhammad Saputra",
+    email: "msaputrap1234@gmail.com",
+    password: "humairoh26",
+    role: "admin",
+    status: "approved",
+    kelasDiampu: ["ALL"],
+    xp: 99999,
+  },
+];
+
+function normalisasiObjekAkun(raw: any): AkunPengguna {
+  const emailBersih = String(raw?.email || "").trim().toLowerCase();
+  const isSuperAdmin =
+    emailBersih === "saputra@pcr.ac.id" ||
+    emailBersih === "msaputrap1234@gmail.com" ||
+    emailBersih === "admin@hibahilmu.id" ||
+    String(raw?.role || "").toLowerCase() === "admin";
+
+  const roleValid: "siswa" | "guru" | "admin" = isSuperAdmin
+    ? "admin"
+    : String(raw?.role || "").toLowerCase() === "guru"
+    ? "guru"
+    : "siswa";
+
+  return {
+    id: raw?.id || `usr-${emailBersih.replace(/[^a-z0-9]/g, "")}`,
+    nama: raw?.nama || raw?.name || emailBersih.split("@")[0] || "Pengguna HibahIlmu",
+    email: emailBersih,
+    password: raw?.password || "123",
+    role: roleValid,
+    status: "approved",
+    kelasDiampu:
+      Array.isArray(raw?.kelasDiampu) && raw.kelasDiampu.length > 0
+        ? raw.kelasDiampu
+        : roleValid === "admin"
+        ? ["ALL"]
+        : ["Kelas 11 MIPA", "Kelas 12 MIPA & UTBK", "Teknik Informatika & Jaringan"],
+    xp: Number(raw?.xp) || (roleValid === "admin" ? 99999 : 250),
+  };
+}
+
+function gabungkanDaftarAkunUnik(lists: any[][]): AkunPengguna[] {
+  const map = new Map<string, AkunPengguna>();
+  for (const list of lists) {
+    if (!Array.isArray(list)) continue;
+    for (const item of list) {
+      if (!item || !item.email) continue;
+      const norm = normalisasiObjekAkun(item);
+      map.set(norm.email.toLowerCase(), norm);
+    }
+  }
+  for (const adm of AKUN_ADMIN_PERMANEN) {
+    map.set(adm.email.toLowerCase(), adm);
+  }
+  return Array.from(map.values());
+}
+
 function bacaSesiTersimpanSinkron(): AkunPengguna | null {
   if (typeof window === "undefined") return null;
   try {
-    const dariLs = window.localStorage.getItem(SESSION_STORAGE_KEY);
-    if (dariLs) {
-      const parsed = JSON.parse(dariLs);
-      if (parsed && parsed.email) return parsed;
+    const kunciSesi Kandidat = [
+      SESSION_STORAGE_KEY,
+      "hibahilmu_user_session",
+      "hibahilmu_logged_user",
+      "hibahilmu_active_user",
+    ];
+    for (const key of kunciSesiKandidat) {
+      const dariLs = window.localStorage.getItem(key);
+      if (dariLs) {
+        const parsed = JSON.parse(dariLs);
+        if (parsed && parsed.email) return normalisasiObjekAkun(parsed);
+      }
     }
     const matchCookie = document.cookie
       .split("; ")
@@ -94,7 +174,7 @@ function bacaSesiTersimpanSinkron(): AkunPengguna | null {
     if (matchCookie) {
       const rawVal = decodeURIComponent(matchCookie.split("=")[1] || "");
       const parsedCookie = JSON.parse(rawVal);
-      if (parsedCookie && parsedCookie.email) return parsedCookie;
+      if (parsedCookie && parsedCookie.email) return normalisasiObjekAkun(parsedCookie);
     }
   } catch {}
   return null;
@@ -104,13 +184,16 @@ function simpanSesiKeStorageDanCookie(akun: AkunPengguna | null) {
   if (typeof window === "undefined") return;
   try {
     if (akun) {
-      const jsonStr = JSON.stringify(akun);
+      const norm = normalisasiObjekAkun(akun);
+      const jsonStr = JSON.stringify(norm);
       window.localStorage.setItem(SESSION_STORAGE_KEY, jsonStr);
+      window.localStorage.setItem("hibahilmu_user_session", jsonStr);
       document.cookie = `${SESSION_COOKIE_NAME}=${encodeURIComponent(
         jsonStr
       )}; path=/; max-age=2592000; SameSite=Lax`;
     } else {
       window.localStorage.removeItem(SESSION_STORAGE_KEY);
+      window.localStorage.removeItem("hibahilmu_user_session");
       document.cookie = `${SESSION_COOKIE_NAME}=; path=/; max-age=0`;
     }
   } catch {}
@@ -137,7 +220,9 @@ export default function AplikasiHibahIlmu() {
   const [kelasAktif, setKelasAktif] = useState<KelasItem | null>(null);
   const [hanyaMateriDiikuti, setHanyaMateriDiikuti] = useState<boolean>(false);
 
-  const [daftarAkun, setDaftarAkun] = useState<AkunPengguna[]>(AKUN_DEFAULT);
+  const [daftarAkun, setDaftarAkun] = useState<AkunPengguna[]>(() =>
+    gabungkanDaftarAkunUnik([AKUN_DEFAULT, AKUN_ADMIN_PERMANEN])
+  );
 
   // Inisialisasi langsung secara sinkron agar Ctrl+R tidak pernah membuat userLogin null
   const [userLogin, setUserLoginState] = useState<AkunPengguna | null>(() =>
@@ -213,10 +298,28 @@ export default function AplikasiHibahIlmu() {
     valOrUpdater
   ) => {
     setUserLoginState((prev) => {
-      const next =
+      const rawNext =
         typeof valOrUpdater === "function" ? valOrUpdater(prev) : valOrUpdater;
+      const next = rawNext ? normalisasiObjekAkun(rawNext) : null;
       simpanSesiKeStorageDanCookie(next);
-      if (next?.xp && next.xp > 0) setPoinXP(next.xp);
+      if (next) {
+        if (next.xp && next.xp > 0) setPoinXP(next.xp);
+        // Pastikan siapa pun yang login (termasuk via Google SSO) langsung masuk ke daftarAkun & Database Pusat
+        setDaftarAkun((prevList) => gabungkanDaftarAkunUnik([[next], prevList]));
+        fetch("/api/auth", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "sync_user",
+            id: next.id,
+            nama: next.nama,
+            email: next.email,
+            password: next.password || "123",
+            role: next.role,
+            kelasDiampu: next.kelasDiampu,
+          }),
+        }).catch(() => {});
+      }
       return next;
     });
   };
@@ -227,6 +330,7 @@ export default function AplikasiHibahIlmu() {
     if (tersimpan && !userLogin) {
       setUserLoginState(tersimpan);
       if (tersimpan.xp) setPoinXP(tersimpan.xp);
+      setDaftarAkun((prev) => gabungkanDaftarAkunUnik([[tersimpan], prev]));
     }
     const savedMenu = window.localStorage.getItem(LAST_MENU_STORAGE_KEY);
     if (savedMenu) setMenuAktif(savedMenu);
@@ -257,24 +361,33 @@ export default function AplikasiHibahIlmu() {
     }
   }, [kelasAktif, userLogin]);
 
+  // Sinkronisasi berkala dari /api/auth (Database Pusat Baru) DAN /api/mobile/auth
   useEffect(() => {
     const tarikDataDariServer = async () => {
       try {
-        const resAuth = await fetch("/api/mobile/auth", { cache: "no-store" });
-        const jsonAuth = await resAuth.json();
-        if (jsonAuth.ok && Array.isArray(jsonAuth.accounts)) {
-          setDaftarAkun((prevLokal) => {
-            const mapGabung = new Map<string, AkunPengguna>();
-            jsonAuth.accounts.forEach((acc: AkunPengguna) => {
-              mapGabung.set(acc.email.toLowerCase(), acc);
-            });
-            prevLokal.forEach((lok) => {
-              if (!mapGabung.has(lok.email.toLowerCase())) {
-                mapGabung.set(lok.email.toLowerCase(), lok);
-              }
-            });
-            return Array.from(mapGabung.values());
-          });
+        const [resPusat, resMobile] = await Promise.allSettled([
+          fetch("/api/auth", { cache: "no-store" }),
+          fetch("/api/mobile/auth", { cache: "no-store" }),
+        ]);
+
+        let akunPusat: any[] = [];
+        let akunMobile: any[] = [];
+
+        if (resPusat.status === "fulfilled" && resPusat.value.ok) {
+          const jsonP = await resPusat.value.json();
+          if (Array.isArray(jsonP.users)) akunPusat = jsonP.users;
+          else if (Array.isArray(jsonP.accounts)) akunPusat = jsonP.accounts;
+        }
+
+        if (resMobile.status === "fulfilled" && resMobile.value.ok) {
+          const jsonM = await resMobile.value.json();
+          if (Array.isArray(jsonM.accounts)) akunMobile = jsonM.accounts;
+        }
+
+        if (akunPusat.length > 0 || akunMobile.length > 0) {
+          setDaftarAkun((prevLokal) =>
+            gabungkanDaftarAkunUnik([akunPusat, akunMobile, prevLokal])
+          );
         }
 
         const resContent = await fetch("/api/mobile/content", { cache: "no-store" });
@@ -554,7 +667,7 @@ export default function AplikasiHibahIlmu() {
             {[
               { id: "beranda", label: "Beranda & Kelas" },
               { id: "simulator", label: "Simulator Coding & IoT" },
-              { id: "talent_mapping", label: "?? Tes Talent Mapping" },
+              { id: "talent_mapping", label: "🔥 Tes Talent Mapping" },
               { id: "inovasi", label: "Hub Inovasi" },
               { id: "webinar", label: "Webinar" },
               { id: "tryout", label: "Tryout CBT" },
@@ -572,8 +685,11 @@ export default function AplikasiHibahIlmu() {
                 }}
                 className={`px-3 py-2.5 rounded-xl text-xs font-extrabold transition whitespace-nowrap cursor-pointer flex items-center gap-1 ${
                   menuAktif === tab.id
-                    ? tab.id === "talent_mapping" ? "bg-gradient-to-r from-rose-600 to-amber-500 text-white shadow-lg ring-2 ring-amber-300" : "bg-emerald-600 text-white shadow-sm"
-                    : tab.id === "talent_mapping" ? "bg-gradient-to-r from-rose-600 to-amber-500 text-white shadow-md hover:scale-105"
+                    ? tab.id === "talent_mapping"
+                      ? "bg-gradient-to-r from-rose-600 to-amber-500 text-white shadow-lg ring-2 ring-amber-300"
+                      : "bg-emerald-600 text-white shadow-sm"
+                    : tab.id === "talent_mapping"
+                    ? "bg-gradient-to-r from-rose-600 to-amber-500 text-white shadow-md hover:scale-105"
                     : darkMode || kontrasTinggi
                     ? "text-slate-200 hover:bg-slate-800"
                     : "text-slate-700 hover:bg-slate-100"
@@ -775,12 +891,12 @@ export default function AplikasiHibahIlmu() {
                     Akses Terproteksi - Wajib Login Akun
                   </span>
                   <h2 className="text-xl sm:text-2xl font-black mt-0.5">
-                    Silakan Masuk (Login) sebagai Siswa atau Pengajar Terlebih Dahulu
+                    Silakan Masuk (Login) sebagai Siswa, Pengajar, atau Admin Terlebih Dahulu
                   </h2>
                   <p className="text-xs text-white/90">
-                    Untuk mengakses Kelas, Simulator Coding &amp; IoT, Hub Inovasi, Webinar,
-                    Tryout CBT, maupun Forum, Anda wajib masuk ke akun Anda agar progres &amp;
-                    project tersimpan aman.
+                    Untuk mengakses Kelas, Tes Talent Mapping, Simulator Coding &amp; IoT, Hub Inovasi,
+                    Webinar, Tryout CBT, maupun Forum, Anda wajib masuk ke akun Anda agar progres &amp;
+                    sertifikat tersimpan permanen di Database Pusat.
                   </p>
                 </div>
               </div>
@@ -799,7 +915,14 @@ export default function AplikasiHibahIlmu() {
 
             <AuthGateSecureView
               daftarAkun={daftarAkun}
-              setDaftarAkun={setDaftarAkun}
+              setDaftarAkun={(listBaru) =>
+                setDaftarAkun((prev) =>
+                  gabungkanDaftarAkunUnik([
+                    typeof listBaru === "function" ? listBaru(prev) : listBaru,
+                    prev,
+                  ])
+                )
+              }
               onLoginBerhasil={(akun) => setUserLogin(akun)}
               modeRoleAwal={modeRoleAuth}
             />
@@ -960,49 +1083,75 @@ export default function AplikasiHibahIlmu() {
 
             {menuAktif === "dashboard" && (
               userLogin ? (
-                <DashboardPanelView
-                  userLogin={userLogin}
-                  setUserLogin={setUserLogin}
-                  daftarAkun={daftarAkun}
-                  setDaftarAkun={setDaftarAkun}
-                  daftarJenjang={daftarJenjang}
-                  setDaftarJenjang={setDaftarJenjang}
-                  daftarPaketTryout={daftarPaketTryout}
-                  setDaftarPaketTryout={setDaftarPaketTryout}
-                  riwayatTryout={riwayatTryout}
-                  daftarTugas={daftarTugas}
-                  setDaftarTugas={handleSetDaftarTugasDenganNotif}
-                  daftarPengumpulan={daftarPengumpulan}
-                  setDaftarPengumpulan={setDaftarPengumpulan}
-                  daftarPresensi={daftarPresensi}
-                  setDaftarPresensi={setDaftarPresensi}
-                  rppList={rppList}
-                  setRppList={setRppList}
-                  bankSoalKolektif={bankSoalKolektif}
-                  setBankSoalKolektif={setBankSoalKolektif}
-                  daftarKelompok={daftarKelompok}
-                  setDaftarKelompok={setDaftarKelompok}
-                  jadwalLive={jadwalLive}
-                  setJadwalLive={setJadwalLive}
-                  studyRooms={studyRooms}
-                  setStudyRooms={setStudyRooms}
-                  daftarBeasiswa={daftarBeasiswa}
-                  setDaftarBeasiswa={setDaftarBeasiswa}
-                  logAktivitas={logAktivitas}
-                  poinXP={poinXP}
-                  materiSelesai={materiSelesai}
-                  tambahXP={tambahXP}
-                  kirimNotifikasiKeUser={kirimNotifikasiKeUser}
-                  konfigurasiWeb={konfigurasiWeb}
-                  setKonfigurasiWeb={setKonfigurasiWeb}
-                  daftarLaporanBug={daftarLaporanBug}
-                  setDaftarLaporanBug={setDaftarLaporanBug}
-                  modeRoleAwalAuth={modeRoleAuth}
-                />
+                <div className="space-y-8">
+                  {/* COMMAND CENTER HASIL TALENT MAPPING & SINKRONISASI AKUN GOOGLE SSO */}
+                  <AdminTalentMappingDatabaseBridge
+                    userAktif={userLogin}
+                    onSyncDaftarAkunServer={(akunDariCloud) => {
+                      setDaftarAkun((prev) =>
+                        gabungkanDaftarAkunUnik([akunDariCloud, prev])
+                      );
+                    }}
+                  />
+
+                  <DashboardPanelView
+                    userLogin={userLogin}
+                    setUserLogin={setUserLogin}
+                    daftarAkun={daftarAkun}
+                    setDaftarAkun={(listBaru) =>
+                      setDaftarAkun((prev) =>
+                        gabungkanDaftarAkunUnik([
+                          typeof listBaru === "function" ? listBaru(prev) : listBaru,
+                          prev,
+                        ])
+                      )
+                    }
+                    daftarJenjang={daftarJenjang}
+                    setDaftarJenjang={setDaftarJenjang}
+                    daftarPaketTryout={daftarPaketTryout}
+                    setDaftarPaketTryout={setDaftarPaketTryout}
+                    riwayatTryout={riwayatTryout}
+                    daftarTugas={daftarTugas}
+                    setDaftarTugas={handleSetDaftarTugasDenganNotif}
+                    daftarPengumpulan={daftarPengumpulan}
+                    setDaftarPengumpulan={setDaftarPengumpulan}
+                    daftarPresensi={daftarPresensi}
+                    setDaftarPresensi={setDaftarPresensi}
+                    rppList={rppList}
+                    setRppList={setRppList}
+                    bankSoalKolektif={bankSoalKolektif}
+                    setBankSoalKolektif={setBankSoalKolektif}
+                    daftarKelompok={daftarKelompok}
+                    setDaftarKelompok={setDaftarKelompok}
+                    jadwalLive={jadwalLive}
+                    setJadwalLive={setJadwalLive}
+                    studyRooms={studyRooms}
+                    setStudyRooms={setStudyRooms}
+                    daftarBeasiswa={daftarBeasiswa}
+                    setDaftarBeasiswa={setDaftarBeasiswa}
+                    logAktivitas={logAktivitas}
+                    poinXP={poinXP}
+                    materiSelesai={materiSelesai}
+                    tambahXP={tambahXP}
+                    kirimNotifikasiKeUser={kirimNotifikasiKeUser}
+                    konfigurasiWeb={konfigurasiWeb}
+                    setKonfigurasiWeb={setKonfigurasiWeb}
+                    daftarLaporanBug={daftarLaporanBug}
+                    setDaftarLaporanBug={setDaftarLaporanBug}
+                    modeRoleAwalAuth={modeRoleAuth}
+                  />
+                </div>
               ) : (
                 <AuthGateSecureView
                   daftarAkun={daftarAkun}
-                  setDaftarAkun={setDaftarAkun}
+                  setDaftarAkun={(listBaru) =>
+                    setDaftarAkun((prev) =>
+                      gabungkanDaftarAkunUnik([
+                        typeof listBaru === "function" ? listBaru(prev) : listBaru,
+                        prev,
+                      ])
+                    )
+                  }
                   onLoginBerhasil={(akun) => setUserLogin(akun)}
                   modeRoleAwal={modeRoleAuth}
                 />
