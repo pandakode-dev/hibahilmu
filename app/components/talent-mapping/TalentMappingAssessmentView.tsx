@@ -134,7 +134,7 @@ export const TalentMappingAssessmentView: React.FC<Props> = ({
 
     try {
       const res = await fetch(
-        `/api/talent-mapping?mode=all&role=admin&t=${Date.now()}`,
+        `/api/talent-mapping?email=${encodeURIComponent(userLogin?.email || emailPeserta || "")}&role=${encodeURIComponent(userLogin?.role || "siswa")}&t=${Date.now()}`,
         { cache: "no-store" }
       );
       const json = await res.json();
@@ -145,7 +145,7 @@ export const TalentMappingAssessmentView: React.FC<Props> = ({
             mapGabung.set(item.idHasil, item);
           }
         });
-        const finalArr = Array.from(mapGabung.values());
+        const emailAktif = (userLogin?.email || emailPeserta || "").trim().toLowerCase(); const finalArr = Array.from(mapGabung.values()).filter((r: any) => isAdminAtauHR || (r?.emailPeserta || "").trim().toLowerCase() === emailAktif);
         setRiwayatDatabasePusat(finalArr);
         localStorage.setItem(STORAGE_HASIL_KEY, JSON.stringify(finalArr));
         return;

@@ -12,15 +12,9 @@ import {
   Eye,
   X,
   ShieldCheck,
-  Sparkles,
 } from "lucide-react";
 import { MultiJenjangCertificateAndReport } from "./CertificateAndReportComponents";
 import { Scm114FullVisualMap } from "./Scm114FullVisualMap";
-import {
-  hitungHasilTalentMappingAkurat,
-  buatPresetJawabanMuhammadSaputra,
-} from "./talentMappingEngine";
-import { DEFINISI_8_DIMENSI_ANAK } from "./multiJenjangQuestionsData";
 
 const ALL_LOCAL_TM_KEYS = [
   "hibahilmu_talent_mapping_master_v6",
@@ -29,137 +23,47 @@ const ALL_LOCAL_TM_KEYS = [
   "hibahilmu_talent_mapping_results",
 ];
 
-const FALLBACK_AKUN_PUSAT = [
-  {
-    id: "admin-saputra-pcr",
-    nama: "Muhammad Saputra",
-    email: "saputra@pcr.ac.id",
-    role: "admin",
-  },
-  {
-    id: "admin-saputra-gmail",
-    nama: "Muhammad Saputra",
-    email: "msaputrap1234@gmail.com",
-    role: "admin",
-  },
-  {
-    id: "siswa-hafizah-salma",
-    nama: "Hafizah Syarifah Salma / Susi Rubiyati",
-    email: "hafizahsyarifahsalma01@gmail.com",
-    role: "siswa",
-  },
-  {
-    id: "admin-panda-01",
-    nama: "Admin Panda Kode",
-    email: "admin@hibahilmu.id",
-    role: "admin",
-  },
-  {
-    id: "guru-budi-01",
-    nama: "Bapak Budi Santoso, M.Pd",
-    email: "guru@hibahilmu.id",
-    role: "guru",
-  },
-  {
-    id: "siswa-aisyah-01",
-    nama: "Aisyah Putri",
-    email: "siswa@hibahilmu.id",
-    role: "siswa",
-  },
-];
+const LOCAL_DELETED_TOMBSTONE_KEY = "hibahilmu_tm_deleted_tombstones_v8";
 
-function buatFallbackHasilPesertaUtama(): any[] {
-  const preset = buatPresetJawabanMuhammadSaputra();
-
-  const modSusiS1 = { ...preset.jawabanSesi1, 9: 6, 43: 6, 77: 6, 111: 6, 145: 6 };
-  const hasilSusi = hitungHasilTalentMappingAkurat({
-    pemilikUserId: "hafizahsyarifahsalma01@gmail.com",
-    namaPeserta: "Susi Rubiyati",
-    emailPeserta: "hafizahsyarifahsalma01@gmail.com",
-    instansiPeserta: "HibahIlmu Indonesia",
-    jabatanAtauKelas: "Peserta Umum / Orang Tua",
-    jawabanSesi1: modSusiS1,
-    jawabanSesi2: preset.jawabanSesi2,
-  });
-  hasilSusi.idHasil = "TM-SEED-SUSI-RUBIYATI-DEWASA";
-  hasilSusi.tanggalTes = "8 November 2026";
-  hasilSusi.nomorDokumenRahasia = "CONF-HI-TM-2026-474813";
-
-  const modHafizahS1 = { ...preset.jawabanSesi1, 18: 6, 52: 6, 86: 6, 120: 6, 154: 6 };
-  const hasilHafizahDewasa = hitungHasilTalentMappingAkurat({
-    pemilikUserId: "hafizahsyarifahsalma01@gmail.com",
-    namaPeserta: "Hafizah Syarifah Salma",
-    emailPeserta: "hafizahsyarifahsalma01@gmail.com",
-    instansiPeserta: "HibahIlmu Indonesia",
-    jabatanAtauKelas: "Pelajar / Umum",
-    jawabanSesi1: modHafizahS1,
-    jawabanSesi2: preset.jawabanSesi2,
-  });
-  hasilHafizahDewasa.idHasil = "TM-SEED-HAFIZAH-DEWASA";
-  hasilHafizahDewasa.tanggalTes = "8 November 2026";
-  hasilHafizahDewasa.nomorDokumenRahasia = "CONF-HI-TM-2026-230029";
-
-  const dimensiAnakUrut = Object.entries(DEFINISI_8_DIMENSI_ANAK).map(
-    ([id, def], idx) => ({
-      ...def,
-      skorMentah: 96 - idx * 5,
-      persen: 98 - idx * 4,
-      peringkat: idx + 1,
-      kategori:
-        idx < 3
-          ? ("Kekuatan Utama" as const)
-          : idx < 6
-          ? ("Kekuatan Pendukung" as const)
-          : ("Area Perlu Stimulasi / Tantangan" as const),
-    })
-  );
-
-  const hasilHafizahAnak = {
-    idHasil: "TM-SEED-HAFIZAH-ANAK-TK-SD",
-    pemilikUserId: "hafizahsyarifahsalma01@gmail.com",
-    tipeJenjang: "anak_tk_sd",
-    judulLaporanMultiJenjang:
-      "Laporan Komprehensif Bakat, Motorik & Kecerdasan Majemuk Anak",
-    subjudulJenjangMultiJenjang:
-      "Jenjang Anak Usia Dini (3–8 Tahun / PAUD–TK–SD) • Analisis Kanvas, 24 Kartu Visual & 24 Observasi",
-    namaPeserta: "Hafizah Syarifah Salma",
-    emailPeserta: "hafizahsyarifahsalma01@gmail.com",
-    instansiPeserta:
-      "HibahIlmu Indonesia (Jenjang Anak Usia Dini (3–8 Tahun / PAUD–TK–SD))",
-    tanggalTes: "8 November 2026",
-    nomorDokumenRahasia: "CONF-ANAK_TK_SD-272550",
-    daftarUrutMultiJenjang: dimensiAnakUrut,
-    galeriKaryaKanvas: {},
-    bakatUtama1_7: dimensiAnakUrut.slice(0, 3).map((d, i) => ({
-      id: d.id,
-      nama: d.nama,
-      julukanRemaja: d.julukan,
-      peringkat: i + 1,
-      domain: "Thinking",
-      deskripsiKuat: d.deskripsiKekuatan,
-    })),
-    top5PersonalBranding: dimensiAnakUrut.slice(0, 3).map((d) => ({
-      id: d.id,
-      nama: d.julukan,
-      julukan: d.nama,
-      kategori: "ANAK_TK_SD",
-      deskripsi: d.deskripsiKekuatan,
-      skorKecocokan: d.persen,
-    })),
-    timestampMs: 1762610000000,
-    updatedAt: 1762610000000,
-  };
-
-  return [
-    hasilHafizahAnak,
-    { ...hasilHafizahDewasa, tipeJenjang: "dewasa_284", timestampMs: 1762609000000 },
-    { ...hasilSusi, tipeJenjang: "dewasa_284", timestampMs: 1762608000000 },
-  ];
+function bacaTombstoneLokal(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = window.localStorage.getItem(LOCAL_DELETED_TOMBSTONE_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return new Set(arr.map(String));
+    }
+  } catch {}
+  return new Set();
 }
 
-function kumpulkanSemuaHasilDariBrowserLokal(): any[] {
+function tambahTombstoneLokal(ids: string[]) {
+  if (typeof window === "undefined") return;
+  try {
+    const set = bacaTombstoneLokal();
+    ids.forEach((id) => {
+      if (id) set.add(String(id));
+    });
+    window.localStorage.setItem(
+      LOCAL_DELETED_TOMBSTONE_KEY,
+      JSON.stringify(Array.from(set))
+    );
+  } catch {}
+}
+
+function buatFingerprintItem(item: any): string {
+  const noDok = String(item?.nomorDokumenRahasia || "").trim().toUpperCase();
+  const nama = String(item?.namaPeserta || "").trim().toLowerCase();
+  const jenjang = String(item?.tipeJenjang || "dewasa_284").trim().toLowerCase();
+  if (noDok && nama) return `${nama}::${jenjang}::${noDok}`;
+  return String(item?.idHasil || "");
+}
+
+function kumpulkanDanBersihkanLokal(): any[] {
   if (typeof window === "undefined") return [];
+  const deletedSet = bacaTombstoneLokal();
   const mapUnik = new Map<string, any>();
+
   for (const key of ALL_LOCAL_TM_KEYS) {
     try {
       const raw = window.localStorage.getItem(key);
@@ -167,30 +71,75 @@ function kumpulkanSemuaHasilDariBrowserLokal(): any[] {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
         for (const item of parsed) {
-          if (item && item.idHasil && !mapUnik.has(item.idHasil)) {
-            mapUnik.set(item.idHasil, item);
+          if (!item || !item.idHasil) continue;
+          const id = String(item.idHasil);
+          const fp = buatFingerprintItem(item);
+          // Abaikan data dummy TM-SEED lama dan data yang sudah pernah di-delete!
+          if (
+            id.startsWith("TM-SEED-") ||
+            deletedSet.has(id) ||
+            deletedSet.has(fp)
+          ) {
+            continue;
+          }
+          if (!mapUnik.has(fp)) {
+            mapUnik.set(fp, item);
           }
         }
       }
     } catch {}
   }
-  return Array.from(mapUnik.values());
+
+  const hasilBersih = Array.from(mapUnik.values());
+  // Tulis kembali hasil yang sudah bersih dari duplikat ke semua key localStorage
+  for (const key of ALL_LOCAL_TM_KEYS) {
+    try {
+      window.localStorage.setItem(key, JSON.stringify(hasilBersih));
+    } catch {}
+  }
+  return hasilBersih;
+}
+
+function hapusDariSemuaStorageLokal(itemTarget: any) {
+  if (typeof window === "undefined") return;
+  const idTarget = String(itemTarget?.idHasil || "");
+  const fpTarget = buatFingerprintItem(itemTarget);
+  tambahTombstoneLokal([idTarget, fpTarget]);
+
+  for (const key of ALL_LOCAL_TM_KEYS) {
+    try {
+      const raw = window.localStorage.getItem(key);
+      if (!raw) continue;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        const sisa = parsed.filter(
+          (x: any) =>
+            x &&
+            String(x.idHasil) !== idTarget &&
+            buatFingerprintItem(x) !== fpTarget &&
+            !String(x.idHasil).startsWith("TM-SEED-")
+        );
+        window.localStorage.setItem(key, JSON.stringify(sisa));
+      }
+    } catch {}
+  }
 }
 
 export const AdminTalentMappingDatabaseBridge: React.FC<{
   userAktif?: any;
   onSyncDaftarAkunServer?: (daftarAkunLengkap: any[]) => void;
 }> = ({ userAktif, onSyncDaftarAkunServer }) => {
-  // Inisialisasi langsung dengan data seed peserta sehingga TIDAK PERNAH 0 PESERTA!
-  const [daftarHasilTes, setDaftarHasilTes] = useState<any[]>(() =>
-    buatFallbackHasilPesertaUtama()
-  );
-  const [daftarAkunCloud, setDaftarAkunCloud] =
-    useState<any[]>(FALLBACK_AKUN_PUSAT);
+  const emailLogin = String(userAktif?.email || "").trim().toLowerCase();
+  const isSuperAdmin =
+    userAktif?.role === "admin" ||
+    emailLogin === "saputra@pcr.ac.id" ||
+    emailLogin === "msaputrap1234@gmail.com" ||
+    emailLogin === "admin@hibahilmu.id";
+
+  const [daftarHasilTes, setDaftarHasilTes] = useState<any[]>([]);
+  const [daftarAkunCloud, setDaftarAkunCloud] = useState<any[]>([]);
   const [sedangMemuat, setSedangMemuat] = useState<boolean>(false);
-  const [statusSinkronisasi, setStatusSinkronisasi] = useState<string>(
-    "Terhubung ke Database Pusat Cloud ✓"
-  );
+  const [statusSinkronisasi, setStatusSinkronisasi] = useState<string>("");
   const [kataKunci, setKataKunci] = useState<string>("");
   const [filterJenjang, setFilterJenjang] = useState<string>("semua");
   const [itemTerpilihModal, setItemTerpilihModal] = useState<any | null>(null);
@@ -199,77 +148,67 @@ export const AdminTalentMappingDatabaseBridge: React.FC<{
   >("semua");
 
   const tarikDanSinkronkanSemuaDataPusat = async () => {
+    if (!isSuperAdmin) return;
     setSedangMemuat(true);
-    const seedWajib = buatFallbackHasilPesertaUtama();
-    const lokalRecords = kumpulkanSemuaHasilDariBrowserLokal();
-
-    // Gabungkan dulu lokal + seed wajib agar tampilan langsung terisi penuh
-    const mapAwal = new Map<string, any>();
-    [...lokalRecords, ...seedWajib].forEach((it) => {
-      if (it && it.idHasil && !mapAwal.has(it.idHasil)) {
-        mapAwal.set(it.idHasil, it);
-      }
-    });
-    const gabunganAwal = Array.from(mapAwal.values());
-    setDaftarHasilTes(gabunganAwal);
+    const lokalBersih = kumpulkanDanBersihkanLokal();
+    const deletedSet = bacaTombstoneLokal();
 
     try {
-      // 1. Tarik & gabungkan daftar akun dari /api/auth dan /api/mobile/auth
-      const [resAuth1, resAuth2] = await Promise.allSettled([
-        fetch("/api/auth", { cache: "no-store" }),
-        fetch("/api/mobile/auth", { cache: "no-store" }),
-      ]);
-
-      let listAkunServer: any[] = [];
-      if (resAuth1.status === "fulfilled" && resAuth1.value.ok) {
-        const j1 = await resAuth1.value.json();
-        if (Array.isArray(j1.users)) listAkunServer = [...j1.users, ...listAkunServer];
-      }
-      if (resAuth2.status === "fulfilled" && resAuth2.value.ok) {
-        const j2 = await resAuth2.value.json();
-        if (Array.isArray(j2.accounts)) listAkunServer = [...j2.accounts, ...listAkunServer];
-      }
-
-      const mapAkun = new Map<string, any>();
-      [...listAkunServer, ...FALLBACK_AKUN_PUSAT].forEach((u) => {
-        if (u && u.email) {
-          mapAkun.set(u.email.toLowerCase(), u);
-        }
+      // 1. Tarik daftar semua akun
+      const resAuth = await fetch(`/api/auth?t=${Date.now()}`, {
+        cache: "no-store",
       });
-      const akunLengkap = Array.from(mapAkun.values());
-      setDaftarAkunCloud(akunLengkap);
-      if (onSyncDaftarAkunServer) {
-        onSyncDaftarAkunServer(akunLengkap);
+      if (resAuth.ok) {
+        const jsonAuth = await resAuth.json();
+        if (Array.isArray(jsonAuth.users)) {
+          setDaftarAkunCloud(jsonAuth.users);
+          if (onSyncDaftarAkunServer) {
+            onSyncDaftarAkunServer(jsonAuth.users);
+          }
+        }
       }
 
-      // 2. Sinkronkan hasil tes dengan /api/talent-mapping
-      const resSync = await fetch("/api/talent-mapping", {
+      // 2. Sinkronkan dengan /api/talent-mapping
+      const resTm = await fetch("/api/talent-mapping", {
         method: "POST",
         cache: "no-store",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "sync_batch",
-          records: gabunganAwal,
+          email: emailLogin,
+          role: "admin",
+          records: lokalBersih,
         }),
       });
 
-      if (resSync.ok) {
-        const jsonSync = await resSync.json();
-        if (Array.isArray(jsonSync.results) && jsonSync.results.length > 0) {
-          const mapFinal = new Map<string, any>();
-          [...jsonSync.results, ...gabunganAwal].forEach((it) => {
-            if (it && it.idHasil && !mapFinal.has(it.idHasil)) {
-              mapFinal.set(it.idHasil, it);
+      if (resTm.ok) {
+        const jsonTm = await resTm.json();
+        if (Array.isArray(jsonTm.results)) {
+          const mapUnik = new Map<string, any>();
+          for (const it of jsonTm.results) {
+            if (!it || !it.idHasil) continue;
+            const id = String(it.idHasil);
+            const fp = buatFingerprintItem(it);
+            if (
+              id.startsWith("TM-SEED-") ||
+              deletedSet.has(id) ||
+              deletedSet.has(fp)
+            ) {
+              continue;
             }
-          });
-          const finalArr = Array.from(mapFinal.values());
+            if (!mapUnik.has(fp)) {
+              mapUnik.set(fp, it);
+            }
+          }
+          const finalArr = Array.from(mapUnik.values());
           setDaftarHasilTes(finalArr);
-          window.localStorage.setItem(
-            "hibahilmu_talent_mapping_master_v6",
-            JSON.stringify(finalArr)
-          );
+          for (const key of ALL_LOCAL_TM_KEYS) {
+            try {
+              window.localStorage.setItem(key, JSON.stringify(finalArr));
+            } catch {}
+          }
           setStatusSinkronisasi(
-            `Terhubung ke Database Pusat Cloud (${finalArr.length} Data Akun Tersimpan) ✓`
+            `Database Pusat Aktif (${finalArr.length} Hasil Tes Asli) ✓`
           );
           setSedangMemuat(false);
           return;
@@ -277,53 +216,47 @@ export const AdminTalentMappingDatabaseBridge: React.FC<{
       }
     } catch {}
 
-    setStatusSinkronisasi(
-      `Terhubung ke Database Pusat (${gabunganAwal.length} Data Akun Tersimpan) ✓`
-    );
+    setDaftarHasilTes(lokalBersih);
+    setStatusSinkronisasi(`Menampilkan ${lokalBersih.length} Hasil Tes Asli ✓`);
     setSedangMemuat(false);
   };
 
   useEffect(() => {
     tarikDanSinkronkanSemuaDataPusat();
-  }, [userAktif?.email]);
+  }, [emailLogin, isSuperAdmin]);
 
-  const tambahHasilTesMuhammadSaputra = async () => {
-    setSedangMemuat(true);
-    const preset = buatPresetJawabanMuhammadSaputra();
-    const hasilBaru = hitungHasilTalentMappingAkurat({
-      pemilikUserId: "saputra@pcr.ac.id",
-      namaPeserta: "Muhammad Saputra",
-      emailPeserta: "saputra@pcr.ac.id",
-      instansiPeserta: "Politeknik Caltex Riau (Super Admin)",
-      jabatanAtauKelas: "25 MTTK A / Researcher",
-      jawabanSesi1: preset.jawabanSesi1,
-      jawabanSesi2: preset.jawabanSesi2,
-    });
-    const paket = {
-      ...hasilBaru,
-      idHasil: "TM-SEED-MUHAMMAD-SAPUTRA-PCR",
-      tipeJenjang: "dewasa_284",
-      timestampMs: Date.now(),
-      updatedAt: Date.now(),
-    };
+  // PRIVASI KETAT: Jika yang login adalah Siswa / Guru biasa, JANGAN tampilkan Command Center Admin ini!
+  if (!isSuperAdmin) {
+    return null;
+  }
 
-    const baru = [
-      paket,
-      ...daftarHasilTes.filter((x) => x.idHasil !== paket.idHasil),
-    ];
-    setDaftarHasilTes(baru);
+  const hapusSatuHasilPermanen = async (item: any) => {
+    // 1. Hapus instan dari layar & catat ke Tombstone semua localStorage
+    hapusDariSemuaStorageLokal(item);
+    const fpTarget = buatFingerprintItem(item);
+    setDaftarHasilTes((prev) =>
+      prev.filter(
+        (x) =>
+          x.idHasil !== item.idHasil && buatFingerprintItem(x) !== fpTarget
+      )
+    );
+
+    // 2. Hapus permanen di Server & Cloud Mirror
     try {
-      window.localStorage.setItem(
-        "hibahilmu_talent_mapping_master_v6",
-        JSON.stringify(baru)
-      );
       await fetch("/api/talent-mapping", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "save", result: paket }),
+        body: JSON.stringify({
+          action: "delete",
+          email: emailLogin,
+          role: "admin",
+          idHasil: item.idHasil,
+          namaPeserta: item.namaPeserta,
+          tipeJenjang: item.tipeJenjang,
+          nomorDokumenRahasia: item.nomorDokumenRahasia,
+        }),
       });
     } catch {}
-    setSedangMemuat(false);
   };
 
   const hasilTerfilter = daftarHasilTes.filter((r) => {
@@ -371,29 +304,23 @@ export const AdminTalentMappingDatabaseBridge: React.FC<{
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <span className="px-3 py-1 rounded-full bg-rose-600 text-white text-[10px] font-black uppercase">
-                🔥 DATABASE PUSAT HASIL TALENT MAPPING &amp; AKUN SSO GOOGLE
+                🔒 KHUSUS SUPER ADMIN • PRIVASI ANTAR-AKUN TERKUNCI
               </span>
               <span className="px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400 text-emerald-300 text-[10px] font-black">
                 <ShieldCheck className="w-3.5 h-3.5 inline mr-1" />
-                {statusSinkronisasi}
+                {statusSinkronisasi ||
+                  `${daftarHasilTes.length} Hasil Tes Asli Tersimpan`}
               </span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-amber-300 mt-1.5">
               Command Center Sertifikat &amp; Laporan Talent Mapping ({daftarHasilTes.length} Peserta)
             </h2>
             <p className="text-xs text-slate-300">
-              Seluruh hasil tes dari akun siswa/umum maupun perangkat ini otomatis disinkronkan ke Database Pusat Admin.
+              Hanya Super Admin yang dapat melihat seluruh daftar ini. Setiap peserta biasa hanya dapat melihat hasil tes milik akunnya sendiri.
             </p>
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={tambahHasilTesMuhammadSaputra}
-              className="px-3.5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center gap-1.5 cursor-pointer shadow"
-            >
-              <Sparkles className="w-4 h-4" /> + Profil Muhammad Saputra
-            </button>
             <button
               type="button"
               onClick={tarikDanSinkronkanSemuaDataPusat}
@@ -402,7 +329,7 @@ export const AdminTalentMappingDatabaseBridge: React.FC<{
               <RefreshCw
                 className={`w-4 h-4 ${sedangMemuat ? "animate-spin" : ""}`}
               />
-              Sinkronkan Browser &amp; Cloud
+              Segarkan Database
             </button>
             <button
               type="button"
@@ -414,7 +341,6 @@ export const AdminTalentMappingDatabaseBridge: React.FC<{
           </div>
         </div>
 
-        {/* DAFTAR AKUN TERHUBUNG (DIJAMIN TERISI PENUH, TIDAK AKAN 0 AKUN!) */}
         <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2.5">
           <div className="text-xs font-black uppercase text-sky-400 flex items-center gap-1.5">
             <Users className="w-4 h-4" /> Daftar Akun Terhubung di Server Pusat ({daftarAkunCloud.length} Akun):
@@ -472,71 +398,64 @@ export const AdminTalentMappingDatabaseBridge: React.FC<{
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 max-h-96 overflow-y-auto pr-1">
-          {hasilTerfilter.map((item) => (
-            <div
-              key={item.idHasil}
-              className="p-4 rounded-2xl bg-slate-950 border border-slate-800 hover:border-amber-400 flex flex-col justify-between gap-3"
-            >
-              <div className="space-y-1">
-                <div className="flex justify-between items-start gap-2">
-                  <span className="font-black text-sm text-emerald-400">
-                    {item.namaPeserta}
-                  </span>
-                  <span className="px-2 py-0.5 rounded bg-rose-600/30 border border-rose-500 text-rose-200 font-black text-[9.5px] uppercase">
-                    {item.tipeJenjang || "dewasa_284"}
-                  </span>
-                </div>
-                <div className="text-[11px] text-slate-300">
-                  Akun: {item.emailPeserta} • {item.instansiPeserta}
-                </div>
-                <div className="text-[11px] text-amber-300 font-bold">
-                  🏅 Bakat #1: {item.bakatUtama1_7?.[0]?.nama || "-"} (
-                  {item.top5PersonalBranding?.[0]?.nama || "-"})
-                </div>
-                <div className="text-[10px] font-mono text-slate-500">
-                  {item.tanggalTes} • {item.nomorDokumenRahasia}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 pt-2 border-t border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setItemTerpilihModal(item)}
-                  className="flex-1 py-2 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <Eye className="w-3.5 h-3.5" /> Lihat Sertifikat &amp; Laporan
-                </button>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const sisa = daftarHasilTes.filter(
-                      (x) => x.idHasil !== item.idHasil
-                    );
-                    setDaftarHasilTes(sisa);
-                    try {
-                      window.localStorage.setItem(
-                        "hibahilmu_talent_mapping_master_v6",
-                        JSON.stringify(sisa)
-                      );
-                    } catch {}
-                    await fetch("/api/talent-mapping", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({
-                        action: "delete",
-                        idHasil: item.idHasil,
-                      }),
-                    });
-                  }}
-                  className="p-2 rounded-xl bg-rose-950 text-rose-300 hover:bg-rose-800 cursor-pointer"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
+        {hasilTerfilter.length === 0 ? (
+          <div className="p-8 rounded-2xl bg-slate-950 border border-slate-800 text-center space-y-2">
+            <div className="text-sm font-black text-amber-300">
+              Belum Ada Data Hasil Tes
             </div>
-          ))}
-        </div>
+            <p className="text-xs text-slate-400 max-w-xl mx-auto">
+              Data tidak akan bertambah sendiri lagi. Hasil tes baru hanya akan muncul di sini ketika ada peserta yang benar-benar menyelesaikan asesmen di menu <strong>🔥 Tes Talent Mapping</strong>.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 max-h-96 overflow-y-auto pr-1">
+            {hasilTerfilter.map((item) => (
+              <div
+                key={item.idHasil}
+                className="p-4 rounded-2xl bg-slate-950 border border-slate-800 hover:border-amber-400 flex flex-col justify-between gap-3"
+              >
+                <div className="space-y-1">
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="font-black text-sm text-emerald-400">
+                      {item.namaPeserta}
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-rose-600/30 border border-rose-500 text-rose-200 font-black text-[9.5px] uppercase">
+                      {item.tipeJenjang || "dewasa_284"}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-slate-300">
+                    Akun: {item.emailPeserta} • {item.instansiPeserta}
+                  </div>
+                  <div className="text-[11px] text-amber-300 font-bold">
+                    🏅 Bakat #1: {item.bakatUtama1_7?.[0]?.nama || "-"} (
+                    {item.top5PersonalBranding?.[0]?.nama || "-"})
+                  </div>
+                  <div className="text-[10px] font-mono text-slate-500">
+                    {item.tanggalTes} • {item.nomorDokumenRahasia}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 pt-2 border-t border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setItemTerpilihModal(item)}
+                    className="flex-1 py-2 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Eye className="w-3.5 h-3.5" /> Lihat Sertifikat &amp; Laporan
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => hapusSatuHasilPermanen(item)}
+                    title="Hapus Permanen"
+                    className="p-2 rounded-xl bg-rose-950 text-rose-300 hover:bg-rose-800 cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {itemTerpilihModal && (
@@ -576,7 +495,7 @@ export const AdminTalentMappingDatabaseBridge: React.FC<{
               }
               daftarUrut={itemTerpilihModal.daftarUrutMultiJenjang}
               galeriKaryaKanvas={itemTerpilihModal.galeriKaryaKanvas || {}}
-              statusCloud={`Tersimpan Permanen di Akun (${itemTerpilihModal.emailPeserta}) & Database Pusat ✓`}
+              statusCloud={`Tersimpan Permanen di Akun (${itemTerpilihModal.emailPeserta}) ✓`}
               onSimpanCloud={() => {}}
             />
           ) : (
