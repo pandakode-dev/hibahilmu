@@ -74,7 +74,6 @@ function kumpulkanDanBersihkanLokal(): any[] {
           if (!item || !item.idHasil) continue;
           const id = String(item.idHasil);
           const fp = buatFingerprintItem(item);
-          // Abaikan data dummy TM-SEED lama dan data yang sudah pernah di-delete!
           if (
             id.startsWith("TM-SEED-") ||
             deletedSet.has(id) ||
@@ -91,7 +90,6 @@ function kumpulkanDanBersihkanLokal(): any[] {
   }
 
   const hasilBersih = Array.from(mapUnik.values());
-  // Tulis kembali hasil yang sudah bersih dari duplikat ke semua key localStorage
   for (const key of ALL_LOCAL_TM_KEYS) {
     try {
       window.localStorage.setItem(key, JSON.stringify(hasilBersih));
@@ -154,7 +152,6 @@ export const AdminTalentMappingDatabaseBridge: React.FC<{
     const deletedSet = bacaTombstoneLokal();
 
     try {
-      // 1. Tarik daftar semua akun
       const resAuth = await fetch(`/api/auth?t=${Date.now()}`, {
         cache: "no-store",
       });
@@ -168,7 +165,6 @@ export const AdminTalentMappingDatabaseBridge: React.FC<{
         }
       }
 
-      // 2. Sinkronkan dengan /api/talent-mapping
       const resTm = await fetch("/api/talent-mapping", {
         method: "POST",
         cache: "no-store",
@@ -225,13 +221,11 @@ export const AdminTalentMappingDatabaseBridge: React.FC<{
     tarikDanSinkronkanSemuaDataPusat();
   }, [emailLogin, isSuperAdmin]);
 
-  // PRIVASI KETAT: Jika yang login adalah Siswa / Guru biasa, JANGAN tampilkan Command Center Admin ini!
   if (!isSuperAdmin) {
     return null;
   }
 
   const hapusSatuHasilPermanen = async (item: any) => {
-    // 1. Hapus instan dari layar & catat ke Tombstone semua localStorage
     hapusDariSemuaStorageLokal(item);
     const fpTarget = buatFingerprintItem(item);
     setDaftarHasilTes((prev) =>
@@ -241,7 +235,6 @@ export const AdminTalentMappingDatabaseBridge: React.FC<{
       )
     );
 
-    // 2. Hapus permanen di Server & Cloud Mirror
     try {
       await fetch("/api/talent-mapping", {
         method: "POST",
@@ -316,7 +309,7 @@ export const AdminTalentMappingDatabaseBridge: React.FC<{
               Command Center Sertifikat &amp; Laporan Talent Mapping ({daftarHasilTes.length} Peserta)
             </h2>
             <p className="text-xs text-slate-300">
-              Hanya Super Admin yang dapat melihat seluruh daftar ini. Setiap peserta biasa hanya dapat melihat hasil tes milik akunnya sendiri.
+              Setiap kartu peserta di bawah ini kini dilengkapi tombol pratinjau dan tombol hapus merah.
             </p>
           </div>
 
@@ -398,13 +391,14 @@ export const AdminTalentMappingDatabaseBridge: React.FC<{
           </div>
         </div>
 
+        {/* KARTU DAFTAR PESERTA DENGAN TOMBOL HAPUS MERAH (TONG SAMPAH) */}
         {hasilTerfilter.length === 0 ? (
           <div className="p-8 rounded-2xl bg-slate-950 border border-slate-800 text-center space-y-2">
             <div className="text-sm font-black text-amber-300">
               Belum Ada Data Hasil Tes
             </div>
             <p className="text-xs text-slate-400 max-w-xl mx-auto">
-              Data tidak akan bertambah sendiri lagi. Hasil tes baru hanya akan muncul di sini ketika ada peserta yang benar-benar menyelesaikan asesmen di menu <strong>🔥 Tes Talent Mapping</strong>.
+              Hasil tes peserta akan tampil di sini. Setiap kartu dilengkapi tombol hapus merah untuk menghapus data secara permanen.
             </p>
           </div>
         ) : (
@@ -446,8 +440,8 @@ export const AdminTalentMappingDatabaseBridge: React.FC<{
                   <button
                     type="button"
                     onClick={() => hapusSatuHasilPermanen(item)}
-                    title="Hapus Permanen"
-                    className="p-2 rounded-xl bg-rose-950 text-rose-300 hover:bg-rose-800 cursor-pointer"
+                    title="Hapus Data Ini Permanen"
+                    className="p-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white cursor-pointer shadow"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -560,7 +554,7 @@ export const AdminTalentMappingDatabaseBridge: React.FC<{
                 </div>
               )}
 
-              {modePrintModal !== "sertifikat_saja" &&
+              {modePrintModal !== "sertifikat_siah" &&
                 itemTerpilihModal.urutan34Bakat && (
                   <Scm114FullVisualMap hasil={itemTerpilihModal} />
                 )}
