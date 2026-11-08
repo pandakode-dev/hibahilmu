@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from "react";
 import {
@@ -81,7 +81,7 @@ const SESSION_STORAGE_KEY = "hibahilmu_active_user_session_v2";
 const SESSION_COOKIE_NAME = "hibahilmu_session_user";
 const LAST_MENU_STORAGE_KEY = "hibahilmu_last_active_menu_v2";
 
-// Akun Super Admin Permanen Muhammad Saputra
+// Akun Super Admin Permanen Muhammad Saputra (Sesuai Kontrak Tipe AkunPengguna)
 const AKUN_ADMIN_PERMANEN: AkunPengguna[] = [
   {
     id: "admin-saputra-pcr",
@@ -90,9 +90,8 @@ const AKUN_ADMIN_PERMANEN: AkunPengguna[] = [
     password: "humairoh26",
     role: "admin",
     status: "approved",
-    kelasDiampu: ["ALL"],
     xp: 99999,
-  },
+  } as AkunPengguna,
   {
     id: "admin-saputra-gmail",
     nama: "Muhammad Saputra",
@@ -100,9 +99,8 @@ const AKUN_ADMIN_PERMANEN: AkunPengguna[] = [
     password: "humairoh26",
     role: "admin",
     status: "approved",
-    kelasDiampu: ["ALL"],
     xp: 99999,
-  },
+  } as AkunPengguna,
 ];
 
 function normalisasiObjekAkun(raw: any): AkunPengguna {
@@ -119,21 +117,23 @@ function normalisasiObjekAkun(raw: any): AkunPengguna {
     ? "guru"
     : "siswa";
 
+  const baseContoh = AKUN_DEFAULT[0] || ({} as AkunPengguna);
+
   return {
+    ...baseContoh,
+    ...raw,
     id: raw?.id || `usr-${emailBersih.replace(/[^a-z0-9]/g, "")}`,
-    nama: raw?.nama || raw?.name || emailBersih.split("@")[0] || "Pengguna HibahIlmu",
+    nama:
+      raw?.nama ||
+      raw?.name ||
+      emailBersih.split("@")[0] ||
+      "Pengguna HibahIlmu",
     email: emailBersih,
     password: raw?.password || "123",
     role: roleValid,
     status: "approved",
-    kelasDiampu:
-      Array.isArray(raw?.kelasDiampu) && raw.kelasDiampu.length > 0
-        ? raw.kelasDiampu
-        : roleValid === "admin"
-        ? ["ALL"]
-        : ["Kelas 11 MIPA", "Kelas 12 MIPA & UTBK", "Teknik Informatika & Jaringan"],
     xp: Number(raw?.xp) || (roleValid === "admin" ? 99999 : 250),
-  };
+  } as AkunPengguna;
 }
 
 function gabungkanDaftarAkunUnik(lists: any[][]): AkunPengguna[] {
@@ -147,7 +147,7 @@ function gabungkanDaftarAkunUnik(lists: any[][]): AkunPengguna[] {
     }
   }
   for (const adm of AKUN_ADMIN_PERMANEN) {
-    map.set(adm.email.toLowerCase(), adm);
+    map.set(adm.email.toLowerCase(), normalisasiObjekAkun(adm));
   }
   return Array.from(map.values());
 }
@@ -174,7 +174,8 @@ function bacaSesiTersimpanSinkron(): AkunPengguna | null {
     if (matchCookie) {
       const rawVal = decodeURIComponent(matchCookie.split("=")[1] || "");
       const parsedCookie = JSON.parse(rawVal);
-      if (parsedCookie && parsedCookie.email) return normalisasiObjekAkun(parsedCookie);
+      if (parsedCookie && parsedCookie.email)
+        return normalisasiObjekAkun(parsedCookie);
     }
   } catch {}
   return null;
@@ -204,7 +205,8 @@ export default function AplikasiHibahIlmu() {
   const [ukuranTeksBesar, setUkuranTeksBesar] = useState<boolean>(false);
   const [kontrasTinggi, setKontrasTinggi] = useState<boolean>(false);
   const [spasiTeksLebar, setSpasiTeksLebar] = useState<boolean>(false);
-  const [bukaMenuAksesibilitas, setBukaMenuAksesibilitas] = useState<boolean>(false);
+  const [bukaMenuAksesibilitas, setBukaMenuAksesibilitas] =
+    useState<boolean>(false);
 
   const [menuAktif, setMenuAktif] = useState<string>(() => {
     if (typeof window !== "undefined") {
@@ -214,25 +216,40 @@ export default function AplikasiHibahIlmu() {
   });
   const [modeRoleAuth, setModeRoleAuth] = useState<"siswa" | "guru">("siswa");
 
-  const [daftarJenjang, setDaftarJenjang] = useState<JenjangItem[]>(STRUKTUR_AWAL);
+  const [daftarJenjang, setDaftarJenjang] =
+    useState<JenjangItem[]>(STRUKTUR_AWAL);
   const [jenjangAktif, setJenjangAktif] = useState<JenjangItem | null>(null);
   const [subJenjangAktif, setSubJenjangAktif] = useState<string>("semua");
   const [kelasAktif, setKelasAktif] = useState<KelasItem | null>(null);
   const [hanyaMateriDiikuti, setHanyaMateriDiikuti] = useState<boolean>(false);
 
-  const [daftarAkun, setDaftarAkun] = useState<AkunPengguna[]>(() =>
+  const [daftarAkun, setDaftarAkunState] = useState<AkunPengguna[]>(() =>
     gabungkanDaftarAkunUnik([AKUN_DEFAULT, AKUN_ADMIN_PERMANEN])
   );
 
-  // Inisialisasi langsung secara sinkron agar Ctrl+R tidak pernah membuat userLogin null
+  // Wrapper setDaftarAkun yang kompatibel penuh dengan React.Dispatch<SetStateAction<AkunPengguna[]>>
+  const setDaftarAkun: React.Dispatch<React.SetStateAction<AkunPengguna[]>> = (
+     updaterOrList
+  ) => {
+    setDaftarAkunState((prev) => {
+      const nextList =
+        typeof updaterOrList === "function"
+          ? updaterOrList(prev)
+          : updaterOrList;
+      return gabungkanDaftarAkunUnik([nextList, prev]);
+    });
+  };
+
   const [userLogin, setUserLoginState] = useState<AkunPengguna | null>(() =>
     bacaSesiTersimpanSinkron()
   );
 
   const [logAktivitas] = useState<LogAktivitas[]>(LOG_AWAL);
-  const [daftarKelompok, setDaftarKelompok] = useState<KelompokBelajar[]>(KELOMPOK_AWAL);
+  const [daftarKelompok, setDaftarKelompok] =
+    useState<KelompokBelajar[]>(KELOMPOK_AWAL);
 
-  const [daftarNotifikasi, setDaftarNotifikasi] = useState<NotifikasiItem[]>(NOTIF_AWAL);
+  const [daftarNotifikasi, setDaftarNotifikasi] =
+    useState<NotifikasiItem[]>(NOTIF_AWAL);
   const [bukaMenuNotif, setBukaMenuNotif] = useState<boolean>(false);
 
   const [konfigurasiWeb, setKonfigurasiWeb] =
@@ -247,13 +264,16 @@ export default function AplikasiHibahIlmu() {
     useState<PengumpulanTugas[]>(PENGUMPULAN_AWAL);
   const [daftarPresensi, setDaftarPresensi] = useState<PresensiItem[]>([]);
   const [rppList, setRppList] = useState<RppItem[]>(RPP_REPOSITORY_AWAL);
-  const [officeHours, setOfficeHours] = useState<OfficeHourItem[]>(OFFICE_HOURS_AWAL);
+  const [officeHours, setOfficeHours] =
+    useState<OfficeHourItem[]>(OFFICE_HOURS_AWAL);
   const [bankSoalKolektif, setBankSoalKolektif] =
     useState<SoalTryout[]>(BANK_SOAL_KOLEKTIF_AWAL);
-  const [jadwalLive, setJadwalLive] = useState<JadwalLiveItem[]>(JADWAL_LIVE_AWAL);
+  const [jadwalLive, setJadwalLive] =
+    useState<JadwalLiveItem[]>(JADWAL_LIVE_AWAL);
   const [agendaList, setAgendaList] =
     useState<AgendaWebinarItem[]>(AGENDA_WEBINAR_AWAL);
-  const [studyRooms, setStudyRooms] = useState<StudyRoomItem[]>(STUDY_ROOMS_AWAL);
+  const [studyRooms, setStudyRooms] =
+    useState<StudyRoomItem[]>(STUDY_ROOMS_AWAL);
   const [daftarBeasiswa, setDaftarBeasiswa] =
     useState<PengajuanBeasiswaItem[]>(BEASISWA_AWAL);
 
@@ -265,38 +285,52 @@ export default function AplikasiHibahIlmu() {
         id: "ch-1",
         pengirimNama: "Aisyah Putri",
         pengirimRole: "siswa",
-        pesan: "Pak Budi, apakah rumus Energi Kinetik selalu menggunakan satuan m/s?",
+        pesan:
+          "Pak Budi, apakah rumus Energi Kinetik selalu menggunakan satuan m/s?",
         waktu: "10:15 WIB",
       },
     ],
   });
 
   const [poinXP, setPoinXP] = useState<number>(480);
-  const [materiSelesai, setMateriSelesai] = useState<string[]>(["materi-sma-1"]);
+  const [materiSelesai, setMateriSelesai] = useState<string[]>([
+    "materi-sma-1",
+  ]);
 
-  const [skorKuisPerModul, setSkorKuisPerModul] = useState<{ [modulId: string]: number }>({
+  const [skorKuisPerModul, setSkorKuisPerModul] = useState<{
+    [modulId: string]: number;
+  }>({
     "materi-sma-1": 90,
   });
 
-  const [daftarPaketTryout, setDaftarPaketTryout] = useState<PaketTryout[]>(PAKET_TRYOUT_AWAL);
-  const [riwayatTryout, setRiwayatTryout] = useState<RiwayatPercobaanTryout[]>([]);
-  const [paketTryoutAktif, setPaketTryoutAktif] = useState<PaketTryout | null>(null);
+  const [daftarPaketTryout, setDaftarPaketTryout] =
+    useState<PaketTryout[]>(PAKET_TRYOUT_AWAL);
+  const [riwayatTryout, setRiwayatTryout] = useState<
+    RiwayatPercobaanTryout[]
+  >([]);
+  const [paketTryoutAktif, setPaketTryoutAktif] =
+    useState<PaketTryout | null>(null);
   const [sedangUjian, setSedangUjian] = useState<boolean>(false);
   const [ujianSelesai, setUjianSelesai] = useState<boolean>(false);
   const [sisaWaktu, setSisaWaktu] = useState<number>(300);
-  const [indeksSoalTryoutAktif, setIndeksSoalTryoutAktif] = useState<number>(0);
-  const [jawabanUserTryout, setJawabanUserTryout] = useState<{ [key: number]: number }>({});
+  const [indeksSoalTryoutAktif, setIndeksSoalTryoutAktif] =
+    useState<number>(0);
+  const [jawabanUserTryout, setJawabanUserTryout] = useState<{
+    [key: number]: number;
+  }>({});
   const [skorTryout, setSkorTryout] = useState<number>(0);
-  const [jumlahPelanggaranUjian, setJumlahPelanggaranUjian] = useState<number>(0);
+  const [jumlahPelanggaranUjian, setJumlahPelanggaranUjian] =
+    useState<number>(0);
   const [pesanPeringatanCheat, setPesanPeringatanCheat] = useState<string>("");
 
-  const [daftarDiskusi, setDaftarDiskusi] = useState<DiskusiPR[]>(DISKUSI_PR_AWAL);
+  const [daftarDiskusi, setDaftarDiskusi] =
+    useState<DiskusiPR[]>(DISKUSI_PR_AWAL);
 
   const semuaModulFlat = daftarJenjang.flatMap((j) => j.kelas);
 
-  const setUserLogin: React.Dispatch<React.SetStateAction<AkunPengguna | null>> = (
-    valOrUpdater
-  ) => {
+  const setUserLogin: React.Dispatch<
+    React.SetStateAction<AkunPengguna | null>
+  > = (valOrUpdater) => {
     setUserLoginState((prev) => {
       const rawNext =
         typeof valOrUpdater === "function" ? valOrUpdater(prev) : valOrUpdater;
@@ -304,8 +338,9 @@ export default function AplikasiHibahIlmu() {
       simpanSesiKeStorageDanCookie(next);
       if (next) {
         if (next.xp && next.xp > 0) setPoinXP(next.xp);
-        // Pastikan siapa pun yang login (termasuk via Google SSO) langsung masuk ke daftarAkun & Database Pusat
-        setDaftarAkun((prevList) => gabungkanDaftarAkunUnik([[next], prevList]));
+        setDaftarAkunState((prevList) =>
+          gabungkanDaftarAkunUnik([[next], prevList])
+        );
         fetch("/api/auth", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -316,7 +351,6 @@ export default function AplikasiHibahIlmu() {
             email: next.email,
             password: next.password || "123",
             role: next.role,
-            kelasDiampu: next.kelasDiampu,
           }),
         }).catch(() => {});
       }
@@ -324,13 +358,14 @@ export default function AplikasiHibahIlmu() {
     });
   };
 
-  // Pastikan sesi dari Cookie/LocalStorage langsung aktif saat mount
   useEffect(() => {
     const tersimpan = bacaSesiTersimpanSinkron();
     if (tersimpan && !userLogin) {
       setUserLoginState(tersimpan);
       if (tersimpan.xp) setPoinXP(tersimpan.xp);
-      setDaftarAkun((prev) => gabungkanDaftarAkunUnik([[tersimpan], prev]));
+      setDaftarAkunState((prev) =>
+        gabungkanDaftarAkunUnik([[tersimpan], prev])
+      );
     }
     const savedMenu = window.localStorage.getItem(LAST_MENU_STORAGE_KEY);
     if (savedMenu) setMenuAktif(savedMenu);
@@ -361,7 +396,6 @@ export default function AplikasiHibahIlmu() {
     }
   }, [kelasAktif, userLogin]);
 
-  // Sinkronisasi berkala dari /api/auth (Database Pusat Baru) DAN /api/mobile/auth
   useEffect(() => {
     const tarikDataDariServer = async () => {
       try {
@@ -385,18 +419,26 @@ export default function AplikasiHibahIlmu() {
         }
 
         if (akunPusat.length > 0 || akunMobile.length > 0) {
-          setDaftarAkun((prevLokal) =>
+          setDaftarAkunState((prevLokal) =>
             gabungkanDaftarAkunUnik([akunPusat, akunMobile, prevLokal])
           );
         }
 
-        const resContent = await fetch("/api/mobile/content", { cache: "no-store" });
+        const resContent = await fetch("/api/mobile/content", {
+          cache: "no-store",
+        });
         const jsonContent = await resContent.json();
         if (jsonContent.ok) {
-          if (Array.isArray(jsonContent.beasiswaList) && jsonContent.beasiswaList.length > 0) {
+          if (
+            Array.isArray(jsonContent.beasiswaList) &&
+            jsonContent.beasiswaList.length > 0
+          ) {
             setDaftarBeasiswa(jsonContent.beasiswaList);
           }
-          if (Array.isArray(jsonContent.laporanList) && jsonContent.laporanList.length > 0) {
+          if (
+            Array.isArray(jsonContent.laporanList) &&
+            jsonContent.laporanList.length > 0
+          ) {
             setDaftarLaporanBug(jsonContent.laporanList);
           }
         }
@@ -429,13 +471,19 @@ export default function AplikasiHibahIlmu() {
     });
   };
 
-  const simpanSkorModul = (modulId: string, skorBaru: number, lulusKkm: boolean) => {
+  const simpanSkorModul = (
+    modulId: string,
+    skorBaru: number,
+    lulusKkm: boolean
+  ) => {
     setSkorKuisPerModul((prev) => ({
       ...prev,
       [modulId]: Math.max(prev[modulId] || 0, skorBaru),
     }));
     if (lulusKkm) {
-      setMateriSelesai((prev) => (prev.includes(modulId) ? prev : [...prev, modulId]));
+      setMateriSelesai((prev) =>
+        prev.includes(modulId) ? prev : [...prev, modulId]
+      );
       tambahXP(50);
     }
   };
@@ -610,7 +658,9 @@ export default function AplikasiHibahIlmu() {
   };
 
   const notifikasiUserAktif = daftarNotifikasi.filter((n) =>
-    userLogin ? n.targetUserId === userLogin.id || n.targetUserId === "ALL" : n.targetUserId === "ALL"
+    userLogin
+      ? n.targetUserId === userLogin.id || n.targetUserId === "ALL"
+      : n.targetUserId === "ALL"
   );
   const jumlahBelumDibaca = notifikasiUserAktif.filter((n) => !n.dibaca).length;
 
@@ -626,9 +676,11 @@ export default function AplikasiHibahIlmu() {
           : darkMode
           ? "bg-slate-950 text-slate-100"
           : "bg-[#F8FAFC] text-slate-800"
-      } ${ukuranTeksBesar ? "text-lg leading-relaxed" : "text-base leading-normal"} ${
-        spasiTeksLebar ? "tracking-wider leading-loose" : ""
-      }`}
+      } ${
+        ukuranTeksBesar
+          ? "text-lg leading-relaxed"
+          : "text-base leading-normal"
+      } ${spasiTeksLebar ? "tracking-wider leading-loose" : ""}`}
     >
       <header
         className={`sticky top-0 z-40 backdrop-blur-xl border-b shadow-xs ${
@@ -656,7 +708,9 @@ export default function AplikasiHibahIlmu() {
               className="w-12 h-12 rounded-2xl object-cover shadow-md border-2 border-emerald-500 group-hover:scale-105 transition"
             />
             <div>
-              <div className="font-black text-2xl tracking-tight leading-none">HibahIlmu.id</div>
+              <div className="font-black text-2xl tracking-tight leading-none">
+                HibahIlmu.id
+              </div>
               <div className="text-xs text-emerald-600 dark:text-emerald-400 font-extrabold uppercase tracking-wider mt-1">
                 WAKAF &amp; HIBAH ILMU GRATIS
               </div>
@@ -667,7 +721,7 @@ export default function AplikasiHibahIlmu() {
             {[
               { id: "beranda", label: "Beranda & Kelas" },
               { id: "simulator", label: "Simulator Coding & IoT" },
-              { id: "talent_mapping", label: "?? Tes Talent Mapping" },
+              { id: "talent_mapping", label: "🔥 Tes Talent Mapping" },
               { id: "inovasi", label: "Hub Inovasi" },
               { id: "webinar", label: "Webinar" },
               { id: "tryout", label: "Tryout CBT" },
@@ -814,10 +868,16 @@ export default function AplikasiHibahIlmu() {
                         }`}
                       >
                         <div className="flex justify-between items-center">
-                          <span className="font-black text-slate-900">{n.judul}</span>
-                          <span className="text-[10px] text-slate-400">{n.waktu}</span>
+                          <span className="font-black text-slate-900">
+                            {n.judul}
+                          </span>
+                          <span className="text-[10px] text-slate-400">
+                            {n.waktu}
+                          </span>
                         </div>
-                        <p className="text-slate-600 leading-relaxed">{n.pesan}</p>
+                        <p className="text-slate-600 leading-relaxed">
+                          {n.pesan}
+                        </p>
                         <div className="text-[10px] font-bold text-indigo-600 pt-0.5">
                           Oleh: {n.pengirim}
                         </div>
@@ -891,12 +951,14 @@ export default function AplikasiHibahIlmu() {
                     Akses Terproteksi - Wajib Login Akun
                   </span>
                   <h2 className="text-xl sm:text-2xl font-black mt-0.5">
-                    Silakan Masuk (Login) sebagai Siswa, Pengajar, atau Admin Terlebih Dahulu
+                    Silakan Masuk (Login) sebagai Siswa, Pengajar, atau Admin
+                    Terlebih Dahulu
                   </h2>
                   <p className="text-xs text-white/90">
-                    Untuk mengakses Kelas, Tes Talent Mapping, Simulator Coding &amp; IoT, Hub Inovasi,
-                    Webinar, Tryout CBT, maupun Forum, Anda wajib masuk ke akun Anda agar progres &amp;
-                    sertifikat tersimpan permanen di Database Pusat.
+                    Untuk mengakses Kelas, Tes Talent Mapping, Simulator Coding
+                    &amp; IoT, Hub Inovasi, Webinar, Tryout CBT, maupun Forum,
+                    Anda wajib masuk ke akun Anda agar progres &amp; sertifikat
+                    tersimpan permanen di Database Pusat.
                   </p>
                 </div>
               </div>
@@ -915,14 +977,7 @@ export default function AplikasiHibahIlmu() {
 
             <AuthGateSecureView
               daftarAkun={daftarAkun}
-              setDaftarAkun={(listBaru) =>
-                setDaftarAkun((prev) =>
-                  gabungkanDaftarAkunUnik([
-                    typeof listBaru === "function" ? listBaru(prev) : listBaru,
-                    prev,
-                  ])
-                )
-              }
+              setDaftarAkun={setDaftarAkun}
               onLoginBerhasil={(akun) => setUserLogin(akun)}
               modeRoleAwal={modeRoleAuth}
             />
@@ -995,11 +1050,17 @@ export default function AplikasiHibahIlmu() {
             )}
 
             {menuAktif === "talent_mapping" && (
-              <TalentMappingAssessmentView userLogin={userLogin} tambahXP={tambahXP} />
+              <TalentMappingAssessmentView
+                userLogin={userLogin}
+                tambahXP={tambahXP}
+              />
             )}
 
             {menuAktif === "simulator" && (
-              <SimulatorPemrogramanView userLogin={userLogin} tambahXP={tambahXP} />
+              <SimulatorPemrogramanView
+                userLogin={userLogin}
+                tambahXP={tambahXP}
+              />
             )}
 
             {menuAktif === "inovasi" && (
@@ -1081,14 +1142,14 @@ export default function AplikasiHibahIlmu() {
                 />
               )}
 
-            {menuAktif === "dashboard" && (
-              userLogin ? (
+            {menuAktif === "dashboard" &&
+              (userLogin ? (
                 <div className="space-y-8">
                   {/* COMMAND CENTER HASIL TALENT MAPPING & SINKRONISASI AKUN GOOGLE SSO */}
                   <AdminTalentMappingDatabaseBridge
                     userAktif={userLogin}
                     onSyncDaftarAkunServer={(akunDariCloud) => {
-                      setDaftarAkun((prev) =>
+                      setDaftarAkunState((prev) =>
                         gabungkanDaftarAkunUnik([akunDariCloud, prev])
                       );
                     }}
@@ -1098,14 +1159,7 @@ export default function AplikasiHibahIlmu() {
                     userLogin={userLogin}
                     setUserLogin={setUserLogin}
                     daftarAkun={daftarAkun}
-                    setDaftarAkun={(listBaru) =>
-                      setDaftarAkun((prev) =>
-                        gabungkanDaftarAkunUnik([
-                          typeof listBaru === "function" ? listBaru(prev) : listBaru,
-                          prev,
-                        ])
-                      )
-                    }
+                    setDaftarAkun={setDaftarAkun}
                     daftarJenjang={daftarJenjang}
                     setDaftarJenjang={setDaftarJenjang}
                     daftarPaketTryout={daftarPaketTryout}
@@ -1144,19 +1198,11 @@ export default function AplikasiHibahIlmu() {
               ) : (
                 <AuthGateSecureView
                   daftarAkun={daftarAkun}
-                  setDaftarAkun={(listBaru) =>
-                    setDaftarAkun((prev) =>
-                      gabungkanDaftarAkunUnik([
-                        typeof listBaru === "function" ? listBaru(prev) : listBaru,
-                        prev,
-                      ])
-                    )
-                  }
+                  setDaftarAkun={setDaftarAkun}
                   onLoginBerhasil={(akun) => setUserLogin(akun)}
                   modeRoleAwal={modeRoleAuth}
                 />
-              )
-            )}
+              ))}
           </>
         )}
       </main>
@@ -1175,8 +1221,8 @@ export default function AplikasiHibahIlmu() {
             HibahIlmu.id - Gerakan Wakaf &amp; Hibah Ilmu Pengetahuan Indonesia
           </div>
           <p className="max-w-md text-xs text-slate-500">
-            Dibangun dengan dedikasi oleh <strong>Panda Kode</strong> - 100% Pendidikan Terbuka Gratis
-            Selamanya.
+            Dibangun dengan dedikasi oleh <strong>Panda Kode</strong> - 100%
+            Pendidikan Terbuka Gratis Selamanya.
           </p>
           <div className="text-xs font-bold text-slate-600 dark:text-slate-400 pt-1">
             {konfigurasiWeb.nomorKontakWa} | {konfigurasiWeb.emailKontakResmi}
