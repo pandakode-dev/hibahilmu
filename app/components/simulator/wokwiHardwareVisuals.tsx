@@ -28,129 +28,273 @@ export type TipePeriferalWokwi =
   | "esp_now_radio"
   | "mesh_10_node";
 
-export interface ItemGudangKomponen {
-  idItem: string;
-  namaTampil: string;
-  kategori: "MCU" | "Output" | "Sensor" | "Komunikasi";
-  tipeCocok: "esp32_board" | TipePeriferalWokwi;
-  warnaAksen: string;
+export type KategoriFilterGudang48 =
+  | "Semua"
+  | "Microcontroller"
+  | "Baterai & Daya"
+  | "Sensor (25)"
+  | "Modul Relay"
+  | "Aktuator & Motor"
+  | "Pasif & Input"
+  | "Aktuator & Relay";
+
+export interface ItemGudang48Master {
+  id: string;
+  nama: string;
+  badgeAtas: string; // Contoh: "MCU", "PASIF", "TANAH", "AIR", "GAS", "MEDIS", "DAYA", "AKTUATOR"
+  jumlahPinLabel: string; // Contoh: "30P", "2P", "3P", "4P", "8P"
+  kategoriFilter: KategoriFilterGudang48;
+  tipeVisualThumb:
+    | "esp32"
+    | "arduino_uno"
+    | "esp8266"
+    | "stm32"
+    | "raspberry_pico"
+    | "baterai_18650"
+    | "solar_panel"
+    | "ina219"
+    | "power_supply"
+    | "step_down"
+    | "ldr"
+    | "dht22"
+    | "soil_moisture"
+    | "npk_tanah"
+    | "ultrasonik"
+    | "pir_motion"
+    | "mq2_gas"
+    | "mq135_co2"
+    | "flame_api"
+    | "rfid_rc522"
+    | "gps_neo6m"
+    | "ph_air"
+    | "tds_air"
+    | "turbidity_air"
+    | "do_oksigen"
+    | "suhu_air"
+    | "water_flow"
+    | "water_level"
+    | "detak_jantung"
+    | "suhu_tubuh"
+    | "ina_arus"
+    | "bmp280"
+    | "mpu6050"
+    | "rain_hujan"
+    | "sound_suara"
+    | "relay_1ch"
+    | "relay_2ch"
+    | "relay_4ch"
+    | "ssr_relay"
+    | "servo_180"
+    | "servo_360"
+    | "pompa_air"
+    | "kipas_dc"
+    | "solenoid_lock"
+    | "motor_dc"
+    | "oled_i2c"
+    | "lcd_16x2"
+    | "buzzer_piezo"
+    | "keypad_4x4"
+    | "led_hijau"
+    | "led_merah"
+    | "resistor_220"
+    | "potensiometer"
+    | "push_button";
+  // Pemetaan ke target drop di Akademi 15 Level:
+  cocokUntukDropZone: "esp32_board" | TipePeriferalWokwi | "universal_part";
+  levelTerkait: number[];
 }
 
-// Daftar Lengkap Isi Gudang Komponen Elektronik (Untuk Di-Drag ke Kanvas)
-export const DAFTAR_GUDANG_KOMPONEN_WOKWI: ItemGudangKomponen[] = [
-  {
-    idItem: "gudang_esp32",
-    namaTampil: "ESP32 DevKit V1 (30-Pin)",
-    kategori: "MCU",
-    tipeCocok: "esp32_board",
-    warnaAksen: "#facc15",
-  },
-  {
-    idItem: "gudang_led",
-    namaTampil: "LED Merah 5mm + 220Ω",
-    kategori: "Output",
-    tipeCocok: "led_merah",
-    warnaAksen: "#ef4444",
-  },
-  {
-    idItem: "gudang_btn",
-    namaTampil: "Push Button Switch",
-    kategori: "Sensor",
-    tipeCocok: "push_button",
-    warnaAksen: "#38bdf8",
-  },
-  {
-    idItem: "gudang_ldr",
-    namaTampil: "Sensor LDR + Relay 5V",
-    kategori: "Sensor",
-    tipeCocok: "ldr_relay",
-    warnaAksen: "#22c55e",
-  },
-  {
-    idItem: "gudang_servo",
-    namaTampil: "Servo SG90 + Solenoid",
-    kategori: "Output",
-    tipeCocok: "servo_solenoid",
-    warnaAksen: "#a855f7",
-  },
-  {
-    idItem: "gudang_dht22",
-    namaTampil: "DHT22 + Kipas & Pompa",
-    kategori: "Sensor",
-    tipeCocok: "dht22_greenhouse",
-    warnaAksen: "#10b981",
-  },
-  {
-    idItem: "gudang_mq2",
-    namaTampil: "Sensor Gas MQ-2 + Buzzer",
-    kategori: "Sensor",
-    tipeCocok: "mq2_alarm",
-    warnaAksen: "#f43f5e",
-  },
-  {
-    idItem: "gudang_uart",
-    namaTampil: "ESP32 #2 (UART Receiver)",
-    kategori: "Komunikasi",
-    tipeCocok: "dual_esp32_uart",
-    warnaAksen: "#f97316",
-  },
-  {
-    idItem: "gudang_relay4",
-    namaTampil: "Modul Relay 4-Ch PLC",
-    kategori: "Output",
-    tipeCocok: "relay_4ch_plc",
-    warnaAksen: "#06b6d4",
-  },
-  {
-    idItem: "gudang_triple",
-    namaTampil: "Klaster 3 MCU Slave",
-    kategori: "Komunikasi",
-    tipeCocok: "triple_mcu",
-    warnaAksen: "#14b8a6",
-  },
-  {
-    idItem: "gudang_npk",
-    namaTampil: "Probe Pupuk NPK RS485",
-    kategori: "Sensor",
-    tipeCocok: "npk_rs485",
-    warnaAksen: "#eab308",
-  },
-  {
-    idItem: "gudang_gps",
-    namaTampil: "GPS Satelit NEO-6M",
-    kategori: "Sensor",
-    tipeCocok: "gps_neo6m",
-    warnaAksen: "#3b82f6",
-  },
-  {
-    idItem: "gudang_batt",
-    namaTampil: "Baterai 18650 + INA219",
-    kategori: "Sensor",
-    tipeCocok: "baterai_18650",
-    warnaAksen: "#10b981",
-  },
-  {
-    idItem: "gudang_struct",
-    namaTampil: "Bus Memori Struct C++",
-    kategori: "Komunikasi",
-    tipeCocok: "struct_ram",
-    warnaAksen: "#a855f7",
-  },
-  {
-    idItem: "gudang_espnow",
-    namaTampil: "Antena 2.4GHz ESP-NOW",
-    kategori: "Komunikasi",
-    tipeCocok: "esp_now_radio",
-    warnaAksen: "#38bdf8",
-  },
-  {
-    idItem: "gudang_mesh10",
-    namaTampil: "Gateway 10-Node Mesh",
-    kategori: "Komunikasi",
-    tipeCocok: "mesh_10_node",
-    warnaAksen: "#facc15",
-  },
+// ============================================================================
+// SINGLE SOURCE OF TRUTH: GUDANG KOMPONEN (48 ITEM) LENGKAP DENGAN IKON SVG
+// ============================================================================
+export const GUDANG_KOMPONEN_48_MASTER: ItemGudang48Master[] = [
+  // --- MICROCONTROLLER (5 ITEM) ---
+  { id: "mcu_esp32", nama: "ESP32 DevKit V1 (Wi-Fi/BLE)", badgeAtas: "MCU", jumlahPinLabel: "30P", kategoriFilter: "Microcontroller", tipeVisualThumb: "esp32", cocokUntukDropZone: "esp32_board", levelTerkait: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15] },
+  { id: "mcu_esp32_node2", nama: "ESP32 #2 (UART / Mesh Node)", badgeAtas: "MCU", jumlahPinLabel: "30P", kategoriFilter: "Microcontroller", tipeVisualThumb: "esp32", cocokUntukDropZone: "dual_esp32_uart", levelTerkait: [7, 14, 15] },
+  { id: "mcu_uno", nama: "Arduino Uno R3 (ATmega328P)", badgeAtas: "MCU", jumlahPinLabel: "28P", kategoriFilter: "Microcontroller", tipeVisualThumb: "arduino_uno", cocokUntukDropZone: "triple_mcu", levelTerkait: [8, 9] },
+  { id: "mcu_nodemcu", nama: "NodeMCU ESP8266 Wi-Fi", badgeAtas: "MCU", jumlahPinLabel: "22P", kategoriFilter: "Microcontroller", tipeVisualThumb: "esp8266", cocokUntukDropZone: "esp_now_radio", levelTerkait: [14] },
+  { id: "mcu_gateway10", nama: "ESP32 Gateway Node #10", badgeAtas: "MCU", jumlahPinLabel: "30P", kategoriFilter: "Microcontroller", tipeVisualThumb: "esp32", cocokUntukDropZone: "mesh_10_node", levelTerkait: [15] },
+
+  // --- BATERAI & DAYA (5 ITEM) ---
+  { id: "pwr_batt18650", nama: "Baterai Li-Ion 18650 (3.7V-4.2V)", badgeAtas: "DAYA", jumlahPinLabel: "2P", kategoriFilter: "Baterai & Daya", tipeVisualThumb: "baterai_18650", cocokUntukDropZone: "baterai_18650", levelTerkait: [12, 15] },
+  { id: "pwr_ina219", nama: "Sensor Tegangan & Arus INA219", badgeAtas: "DAYA", jumlahPinLabel: "4P", kategoriFilter: "Baterai & Daya", tipeVisualThumb: "ina219", cocokUntukDropZone: "baterai_18650", levelTerkait: [12] },
+  { id: "pwr_solar", nama: "Panel Surya Mini 6V 2W", badgeAtas: "DAYA", jumlahPinLabel: "2P", kategoriFilter: "Baterai & Daya", tipeVisualThumb: "solar_panel", cocokUntukDropZone: "baterai_18650", levelTerkait: [12] },
+  { id: "pwr_psu12v", nama: "Adaptor Power Supply 12V DC", badgeAtas: "DAYA", jumlahPinLabel: "2P", kategoriFilter: "Baterai & Daya", tipeVisualThumb: "power_supply", cocokUntukDropZone: "universal_part", levelTerkait: [4, 8] },
+  { id: "pwr_buck", nama: "Step-Down Buck LM2596 (5V)", badgeAtas: "DAYA", jumlahPinLabel: "4P", kategoriFilter: "Baterai & Daya", tipeVisualThumb: "step_down", cocokUntukDropZone: "universal_part", levelTerkait: [12] },
+
+  // --- PASIF & INPUT (6 ITEM - SESUAI GAMBAR BARIS TENGAH) ---
+  { id: "pas_keypad", nama: "Keypad Matriks 4x4", badgeAtas: "PASIF", jumlahPinLabel: "8P", kategoriFilter: "Pasif & Input", tipeVisualThumb: "keypad_4x4", cocokUntukDropZone: "push_button", levelTerkait: [2] },
+  { id: "pas_led_hijau", nama: "LED Hijau 5mm", badgeAtas: "PASIF", jumlahPinLabel: "2P", kategoriFilter: "Pasif & Input", tipeVisualThumb: "led_hijau", cocokUntukDropZone: "led_merah", levelTerkait: [1] },
+  { id: "pas_led_merah", nama: "LED Merah 5mm", badgeAtas: "PASIF", jumlahPinLabel: "2P", kategoriFilter: "Pasif & Input", tipeVisualThumb: "led_merah", cocokUntukDropZone: "led_merah", levelTerkait: [1, 2] },
+  { id: "pas_resistor", nama: "Resistor Gelang 220Ω", badgeAtas: "PASIF", jumlahPinLabel: "2P", kategoriFilter: "Pasif & Input", tipeVisualThumb: "resistor_220", cocokUntukDropZone: "led_merah", levelTerkait: [1] },
+  { id: "pas_potensio", nama: "Potensiometer Putar 10kΩ", badgeAtas: "PASIF", jumlahPinLabel: "3P", kategoriFilter: "Pasif & Input", tipeVisualThumb: "potensiometer", cocokUntukDropZone: "ldr_relay", levelTerkait: [3] },
+  { id: "pas_button", nama: "Push Button Tactile Switch", badgeAtas: "PASIF", jumlahPinLabel: "4P", kategoriFilter: "Pasif & Input", tipeVisualThumb: "push_button", cocokUntukDropZone: "push_button", levelTerkait: [2] },
+
+  // --- SENSOR (25 ITEM - TERMASUK TANAH, AIR, MEDIS, GAS SESUAI GAMBAR) ---
+  { id: "sen_npk", nama: "Sensor Pupuk NPK RS485", badgeAtas: "TANAH", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "npk_tanah", cocokUntukDropZone: "npk_rs485", levelTerkait: [10, 13, 15] },
+  { id: "sen_soil", nama: "Sensor Kelembaban Tanah (Soil)", badgeAtas: "TANAH", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "soil_moisture", cocokUntukDropZone: "dht22_greenhouse", levelTerkait: [5] },
+  { id: "sen_dht22", nama: "Sensor Suhu & Lembab DHT22", badgeAtas: "SUHU", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "dht22", cocokUntukDropZone: "dht22_greenhouse", levelTerkait: [5, 13, 15] },
+  { id: "sen_ldr", nama: "Sensor Cahaya LDR Photoresistor", badgeAtas: "CAHAYA", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "ldr", cocokUntukDropZone: "ldr_relay", levelTerkait: [3] },
+  { id: "sen_gps", nama: "Modul GPS Satelit NEO-6M", badgeAtas: "SATELIT", jumlahPinLabel: "4P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "gps_neo6m", cocokUntukDropZone: "gps_neo6m", levelTerkait: [11, 15] },
+  { id: "sen_rfid", nama: "RFID Card Reader RC522", badgeAtas: "AKSES", jumlahPinLabel: "7P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "rfid_rc522", cocokUntukDropZone: "servo_solenoid", levelTerkait: [4] },
+  { id: "sen_mq2", nama: "Sensor Gas & Asap MQ-2", badgeAtas: "GAS", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "mq2_gas", cocokUntukDropZone: "mq2_alarm", levelTerkait: [6] },
+  { id: "sen_mq135", nama: "Sensor Kualitas Udara MQ-135", badgeAtas: "GAS", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "mq135_co2", cocokUntukDropZone: "mq2_alarm", levelTerkait: [6] },
+  { id: "sen_flame", nama: "Flame Sensor Detektor Api", badgeAtas: "API", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "flame_api", cocokUntukDropZone: "mq2_alarm", levelTerkait: [6] },
+  { id: "sen_ph", nama: "Sensor pH Air (Asam/Basa)", badgeAtas: "AIR", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "ph_air", cocokUntukDropZone: "npk_rs485", levelTerkait: [10] },
+  { id: "sen_tds", nama: "Sensor TDS Meter (PPM Air)", badgeAtas: "AIR", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "tds_air", cocokUntukDropZone: "npk_rs485", levelTerkait: [10] },
+  { id: "sen_turbidity", nama: "Sensor Turbidity Kekeruhan", badgeAtas: "AIR", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "turbidity_air", cocokUntukDropZone: "npk_rs485", levelTerkait: [10] },
+  { id: "sen_do", nama: "Sensor DO (Oksigen Terlarut)", badgeAtas: "AIR", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "do_oksigen", cocokUntukDropZone: "npk_rs485", levelTerkait: [10] },
+  { id: "sen_ds18b20", nama: "Sensor Suhu Air DS18B20", badgeAtas: "AIR", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "suhu_air", cocokUntukDropZone: "dht22_greenhouse", levelTerkait: [5, 15] },
+  { id: "sen_flow", nama: "Sensor Debit Air Water Flow", badgeAtas: "AIR", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "water_flow", cocokUntukDropZone: "dht22_greenhouse", levelTerkait: [5] },
+  { id: "sen_level", nama: "Sensor Tinggi Muka Air", badgeAtas: "AIR", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "water_level", cocokUntukDropZone: "dht22_greenhouse", levelTerkait: [5] },
+  { id: "sen_heart", nama: "Sensor Detak Jantung & SpO2", badgeAtas: "MEDIS", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "detak_jantung", cocokUntukDropZone: "struct_ram", levelTerkait: [13] },
+  { id: "sen_ultrasonik", nama: "Sensor Jarak HC-SR04", badgeAtas: "JARAK", jumlahPinLabel: "4P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "ultrasonik", cocokUntukDropZone: "servo_solenoid", levelTerkait: [4] },
+  { id: "sen_pir", nama: "Sensor Gerak PIR HC-SR501", badgeAtas: "GERAK", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "pir_motion", cocokUntukDropZone: "ldr_relay", levelTerkait: [3] },
+  { id: "sen_bmp280", nama: "Sensor Tekanan Udara BMP280", badgeAtas: "CUACA", jumlahPinLabel: "4P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "bmp280", cocokUntukDropZone: "struct_ram", levelTerkait: [13] },
+  { id: "sen_mpu6050", nama: "Sensor Gyro & Akselerometer", badgeAtas: "GERAK", jumlahPinLabel: "6P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "mpu6050", cocokUntukDropZone: "struct_ram", levelTerkait: [13] },
+  { id: "sen_rain", nama: "Sensor Tetes Hujan (Raindrop)", badgeAtas: "CUACA", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "rain_hujan", cocokUntukDropZone: "dht22_greenhouse", levelTerkait: [5] },
+  { id: "sen_sound", nama: "Sensor Suara Mikrofon KY-038", badgeAtas: "AUDIO", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "sound_suara", cocokUntukDropZone: "ldr_relay", levelTerkait: [3] },
+  { id: "sen_pz004t", nama: "Sensor Daya Listrik PZEM-004T", badgeAtas: "DAYA", jumlahPinLabel: "4P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "ina_arus", cocokUntukDropZone: "baterai_18650", levelTerkait: [12] },
+  { id: "sen_mlx90614", nama: "Sensor Suhu Inframerah Medis", badgeAtas: "MEDIS", jumlahPinLabel: "4P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "suhu_tubuh", cocokUntukDropZone: "struct_ram", levelTerkait: [13] },
+
+  // --- MODUL RELAY & AKTUATOR (7 ITEM) ---
+  { id: "rel_1ch", nama: "Modul Relay 1-Ch 5V Opto", badgeAtas: "RELAY", jumlahPinLabel: "3P", kategoriFilter: "Modul Relay", tipeVisualThumb: "relay_1ch", cocokUntukDropZone: "ldr_relay", levelTerkait: [3, 6] },
+  { id: "rel_2ch", nama: "Modul Relay 2-Ch (Pompa & Kipas)", badgeAtas: "RELAY", jumlahPinLabel: "4P", kategoriFilter: "Modul Relay", tipeVisualThumb: "relay_2ch", cocokUntukDropZone: "dht22_greenhouse", levelTerkait: [5] },
+  { id: "rel_4ch", nama: "Modul Relay 4-Ch Industri PLC", badgeAtas: "RELAY", jumlahPinLabel: "6P", kategoriFilter: "Modul Relay", tipeVisualThumb: "relay_4ch", cocokUntukDropZone: "relay_4ch_plc", levelTerkait: [8] },
+  { id: "akt_servo180", nama: "Servo SG90 180° (Palang Pintu)", badgeAtas: "AKTUATOR", jumlahPinLabel: "3P", kategoriFilter: "Aktuator & Motor", tipeVisualThumb: "servo_180", cocokUntukDropZone: "servo_solenoid", levelTerkait: [4] },
+  { id: "akt_solenoid", nama: "Solenoid Door Lock 12V", badgeAtas: "AKTUATOR", jumlahPinLabel: "2P", kategoriFilter: "Aktuator & Motor", tipeVisualThumb: "solenoid_lock", cocokUntukDropZone: "servo_solenoid", levelTerkait: [4] },
+  { id: "akt_pompa", nama: "Pompa Air Mini Submersible", badgeAtas: "AKTUATOR", jumlahPinLabel: "2P", kategoriFilter: "Aktuator & Motor", tipeVisualThumb: "pompa_air", cocokUntukDropZone: "dht22_greenhouse", levelTerkait: [5, 6] },
+  { id: "akt_buzzer", nama: "Buzzer Piezo Sirine (2p)", badgeAtas: "AKTUATOR", jumlahPinLabel: "2P", kategoriFilter: "Aktuator & Motor", tipeVisualThumb: "buzzer_piezo", cocokUntukDropZone: "mq2_alarm", levelTerkait: [6] },
 ];
+
+// ============================================================================
+// PENGGAMBAR IKON MINIATUR SVG DI DALAM KARTU GUDANG KOMPONEN (48 ITEM)
+// ============================================================================
+export const MiniaturSvgGudang48: React.FC<{
+  tipe: ItemGudang48Master["tipeVisualThumb"];
+}> = ({ tipe }) => {
+  switch (tipe) {
+    case "keypad_4x4":
+      return (
+        <svg viewBox="0 0 60 50" className="w-14 h-11 mx-auto">
+          <rect x={12} y={4} width={36} height={42} rx={4} fill="#1e293b" stroke="#64748b" strokeWidth={1.5} />
+          {[0, 1, 2, 3].map((r) =>
+            [0, 1, 2, 3].map((c) => (
+              <rect
+                key={`${r}-${c}`}
+                x={16 + c * 7.5}
+                y={8 + r * 8.5}
+                width={5.5}
+                height={6}
+                rx={1}
+                fill={c === 3 ? "#ef4444" : r === 3 && c !== 1 ? "#f59e0b" : "#0284c7"}
+              />
+            ))
+          )}
+        </svg>
+      );
+
+    case "led_hijau":
+    case "led_merah": {
+      const warna = tipe === "led_hijau" ? "#22c55e" : "#ef4444";
+      return (
+        <svg viewBox="0 0 60 50" className="w-14 h-11 mx-auto">
+          <line x1={26} y1={28} x2={26} y2={46} stroke="#94a3b8" strokeWidth={2} />
+          <line x1={34} y1={28} x2={34} y2={43} stroke="#94a3b8" strokeWidth={2} />
+          <path d="M 20 28 L 20 16 A 10 10 0 0 1 40 16 L 40 28 Z" fill={warna} stroke="#ffffff" strokeWidth={1.2} />
+        </svg>
+      );
+    }
+
+    case "resistor_220":
+      return (
+        <svg viewBox="0 0 60 50" className="w-14 h-11 mx-auto">
+          <line x1={6} y1={25} x2={54} y2={25} stroke="#94a3b8" strokeWidth={2.5} />
+          <rect x={16} y={18} width={28} height={14} rx={4} fill="#d97706" stroke="#fde047" strokeWidth={1} />
+          <line x1={22} y1={18} x2={22} y2={32} stroke="#ef4444" strokeWidth={2.5} />
+          <line x1={28} y1={18} x2={28} y2={32} stroke="#ef4444" strokeWidth={2.5} />
+          <line x1={34} y1={18} x2={34} y2={32} stroke="#78350f" strokeWidth={2.5} />
+        </svg>
+      );
+
+    case "potensiometer":
+      return (
+        <svg viewBox="0 0 60 50" className="w-14 h-11 mx-auto">
+          <rect x={14} y={8} width={32} height={26} rx={4} fill="#1e3a8a" stroke="#facc15" strokeWidth={1.2} />
+          <circle cx={30} cy={21} r={8} fill="#0f172a" stroke="#38bdf8" strokeWidth={1.5} />
+          <line x1={30} y1={21} x2={36} y2={16} stroke="#facc15" strokeWidth={2} />
+          <line x1={22} y1={34} x2={22} y2={45} stroke="#facc15" strokeWidth={2} />
+          <line x1={30} y1={34} x2={30} y2={45} stroke="#facc15" strokeWidth={2} />
+          <line x1={38} y1={34} x2={38} y2={45} stroke="#facc15" strokeWidth={2} />
+        </svg>
+      );
+
+    case "npk_tanah":
+    case "soil_moisture":
+      return (
+        <svg viewBox="0 0 60 50" className="w-14 h-11 mx-auto">
+          <rect x={14} y={10} width={32} height={18} rx={3} fill="#78350f" stroke="#facc15" strokeWidth={1.2} />
+          <line x1={21} y1={28} x2={21} y2={44} stroke="#cbd5e1" strokeWidth={2.5} />
+          <line x1={30} y1={28} x2={30} y2={44} stroke="#cbd5e1" strokeWidth={2.5} />
+          <line x1={39} y1={28} x2={39} y2={44} stroke="#cbd5e1" strokeWidth={2.5} />
+          <text x={30} y={22} textAnchor="middle" fill="#fde047" fontSize="7" fontWeight="bold">NPK</text>
+        </svg>
+      );
+
+    case "ph_air":
+    case "tds_air":
+    case "turbidity_air":
+    case "do_oksigen":
+    case "suhu_air":
+      return (
+        <svg viewBox="0 0 60 50" className="w-14 h-11 mx-auto">
+          <rect x={10} y={14} width={18} height={24} rx={3} fill="#1d4ed8" stroke="#60a5fa" strokeWidth={1.2} />
+          <rect x={34} y={12} width={16} height={26} rx={3} fill="#065f46" stroke="#34d399" strokeWidth={1.2} />
+          <path d="M 28 24 L 34 24" stroke="#facc15" strokeWidth={2} />
+          <line x1={42} y1={8} x2={42} y2={36} stroke="#38bdf8" strokeWidth={3} />
+        </svg>
+      );
+
+    case "detak_jantung":
+    case "suhu_tubuh":
+      return (
+        <svg viewBox="0 0 60 50" className="w-14 h-11 mx-auto">
+          <rect x={12} y={12} width={36} height={26} rx={4} fill="#881337" stroke="#fb7185" strokeWidth={1.5} />
+          <polyline points="16,26 24,26 27,17 32,33 35,24 44,24" fill="none" stroke="#ffffff" strokeWidth={1.8} />
+        </svg>
+      );
+
+    case "mq2_gas":
+    case "mq135_co2":
+      return (
+        <svg viewBox="0 0 60 50" className="w-14 h-11 mx-auto">
+          <rect x={12} y={10} width={36} height={30} rx={4} fill="#1e3a8a" stroke="#60a5fa" strokeWidth={1.2} />
+          <circle cx={30} cy={25} r={10} fill="#94a3b8" stroke="#e2e8f0" strokeWidth={1.5} />
+          <circle cx={30} cy={25} r={6} fill="#475569" />
+        </svg>
+      );
+
+    case "esp32":
+    case "esp8266":
+    case "arduino_uno":
+      return (
+        <svg viewBox="0 0 60 50" className="w-14 h-11 mx-auto">
+          <rect x={14} y={6} width={32} height={38} rx={4} fill="#0f172a" stroke="#38bdf8" strokeWidth={1.5} />
+          <rect x={20} y={11} width={20} height={15} rx={2} fill="#cbd5e1" />
+          <circle cx={24} cy={36} r={2} fill="#ef4444" />
+          <circle cx={36} cy={36} r={2} fill="#22c55e" />
+        </svg>
+      );
+
+    default:
+      return (
+        <svg viewBox="0 0 60 50" className="w-14 h-11 mx-auto">
+          <rect x={12} y={10} width={36} height={30} rx={5} fill="#065f46" stroke="#34d399" strokeWidth={1.5} />
+          <circle cx={30} cy={25} r={8} fill="#0284c7" stroke="#facc15" strokeWidth={1.5} />
+        </svg>
+      );
+  }
+};
 
 export interface SpesifikasiHardwareLevel {
   level: number;
@@ -167,7 +311,6 @@ export interface SpesifikasiHardwareLevel {
   daftarClueLatihan: string[];
 }
 
-// Koordinat Pin Fisik ESP32 DevKit V1 (Kiri x=42, Kanan x=178)
 export const PIN_FISIK_ESP32_STANDAR: TitikPinFisik[] = [
   { idPin: "ESP_3V3", labelPin: "3V3", x: 178, y: 56, warnaPin: "#ef4444", posisiKomponen: "esp32" },
   { idPin: "ESP_GND", labelPin: "GND", x: 178, y: 78, warnaPin: "#64748b", posisiKomponen: "esp32" },
@@ -191,7 +334,7 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
   1: {
     level: 1,
     tipeVisualPeriferal: "led_merah",
-    namaPeriferal: "LED Merah 5mm + 220Ω",
+    namaPeriferal: "LED Merah 5mm + Resistor 220Ω",
     pinEsp32Tersedia: PIN_FISIK_ESP32_STANDAR,
     pinPeriferalTersedia: [
       { idPin: "LED_ANODA", labelPin: "Anoda (+)", x: 365, y: 105, warnaPin: "#ef4444", posisiKomponen: "periferal" },
@@ -212,7 +355,7 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
       },
     ],
     daftarClueLatihan: [
-      "Clue 1 (Gudang Komponen): Tarik 'ESP32 DevKit V1' ke kotak kiri, dan tarik 'LED Merah 5mm + 220Ω' ke kotak kanan.",
+      "Clue 1 (Gudang 48 Item): Tarik 'ESP32 DevKit V1' ke kotak kiri, dan tarik 'LED Merah 5mm' (atau Resistor 220Ω) ke kotak kanan.",
       "Clue 2 (Klik 2 Titik Pin): Klik bulatan 'GPIO 2' lalu klik bulatan 'Anoda (+)'. Selanjutnya klik bulatan 'GND' lalu klik bulatan 'Katoda (-)'.",
       "Clue 3 (Kode C++): Ketik pinMode(2, OUTPUT); di setup(), dan digitalWrite(2, HIGH); delay(1000); digitalWrite(2, LOW); delay(1000); di loop().",
     ],
@@ -220,7 +363,7 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
   2: {
     level: 2,
     tipeVisualPeriferal: "push_button",
-    namaPeriferal: "Push Button Switch",
+    namaPeriferal: "Push Button Tactile Switch",
     pinEsp32Tersedia: PIN_FISIK_ESP32_STANDAR,
     pinPeriferalTersedia: [
       { idPin: "BTN_SIG", labelPin: "Pin Sakelar (SIG)", x: 365, y: 100, warnaPin: "#38bdf8", posisiKomponen: "periferal" },
@@ -241,7 +384,7 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
       },
     ],
     daftarClueLatihan: [
-      "Clue 1 (Komponen): Tarik 'ESP32 DevKit V1' dan 'Push Button Switch' dari Gudang Komponen ke kanvas.",
+      "Clue 1 (Komponen): Pilih tab 'Pasif & Input' di Gudang 48 Komponen, lalu tarik 'Push Button Tactile Switch' ke kanvas.",
       "Clue 2 (Kabel): Klik 'GPIO 4' -> klik 'Pin Sakelar (SIG)', lalu klik 'GND' -> klik 'Pin GND Tombol'.",
       "Clue 3 (Kode): Gunakan int tombol = digitalRead(4); dan if (tombol == LOW) digitalWrite(2, HIGH);",
     ],
@@ -249,7 +392,7 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
   3: {
     level: 3,
     tipeVisualPeriferal: "ldr_relay",
-    namaPeriferal: "Sensor LDR + Relay 5V",
+    namaPeriferal: "Sensor Cahaya LDR + Modul Relay 5V",
     pinEsp32Tersedia: PIN_FISIK_ESP32_STANDAR,
     pinPeriferalTersedia: [
       { idPin: "LDR_AO", labelPin: "LDR Pin AO", x: 355, y: 82, warnaPin: "#22c55e", posisiKomponen: "periferal" },
@@ -270,7 +413,7 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
       },
     ],
     daftarClueLatihan: [
-      "Clue 1 (Komponen): Tarik 'Sensor LDR + Relay 5V' dari Gudang Komponen ke kotak kanan.",
+      "Clue 1 (Komponen): Tarik 'Sensor Cahaya LDR' atau 'Modul Relay 1-Ch' dari Gudang 48 Komponen ke kotak kanan.",
       "Clue 2 (Kabel): Klik 'GPIO 34' -> klik 'LDR Pin AO', lalu klik 'GPIO 26' -> klik 'Relay Pin IN'.",
       "Clue 3 (Kode): Baca cahaya dengan int adc = analogRead(34); lalu if (adc < 1000) digitalWrite(26, HIGH);",
     ],
@@ -278,7 +421,7 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
   4: {
     level: 4,
     tipeVisualPeriferal: "servo_solenoid",
-    namaPeriferal: "Servo SG90 + Solenoid",
+    namaPeriferal: "Servo SG90 180° + Solenoid Lock 12V",
     pinEsp32Tersedia: PIN_FISIK_ESP32_STANDAR,
     pinPeriferalTersedia: [
       { idPin: "SERVO_PWM", labelPin: "Servo PWM", x: 355, y: 82, warnaPin: "#a855f7", posisiKomponen: "periferal" },
@@ -299,7 +442,7 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
       },
     ],
     daftarClueLatihan: [
-      "Clue 1 (Komponen): Tarik 'Servo SG90 + Solenoid' dari Gudang Komponen ke kanvas.",
+      "Clue 1 (Komponen): Tarik 'Servo SG90 180°' atau 'Solenoid Door Lock 12V' dari Gudang 48 Komponen.",
       "Clue 2 (Kabel): Klik 'GPIO 13' -> klik 'Servo PWM', lalu klik 'GPIO 27' -> klik 'Solenoid IN'.",
       "Clue 3 (Kode): Ketik pintu.attach(13); di setup(), dan digitalWrite(27, HIGH); pintu.write(90); di loop().",
     ],
@@ -307,7 +450,7 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
   5: {
     level: 5,
     tipeVisualPeriferal: "dht22_greenhouse",
-    namaPeriferal: "DHT22 + Kipas & Pompa",
+    namaPeriferal: "Sensor Suhu DHT22 + Kipas & Pompa",
     pinEsp32Tersedia: PIN_FISIK_ESP32_STANDAR,
     pinPeriferalTersedia: [
       { idPin: "DHT_DATA", labelPin: "DHT22 Data", x: 355, y: 70, warnaPin: "#10b981", posisiKomponen: "periferal" },
@@ -335,7 +478,7 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
       },
     ],
     daftarClueLatihan: [
-      "Clue 1 (Komponen): Tarik 'DHT22 + Kipas & Pompa' dari Gudang Komponen.",
+      "Clue 1 (Komponen): Tarik 'Sensor Suhu & Lembab DHT22' atau 'Pompa Air Mini' dari Gudang 48 Komponen.",
       "Clue 2 (Kabel): Hubungkan 3 pasang titik: GPIO 15 -> DHT22 Data, GPIO 33 -> Kipas IN, dan GPIO 25 -> Pompa IN.",
       "Clue 3 (Kode): if (suhu > 32.0) digitalWrite(33, HIGH);",
     ],
@@ -343,7 +486,7 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
   6: {
     level: 6,
     tipeVisualPeriferal: "mq2_alarm",
-    namaPeriferal: "Sensor Gas MQ-2 + Buzzer",
+    namaPeriferal: "Sensor Gas MQ-2 + Buzzer Piezo",
     pinEsp32Tersedia: PIN_FISIK_ESP32_STANDAR,
     pinPeriferalTersedia: [
       { idPin: "MQ2_AO", labelPin: "MQ-2 AO", x: 355, y: 85, warnaPin: "#f43f5e", posisiKomponen: "periferal" },
@@ -364,7 +507,7 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
       },
     ],
     daftarClueLatihan: [
-      "Clue 1 (Komponen): Tarik 'Sensor Gas MQ-2 + Buzzer' dari Gudang Komponen.",
+      "Clue 1 (Komponen): Tarik 'Sensor Gas & Asap MQ-2' dari Gudang 48 Komponen.",
       "Clue 2 (Kabel): Klik 'GPIO 32' -> klik 'MQ-2 AO', lalu klik 'GPIO 19' -> klik 'Buzzer (+)'.",
       "Clue 3 (Kode): Baca analogRead(32) dan jika ppm >= 500 nyalakan pin 19 dan 25.",
     ],
@@ -372,7 +515,7 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
   7: {
     level: 7,
     tipeVisualPeriferal: "dual_esp32_uart",
-    namaPeriferal: "ESP32 #2 (UART Receiver)",
+    namaPeriferal: "ESP32 #2 (UART / Mesh Node)",
     pinEsp32Tersedia: PIN_FISIK_ESP32_STANDAR,
     pinPeriferalTersedia: [
       { idPin: "MCU2_RX16", labelPin: "ESP32#2 RX2(16)", x: 355, y: 95, warnaPin: "#f97316", posisiKomponen: "periferal" },
@@ -393,7 +536,7 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
       },
     ],
     daftarClueLatihan: [
-      "Clue 1 (Komponen): Tarik 'ESP32 #2 (UART Receiver)' ke kotak kanan.",
+      "Clue 1 (Komponen): Tarik 'ESP32 #2 (UART / Mesh Node)' ke kotak kanan.",
       "Clue 2 (Kabel Silang): Klik 'TX2 (17)' -> klik 'ESP32#2 RX2(16)', lalu klik 'RX2 (16)' -> klik 'ESP32#2 TX2(17)'.",
       "Clue 3 (Kode): Serial2.begin(115200, SERIAL_8N1, 16, 17); dan Serial2.println(\"DATA_OK\");",
     ],
@@ -401,7 +544,7 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
   8: {
     level: 8,
     tipeVisualPeriferal: "relay_4ch_plc",
-    namaPeriferal: "Modul Relay 4-Ch PLC",
+    namaPeriferal: "Modul Relay 4-Ch Industri PLC",
     pinEsp32Tersedia: PIN_FISIK_ESP32_STANDAR,
     pinPeriferalTersedia: [
       { idPin: "REL4_IN1", labelPin: "Relay IN1", x: 355, y: 90, warnaPin: "#38bdf8", posisiKomponen: "periferal" },
@@ -422,14 +565,14 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
       },
     ],
     daftarClueLatihan: [
-      "Clue 1 (Komponen): Tarik 'Modul Relay 4-Ch PLC' ke kotak kanan.",
+      "Clue 1 (Komponen): Tarik 'Modul Relay 4-Ch Industri PLC' ke kotak kanan.",
       "Clue 2 (Kabel): Klik 'GPIO 4' -> klik 'Relay IN1', lalu klik 'GND' -> klik 'Relay GND'.",
     ],
   },
   9: {
     level: 9,
     tipeVisualPeriferal: "triple_mcu",
-    namaPeriferal: "Klaster 3 MCU Slave",
+    namaPeriferal: "Arduino Uno R3 (ATmega328P)",
     pinEsp32Tersedia: PIN_FISIK_ESP32_STANDAR,
     pinPeriferalTersedia: [
       { idPin: "BUS_SYNC", labelPin: "Bus Klaster", x: 355, y: 120, warnaPin: "#10b981", posisiKomponen: "periferal" },
@@ -443,14 +586,14 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
       },
     ],
     daftarClueLatihan: [
-      "Clue 1 (Komponen): Tarik 'Klaster 3 MCU Slave' ke kotak kanan.",
+      "Clue 1 (Komponen): Tarik 'Arduino Uno R3' ke kotak kanan.",
       "Clue 2 (Kabel): Klik 'GPIO 15' -> klik 'Bus Klaster'.",
     ],
   },
   10: {
     level: 10,
     tipeVisualPeriferal: "npk_rs485",
-    namaPeriferal: "Probe Pupuk NPK RS485",
+    namaPeriferal: "Sensor Pupuk NPK RS485",
     pinEsp32Tersedia: PIN_FISIK_ESP32_STANDAR,
     pinPeriferalTersedia: [
       { idPin: "NPK_RO", labelPin: "RS485 RO", x: 355, y: 95, warnaPin: "#06b6d4", posisiKomponen: "periferal" },
@@ -471,14 +614,14 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
       },
     ],
     daftarClueLatihan: [
-      "Clue 1 (Komponen): Tarik 'Probe Pupuk NPK RS485' ke kotak kanan.",
+      "Clue 1 (Komponen): Ketik 'NPK' di kotak pencarian Gudang 48 Komponen, lalu tarik 'Sensor Pupuk NPK RS485' ke kotak kanan.",
       "Clue 2 (Kabel): Klik 'RX2 (16)' -> klik 'RS485 RO', lalu klik 'TX2 (17)' -> klik 'RS485 DI'.",
     ],
   },
   11: {
     level: 11,
     tipeVisualPeriferal: "gps_neo6m",
-    namaPeriferal: "GPS Satelit NEO-6M",
+    namaPeriferal: "Modul GPS Satelit NEO-6M",
     pinEsp32Tersedia: PIN_FISIK_ESP32_STANDAR,
     pinPeriferalTersedia: [
       { idPin: "GPS_TX", labelPin: "GPS TX", x: 355, y: 95, warnaPin: "#38bdf8", posisiKomponen: "periferal" },
@@ -499,14 +642,14 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
       },
     ],
     daftarClueLatihan: [
-      "Clue 1 (Komponen): Tarik 'GPS Satelit NEO-6M' ke kotak kanan.",
+      "Clue 1 (Komponen): Tarik 'Modul GPS Satelit NEO-6M' ke kotak kanan.",
       "Clue 2 (Kabel): Klik 'GPIO 4' -> klik 'GPS TX', lalu klik '3V3' -> klik 'GPS VCC'.",
     ],
   },
   12: {
     level: 12,
     tipeVisualPeriferal: "baterai_18650",
-    namaPeriferal: "Baterai 18650 + INA219",
+    namaPeriferal: "Baterai Li-Ion 18650 + INA219",
     pinEsp32Tersedia: PIN_FISIK_ESP32_STANDAR,
     pinPeriferalTersedia: [
       { idPin: "BATT_ADC", labelPin: "Volt Out", x: 355, y: 95, warnaPin: "#f59e0b", posisiKomponen: "periferal" },
@@ -527,14 +670,14 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
       },
     ],
     daftarClueLatihan: [
-      "Clue 1 (Komponen): Tarik 'Baterai 18650 + INA219' ke kotak kanan.",
+      "Clue 1 (Komponen): Pilih kategori 'Baterai & Daya', lalu tarik 'Baterai Li-Ion 18650' atau 'Sensor INA219' ke kotak kanan.",
       "Clue 2 (Kabel): Klik 'GPIO 35' -> klik 'Volt Out', lalu klik 'GND' -> klik 'Baterai (-)'.",
     ],
   },
   13: {
     level: 13,
     tipeVisualPeriferal: "struct_ram",
-    namaPeriferal: "Bus Memori Struct C++",
+    namaPeriferal: "Sensor Multi-Parameter (Struct C++)",
     pinEsp32Tersedia: PIN_FISIK_ESP32_STANDAR,
     pinPeriferalTersedia: [
       { idPin: "RAM_BUS", labelPin: "Bus Struct", x: 355, y: 120, warnaPin: "#a855f7", posisiKomponen: "periferal" },
@@ -548,14 +691,14 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
       },
     ],
     daftarClueLatihan: [
-      "Clue 1 (Komponen): Tarik 'Bus Memori Struct C++' ke kotak kanan.",
+      "Clue 1 (Komponen): Tarik sensor pendukung dari Gudang 48 Komponen ke kotak kanan.",
       "Clue 2 (Kabel): Klik 'GPIO 13' -> klik 'Bus Struct'.",
     ],
   },
   14: {
     level: 14,
     tipeVisualPeriferal: "esp_now_radio",
-    namaPeriferal: "Antena 2.4GHz ESP-NOW",
+    namaPeriferal: "NodeMCU ESP8266 / ESP-NOW Peer",
     pinEsp32Tersedia: PIN_FISIK_ESP32_STANDAR,
     pinPeriferalTersedia: [
       { idPin: "ANT_RF", labelPin: "Antena RF", x: 355, y: 120, warnaPin: "#38bdf8", posisiKomponen: "periferal" },
@@ -569,14 +712,14 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
       },
     ],
     daftarClueLatihan: [
-      "Clue 1 (Komponen): Tarik 'Antena 2.4GHz ESP-NOW' ke kotak kanan.",
+      "Clue 1 (Komponen): Tarik 'NodeMCU ESP8266 Wi-Fi' atau 'ESP32 #2' ke kotak kanan.",
       "Clue 2 (Kabel): Klik 'GPIO 2' -> klik 'Antena RF'.",
     ],
   },
   15: {
     level: 15,
     tipeVisualPeriferal: "mesh_10_node",
-    namaPeriferal: "Gateway 10-Node Mesh",
+    namaPeriferal: "ESP32 Gateway Node #10",
     pinEsp32Tersedia: PIN_FISIK_ESP32_STANDAR,
     pinPeriferalTersedia: [
       { idPin: "MESH_HOP", labelPin: "Next-Hop (N+1)", x: 355, y: 95, warnaPin: "#10b981", posisiKomponen: "periferal" },
@@ -597,15 +740,12 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
       },
     ],
     daftarClueLatihan: [
-      "Clue 1 (Komponen): Tarik 'Gateway 10-Node Mesh' ke kotak kanan.",
+      "Clue 1 (Komponen): Tarik 'ESP32 Gateway Node #10' ke kotak kanan.",
       "Clue 2 (Kabel): Klik 'TX2 (17)' -> klik 'Next-Hop (N+1)', lalu klik 'GPIO 2' -> klik 'Cloud Uplink'.",
     ],
   },
 };
 
-// ============================================================================
-// KOMPONEN PENGGAMBAR PERANGKAT KERAS ASLI WOKWI DI DALAM SVG
-// ============================================================================
 export const GambarPeriferalWokwiAsli: React.FC<{
   tipe: TipePeriferalWokwi;
   simulasiHidup: boolean;

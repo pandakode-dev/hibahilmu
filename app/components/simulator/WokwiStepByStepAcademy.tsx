@@ -17,7 +17,9 @@ import {
   Target,
   Cable,
   Trash2,
-  PackageOpen,
+  Search,
+  Filter,
+  Move,
   MousePointerClick,
 } from "lucide-react";
 import {
@@ -26,10 +28,12 @@ import {
 } from "./wokwiCurriculumData";
 import {
   SPESIFIKASI_HARDWARE_15_LEVEL,
-  DAFTAR_GUDANG_KOMPONEN_WOKWI,
+  GUDANG_KOMPONEN_48_MASTER,
+  MiniaturSvgGudang48,
   GambarPeriferalWokwiAsli,
   TitikPinFisik,
-  ItemGudangKomponen,
+  ItemGudang48Master,
+  KategoriFilterGudang48,
 } from "./wokwiHardwareVisuals";
 
 export interface KabelTersambung {
@@ -37,6 +41,16 @@ export interface KabelTersambung {
   kePinPeriferal: string;
   warna: string;
 }
+
+const DAFTAR_TAB_FILTER_GUDANG: KategoriFilterGudang48[] = [
+  "Semua",
+  "Microcontroller",
+  "Baterai & Daya",
+  "Sensor (25)",
+  "Modul Relay",
+  "Aktuator & Motor",
+  "Pasif & Input",
+];
 
 export const WokwiStepByStepAcademy: React.FC<{
   onTambahXp?: (xp: number) => void;
@@ -53,17 +67,22 @@ export const WokwiStepByStepAcademy: React.FC<{
     "tutorial_berkedip" | "latihan_mandiri"
   >("tutorial_berkedip");
 
+  // State Filter & Pencarian Gudang Komponen (48 Item)
+  const [filterKategoriGudang, setFilterKategoriGudang] =
+    useState<KategoriFilterGudang48>("Semua");
+  const [kataCariGudang, setKataCariGudang] = useState<string>("");
+
   const materiAktif: LessonStepIoT = KURIKULUM_15_LEVEL_IOT[indeksLevel];
   const spekHardware =
     SPESIFIKASI_HARDWARE_15_LEVEL[materiAktif.level] ||
     SPESIFIKASI_HARDWARE_15_LEVEL[1];
 
-  // State Drag & Drop dari Gudang Komponen ke Kotak Bayangan Kanvas
+  // State Drag & Drop dari Gudang Komponen (48 Item) ke Kotak Bayangan Kanvas
   const [esp32SudahDitaruh, setEsp32SudahDitaruh] = useState<boolean>(false);
   const [periferalSudahDitaruh, setPeriferalSudahDitaruh] =
     useState<boolean>(false);
   const [itemSedangDiDrag, setItemSedangDiDrag] =
-    useState<ItemGudangKomponen | null>(null);
+    useState<ItemGudang48Master | null>(null);
   const [pesanGudang, setPesanGudang] = useState<string>("");
 
   // State Klik 2 Titik Kaki Pin & Kabel Hidup Mengikuti Kursor Mouse
@@ -94,7 +113,7 @@ export const WokwiStepByStepAcademy: React.FC<{
   const [daftarErrorDetail, setDaftarErrorDetail] = useState<string[]>([]);
   const [pesanFeedback, setPesanFeedback] = useState<string>("");
   const [outputSerialSimulasi, setOutputSerialSimulasi] = useState<string>(
-    "// 1. Tarik (Drag) ESP32 & Komponen dari Gudang Komponen ke kotak bayangan di kanvas.\n// 2. Klik kaki pin ke-1 lalu klik kaki pin ke-2 untuk menyambung kabel.\n// 3. Ketik kode C++ dan jalankan!"
+    "// 1. Tarik (Drag) ESP32 & Komponen dari GUDANG KOMPONEN (48 ITEM) ke kotak bayangan di kanvas.\n// 2. Klik kaki pin ke-1 lalu klik kaki pin ke-2 untuk menyambung kabel.\n// 3. Ketik kode C++ dan jalankan!"
   );
 
   const [detakSimulasi, setDetakSimulasi] = useState<number>(0);
@@ -129,11 +148,10 @@ export const WokwiStepByStepAcademy: React.FC<{
     setDaftarErrorDetail([]);
     setPesanFeedback("");
     setOutputSerialSimulasi(
-      `// Level ${target.level}: ${target.judulMateri}\n// Tarik komponen dari Gudang Komponen ke kotak bayangan di kanvas!`
+      `// Level ${target.level}: ${target.judulMateri}\n// Cari & tarik komponen dari GUDANG KOMPONEN (48 ITEM) ke kotak bayangan di kanvas!`
     );
   };
 
-  // Cari sambungan kabel wajib mana yang saat ini BELUM dipasang oleh siswa
   const sambunganWajibBelumTerpasang = spekHardware.sambunganWajib.filter(
     (wajib) =>
       !kabelTerpasangList.some(
@@ -159,48 +177,67 @@ export const WokwiStepByStepAcademy: React.FC<{
   const tampilkanBayanganPanduan =
     modeBelajar === "tutorial_berkedip" || intipBayanganSementara;
 
+  // Filter daftar 48 komponen sesuai tab kategori dan pencarian teks
+  const daftarGudangTerfilter = GUDANG_KOMPONEN_48_MASTER.filter((item) => {
+    const cocokKategori =
+      filterKategoriGudang === "Semua" ||
+      item.kategoriFilter === filterKategoriGudang;
+    const kw = kataCariGudang.trim().toLowerCase();
+    const cocokKata =
+      !kw ||
+      item.nama.toLowerCase().includes(kw) ||
+      item.badgeAtas.toLowerCase().includes(kw);
+    return cocokKategori && cocokKata;
+  });
+
   // ==========================================================================
-  // 1. HANDLER DRAG & DROP DARI GUDANG KOMPONEN KE ZONA BAYANGAN KANVAS
+  // 1. HANDLER DRAG & DROP DARI GUDANG KOMPONEN (48 ITEM) KE ZONA BAYANGAN
   // ==========================================================================
-  const handleDropKeZonaBayangan = (zonaTarget: "zona_esp32" | "zona_periferal") => {
+  const handleDropKeZonaBayangan = (
+    zonaTarget: "zona_esp32" | "zona_periferal"
+  ) => {
     if (!itemSedangDiDrag) return;
 
     if (zonaTarget === "zona_esp32") {
-      if (itemSedangDiDrag.tipeCocok === "esp32_board") {
+      if (itemSedangDiDrag.cocokUntukDropZone === "esp32_board") {
         setEsp32SudahDitaruh(true);
         setPesanGudang(
-          "✅ Mantap! Papan ESP32 DevKit V1 berhasil dipasang ke meja breadboard!"
+          `✅ Mantap! '${itemSedangDiDrag.nama}' berhasil ditarik dari Gudang 48 Item ke meja breadboard!`
         );
       } else {
         setPesanGudang(
-          `❌ Salah Tempat! Kotak kiri khusus untuk 'ESP32 DevKit V1', bukan '${itemSedangDiDrag.namaTampil}'.`
+          `❌ Salah Tempat! Kotak kiri membutuhkan Mikrokontroler Utama 'ESP32 DevKit V1', bukan '${itemSedangDiDrag.nama}'.`
         );
       }
     } else if (zonaTarget === "zona_periferal") {
-      if (itemSedangDiDrag.tipeCocok === spekHardware.tipeVisualPeriferal) {
+      const cocokTipe =
+        itemSedangDiDrag.cocokUntukDropZone ===
+          spekHardware.tipeVisualPeriferal ||
+        itemSedangDiDrag.levelTerkait.includes(materiAktif.level);
+
+      if (cocokTipe && itemSedangDiDrag.cocokUntukDropZone !== "esp32_board") {
         setPeriferalSudahDitaruh(true);
         setPesanGudang(
-          `✅ Tepat Sekali! Komponen '${itemSedangDiDrag.namaTampil}' berhasil dipasang ke kanvas!`
+          `✅ Tepat Sekali! Komponen '${itemSedangDiDrag.nama}' berhasil dipasang ke kanvas!`
         );
       } else {
         setPesanGudang(
-          `❌ Komponen Tidak Sesuai Modul! Level ${materiAktif.level} membutuhkan '${spekHardware.namaPeriferal}', bukan '${itemSedangDiDrag.namaTampil}'.`
+          `❌ Komponen Tidak Sesuai Modul! Level ${materiAktif.level} membutuhkan '${spekHardware.namaPeriferal}', bukan '${itemSedangDiDrag.nama}'.`
         );
       }
     }
     setItemSedangDiDrag(null);
   };
 
-  // Mendukung klik kartu di Gudang Komponen (bagi pengguna HP/layar sentuh) untuk memilih lalu klik kotak bayangan
-  const handleKlikKartuGudang = (item: ItemGudangKomponen) => {
+  const handleKlikKartuGudang = (item: ItemGudang48Master) => {
     setItemSedangDiDrag(item);
-    if (item.tipeCocok === "esp32_board") {
+    if (item.cocokUntukDropZone === "esp32_board") {
       setPesanGudang(
-        `👉 '${item.namaTampil}' dipilih! Sekarang tarik atau KLIK kotak bayangan kiri di dalam kanvas untuk menaruhnya.`
+        `👉 '${item.nama}' dipilih! Sekarang tarik atau KLIK kotak bayangan kuning di sebelah kiri kanvas.`
       );
     } else {
       setPesanGudang(
-        `👉 '${item.namaTampil}' dipilih! Sekarang tarik atau KLIK kotak bayangan kanan di dalam kanvas untuk menaruhnya.`
+        `👉 '${item.nama}' dipilih! Sekarang tarik atau KLIK kotak bayangan biru di sebelah kanan kanvas.`
       );
     }
   };
@@ -227,12 +264,11 @@ export const WokwiStepByStepAcademy: React.FC<{
 
     if (!esp32SudahDitaruh || !periferalSudahDitaruh) {
       setPesanGudang(
-        "⚠️ Tarik dan pasang dulu ESP32 serta Komponen dari Gudang Komponen ke kanvas sebelum menyambung kaki pin!"
+        "⚠️ Tarik dan pasang dulu ESP32 serta Komponen dari Gudang Komponen (48 Item) ke kanvas sebelum menyambung kaki pin!"
       );
       return;
     }
 
-    // KLIK TITIK KE-1: Mulai menarik ujung kabel dari kaki pin ini
     if (!pinAwalDiklik) {
       setPinAwalDiklik(pinDiklik);
       setPosisiKursorSvg({ x: pinDiklik.x, y: pinDiklik.y });
@@ -242,14 +278,12 @@ export const WokwiStepByStepAcademy: React.FC<{
       return;
     }
 
-    // Jika mengklik titik yang sama persis, batalkan pegangan kabel
     if (pinAwalDiklik.idPin === pinDiklik.idPin) {
       setPinAwalDiklik(null);
       setPesanGudang("Tarikan kabel dibatalkan.");
       return;
     }
 
-    // Jika mengklik pin di komponen yang sama (misal ESP32 ke ESP32), pindahkan titik awal ke pin baru tersebut
     if (pinAwalDiklik.posisiKomponen === pinDiklik.posisiKomponen) {
       setPinAwalDiklik(pinDiklik);
       setPosisiKursorSvg({ x: pinDiklik.x, y: pinDiklik.y });
@@ -259,7 +293,6 @@ export const WokwiStepByStepAcademy: React.FC<{
       return;
     }
 
-    // KLIK TITIK KE-2 BERBEDA KOMPONEN: Resmi pasang kabel antara Titik 1 dan Titik 2!
     const idEsp =
       pinAwalDiklik.posisiKomponen === "esp32"
         ? pinAwalDiklik.idPin
@@ -301,12 +334,12 @@ export const WokwiStepByStepAcademy: React.FC<{
 
     if (!esp32SudahDitaruh) {
       errors.push(
-        "[KOMPONEN BELUM DITARUH] Tarik 'ESP32 DevKit V1' dari Gudang Komponen ke kotak bayangan kiri di kanvas!"
+        "[KOMPONEN BELUM DITARUH] Tarik 'ESP32 DevKit V1' dari Gudang Komponen (48 Item) ke kotak bayangan kiri!"
       );
     }
     if (!periferalSudahDitaruh) {
       errors.push(
-        `[KOMPONEN BELUM DITARUH] Tarik '${spekHardware.namaPeriferal}' dari Gudang Komponen ke kotak bayangan kanan di kanvas!`
+        `[KOMPONEN BELUM DITARUH] Tarik '${spekHardware.namaPeriferal}' dari Gudang Komponen (48 Item) ke kotak bayangan kanan!`
       );
     }
 
@@ -346,7 +379,7 @@ export const WokwiStepByStepAcademy: React.FC<{
       setStatusVerifikasi("gagal_rangkaian");
       setDaftarErrorDetail(errors);
       setPesanFeedback(
-        "❌ SIMULASI GAGAL MENYALA: Komponen belum ditaruh atau sambungan kaki pin belum lengkap!"
+        "❌ SIMULASI GAGAL MENYALA: Komponen belum ditaruh dari Gudang 48 Item atau sambungan kaki pin belum tepat!"
       );
       setOutputSerialSimulasi(
         `[HARDWARE & WIRING ERROR — RANGKAIAN TIDAK MENYALA]\n--------------------------------------------------\n${errors
@@ -404,7 +437,7 @@ export const WokwiStepByStepAcademy: React.FC<{
     setStatusVerifikasi("lulus");
     setDaftarErrorDetail([]);
     setPesanFeedback(
-      `🎉 SEMPURNA! Komponen, sambungan 2 titik pin, dan kodingan C++ Level ${materiAktif.level} Anda 100% BENAR (+${materiAktif.xpReward} XP)!`
+      `🎉 SEMPURNA! Perakitan dari Gudang 48 Komponen, sambungan 2 titik pin, dan kodingan C++ Level ${materiAktif.level} Anda 100% BENAR (+${materiAktif.xpReward} XP)!`
     );
     setOutputSerialSimulasi(materiAktif.simulasiOutputJikaBenar);
 
@@ -506,18 +539,30 @@ export const WokwiStepByStepAcademy: React.FC<{
       </div>
 
       {/* =================================================================== */}
-      {/* LACI GUDANG KOMPONEN ELEKTRONIK (DRAG DARI SINI KE KANVAS!)         */}
+      {/* GUDANG KOMPONEN (48 ITEM) TERPADU — SAMA PERSIS DENGAN KANVAS UTAMA */}
       {/* =================================================================== */}
-      <div className="bg-slate-950 p-4 rounded-3xl border-2 border-indigo-500/50 space-y-3 shadow-inner">
-        <div className="flex flex-wrap justify-between items-center gap-2">
+      <div className="bg-[#0b101e] p-5 rounded-3xl border-2 border-slate-800 space-y-4 shadow-2xl">
+        {/* Baris Judul Gudang Komponen (48 Item) + Kotak Pencarian */}
+        <div className="flex flex-wrap justify-between items-center gap-3">
           <div className="flex items-center gap-2">
-            <PackageOpen className="w-5 h-5 text-amber-400" />
-            <span className="text-xs sm:text-sm font-black uppercase text-amber-300">
-              Gudang Komponen Elektronik (Tarik / Drag Komponen yang Diminta Modul ke Dalam Kanvas di Bawah):
+            <Move className="w-4 h-4 text-amber-400" />
+            <span className="text-xs sm:text-sm font-black uppercase tracking-wide text-amber-400">
+              GUDANG KOMPONEN ({GUDANG_KOMPONEN_48_MASTER.length} ITEM):
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative w-64 sm:w-72">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+              <input
+                type="text"
+                placeholder="Cari NPK, Pompa, RFID, Keypad, PIR, LED..."
+                value={kataCariGudang}
+                onChange={(e) => setKataCariGudang(e.target.value)}
+                className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+
             {modeBelajar === "latihan_mandiri" && (
               <button
                 type="button"
@@ -529,10 +574,11 @@ export const WokwiStepByStepAcademy: React.FC<{
                 }}
                 className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs flex items-center gap-1 cursor-pointer"
               >
-                <HelpCircle className="w-3.5 h-3.5" /> 💡 Butuh Clue? (
-                {jumlahClueDibuka}/{spekHardware.daftarClueLatihan.length})
+                <HelpCircle className="w-3.5 h-3.5" /> 💡 Clue ({jumlahClueDibuka}/
+                {spekHardware.daftarClueLatihan.length})
               </button>
             )}
+
             <button
               type="button"
               onClick={() => {
@@ -549,89 +595,98 @@ export const WokwiStepByStepAcademy: React.FC<{
           </div>
         </div>
 
-        {/* Kartu-Kartu Komponen di Dalam Gudang yang Bisa Di-Drag */}
-        <div className="flex gap-2.5 overflow-x-auto pb-2 pt-1">
-          {DAFTAR_GUDANG_KOMPONEN_WOKWI.map((item) => {
-            const adalahKomponenTargetLevelIni =
-              (item.tipeCocok === "esp32_board" && !esp32SudahDitaruh) ||
-              (item.tipeCocok === spekHardware.tipeVisualPeriferal &&
-                !periferalSudahDitaruh);
+        {/* Baris Tab Filter Kategori Gudang 48 Item */}
+        <div className="flex flex-wrap items-center gap-2">
+          <Filter className="w-3.5 h-3.5 text-indigo-400 mr-1" />
+          {DAFTAR_TAB_FILTER_GUDANG.map((kat) => {
+            const aktif = filterKategoriGudang === kat;
+            return (
+              <button
+                key={kat}
+                type="button"
+                onClick={() => setFilterKategoriGudang(kat)}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-black cursor-pointer transition ${
+                  aktif
+                    ? "bg-indigo-600 text-white shadow-md"
+                    : "bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-600"
+                }`}
+              >
+                {kat}
+              </button>
+            );
+          })}
+        </div>
 
-            const sudahTerpasangDiKanvas =
-              (item.tipeCocok === "esp32_board" && esp32SudahDitaruh) ||
-              (item.tipeCocok === spekHardware.tipeVisualPeriferal &&
-                periferalSudahDitaruh);
+        {/* Grid Kartu Gudang Komponen (48 Item) dengan Gambar Miniatur SVG Asli */}
+        <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-8 lg:grid-cols-10 gap-2.5 max-h-52 overflow-y-auto pr-1 pt-1">
+          {daftarGudangTerfilter.map((item) => {
+            const dibutuhkanEsp32 =
+              item.cocokUntukDropZone === "esp32_board" && !esp32SudahDitaruh;
+            const dibutuhkanPeriferal =
+              item.cocokUntukDropZone !== "esp32_board" &&
+              (item.cocokUntukDropZone === spekHardware.tipeVisualPeriferal ||
+                item.levelTerkait.includes(materiAktif.level)) &&
+              !periferalSudahDitaruh;
 
-            const sedangTerpilihDrag =
-              itemSedangDiDrag?.idItem === item.idItem;
+            const harusDisorotBerkedip =
+              tampilkanBayanganPanduan &&
+              (dibutuhkanEsp32 || (esp32SudahDitaruh && dibutuhkanPeriferal));
+
+            const sedangTerpilihDrag = itemSedangDiDrag?.id === item.id;
 
             return (
               <div
-                key={item.idItem}
-                draggable={!sudahTerpasangDiKanvas}
+                key={item.id}
+                draggable
                 onDragStart={() => {
                   setItemSedangDiDrag(item);
                   setPesanGudang(
-                    `📦 Menarik '${item.namaTampil}'... Jatuhkan (Drop) ke kotak bayangan yang sesuai di kanvas bawah!`
+                    `📦 Menarik '${item.nama}' (${item.jumlahPinLabel})... Jatuhkan (Drop) ke kotak bayangan di kanvas bawah!`
                   );
                 }}
-                onClick={() => {
-                  if (!sudahTerpasangDiKanvas) handleKlikKartuGudang(item);
-                }}
-                className={`min-w-[155px] p-3 rounded-2xl border-2 select-none transition flex flex-col justify-between gap-1.5 ${
-                  sudahTerpasangDiKanvas
-                    ? "bg-emerald-950/40 border-emerald-600/40 opacity-50 cursor-default"
-                    : sedangTerpilihDrag
-                    ? "bg-amber-400 text-slate-950 border-white scale-105 cursor-grabbing shadow-xl"
-                    : tampilkanBayanganPanduan && adalahKomponenTargetLevelIni
-                    ? "bg-slate-900 border-amber-400 ring-2 ring-amber-400/50 animate-pulse cursor-grab hover:scale-105"
-                    : "bg-slate-900 border-slate-800 hover:border-slate-600 cursor-grab"
+                onClick={() => handleKlikKartuGudang(item)}
+                className={`p-2.5 rounded-2xl border-2 select-none transition flex flex-col justify-between gap-1.5 cursor-grab active:cursor-grabbing ${
+                  sedangTerpilihDrag
+                    ? "bg-amber-400/20 border-amber-300 scale-105 shadow-xl"
+                    : harusDisorotBerkedip
+                    ? "bg-slate-900 border-amber-400 ring-2 ring-amber-400/60 animate-pulse"
+                    : "bg-[#111827] border-slate-800 hover:border-indigo-500/60"
                 }`}
               >
+                {/* Header Badge Kategori & Jumlah Pin (2P, 3P, 8P, 30P) */}
                 <div className="flex justify-between items-center gap-1">
-                  <span
-                    style={{
-                      backgroundColor: sedangTerpilihDrag
-                        ? "#0f172a"
-                        : item.warnaAksen,
-                    }}
-                    className="px-2 py-0.5 rounded text-[9px] font-black text-slate-950 uppercase"
-                  >
-                    {item.kategori}
+                  <span className="text-[8.5px] font-black uppercase text-sky-400 tracking-tighter">
+                    {item.badgeAtas}
                   </span>
-                  {sudahTerpasangDiKanvas ? (
-                    <span className="text-[10px] font-black text-emerald-400">
-                      ✓ Di Kanvas
-                    </span>
-                  ) : (
-                    <span className="text-[9.5px] font-bold text-amber-300">
-                      ✋ Drag ke Kanvas
-                    </span>
-                  )}
+                  <span className="text-[8.5px] font-black uppercase text-amber-400">
+                    {item.jumlahPinLabel}
+                  </span>
                 </div>
 
-                <div
-                  className={`font-black text-xs leading-snug ${
-                    sedangTerpilihDrag ? "text-slate-950" : "text-white"
-                  }`}
-                >
-                  {item.namaTampil}
+                {/* Gambar Miniatur SVG Asli */}
+                <div className="py-0.5">
+                  <MiniaturSvgGudang48 tipe={item.tipeVisualThumb} />
+                </div>
+
+                {/* Nama Komponen */}
+                <div className="text-[10px] font-bold text-white leading-tight truncate text-center">
+                  {item.nama}
                 </div>
               </div>
             );
           })}
         </div>
 
-        {/* Baris Status Interaksi Gudang & Tarikan Kaki Pin */}
-        <div className="px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-800 flex flex-wrap justify-between items-center gap-2 text-xs">
+        {/* Baris Status Panduan Tarik Komponen & Klik 2 Kaki Pin */}
+        <div className="px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 flex flex-wrap justify-between items-center gap-2 text-xs">
           <div className="flex items-center gap-2 font-bold text-amber-300">
             <MousePointerClick className="w-4 h-4 shrink-0" />
             <span>
               {pesanGudang ||
                 (langkahTutorialSaatIni === "taruh_esp32"
-                  ? "Langkah 1: Tarik (Drag) kartu 'ESP32 DevKit V1' dari Gudang di atas ke kotak bayangan kuning di sebelah kiri kanvas!"
+                  ? "Langkah 1: Tarik (Drag) kartu 'ESP32 DevKit V1 (30P)' yang berkedip di Gudang Komponen atas ke kotak bayangan kiri di kanvas!"
                   : langkahTutorialSaatIni === "taruh_periferal"
-                  ? `Langkah 2: Tarik (Drag) kartu '${spekHardware.namaPeriferal}' dari Gudang di atas ke kotak bayangan biru di sebelah kanan kanvas!`
+                  ? `Langkah 2: Tarik (Drag) kartu '${spekHardware.namaPeriferal}' yang berkedip di Gudang Komponen atas ke kotak bayangan kanan di kanvas!`
                   : pinAwalDiklik
                   ? `🔌 Ujung ke-1 [${pinAwalDiklik.labelPin}] sudah diklik! Sekarang KLIK bulatan kaki pin tujuan di komponen seberangnya!`
                   : sambunganBerkedipTarget
@@ -646,7 +701,7 @@ export const WokwiStepByStepAcademy: React.FC<{
               onClick={() => setPinAwalDiklik(null)}
               className="px-2.5 py-1 rounded-lg bg-rose-600 text-white font-black text-[10px] cursor-pointer"
             >
-              Batalkan Pegangan Kabel (ESC)
+              Batalkan Pegangan Kabel
             </button>
           )}
         </div>
@@ -684,7 +739,6 @@ export const WokwiStepByStepAcademy: React.FC<{
       {/* MEJA KANVAS BREADBOARD WOKWI (DROP ZONE KOMPONEN & KLIK 2 KAKI PIN) */}
       {/* =================================================================== */}
       <div className="bg-[#090d16] rounded-3xl border-2 border-slate-800 p-3 relative overflow-hidden shadow-2xl">
-        {/* Banner Petunjuk Rapi di Dalam Kanvas (Tidak Terpotong) */}
         {esp32SudahDitaruh &&
           periferalSudahDitaruh &&
           sambunganBerkedipTarget &&
@@ -703,7 +757,6 @@ export const WokwiStepByStepAcademy: React.FC<{
           }}
           className="w-full h-64 sm:h-76 select-none"
         >
-          {/* Grid Titik Breadboard */}
           {Array.from({ length: 21 }).map((_, gx) =>
             Array.from({ length: 9 }).map((__, gy) => (
               <circle
@@ -716,9 +769,7 @@ export const WokwiStepByStepAcademy: React.FC<{
             ))
           )}
 
-          {/* =============================================================== */}
-          {/* ZONA DROP 1 (KIRI): KOTAK BAYANGAN ESP32 ATAU BOARD ESP32 ASLI  */}
-          {/* =============================================================== */}
+          {/* ZONA DROP 1 (KIRI): KOTAK BAYANGAN ESP32 ATAU BOARD ESP32 ASLI */}
           {!esp32SudahDitaruh ? (
             <g
               onDragOver={(e) => e.preventDefault()}
@@ -730,7 +781,7 @@ export const WokwiStepByStepAcademy: React.FC<{
                 if (itemSedangDiDrag) handleDropKeZonaBayangan("zona_esp32");
                 else
                   setPesanGudang(
-                    "👆 Tarik (Drag) kartu 'ESP32 DevKit V1' dari Gudang Komponen di atas ke kotak bayangan kuning ini!"
+                    "👆 Tarik (Drag) kartu 'ESP32 DevKit V1 (30P)' dari Gudang Komponen (48 Item) di atas ke kotak bayangan kuning ini!"
                   );
               }}
               className="cursor-pointer"
@@ -780,12 +831,11 @@ export const WokwiStepByStepAcademy: React.FC<{
                 fill="#94a3b8"
                 fontSize="8.5"
               >
-                (Tarik dari Gudang Komponen)
+                (Tarik dari Gudang 48 Item)
               </text>
             </g>
           ) : (
             <g>
-              {/* PCB ESP32 DevKit V1 dengan Ruang Label Pin yang Jelas & Kontras */}
               <rect
                 x={50}
                 y={28}
@@ -796,7 +846,6 @@ export const WokwiStepByStepAcademy: React.FC<{
                 stroke="#64748b"
                 strokeWidth={2}
               />
-              {/* Shield Wi-Fi ESP-WROOM-32 diletakkan di tengah agar tidak menabrak teks pin kiri/kanan */}
               <rect
                 x={74}
                 y={38}
@@ -827,7 +876,6 @@ export const WokwiStepByStepAcademy: React.FC<{
                 Wi-Fi + BLE
               </text>
 
-              {/* Port Micro-USB */}
               <rect x={92} y={214} width={36} height={14} rx={3} fill="#94a3b8" />
               <circle
                 cx={96}
@@ -846,7 +894,6 @@ export const WokwiStepByStepAcademy: React.FC<{
                 }
               />
 
-              {/* Titik Kaki Pin ESP32 (Wajib Diklik sebagai Titik 1 atau Titik 2) */}
               {spekHardware.pinEsp32Tersedia.map((pin) => {
                 const sedangDipegang = pinAwalDiklik?.idPin === pin.idPin;
                 const harusBerkedip =
@@ -877,7 +924,6 @@ export const WokwiStepByStepAcademy: React.FC<{
                         />
                       </circle>
                     )}
-                    {/* Badge Latar Teks Pin agar Sangat Jelas Terbaca */}
                     <rect
                       x={isKanan ? pin.x - 54 : pin.x + 9}
                       y={pin.y - 7}
@@ -917,9 +963,7 @@ export const WokwiStepByStepAcademy: React.FC<{
             </g>
           )}
 
-          {/* =============================================================== */}
-          {/* ZONA DROP 2 (KANAN): KOTAK BAYANGAN ATAU KOMPONEN PERIFERAL     */}
-          {/* =============================================================== */}
+          {/* ZONA DROP 2 (KANAN): KOTAK BAYANGAN ATAU KOMPONEN PERIFERAL */}
           {!periferalSudahDitaruh ? (
             <g
               onDragOver={(e) => e.preventDefault()}
@@ -932,7 +976,7 @@ export const WokwiStepByStepAcademy: React.FC<{
                   handleDropKeZonaBayangan("zona_periferal");
                 else
                   setPesanGudang(
-                    `👆 Tarik (Drag) kartu '${spekHardware.namaPeriferal}' dari Gudang Komponen di atas ke kotak bayangan biru ini!`
+                    `👆 Tarik (Drag) kartu '${spekHardware.namaPeriferal}' dari Gudang Komponen (48 Item) di atas ke kotak bayangan biru ini!`
                   );
               }}
               className="cursor-pointer"
@@ -982,7 +1026,7 @@ export const WokwiStepByStepAcademy: React.FC<{
                 fill="#94a3b8"
                 fontSize="8.5"
               >
-                (Tarik dari Gudang Komponen)
+                (Tarik dari Gudang 48 Item)
               </text>
             </g>
           ) : (
@@ -994,7 +1038,6 @@ export const WokwiStepByStepAcademy: React.FC<{
                 nilaiSensorUji={nilaiSensorUji}
               />
 
-              {/* Titik Kaki Pin pada Komponen Periferal */}
               {spekHardware.pinPeriferalTersedia.map((pin) => {
                 const sedangDipegang = pinAwalDiklik?.idPin === pin.idPin;
                 const harusBerkedip =
@@ -1063,9 +1106,7 @@ export const WokwiStepByStepAcademy: React.FC<{
             </g>
           )}
 
-          {/* =============================================================== */}
-          {/* GARIS BAYANGAN PANDUAN (TIDAK BISA DIKLIK AGAR WAJIB KLIK 2 PIN)*/}
-          {/* =============================================================== */}
+          {/* GARIS BAYANGAN PANDUAN (NON-CLICKABLE AGAR WAJIB KLIK 2 TITIK PIN) */}
           {esp32SudahDitaruh &&
             periferalSudahDitaruh &&
             tampilkanBayanganPanduan &&
@@ -1096,9 +1137,7 @@ export const WokwiStepByStepAcademy: React.FC<{
               </path>
             )}
 
-          {/* =============================================================== */}
-          {/* KABEL HIDUP YANG SEDANG MENGIKUTI KURSOR MOUSE SAAT TITIK 1 DIKLIK */}
-          {/* =============================================================== */}
+          {/* KABEL HIDUP YANG MENGIKUTI KURSOR MOUSE */}
           {pinAwalDiklik && (
             <path
               pointerEvents="none"
@@ -1114,9 +1153,7 @@ export const WokwiStepByStepAcademy: React.FC<{
             />
           )}
 
-          {/* =============================================================== */}
-          {/* KABEL JUMPER YANG SUDAH RESMI TERSAMBUNG ANTARA 2 KAKI PIN      */}
-          {/* =============================================================== */}
+          {/* KABEL JUMPER YANG SUDAH TERSAMBUNG */}
           {kabelTerpasangList.map((k, idx) => {
             const p1 = spekHardware.pinEsp32Tersedia.find(
               (p) => p.idPin === k.dariPinEsp32
@@ -1156,7 +1193,6 @@ export const WokwiStepByStepAcademy: React.FC<{
           })}
         </svg>
 
-        {/* Daftar Kabel Terpasang di Bawah Kanvas */}
         <div className="mt-2 bg-slate-900 p-3 rounded-2xl border border-slate-800 flex flex-wrap justify-between items-center gap-2 text-xs">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-black text-sky-400 flex items-center gap-1">
@@ -1214,9 +1250,7 @@ export const WokwiStepByStepAcademy: React.FC<{
         </div>
       </div>
 
-      {/* =================================================================== */}
-      {/* BAGIAN BAWAH: INSTRUKSI MODUL (KIRI) & EDITOR KODE C++ (KANAN)      */}
-      {/* =================================================================== */}
+      {/* BAGIAN BAWAH: INSTRUKSI MODUL (KIRI) & EDITOR KODE C++ (KANAN) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <div className="lg:col-span-6 space-y-4">
           <div className="p-5 rounded-2xl bg-slate-950 border border-slate-800 space-y-3 text-xs">
@@ -1236,7 +1270,7 @@ export const WokwiStepByStepAcademy: React.FC<{
 
             <div className="space-y-1.5">
               <div className="font-black uppercase text-sky-400">
-                1. Komponen &amp; Kaki Pin yang Harus Dihubungkan:
+                1. Kaki Pin yang Harus Diklik &amp; Dihubungkan:
               </div>
               {spekHardware.sambunganWajib.map((w, i) => (
                 <div
@@ -1295,7 +1329,7 @@ export const WokwiStepByStepAcademy: React.FC<{
                   onClick={() => {
                     setKodeKetikanUser(materiAktif.kodeTargetBenar);
                     setPesanGudang(
-                      "Contoh kode C++ sudah diisi. Pastikan Anda sudah menarik komponen dari Gudang dan mengklik ke-2 kaki pin di kanvas!"
+                      "Contoh kode C++ sudah diisi. Pastikan Anda sudah menarik komponen dari Gudang 48 Item dan mengklik ke-2 kaki pin di kanvas!"
                     );
                   }}
                   className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-[11px] flex items-center gap-1 cursor-pointer"
