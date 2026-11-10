@@ -41,8 +41,8 @@ export type KategoriFilterGudang48 =
 export interface ItemGudang48Master {
   id: string;
   nama: string;
-  badgeAtas: string; // Contoh: "MCU", "PASIF", "TANAH", "AIR", "GAS", "MEDIS", "DAYA", "AKTUATOR"
-  jumlahPinLabel: string; // Contoh: "30P", "2P", "3P", "4P", "8P"
+  badgeAtas: string;
+  jumlahPinLabel: string;
   kategoriFilter: KategoriFilterGudang48;
   tipeVisualThumb:
     | "esp32"
@@ -99,81 +99,153 @@ export interface ItemGudang48Master {
     | "resistor_220"
     | "potensiometer"
     | "push_button";
-  // Pemetaan ke target drop di Akademi 15 Level:
   cocokUntukDropZone: "esp32_board" | TipePeriferalWokwi | "universal_part";
   levelTerkait: number[];
 }
 
 // ============================================================================
-// SINGLE SOURCE OF TRUTH: GUDANG KOMPONEN (48 ITEM) LENGKAP DENGAN IKON SVG
+// KATALOG 48 KOMPONEN ASLI (URUTAN & VISUAL IDENTIK DENGAN STUDIO WOKWI UTAMA)
 // ============================================================================
 export const GUDANG_KOMPONEN_48_MASTER: ItemGudang48Master[] = [
-  // --- MICROCONTROLLER (5 ITEM) ---
+  // 1-5: MICROCONTROLLER
   { id: "mcu_esp32", nama: "ESP32 DevKit V1 (Wi-Fi/BLE)", badgeAtas: "MCU", jumlahPinLabel: "30P", kategoriFilter: "Microcontroller", tipeVisualThumb: "esp32", cocokUntukDropZone: "esp32_board", levelTerkait: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15] },
   { id: "mcu_esp32_node2", nama: "ESP32 #2 (UART / Mesh Node)", badgeAtas: "MCU", jumlahPinLabel: "30P", kategoriFilter: "Microcontroller", tipeVisualThumb: "esp32", cocokUntukDropZone: "dual_esp32_uart", levelTerkait: [7, 14, 15] },
   { id: "mcu_uno", nama: "Arduino Uno R3 (ATmega328P)", badgeAtas: "MCU", jumlahPinLabel: "28P", kategoriFilter: "Microcontroller", tipeVisualThumb: "arduino_uno", cocokUntukDropZone: "triple_mcu", levelTerkait: [8, 9] },
   { id: "mcu_nodemcu", nama: "NodeMCU ESP8266 Wi-Fi", badgeAtas: "MCU", jumlahPinLabel: "22P", kategoriFilter: "Microcontroller", tipeVisualThumb: "esp8266", cocokUntukDropZone: "esp_now_radio", levelTerkait: [14] },
-  { id: "mcu_gateway10", nama: "ESP32 Gateway Node #10", badgeAtas: "MCU", jumlahPinLabel: "30P", kategoriFilter: "Microcontroller", tipeVisualThumb: "esp32", cocokUntukDropZone: "mesh_10_node", levelTerkait: [15] },
+  { id: "mcu_gateway10", nama: "ESP32 Gateway Node #10", badgeAtas: "MCU", jumlahPinLabel: "30P", kategoriFilter: "Microcontroller", tipeVisualThumb: "stm32", cocokUntukDropZone: "mesh_10_node", levelTerkait: [15] },
 
-  // --- BATERAI & DAYA (5 ITEM) ---
+  // 6-10: BATERAI & DAYA
   { id: "pwr_batt18650", nama: "Baterai Li-Ion 18650 (3.7V-4.2V)", badgeAtas: "DAYA", jumlahPinLabel: "2P", kategoriFilter: "Baterai & Daya", tipeVisualThumb: "baterai_18650", cocokUntukDropZone: "baterai_18650", levelTerkait: [12, 15] },
   { id: "pwr_ina219", nama: "Sensor Tegangan & Arus INA219", badgeAtas: "DAYA", jumlahPinLabel: "4P", kategoriFilter: "Baterai & Daya", tipeVisualThumb: "ina219", cocokUntukDropZone: "baterai_18650", levelTerkait: [12] },
   { id: "pwr_solar", nama: "Panel Surya Mini 6V 2W", badgeAtas: "DAYA", jumlahPinLabel: "2P", kategoriFilter: "Baterai & Daya", tipeVisualThumb: "solar_panel", cocokUntukDropZone: "baterai_18650", levelTerkait: [12] },
   { id: "pwr_psu12v", nama: "Adaptor Power Supply 12V DC", badgeAtas: "DAYA", jumlahPinLabel: "2P", kategoriFilter: "Baterai & Daya", tipeVisualThumb: "power_supply", cocokUntukDropZone: "universal_part", levelTerkait: [4, 8] },
   { id: "pwr_buck", nama: "Step-Down Buck LM2596 (5V)", badgeAtas: "DAYA", jumlahPinLabel: "4P", kategoriFilter: "Baterai & Daya", tipeVisualThumb: "step_down", cocokUntukDropZone: "universal_part", levelTerkait: [12] },
 
-  // --- PASIF & INPUT (6 ITEM - SESUAI GAMBAR BARIS TENGAH) ---
+  // 11-20: SENSOR & AKTUATOR POPULER
+  { id: "sen_mq2", nama: "Sensor Gas MQ-2 (LPG/Asap)", badgeAtas: "GAS", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "mq2_gas", cocokUntukDropZone: "mq2_alarm", levelTerkait: [6] },
+  { id: "sen_rfid", nama: "RFID Card Reader RC522", badgeAtas: "AKSES", jumlahPinLabel: "7P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "rfid_rc522", cocokUntukDropZone: "servo_solenoid", levelTerkait: [4] },
+  { id: "akt_solenoid", nama: "Solenoid Lock 12V DC", badgeAtas: "AKTUATOR", jumlahPinLabel: "2P", kategoriFilter: "Aktuator & Motor", tipeVisualThumb: "solenoid_lock", cocokUntukDropZone: "servo_solenoid", levelTerkait: [4] },
+  { id: "akt_pompa", nama: "Pompa Air Mini DC", badgeAtas: "AKTUATOR", jumlahPinLabel: "2P", kategoriFilter: "Aktuator & Motor", tipeVisualThumb: "pompa_air", cocokUntukDropZone: "dht22_greenhouse", levelTerkait: [5, 6] },
+  { id: "akt_servo180", nama: "Servo SG90 180°", badgeAtas: "AKTUATOR", jumlahPinLabel: "3P", kategoriFilter: "Aktuator & Motor", tipeVisualThumb: "servo_180", cocokUntukDropZone: "servo_solenoid", levelTerkait: [4] },
+  { id: "akt_servo360", nama: "Servo MG996R 360°", badgeAtas: "AKTUATOR", jumlahPinLabel: "3P", kategoriFilter: "Aktuator & Motor", tipeVisualThumb: "servo_360", cocokUntukDropZone: "relay_4ch_plc", levelTerkait: [8] },
+  { id: "akt_kipas", nama: "Kipas DC (PWM) Exhaust", badgeAtas: "AKTUATOR", jumlahPinLabel: "2P", kategoriFilter: "Aktuator & Motor", tipeVisualThumb: "kipas_dc", cocokUntukDropZone: "dht22_greenhouse", levelTerkait: [5] },
+  { id: "dsp_oled", nama: "Layar OLED I2C 0.96\"", badgeAtas: "LAYAR", jumlahPinLabel: "4P", kategoriFilter: "Aktuator & Motor", tipeVisualThumb: "oled_i2c", cocokUntukDropZone: "dual_esp32_uart", levelTerkait: [7] },
+  { id: "dsp_lcd", nama: "LCD 16x2 I2C (4p)", badgeAtas: "LAYAR", jumlahPinLabel: "4P", kategoriFilter: "Aktuator & Motor", tipeVisualThumb: "lcd_16x2", cocokUntukDropZone: "dual_esp32_uart", levelTerkait: [7] },
+  { id: "akt_buzzer", nama: "Buzzer Piezo (2p)", badgeAtas: "AUDIO", jumlahPinLabel: "2P", kategoriFilter: "Aktuator & Motor", tipeVisualThumb: "buzzer_piezo", cocokUntukDropZone: "mq2_alarm", levelTerkait: [6] },
+
+  // 21-30: PASIF, TANAH & AIR (SESUAI GAMBAR SCREENSHOT)
   { id: "pas_keypad", nama: "Keypad Matriks 4x4", badgeAtas: "PASIF", jumlahPinLabel: "8P", kategoriFilter: "Pasif & Input", tipeVisualThumb: "keypad_4x4", cocokUntukDropZone: "push_button", levelTerkait: [2] },
   { id: "pas_led_hijau", nama: "LED Hijau 5mm", badgeAtas: "PASIF", jumlahPinLabel: "2P", kategoriFilter: "Pasif & Input", tipeVisualThumb: "led_hijau", cocokUntukDropZone: "led_merah", levelTerkait: [1] },
   { id: "pas_led_merah", nama: "LED Merah 5mm", badgeAtas: "PASIF", jumlahPinLabel: "2P", kategoriFilter: "Pasif & Input", tipeVisualThumb: "led_merah", cocokUntukDropZone: "led_merah", levelTerkait: [1, 2] },
   { id: "pas_resistor", nama: "Resistor Gelang 220Ω", badgeAtas: "PASIF", jumlahPinLabel: "2P", kategoriFilter: "Pasif & Input", tipeVisualThumb: "resistor_220", cocokUntukDropZone: "led_merah", levelTerkait: [1] },
-  { id: "pas_potensio", nama: "Potensiometer Putar 10kΩ", badgeAtas: "PASIF", jumlahPinLabel: "3P", kategoriFilter: "Pasif & Input", tipeVisualThumb: "potensiometer", cocokUntukDropZone: "ldr_relay", levelTerkait: [3] },
-  { id: "pas_button", nama: "Push Button Tactile Switch", badgeAtas: "PASIF", jumlahPinLabel: "4P", kategoriFilter: "Pasif & Input", tipeVisualThumb: "push_button", cocokUntukDropZone: "push_button", levelTerkait: [2] },
-
-  // --- SENSOR (25 ITEM - TERMASUK TANAH, AIR, MEDIS, GAS SESUAI GAMBAR) ---
+  { id: "pas_potensio", nama: "Potensiometer 10kΩ", badgeAtas: "PASIF", jumlahPinLabel: "3P", kategoriFilter: "Pasif & Input", tipeVisualThumb: "potensiometer", cocokUntukDropZone: "ldr_relay", levelTerkait: [3] },
   { id: "sen_npk", nama: "Sensor Pupuk NPK RS485", badgeAtas: "TANAH", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "npk_tanah", cocokUntukDropZone: "npk_rs485", levelTerkait: [10, 13, 15] },
-  { id: "sen_soil", nama: "Sensor Kelembaban Tanah (Soil)", badgeAtas: "TANAH", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "soil_moisture", cocokUntukDropZone: "dht22_greenhouse", levelTerkait: [5] },
-  { id: "sen_dht22", nama: "Sensor Suhu & Lembab DHT22", badgeAtas: "SUHU", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "dht22", cocokUntukDropZone: "dht22_greenhouse", levelTerkait: [5, 13, 15] },
-  { id: "sen_ldr", nama: "Sensor Cahaya LDR Photoresistor", badgeAtas: "CAHAYA", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "ldr", cocokUntukDropZone: "ldr_relay", levelTerkait: [3] },
-  { id: "sen_gps", nama: "Modul GPS Satelit NEO-6M", badgeAtas: "SATELIT", jumlahPinLabel: "4P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "gps_neo6m", cocokUntukDropZone: "gps_neo6m", levelTerkait: [11, 15] },
-  { id: "sen_rfid", nama: "RFID Card Reader RC522", badgeAtas: "AKSES", jumlahPinLabel: "7P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "rfid_rc522", cocokUntukDropZone: "servo_solenoid", levelTerkait: [4] },
-  { id: "sen_mq2", nama: "Sensor Gas & Asap MQ-2", badgeAtas: "GAS", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "mq2_gas", cocokUntukDropZone: "mq2_alarm", levelTerkait: [6] },
-  { id: "sen_mq135", nama: "Sensor Kualitas Udara MQ-135", badgeAtas: "GAS", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "mq135_co2", cocokUntukDropZone: "mq2_alarm", levelTerkait: [6] },
-  { id: "sen_flame", nama: "Flame Sensor Detektor Api", badgeAtas: "API", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "flame_api", cocokUntukDropZone: "mq2_alarm", levelTerkait: [6] },
-  { id: "sen_ph", nama: "Sensor pH Air (Asam/Basa)", badgeAtas: "AIR", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "ph_air", cocokUntukDropZone: "npk_rs485", levelTerkait: [10] },
-  { id: "sen_tds", nama: "Sensor TDS Meter (PPM Air)", badgeAtas: "AIR", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "tds_air", cocokUntukDropZone: "npk_rs485", levelTerkait: [10] },
-  { id: "sen_turbidity", nama: "Sensor Turbidity Kekeruhan", badgeAtas: "AIR", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "turbidity_air", cocokUntukDropZone: "npk_rs485", levelTerkait: [10] },
-  { id: "sen_do", nama: "Sensor DO (Oksigen Terlarut)", badgeAtas: "AIR", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "do_oksigen", cocokUntukDropZone: "npk_rs485", levelTerkait: [10] },
+  { id: "sen_ph", nama: "Sensor pH Air (0-14)", badgeAtas: "AIR", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "ph_air", cocokUntukDropZone: "npk_rs485", levelTerkait: [10] },
+  { id: "sen_tds", nama: "Sensor TDS Meter Air", badgeAtas: "AIR", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "tds_air", cocokUntukDropZone: "npk_rs485", levelTerkait: [10] },
+  { id: "sen_turbidity", nama: "Sensor Turbidity Air", badgeAtas: "AIR", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "turbidity_air", cocokUntukDropZone: "npk_rs485", levelTerkait: [10] },
+  { id: "sen_do", nama: "Sensor DO Oksigen Air", badgeAtas: "AIR", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "do_oksigen", cocokUntukDropZone: "npk_rs485", levelTerkait: [10] },
+
+  // 31-48: SENSOR LANJUTAN, RELAY & AKTUATOR
+  { id: "sen_flow", nama: "Sensor Debit Water Flow", badgeAtas: "AIR", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "water_flow", cocokUntukDropZone: "dht22_greenhouse", levelTerkait: [5] },
+  { id: "sen_level", nama: "Sensor Level Tinggi Air", badgeAtas: "AIR", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "water_level", cocokUntukDropZone: "dht22_greenhouse", levelTerkait: [5] },
   { id: "sen_ds18b20", nama: "Sensor Suhu Air DS18B20", badgeAtas: "AIR", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "suhu_air", cocokUntukDropZone: "dht22_greenhouse", levelTerkait: [5, 15] },
-  { id: "sen_flow", nama: "Sensor Debit Air Water Flow", badgeAtas: "AIR", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "water_flow", cocokUntukDropZone: "dht22_greenhouse", levelTerkait: [5] },
-  { id: "sen_level", nama: "Sensor Tinggi Muka Air", badgeAtas: "AIR", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "water_level", cocokUntukDropZone: "dht22_greenhouse", levelTerkait: [5] },
-  { id: "sen_heart", nama: "Sensor Detak Jantung & SpO2", badgeAtas: "MEDIS", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "detak_jantung", cocokUntukDropZone: "struct_ram", levelTerkait: [13] },
+  { id: "sen_heart", nama: "Sensor Detak Jantung SpO2", badgeAtas: "MEDIS", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "detak_jantung", cocokUntukDropZone: "struct_ram", levelTerkait: [13] },
+  { id: "sen_mq135", nama: "Sensor Udara MQ-135 (CO2)", badgeAtas: "GAS", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "mq135_co2", cocokUntukDropZone: "mq2_alarm", levelTerkait: [6] },
+  { id: "sen_flame", nama: "Sensor Gas CO / Flame Api", badgeAtas: "GAS", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "flame_api", cocokUntukDropZone: "mq2_alarm", levelTerkait: [6] },
+  { id: "sen_pz004t", nama: "Sensor Daya Listrik PZEM", badgeAtas: "DAYA", jumlahPinLabel: "3P", kategoriFilter: "Baterai & Daya", tipeVisualThumb: "ina_arus", cocokUntukDropZone: "baterai_18650", levelTerkait: [12] },
+  { id: "akt_motor_dc", nama: "Motor DC Geared Konveyor", badgeAtas: "AKTUATOR", jumlahPinLabel: "3P", kategoriFilter: "Aktuator & Motor", tipeVisualThumb: "motor_dc", cocokUntukDropZone: "relay_4ch_plc", levelTerkait: [8] },
+  { id: "pas_button", nama: "Push Button Tactile Switch", badgeAtas: "PASIF", jumlahPinLabel: "4P", kategoriFilter: "Pasif & Input", tipeVisualThumb: "push_button", cocokUntukDropZone: "push_button", levelTerkait: [2] },
+  { id: "sen_ldr", nama: "Sensor Cahaya LDR Modul", badgeAtas: "CAHAYA", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "ldr", cocokUntukDropZone: "ldr_relay", levelTerkait: [3] },
+  { id: "sen_dht22", nama: "Sensor Suhu & Lembab DHT22", badgeAtas: "SUHU", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "dht22", cocokUntukDropZone: "dht22_greenhouse", levelTerkait: [5, 13, 15] },
+  { id: "sen_soil", nama: "Sensor Kelembaban Tanah", badgeAtas: "TANAH", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "soil_moisture", cocokUntukDropZone: "dht22_greenhouse", levelTerkait: [5] },
+  { id: "sen_gps", nama: "Modul GPS Satelit NEO-6M", badgeAtas: "SATELIT", jumlahPinLabel: "4P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "gps_neo6m", cocokUntukDropZone: "gps_neo6m", levelTerkait: [11, 15] },
   { id: "sen_ultrasonik", nama: "Sensor Jarak HC-SR04", badgeAtas: "JARAK", jumlahPinLabel: "4P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "ultrasonik", cocokUntukDropZone: "servo_solenoid", levelTerkait: [4] },
   { id: "sen_pir", nama: "Sensor Gerak PIR HC-SR501", badgeAtas: "GERAK", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "pir_motion", cocokUntukDropZone: "ldr_relay", levelTerkait: [3] },
-  { id: "sen_bmp280", nama: "Sensor Tekanan Udara BMP280", badgeAtas: "CUACA", jumlahPinLabel: "4P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "bmp280", cocokUntukDropZone: "struct_ram", levelTerkait: [13] },
-  { id: "sen_mpu6050", nama: "Sensor Gyro & Akselerometer", badgeAtas: "GERAK", jumlahPinLabel: "6P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "mpu6050", cocokUntukDropZone: "struct_ram", levelTerkait: [13] },
-  { id: "sen_rain", nama: "Sensor Tetes Hujan (Raindrop)", badgeAtas: "CUACA", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "rain_hujan", cocokUntukDropZone: "dht22_greenhouse", levelTerkait: [5] },
-  { id: "sen_sound", nama: "Sensor Suara Mikrofon KY-038", badgeAtas: "AUDIO", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "sound_suara", cocokUntukDropZone: "ldr_relay", levelTerkait: [3] },
-  { id: "sen_pz004t", nama: "Sensor Daya Listrik PZEM-004T", badgeAtas: "DAYA", jumlahPinLabel: "4P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "ina_arus", cocokUntukDropZone: "baterai_18650", levelTerkait: [12] },
-  { id: "sen_mlx90614", nama: "Sensor Suhu Inframerah Medis", badgeAtas: "MEDIS", jumlahPinLabel: "4P", kategoriFilter: "Sensor (25)", tipeVisualThumb: "suhu_tubuh", cocokUntukDropZone: "struct_ram", levelTerkait: [13] },
-
-  // --- MODUL RELAY & AKTUATOR (7 ITEM) ---
   { id: "rel_1ch", nama: "Modul Relay 1-Ch 5V Opto", badgeAtas: "RELAY", jumlahPinLabel: "3P", kategoriFilter: "Modul Relay", tipeVisualThumb: "relay_1ch", cocokUntukDropZone: "ldr_relay", levelTerkait: [3, 6] },
-  { id: "rel_2ch", nama: "Modul Relay 2-Ch (Pompa & Kipas)", badgeAtas: "RELAY", jumlahPinLabel: "4P", kategoriFilter: "Modul Relay", tipeVisualThumb: "relay_2ch", cocokUntukDropZone: "dht22_greenhouse", levelTerkait: [5] },
-  { id: "rel_4ch", nama: "Modul Relay 4-Ch Industri PLC", badgeAtas: "RELAY", jumlahPinLabel: "6P", kategoriFilter: "Modul Relay", tipeVisualThumb: "relay_4ch", cocokUntukDropZone: "relay_4ch_plc", levelTerkait: [8] },
-  { id: "akt_servo180", nama: "Servo SG90 180° (Palang Pintu)", badgeAtas: "AKTUATOR", jumlahPinLabel: "3P", kategoriFilter: "Aktuator & Motor", tipeVisualThumb: "servo_180", cocokUntukDropZone: "servo_solenoid", levelTerkait: [4] },
-  { id: "akt_solenoid", nama: "Solenoid Door Lock 12V", badgeAtas: "AKTUATOR", jumlahPinLabel: "2P", kategoriFilter: "Aktuator & Motor", tipeVisualThumb: "solenoid_lock", cocokUntukDropZone: "servo_solenoid", levelTerkait: [4] },
-  { id: "akt_pompa", nama: "Pompa Air Mini Submersible", badgeAtas: "AKTUATOR", jumlahPinLabel: "2P", kategoriFilter: "Aktuator & Motor", tipeVisualThumb: "pompa_air", cocokUntukDropZone: "dht22_greenhouse", levelTerkait: [5, 6] },
-  { id: "akt_buzzer", nama: "Buzzer Piezo Sirine (2p)", badgeAtas: "AKTUATOR", jumlahPinLabel: "2P", kategoriFilter: "Aktuator & Motor", tipeVisualThumb: "buzzer_piezo", cocokUntukDropZone: "mq2_alarm", levelTerkait: [6] },
+  { id: "rel_2ch", nama: "Modul Relay 2-Ch (5V)", badgeAtas: "RELAY", jumlahPinLabel: "4P", kategoriFilter: "Modul Relay", tipeVisualThumb: "relay_2ch", cocokUntukDropZone: "dht22_greenhouse", levelTerkait: [5] },
+  { id: "rel_4ch", nama: "Modul Relay 4-Ch PLC", badgeAtas: "RELAY", jumlahPinLabel: "6P", kategoriFilter: "Modul Relay", tipeVisualThumb: "relay_4ch", cocokUntukDropZone: "relay_4ch_plc", levelTerkait: [8] },
 ];
 
 // ============================================================================
-// PENGGAMBAR IKON MINIATUR SVG DI DALAM KARTU GUDANG KOMPONEN (48 ITEM)
+// RENDERER IKON MINIATUR SVG LENGKAP UNTUK SELURUH 48 ITEM (TANPA FALLBACK!)
 // ============================================================================
 export const MiniaturSvgGudang48: React.FC<{
   tipe: ItemGudang48Master["tipeVisualThumb"];
 }> = ({ tipe }) => {
   switch (tipe) {
+    case "esp32":
+    case "esp8266":
+      return (
+        <svg viewBox="0 0 60 50" className="w-14 h-11 mx-auto">
+          <rect x={12} y={4} width={36} height={42} rx={4} fill="#0f172a" stroke="#475569" strokeWidth={1.5} />
+          <rect x={18} y={8} width={24} height={16} rx={2} fill="#cbd5e1" />
+          <text x={30} y={18} textAnchor="middle" fill="#0f172a" fontSize="5" fontWeight="bold">ESP32</text>
+          {[10, 16, 22, 28, 34, 40].map((y) => (
+            <g key={y}>
+              <circle cx={14} cy={y} r={1.3} fill="#facc15" />
+              <circle cx={46} cy={y} r={1.3} fill="#facc15" />
+            </g>
+          ))}
+          <rect x={25} y={42} width={10} height={5} rx={1} fill="#94a3b8" />
+        </svg>
+      );
+
+    case "arduino_uno":
+    case "stm32":
+    case "raspberry_pico":
+      return (
+        <svg viewBox="0 0 60 50" className="w-14 h-11 mx-auto">
+          <rect x={8} y={8} width={44} height={34} rx={4} fill="#0284c7" stroke="#38bdf8" strokeWidth={1.5} />
+          <rect x={6} y={13} width={7} height={9} rx={1} fill="#cbd5e1" />
+          <rect x={22} y={22} width={18} height={8} rx={1} fill="#0f172a" />
+          <text x={31} y={18} textAnchor="middle" fill="#ffffff" fontSize="5.5" fontWeight="bold">UNO R3</text>
+        </svg>
+      );
+
+    case "baterai_18650":
+      return (
+        <svg viewBox="0 0 60 50" className="w-14 h-11 mx-auto">
+          <rect x={24} y={5} width={12} height={4} rx={1} fill="#facc15" />
+          <rect x={16} y={9} width={28} height={35} rx={5} fill="#059669" stroke="#34d399" strokeWidth={1.5} />
+          <path d="M 31 15 L 25 26 L 30 26 L 28 36 L 35 24 L 30 24 Z" fill="#fde047" />
+          <text x={30} y={41} textAnchor="middle" fill="#ffffff" fontSize="5.5" fontWeight="bold">3.7V Li-Ion</text>
+        </svg>
+      );
+
+    case "solar_panel":
+      return (
+        <svg viewBox="0 0 60 50" className="w-14 h-11 mx-auto">
+          <rect x={10} y={8} width={40} height={32} rx={3} fill="#1e3a8a" stroke="#60a5fa" strokeWidth={1.5} />
+          <line x1={23} y1={8} x2={23} y2={40} stroke="#38bdf8" strokeWidth={1} />
+          <line x1={37} y1={8} x2={37} y2={40} stroke="#38bdf8" strokeWidth={1} />
+          <line x1={10} y1={19} x2={50} y2={19} stroke="#38bdf8" strokeWidth={1} />
+          <line x1={10} y1={30} x2={50} y2={30} stroke="#38bdf8" strokeWidth={1} />
+          <circle cx={48} cy={10} r={5} fill="#facc15" />
+        </svg>
+      );
+
+    case "ina219":
+    case "ina_arus":
+      return (
+        <svg viewBox="0 0 60 50" className="w-14 h-11 mx-auto">
+          <rect x={10} y={10} width={28} height={28} rx={3} fill="#065f46" stroke="#34d399" strokeWidth={1.5} />
+          <rect x={15} y={15} width={18} height={10} rx={1.5} fill="#0f172a" />
+          <circle cx={46} cy={24} r={8} fill="none" stroke="#38bdf8" strokeWidth={2} strokeDasharray="3 2" />
+          <text x={24} y={34} textAnchor="middle" fill="#fde047" fontSize="5.5" fontWeight="bold">400V 100A</text>
+        </svg>
+      );
+
+    case "power_supply":
+    case "step_down":
+      return (
+        <svg viewBox="0 0 60 50" className="w-14 h-11 mx-auto">
+          <rect x={10} y={10} width={40} height={30} rx={4} fill="#1e293b" stroke="#f59e0b" strokeWidth={1.5} />
+          <circle cx={22} cy={25} r={7} fill="#b45309" stroke="#fde047" strokeWidth={1.2} />
+          <rect x={34} y={16} width={11} height={18} rx={2} fill="#0284c7" />
+          <text x={30} y={46} textAnchor="middle" fill="#facc15" fontSize="5.5" fontWeight="bold">DC BUCK</text>
+        </svg>
+      );
+
     case "keypad_4x4":
       return (
         <svg viewBox="0 0 60 50" className="w-14 h-11 mx-auto">
@@ -214,6 +286,7 @@ export const MiniaturSvgGudang48: React.FC<{
           <line x1={22} y1={18} x2={22} y2={32} stroke="#ef4444" strokeWidth={2.5} />
           <line x1={28} y1={18} x2={28} y2={32} stroke="#ef4444" strokeWidth={2.5} />
           <line x1={34} y1={18} x2={34} y2={32} stroke="#78350f" strokeWidth={2.5} />
+          <text x={30} y={42} textAnchor="middle" fill="#cbd5e1" fontSize="6" fontWeight="bold">220 Ω</text>
         </svg>
       );
 
@@ -229,15 +302,29 @@ export const MiniaturSvgGudang48: React.FC<{
         </svg>
       );
 
+    case "push_button":
+      return (
+        <svg viewBox="0 0 60 50" className="w-14 h-11 mx-auto">
+          <rect x={15} y={10} width={30} height={30} rx={5} fill="#334155" stroke="#94a3b8" strokeWidth={1.5} />
+          <circle cx={20} cy={15} r={2} fill="#cbd5e1" />
+          <circle cx={40} cy={15} r={2} fill="#cbd5e1" />
+          <circle cx={20} cy={35} r={2} fill="#cbd5e1" />
+          <circle cx={40} cy={35} r={2} fill="#cbd5e1" />
+          <circle cx={30} cy={25} r={9} fill="#ef4444" stroke="#ffffff" strokeWidth={1.2} />
+        </svg>
+      );
+
     case "npk_tanah":
     case "soil_moisture":
       return (
         <svg viewBox="0 0 60 50" className="w-14 h-11 mx-auto">
-          <rect x={14} y={10} width={32} height={18} rx={3} fill="#78350f" stroke="#facc15" strokeWidth={1.2} />
-          <line x1={21} y1={28} x2={21} y2={44} stroke="#cbd5e1" strokeWidth={2.5} />
-          <line x1={30} y1={28} x2={30} y2={44} stroke="#cbd5e1" strokeWidth={2.5} />
-          <line x1={39} y1={28} x2={39} y2={44} stroke="#cbd5e1" strokeWidth={2.5} />
-          <text x={30} y={22} textAnchor="middle" fill="#fde047" fontSize="7" fontWeight="bold">NPK</text>
+          <rect x={12} y={8} width={22} height={16} rx={3} fill="#78350f" stroke="#facc15" strokeWidth={1.2} />
+          <line x1={17} y1={24} x2={17} y2={43} stroke="#cbd5e1" strokeWidth={2.5} />
+          <line x1={23} y1={24} x2={23} y2={43} stroke="#cbd5e1" strokeWidth={2.5} />
+          <line x1={29} y1={24} x2={29} y2={43} stroke="#cbd5e1" strokeWidth={2.5} />
+          <rect x={36} y={10} width={14} height={28} rx={2} fill="#0f172a" stroke="#34d399" strokeWidth={1} />
+          <text x={43} y={20} textAnchor="middle" fill="#34d399" fontSize="5" fontWeight="bold">N P K</text>
+          <text x={43} y={29} textAnchor="middle" fill="#facc15" fontSize="5" fontWeight="bold">RS485</text>
         </svg>
       );
 
@@ -246,14 +333,26 @@ export const MiniaturSvgGudang48: React.FC<{
     case "turbidity_air":
     case "do_oksigen":
     case "suhu_air":
+    case "water_flow":
+    case "water_level": {
+      const warnaKotak =
+        tipe === "ph_air"
+          ? "#2563eb"
+          : tipe === "tds_air"
+          ? "#1e293b"
+          : tipe === "do_oksigen"
+          ? "#7c3aed"
+          : "#059669";
       return (
         <svg viewBox="0 0 60 50" className="w-14 h-11 mx-auto">
-          <rect x={10} y={14} width={18} height={24} rx={3} fill="#1d4ed8" stroke="#60a5fa" strokeWidth={1.2} />
+          <rect x={10} y={14} width={20} height={24} rx={3} fill={warnaKotak} stroke="#60a5fa" strokeWidth={1.2} />
           <rect x={34} y={12} width={16} height={26} rx={3} fill="#065f46" stroke="#34d399" strokeWidth={1.2} />
-          <path d="M 28 24 L 34 24" stroke="#facc15" strokeWidth={2} />
-          <line x1={42} y1={8} x2={42} y2={36} stroke="#38bdf8" strokeWidth={3} />
+          <path d="M 30 24 L 34 24" stroke="#facc15" strokeWidth={2} />
+          <line x1={42} y1={7} x2={42} y2={36} stroke="#38bdf8" strokeWidth={3} />
+          <text x={20} y={29} textAnchor="middle" fill="#fde047" fontSize="5.5" fontWeight="bold">PROBE</text>
         </svg>
       );
+    }
 
     case "detak_jantung":
     case "suhu_tubuh":
@@ -266,31 +365,137 @@ export const MiniaturSvgGudang48: React.FC<{
 
     case "mq2_gas":
     case "mq135_co2":
+    case "flame_api":
       return (
         <svg viewBox="0 0 60 50" className="w-14 h-11 mx-auto">
           <rect x={12} y={10} width={36} height={30} rx={4} fill="#1e3a8a" stroke="#60a5fa" strokeWidth={1.2} />
-          <circle cx={30} cy={25} r={10} fill="#94a3b8" stroke="#e2e8f0" strokeWidth={1.5} />
-          <circle cx={30} cy={25} r={6} fill="#475569" />
+          <circle cx={30} cy={23} r={10} fill="#94a3b8" stroke="#e2e8f0" strokeWidth={1.5} />
+          <circle cx={30} cy={23} r={6} fill="#475569" />
+          <text x={30} y={38} textAnchor="middle" fill="#fde047" fontSize="5" fontWeight="bold">GAS PPM</text>
         </svg>
       );
 
-    case "esp32":
-    case "esp8266":
-    case "arduino_uno":
+    case "ldr":
+    case "sound_suara":
+    case "rain_hujan":
       return (
         <svg viewBox="0 0 60 50" className="w-14 h-11 mx-auto">
-          <rect x={14} y={6} width={32} height={38} rx={4} fill="#0f172a" stroke="#38bdf8" strokeWidth={1.5} />
-          <rect x={20} y={11} width={20} height={15} rx={2} fill="#cbd5e1" />
-          <circle cx={24} cy={36} r={2} fill="#ef4444" />
-          <circle cx={36} cy={36} r={2} fill="#22c55e" />
+          <rect x={12} y={12} width={36} height={26} rx={4} fill="#1e3a8a" stroke="#38bdf8" strokeWidth={1.5} />
+          <circle cx={38} cy={25} r={8} fill="#fde047" stroke="#ca8a04" strokeWidth={1.5} />
+          <path d="M 33 23 Q 38 19 43 23 Q 38 28 33 28" fill="none" stroke="#b45309" strokeWidth={1.5} />
+          <rect x={16} y={20} width={10} height={10} rx={1} fill="#0284c7" />
         </svg>
       );
 
-    default:
+    case "dht22":
+    case "bmp280":
+    case "mpu6050":
       return (
         <svg viewBox="0 0 60 50" className="w-14 h-11 mx-auto">
-          <rect x={12} y={10} width={36} height={30} rx={5} fill="#065f46" stroke="#34d399" strokeWidth={1.5} />
-          <circle cx={30} cy={25} r={8} fill="#0284c7" stroke="#facc15" strokeWidth={1.5} />
+          <rect x={16} y={6} width={28} height={30} rx={4} fill="#f8fafc" stroke="#0284c7" strokeWidth={1.5} />
+          <line x1={20} y1={13} x2={40} y2={13} stroke="#94a3b8" strokeWidth={1.5} />
+          <line x1={20} y1={19} x2={40} y2={19} stroke="#94a3b8" strokeWidth={1.5} />
+          <line x1={20} y1={25} x2={40} y2={25} stroke="#94a3b8" strokeWidth={1.5} />
+          <line x1={24} y1={36} x2={24} y2={46} stroke="#facc15" strokeWidth={2} />
+          <line x1={30} y1={36} x2={30} y2={46} stroke="#facc15" strokeWidth={2} />
+          <line x1={36} y1={36} x2={36} y2={46} stroke="#facc15" strokeWidth={2} />
+        </svg>
+      );
+
+    case "gps_neo6m":
+      return (
+        <svg viewBox="0 0 60 50" className="w-14 h-11 mx-auto">
+          <rect x={12} y={8} width={36} height={34} rx={4} fill="#1e3a8a" stroke="#60a5fa" strokeWidth={1.5} />
+          <rect x={18} y={13} width={24} height={20} rx={3} fill="#d97706" stroke="#fde047" strokeWidth={1.2} />
+          <circle cx={30} cy={23} r={3.5} fill="#fef08a" />
+          <text x={30} y={40} textAnchor="middle" fill="#34d399" fontSize="5" fontWeight="bold">GPS NEO</text>
+        </svg>
+      );
+
+    case "rfid_rc522":
+      return (
+        <svg viewBox="0 0 60 50" className="w-14 h-11 mx-auto">
+          <rect x={10} y={8} width={40} height={34} rx={4} fill="#1d4ed8" stroke="#60a5fa" strokeWidth={1.5} />
+          <rect x={16} y={13} width={28} height={18} rx={2} fill="none" stroke="#fde047" strokeWidth={1.2} />
+          <circle cx={30} cy={22} r={5} fill="none" stroke="#fde047" strokeWidth={1.2} />
+          <text x={30} y={39} textAnchor="middle" fill="#ffffff" fontSize="5.5" fontWeight="bold">RFID</text>
+        </svg>
+      );
+
+    case "ultrasonik":
+    case "pir_motion":
+      return (
+        <svg viewBox="0 0 60 50" className="w-14 h-11 mx-auto">
+          <rect x={8} y={12} width={44} height={26} rx={4} fill="#0284c7" stroke="#38bdf8" strokeWidth={1.5} />
+          <circle cx={20} cy={25} r={8} fill="#cbd5e1" stroke="#475569" strokeWidth={1.5} />
+          <circle cx={40} cy={25} r={8} fill="#cbd5e1" stroke="#475569" strokeWidth={1.5} />
+        </svg>
+      );
+
+    case "relay_1ch":
+    case "relay_2ch":
+    case "relay_4ch":
+    case "ssr_relay":
+      return (
+        <svg viewBox="0 0 60 50" className="w-14 h-11 mx-auto">
+          <rect x={10} y={8} width={40} height={34} rx={4} fill="#b91c1c" stroke="#f87171" strokeWidth={1.5} />
+          <rect x={15} y={13} width={14} height={24} rx={2} fill="#1d4ed8" stroke="#60a5fa" strokeWidth={1} />
+          <rect x={32} y={13} width={14} height={24} rx={2} fill="#1d4ed8" stroke="#60a5fa" strokeWidth={1} />
+        </svg>
+      );
+
+    case "servo_180":
+    case "servo_360":
+      return (
+        <svg viewBox="0 0 60 50" className="w-14 h-11 mx-auto">
+          <rect x={14} y={16} width={26} height={22} rx={3} fill="#0284c7" stroke="#38bdf8" strokeWidth={1.5} />
+          <circle cx={34} cy={27} r={5} fill="#f8fafc" />
+          <line x1={34} y1={27} x2={50} y2={15} stroke="#facc15" strokeWidth={4} strokeLinecap="round" />
+        </svg>
+      );
+
+    case "pompa_air":
+    case "motor_dc":
+      return (
+        <svg viewBox="0 0 60 50" className="w-14 h-11 mx-auto">
+          <rect x={16} y={12} width={28} height={26} rx={5} fill="#0284c7" stroke="#38bdf8" strokeWidth={1.5} />
+          <circle cx={30} cy={25} r={7} fill="#e2e8f0" stroke="#0f172a" strokeWidth={1.5} />
+          <rect x={26} y={6} width={8} height={6} rx={1} fill="#38bdf8" />
+        </svg>
+      );
+
+    case "kipas_dc":
+      return (
+        <svg viewBox="0 0 60 50" className="w-14 h-11 mx-auto">
+          <rect x={14} y={9} width={32} height={32} rx={5} fill="#1e293b" stroke="#64748b" strokeWidth={1.5} />
+          <circle cx={30} cy={25} r={12} fill="#0f172a" stroke="#38bdf8" strokeWidth={1} />
+          <circle cx={30} cy={25} r={4} fill="#38bdf8" />
+        </svg>
+      );
+
+    case "solenoid_lock":
+      return (
+        <svg viewBox="0 0 60 50" className="w-14 h-11 mx-auto">
+          <rect x={12} y={14} width={28} height={22} rx={3} fill="#64748b" stroke="#cbd5e1" strokeWidth={1.5} />
+          <rect x={40} y={20} width={12} height={10} rx={2} fill="#facc15" />
+        </svg>
+      );
+
+    case "oled_i2c":
+    case "lcd_16x2":
+      return (
+        <svg viewBox="0 0 60 50" className="w-14 h-11 mx-auto">
+          <rect x={10} y={10} width={40} height={30} rx={4} fill="#1e3a8a" stroke="#38bdf8" strokeWidth={1.5} />
+          <rect x={14} y={15} width={32} height={20} rx={2} fill="#0f172a" />
+          <text x={30} y={28} textAnchor="middle" fill="#38bdf8" fontSize="6" fontWeight="bold">OLED I2C</text>
+        </svg>
+      );
+
+    case "buzzer_piezo":
+      return (
+        <svg viewBox="0 0 60 50" className="w-14 h-11 mx-auto">
+          <circle cx={30} cy={25} r={15} fill="#0f172a" stroke="#94a3b8" strokeWidth={1.5} />
+          <circle cx={30} cy={25} r={5} fill="#cbd5e1" />
         </svg>
       );
   }
@@ -442,7 +647,7 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
       },
     ],
     daftarClueLatihan: [
-      "Clue 1 (Komponen): Tarik 'Servo SG90 180°' atau 'Solenoid Door Lock 12V' dari Gudang 48 Komponen.",
+      "Clue 1 (Komponen): Tarik 'Servo SG90 180°' atau 'Solenoid Lock 12V' dari Gudang 48 Komponen.",
       "Clue 2 (Kabel): Klik 'GPIO 13' -> klik 'Servo PWM', lalu klik 'GPIO 27' -> klik 'Solenoid IN'.",
       "Clue 3 (Kode): Ketik pintu.attach(13); di setup(), dan digitalWrite(27, HIGH); pintu.write(90); di loop().",
     ],
@@ -507,7 +712,7 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
       },
     ],
     daftarClueLatihan: [
-      "Clue 1 (Komponen): Tarik 'Sensor Gas & Asap MQ-2' dari Gudang 48 Komponen.",
+      "Clue 1 (Komponen): Tarik 'Sensor Gas MQ-2' dari Gudang 48 Komponen.",
       "Clue 2 (Kabel): Klik 'GPIO 32' -> klik 'MQ-2 AO', lalu klik 'GPIO 19' -> klik 'Buzzer (+)'.",
       "Clue 3 (Kode): Baca analogRead(32) dan jika ppm >= 500 nyalakan pin 19 dan 25.",
     ],
@@ -544,7 +749,7 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
   8: {
     level: 8,
     tipeVisualPeriferal: "relay_4ch_plc",
-    namaPeriferal: "Modul Relay 4-Ch Industri PLC",
+    namaPeriferal: "Modul Relay 4-Ch PLC",
     pinEsp32Tersedia: PIN_FISIK_ESP32_STANDAR,
     pinPeriferalTersedia: [
       { idPin: "REL4_IN1", labelPin: "Relay IN1", x: 355, y: 90, warnaPin: "#38bdf8", posisiKomponen: "periferal" },
@@ -565,7 +770,7 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
       },
     ],
     daftarClueLatihan: [
-      "Clue 1 (Komponen): Tarik 'Modul Relay 4-Ch Industri PLC' ke kotak kanan.",
+      "Clue 1 (Komponen): Tarik 'Modul Relay 4-Ch PLC' ke kotak kanan.",
       "Clue 2 (Kabel): Klik 'GPIO 4' -> klik 'Relay IN1', lalu klik 'GND' -> klik 'Relay GND'.",
     ],
   },
@@ -909,6 +1114,97 @@ export const GambarPeriferalWokwiAsli: React.FC<{
       );
     }
 
+    case "mq2_alarm": {
+      const bahaya = simulasiHidup;
+      return (
+        <g>
+          <line x1={355} y1={85} x2={395} y2={85} stroke="#f43f5e" strokeWidth={3.5} />
+          <rect x={395} y={50} width={105} height={68} rx={8} fill="#1e3a8a" stroke="#60a5fa" strokeWidth={2} />
+          <circle cx={447} cy={78} r={18} fill="#94a3b8" stroke="#f8fafc" strokeWidth={2} />
+          <circle cx={447} cy={78} r={11} fill="#334155" />
+          <text x={447} y={110} textAnchor="middle" fill="#fde047" fontSize="9" fontWeight="bold">
+            MQ-2 GAS (650 PPM)
+          </text>
+
+          <line x1={355} y1={165} x2={395} y2={165} stroke="#ec4899" strokeWidth={3.5} />
+          <circle
+            cx={447}
+            cy={165}
+            r={26}
+            fill={bahaya && detak % 2 === 0 ? "#e11d48" : "#0f172a"}
+            stroke="#f43f5e"
+            strokeWidth={2.5}
+          />
+          <circle cx={447} cy={165} r={8} fill="#cbd5e1" />
+          <text x={447} y={202} textAnchor="middle" fill="#ffffff" fontSize="9.5" fontWeight="bold">
+            {bahaya ? "🚨 ALARM BEEP!" : "PIEZO BUZZER"}
+          </text>
+        </g>
+      );
+    }
+
+    case "dual_esp32_uart":
+    case "esp_now_radio":
+    case "mesh_10_node": {
+      return (
+        <g>
+          <line x1={355} y1={95} x2={395} y2={95} stroke="#f97316" strokeWidth={3.5} />
+          <line x1={355} y1={155} x2={395} y2={155} stroke="#06b6d4" strokeWidth={3.5} />
+          <rect x={395} y={40} width={115} height={170} rx={10} fill="#0f172a" stroke="#38bdf8" strokeWidth={2} />
+          <rect x={415} y={54} width={75} height={50} rx={5} fill="#cbd5e1" />
+          <text x={452} y={78} textAnchor="middle" fill="#0f172a" fontSize="8.5" fontWeight="bold">
+            ESP32 NODE #2
+          </text>
+          <text x={452} y={92} textAnchor="middle" fill="#334155" fontSize="7.5" fontWeight="bold">
+            GATEWAY / MESH
+          </text>
+          <rect x={410} y={118} width={85} height={48} rx={6} fill="#020617" stroke="#0284c7" />
+          <text x={452} y={138} textAnchor="middle" fill="#38bdf8" fontSize="8.5" fontWeight="bold">
+            OLED TELEMETRY
+          </text>
+          <text x={452} y={154} textAnchor="middle" fill="#34d399" fontSize="8" fontWeight="bold">
+            {simulasiHidup ? "RX: DATA_OK ✓" : "WAITING RX..."}
+          </text>
+        </g>
+      );
+    }
+
+    case "relay_4ch_plc":
+    case "triple_mcu": {
+      return (
+        <g>
+          <line x1={355} y1={90} x2={395} y2={90} stroke="#38bdf8" strokeWidth={3.5} />
+          <line x1={355} y1={155} x2={395} y2={155} stroke="#64748b" strokeWidth={3.5} />
+          <rect x={395} y={48} width={125} height={150} rx={10} fill="#991b1b" stroke="#f87171" strokeWidth={2} />
+          {[0, 1, 2, 3].map((idx) => {
+            const aktifRel = simulasiHidup && detak % 4 === idx;
+            return (
+              <g key={idx}>
+                <rect
+                  x={405 + idx * 28}
+                  y={68}
+                  width={23}
+                  height={85}
+                  rx={4}
+                  fill={aktifRel ? "#2563eb" : "#1e3a8a"}
+                  stroke="#93c5fd"
+                />
+                <circle
+                  cx={416 + idx * 28}
+                  cy={168}
+                  r={4.5}
+                  fill={aktifRel ? "#22c55e" : "#450a0a"}
+                />
+              </g>
+            );
+          })}
+          <text x={457} y={190} textAnchor="middle" fill="#fde047" fontSize="9.5" fontWeight="bold">
+            4-CH PLC RELAY MODULE
+          </text>
+        </g>
+      );
+    }
+
     case "npk_rs485": {
       return (
         <g>
@@ -949,7 +1245,8 @@ export const GambarPeriferalWokwiAsli: React.FC<{
       );
     }
 
-    case "baterai_18650": {
+    case "baterai_18650":
+    case "struct_ram": {
       return (
         <g>
           <line x1={355} y1={95} x2={395} y2={95} stroke="#f59e0b" strokeWidth={3} />
@@ -964,32 +1261,6 @@ export const GambarPeriferalWokwiAsli: React.FC<{
           </text>
           <text x={447} y={152} textAnchor="middle" fill="#a7f3d0" fontSize="9" fontWeight="bold">
             INA219 Sensor
-          </text>
-        </g>
-      );
-    }
-
-    default: {
-      return (
-        <g>
-          <rect
-            x={385}
-            y={58}
-            width={125}
-            height={128}
-            rx={12}
-            fill={simulasiHidup ? "#065f46" : "#1e293b"}
-            stroke={simulasiHidup ? "#34d399" : "#38bdf8"}
-            strokeWidth={2.5}
-          />
-          <text x={447} y={105} textAnchor="middle" fill="#ffffff" fontSize="10.5" fontWeight="bold">
-            MODUL HARDWARE
-          </text>
-          <text x={447} y={125} textAnchor="middle" fill="#facc15" fontSize="10" fontWeight="bold">
-            {tipe.toUpperCase()}
-          </text>
-          <text x={447} y={148} textAnchor="middle" fill="#34d399" fontSize="9.5" fontWeight="bold">
-            {simulasiHidup ? "⚡ ONLINE & AKTIF" : "STANDBY"}
           </text>
         </g>
       );
