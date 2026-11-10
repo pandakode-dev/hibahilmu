@@ -1,6 +1,4 @@
 "use client";
-import { WokwiMultihop10NodeAndGuides } from "./WokwiMultihop10NodeAndGuides";
-
 
 import React, { useState } from "react";
 import {
@@ -25,6 +23,7 @@ import {
   LibrarySimulatorItem,
 } from "./simulatorData";
 import { ElectronicAndIotCanvas } from "./ElectronicAndIotCanvas";
+import { WokwiMultihop10NodeAndGuides } from "./WokwiMultihop10NodeAndGuides";
 
 interface SimulatorPemrogramanProps {
   userLogin: AkunPengguna | null;
@@ -162,7 +161,8 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
           </h1>
           <p className="text-xs sm:text-sm text-indigo-200 leading-relaxed">
             Dilengkapi validasi kompilasi library nyata, pemrograman multi-mikrokontroler,
-            animasi fisika sensor real-time, serta integrasi dashboard IoT Blynk dan Cloud Project Sync.
+            simulasi 10-Node Multi-Hop Mesh (Suhu, Pupuk NPK, GPS &amp; Baterai), serta panduan
+            eksperimen kode C++ lengkap untuk seluruh proyek.
           </p>
         </div>
 
@@ -290,6 +290,11 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
           );
         })}
       </div>
+
+      {/* PANEL PROYEK 8 (10-NODE MULTI-HOP MESH) & PANDUAN 8 PROYEK KHUSUS MODE WOKWI */}
+      {kategoriAktif === "wokwi" && (
+        <WokwiMultihop10NodeAndGuides onTambahXp={tambahXP} />
+      )}
 
       {/* KANVAS DRAG & DROP INTERAKTIF KHUSUS WOKWI IOT, EWB ELEKTRONIKA, & MATLAB SIMULINK */}
       {(kategoriAktif === "wokwi" ||
@@ -478,8 +483,6 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
           </div>
         </div>
       )}
-    
-      <WokwiMultihop10NodeAndGuides onTambahXp={tambahXP} />
     </div>
   );
 };
