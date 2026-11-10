@@ -1,25 +1,24 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   CheckCircle2,
   ChevronRight,
-  ChevronLeft,
   Play,
   Sparkles,
-  Cpu,
   Code2,
   AlertCircle,
   RotateCcw,
   Award,
   Lightbulb,
   Lock,
-  Zap,
   HelpCircle,
   Eye,
   Target,
   Cable,
   Trash2,
+  PackageOpen,
+  MousePointerClick,
 } from "lucide-react";
 import {
   KURIKULUM_15_LEVEL_IOT,
@@ -27,8 +26,10 @@ import {
 } from "./wokwiCurriculumData";
 import {
   SPESIFIKASI_HARDWARE_15_LEVEL,
+  DAFTAR_GUDANG_KOMPONEN_WOKWI,
   GambarPeriferalWokwiAsli,
   TitikPinFisik,
+  ItemGudangKomponen,
 } from "./wokwiHardwareVisuals";
 
 export interface KabelTersambung {
@@ -41,14 +42,13 @@ export const WokwiStepByStepAcademy: React.FC<{
   onTambahXp?: (xp: number) => void;
   onBukaSimulator10Node?: () => void;
 }> = ({ onTambahXp, onBukaSimulator10Node }) => {
+  const svgRef = useRef<SVGSVGElement | null>(null);
+
   const [indeksLevel, setIndeksLevel] = useState<number>(0);
   const [levelSelesaiSet, setLevelSelesaiSet] = useState<Set<number>>(
     new Set()
   );
 
-  // PILIHAN MODE BELAJAR:
-  // "tutorial_berkedip" = Ada bayangan komponen & kedap-kedip jalur kabel yang harus ditarik
-  // "latihan_mandiri"   = Tanpa bayangan (hanya instruksi soal + tombol Clue bertahap jika butuh)
   const [modeBelajar, setModeBelajar] = useState<
     "tutorial_berkedip" | "latihan_mandiri"
   >("tutorial_berkedip");
@@ -58,19 +58,27 @@ export const WokwiStepByStepAcademy: React.FC<{
     SPESIFIKASI_HARDWARE_15_LEVEL[materiAktif.level] ||
     SPESIFIKASI_HARDWARE_15_LEVEL[1];
 
-  // State Perakitan Komponen ke Kotak Bayangan di Breadboard
+  // State Drag & Drop dari Gudang Komponen ke Kotak Bayangan Kanvas
   const [esp32SudahDitaruh, setEsp32SudahDitaruh] = useState<boolean>(false);
   const [periferalSudahDitaruh, setPeriferalSudahDitaruh] =
     useState<boolean>(false);
+  const [itemSedangDiDrag, setItemSedangDiDrag] =
+    useState<ItemGudangKomponen | null>(null);
+  const [pesanGudang, setPesanGudang] = useState<string>("");
 
-  // State Tarik Kabel Antar-Pin (Interactive Wire Connection)
+  // State Klik 2 Titik Kaki Pin & Kabel Hidup Mengikuti Kursor Mouse
   const [kabelTerpasangList, setKabelTerpasangList] = useState<
     KabelTersambung[]
   >([]);
-  const [pinSedangDitarik, setPinSedangDitarik] =
-    useState<TitikPinFisik | null>(null);
+  const [pinAwalDiklik, setPinAwalDiklik] = useState<TitikPinFisik | null>(
+    null
+  );
+  const [posisiKursorSvg, setPosisiKursorSvg] = useState<{
+    x: number;
+    y: number;
+  }>({ x: 280, y: 120 });
 
-  // State Clue Bertahap (Khusus Mode Latihan Mandiri)
+  // State Clue Bertahap
   const [jumlahClueDibuka, setJumlahClueDibuka] = useState<number>(0);
   const [intipBayanganSementara, setIntipBayanganSementara] =
     useState<boolean>(false);
@@ -86,7 +94,7 @@ export const WokwiStepByStepAcademy: React.FC<{
   const [daftarErrorDetail, setDaftarErrorDetail] = useState<string[]>([]);
   const [pesanFeedback, setPesanFeedback] = useState<string>("");
   const [outputSerialSimulasi, setOutputSerialSimulasi] = useState<string>(
-    "// Ikuti panduan berkedip di kanvas atas untuk menaruh ESP32, menaruh Sensor/LED, dan menarik kabel ke kaki pin yang diminta!"
+    "// 1. Tarik (Drag) ESP32 & Komponen dari Gudang Komponen ke kotak bayangan di kanvas.\n// 2. Klik kaki pin ke-1 lalu klik kaki pin ke-2 untuk menyambung kabel.\n// 3. Ketik kode C++ dan jalankan!"
   );
 
   const [detakSimulasi, setDetakSimulasi] = useState<number>(0);
@@ -100,7 +108,6 @@ export const WokwiStepByStepAcademy: React.FC<{
     return () => clearInterval(timer);
   }, [statusVerifikasi]);
 
-  // Reset atau pindah ke level tertentu
   const pindahKeLevel = (
     idxBaru: number,
     modeTarget: "tutorial_berkedip" | "latihan_mandiri" = modeBelajar
@@ -111,8 +118,10 @@ export const WokwiStepByStepAcademy: React.FC<{
     setModeBelajar(modeTarget);
     setEsp32SudahDitaruh(false);
     setPeriferalSudahDitaruh(false);
+    setItemSedangDiDrag(null);
+    setPesanGudang("");
     setKabelTerpasangList([]);
-    setPinSedangDitarik(null);
+    setPinAwalDiklik(null);
     setJumlahClueDibuka(0);
     setIntipBayanganSementara(false);
     setKodeKetikanUser(target.kodeTemplateAwal);
@@ -120,11 +129,11 @@ export const WokwiStepByStepAcademy: React.FC<{
     setDaftarErrorDetail([]);
     setPesanFeedback("");
     setOutputSerialSimulasi(
-      `// Level ${target.level}: ${target.judulMateri}\n// Langkah 1: Tarik/Klik ESP32 & Komponen ke kanvas.\n// Langkah 2: Tarik kabel antar-kaki pin.\n// Langkah 3: Ketik kode C++ dan jalankan!`
+      `// Level ${target.level}: ${target.judulMateri}\n// Tarik komponen dari Gudang Komponen ke kotak bayangan di kanvas!`
     );
   };
 
-  // Cari sambungan kabel wajib mana yang saat ini BELUM dipasang oleh siswa (untuk panduan kedap-kedip)
+  // Cari sambungan kabel wajib mana yang saat ini BELUM dipasang oleh siswa
   const sambunganWajibBelumTerpasang = spekHardware.sambunganWajib.filter(
     (wajib) =>
       !kabelTerpasangList.some(
@@ -151,109 +160,156 @@ export const WokwiStepByStepAcademy: React.FC<{
     modeBelajar === "tutorial_berkedip" || intipBayanganSementara;
 
   // ==========================================================================
-  // FUNGSI INTERAKTIF KLIK / TARIK KAKI PIN UNTUK MENYAMBUNG KABEL JUMPER
+  // 1. HANDLER DRAG & DROP DARI GUDANG KOMPONEN KE ZONA BAYANGAN KANVAS
   // ==========================================================================
-  const handleKlikTitikPin = (pinDiklik: TitikPinFisik) => {
+  const handleDropKeZonaBayangan = (zonaTarget: "zona_esp32" | "zona_periferal") => {
+    if (!itemSedangDiDrag) return;
+
+    if (zonaTarget === "zona_esp32") {
+      if (itemSedangDiDrag.tipeCocok === "esp32_board") {
+        setEsp32SudahDitaruh(true);
+        setPesanGudang(
+          "✅ Mantap! Papan ESP32 DevKit V1 berhasil dipasang ke meja breadboard!"
+        );
+      } else {
+        setPesanGudang(
+          `❌ Salah Tempat! Kotak kiri khusus untuk 'ESP32 DevKit V1', bukan '${itemSedangDiDrag.namaTampil}'.`
+        );
+      }
+    } else if (zonaTarget === "zona_periferal") {
+      if (itemSedangDiDrag.tipeCocok === spekHardware.tipeVisualPeriferal) {
+        setPeriferalSudahDitaruh(true);
+        setPesanGudang(
+          `✅ Tepat Sekali! Komponen '${itemSedangDiDrag.namaTampil}' berhasil dipasang ke kanvas!`
+        );
+      } else {
+        setPesanGudang(
+          `❌ Komponen Tidak Sesuai Modul! Level ${materiAktif.level} membutuhkan '${spekHardware.namaPeriferal}', bukan '${itemSedangDiDrag.namaTampil}'.`
+        );
+      }
+    }
+    setItemSedangDiDrag(null);
+  };
+
+  // Mendukung klik kartu di Gudang Komponen (bagi pengguna HP/layar sentuh) untuk memilih lalu klik kotak bayangan
+  const handleKlikKartuGudang = (item: ItemGudangKomponen) => {
+    setItemSedangDiDrag(item);
+    if (item.tipeCocok === "esp32_board") {
+      setPesanGudang(
+        `👉 '${item.namaTampil}' dipilih! Sekarang tarik atau KLIK kotak bayangan kiri di dalam kanvas untuk menaruhnya.`
+      );
+    } else {
+      setPesanGudang(
+        `👉 '${item.namaTampil}' dipilih! Sekarang tarik atau KLIK kotak bayangan kanan di dalam kanvas untuk menaruhnya.`
+      );
+    }
+  };
+
+  // ==========================================================================
+  // 2. HANDLER KLIK 2 TITIK KAKI PIN SECARA BERURUTAN + KABEL IKUT MOUSE
+  // ==========================================================================
+  const handleMouseMoveSvg = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (!pinAwalDiklik || !svgRef.current) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    const scaleX = 580 / rect.width;
+    const scaleY = 250 / rect.height;
+    setPosisiKursorSvg({
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY,
+    });
+  };
+
+  const handleKlikTitikPinFisik = (
+    e: React.MouseEvent,
+    pinDiklik: TitikPinFisik
+  ) => {
+    e.stopPropagation();
+
     if (!esp32SudahDitaruh || !periferalSudahDitaruh) {
-      setPesanFeedback(
-        "⚠️ Taruh dulu papan ESP32 dan Komponen Sensor/Aktuator ke meja breadboard sebelum menarik kabel!"
+      setPesanGudang(
+        "⚠️ Tarik dan pasang dulu ESP32 serta Komponen dari Gudang Komponen ke kanvas sebelum menyambung kaki pin!"
       );
       return;
     }
 
-    // Jika belum ada pin awal yang dipilih, jadikan pin ini sebagai ujung awal kabel
-    if (!pinSedangDitarik) {
-      setPinSedangDitarik(pinDiklik);
+    // KLIK TITIK KE-1: Mulai menarik ujung kabel dari kaki pin ini
+    if (!pinAwalDiklik) {
+      setPinAwalDiklik(pinDiklik);
+      setPosisiKursorSvg({ x: pinDiklik.x, y: pinDiklik.y });
+      setPesanGudang(
+        `🔌 Titik ke-1 [${pinDiklik.labelPin}] terpegang! Sekarang arahkan kabel dan KLIK titik kaki pin ke-2 pada komponen pasangan!`
+      );
       return;
     }
 
-    // Jika mengklik pin yang sama, batalkan tarikan
-    if (pinSedangDitarik.idPin === pinDiklik.idPin) {
-      setPinSedangDitarik(null);
+    // Jika mengklik titik yang sama persis, batalkan pegangan kabel
+    if (pinAwalDiklik.idPin === pinDiklik.idPin) {
+      setPinAwalDiklik(null);
+      setPesanGudang("Tarikan kabel dibatalkan.");
       return;
     }
 
-    // Pastikan menyambung antara ESP32 <-> Periferal
-    let idEsp = "";
-    let idPerif = "";
-    if (
-      pinSedangDitarik.posisiKomponen === "esp32" &&
-      pinDiklik.posisiKomponen === "periferal"
-    ) {
-      idEsp = pinSedangDitarik.idPin;
-      idPerif = pinDiklik.idPin;
-    } else if (
-      pinSedangDitarik.posisiKomponen === "periferal" &&
-      pinDiklik.posisiKomponen === "esp32"
-    ) {
-      idEsp = pinDiklik.idPin;
-      idPerif = pinSedangDitarik.idPin;
-    } else {
-      setPinSedangDitarik(pinDiklik);
+    // Jika mengklik pin di komponen yang sama (misal ESP32 ke ESP32), pindahkan titik awal ke pin baru tersebut
+    if (pinAwalDiklik.posisiKomponen === pinDiklik.posisiKomponen) {
+      setPinAwalDiklik(pinDiklik);
+      setPosisiKursorSvg({ x: pinDiklik.x, y: pinDiklik.y });
+      setPesanGudang(
+        `🔌 Titik ke-1 dipindahkan ke [${pinDiklik.labelPin}]. Sekarang klik titik kaki pin pada komponen seberangnya!`
+      );
       return;
     }
 
-    // Cari warna kabel yang sesuai
+    // KLIK TITIK KE-2 BERBEDA KOMPONEN: Resmi pasang kabel antara Titik 1 dan Titik 2!
+    const idEsp =
+      pinAwalDiklik.posisiKomponen === "esp32"
+        ? pinAwalDiklik.idPin
+        : pinDiklik.idPin;
+    const idPerif =
+      pinAwalDiklik.posisiKomponen === "periferal"
+        ? pinAwalDiklik.idPin
+        : pinDiklik.idPin;
+
     const cocokWajib = spekHardware.sambunganWajib.find(
       (w) => w.dariPinEsp32 === idEsp && w.kePinPeriferal === idPerif
     );
-    const warnaKabelBaru = cocokWajib?.warnaKabel || pinSedangDitarik.warnaPin;
+    const warnaKabelBaru = cocokWajib?.warnaKabel || pinAwalDiklik.warnaPin;
 
     setKabelTerpasangList((prev) => {
-      const tanpaDuplikat = prev.filter(
+      const bersih = prev.filter(
         (k) => !(k.dariPinEsp32 === idEsp && k.kePinPeriferal === idPerif)
       );
       return [
-        ...tanpaDuplikat,
+        ...bersih,
         { dariPinEsp32: idEsp, kePinPeriferal: idPerif, warna: warnaKabelBaru },
       ];
     });
-    setPinSedangDitarik(null);
-    setStatusVerifikasi("belum");
-  };
 
-  // Shortcut pasang otomatis 1 langkah berikutnya (memudahkan di layar HP/Tablet)
-  const lakukanLangkahTutorialBerikutnya = () => {
-    if (!esp32SudahDitaruh) {
-      setEsp32SudahDitaruh(true);
-      return;
-    }
-    if (!periferalSudahDitaruh) {
-      setPeriferalSudahDitaruh(true);
-      return;
-    }
-    if (sambunganBerkedipTarget) {
-      setKabelTerpasangList((prev) => [
-        ...prev,
-        {
-          dariPinEsp32: sambunganBerkedipTarget.dariPinEsp32,
-          kePinPeriferal: sambunganBerkedipTarget.kePinPeriferal,
-          warna: sambunganBerkedipTarget.warnaKabel,
-        },
-      ]);
-      return;
-    }
+    setPinAwalDiklik(null);
+    setStatusVerifikasi("belum");
+    setPesanGudang(
+      cocokWajib
+        ? `✅ Kabel berhasil disambung: ${cocokWajib.keteranganJalur}!`
+        : `⚠️ Kabel terpasang dari ${pinAwalDiklik.labelPin} ke ${pinDiklik.labelPin}.`
+    );
   };
 
   // ==========================================================================
-  // MESIN VALIDASI KETAT: KOMPONEN + KABEL PIN + SINTAKS KODE C++
+  // 3. MESIN VALIDASI KETAT: KOMPONEN + KABEL PIN + SINTAKS KODE C++
   // ==========================================================================
   const periksaRangkaianDanJalankanProgram = () => {
     const errors: string[] = [];
 
-    // 1. Cek apakah ESP32 dan Komponen sudah ditarik ke Breadboard
     if (!esp32SudahDitaruh) {
       errors.push(
-        "[KOMPONEN BELUM DITARUH] Anda belum menarik/memasang papan ESP32 DevKit V1 ke meja rangkaian!"
+        "[KOMPONEN BELUM DITARUH] Tarik 'ESP32 DevKit V1' dari Gudang Komponen ke kotak bayangan kiri di kanvas!"
       );
     }
     if (!periferalSudahDitaruh) {
       errors.push(
-        `[KOMPONEN BELUM DITARUH] Anda belum menarik/memasang komponen "${spekHardware.namaPeriferal}" ke meja rangkaian!`
+        `[KOMPONEN BELUM DITARUH] Tarik '${spekHardware.namaPeriferal}' dari Gudang Komponen ke kotak bayangan kanan di kanvas!`
       );
     }
 
-    // 2. Cek apakah semua kabel wajib sudah ditarik ke pin yang benar
     for (const wajib of spekHardware.sambunganWajib) {
       const sudahAda = kabelTerpasangList.some(
         (k) =>
@@ -265,7 +321,6 @@ export const WokwiStepByStepAcademy: React.FC<{
       }
     }
 
-    // Cek apakah ada kabel salah pasang yang tidak diminta modul
     for (const terpasang of kabelTerpasangList) {
       const valid = spekHardware.sambunganWajib.some(
         (w) =>
@@ -282,7 +337,7 @@ export const WokwiStepByStepAcademy: React.FC<{
             (p) => p.idPin === terpasang.kePinPeriferal
           )?.labelPin || terpasang.kePinPeriferal;
         errors.push(
-          `[SALAH SAMBUNG KABEL] Kabel dari "${namaEsp}" ke "${namaPerif}" tidak sesuai dengan instruksi modul! Hapus kabel yang salah.`
+          `[SALAH SAMBUNG PIN] Kabel dari "${namaEsp}" ke "${namaPerif}" salah alamat! Hapus kabel tersebut.`
         );
       }
     }
@@ -291,19 +346,16 @@ export const WokwiStepByStepAcademy: React.FC<{
       setStatusVerifikasi("gagal_rangkaian");
       setDaftarErrorDetail(errors);
       setPesanFeedback(
-        "❌ SIMULASI GAGAL MENYALA: Rangkaian fisik atau tarikan kabel Anda belum tepat! Klik tombol '💡 Butuh Clue?' jika Anda kesulitan."
+        "❌ SIMULASI GAGAL MENYALA: Komponen belum ditaruh atau sambungan kaki pin belum lengkap!"
       );
       setOutputSerialSimulasi(
-        `[HARDWARE & WIRING ERROR — SIMULASI TIDAK BERHASIL]\n--------------------------------------------------\n${errors
+        `[HARDWARE & WIRING ERROR — RANGKAIAN TIDAK MENYALA]\n--------------------------------------------------\n${errors
           .map((e, i) => `${i + 1}. ${e}`)
-          .join(
-            "\n"
-          )}\n--------------------------------------------------\n👉 Perbaiki komponen/kabel di kanvas atas atau buka Clue!`
+          .join("\n")}`
       );
       return;
     }
 
-    // 3. Validasi Kodingan C++ (Hapus komentar dulu agar komentar template tidak dianggap kode)
     const kodeBersih = kodeKetikanUser
       .replace(/\/\/.*$/gm, "")
       .replace(/\/\*[\s\S]*?\*\//g, "")
@@ -339,23 +391,20 @@ export const WokwiStepByStepAcademy: React.FC<{
       setStatusVerifikasi("gagal_kode");
       setDaftarErrorDetail(errors);
       setPesanFeedback(
-        `❌ KOMPILASI KODE GAGAL (${errors.length} Kesalahan): Kabel rangkaian sudah benar, tetapi kodingan C++ Anda masih belum tepat!`
+        `❌ KOMPILASI KODE GAGAL (${errors.length} Kesalahan): Rangkaian fisik sudah benar, tetapi kode C++ Anda masih belum lengkap!`
       );
       setOutputSerialSimulasi(
-        `[ESP32 GCC COMPILER ERROR — SIMULASI DIHENTIKAN]\n--------------------------------------------------\n${errors
+        `[ESP32 GCC COMPILER ERROR]\n--------------------------------------------------\n${errors
           .map((e, i) => `${i + 1}. ${e}`)
-          .join(
-            "\n"
-          )}\n--------------------------------------------------\n💡 Klik tombol '💡 Buka Clue Petunjuk' jika Anda butuh bantuan!`
+          .join("\n")}`
       );
       return;
     }
 
-    // 4. SEMUA BENAR (KOMPONEN + KABEL + KODE) -> SIMULASI MENYALA & BUKA LEVEL BERIKUTNYA!
     setStatusVerifikasi("lulus");
     setDaftarErrorDetail([]);
     setPesanFeedback(
-      `🎉 LUAR BIASA! Perakitan komponen, tarikan kabel pin, dan kodingan C++ Level ${materiAktif.level} Anda 100% BENAR (+${materiAktif.xpReward} XP)! Sekarang Anda bisa lanjut ke Level berikutnya!`
+      `🎉 SEMPURNA! Komponen, sambungan 2 titik pin, dan kodingan C++ Level ${materiAktif.level} Anda 100% BENAR (+${materiAktif.xpReward} XP)!`
     );
     setOutputSerialSimulasi(materiAktif.simulasiOutputJikaBenar);
 
@@ -365,30 +414,10 @@ export const WokwiStepByStepAcademy: React.FC<{
     }
   };
 
-  // Fungsi Bantuan Otomatis (Memasang Komponen + Kabel + Kode)
-  const pasangSemuaOtomatis = () => {
-    setEsp32SudahDitaruh(true);
-    setPeriferalSudahDitaruh(true);
-    setKabelTerpasangList(
-      spekHardware.sambunganWajib.map((w) => ({
-        dariPinEsp32: w.dariPinEsp32,
-        kePinPeriferal: w.kePinPeriferal,
-        warna: w.warnaKabel,
-      }))
-    );
-    setKodeKetikanUser(materiAktif.kodeTargetBenar);
-    setStatusVerifikasi("belum");
-    setDaftarErrorDetail([]);
-    setPesanFeedback(
-      "✨ Seluruh komponen, kabel pin, dan kode C++ yang benar telah dipasang! Klik tombol hijau '1. Periksa Rangkaian & Jalankan Program' untuk menyalakan simulasi."
-    );
-  };
-
   const simulasiAktif = statusVerifikasi === "lulus";
   const sudahLulusLevelIni =
     statusVerifikasi === "lulus" || levelSelesaiSet.has(materiAktif.level);
 
-  // Koordinat pin yang sedang berkedip di mode tutorial
   const pinEspBerkedipObj = sambunganBerkedipTarget
     ? spekHardware.pinEsp32Tersedia.find(
         (p) => p.idPin === sambunganBerkedipTarget.dariPinEsp32
@@ -401,18 +430,16 @@ export const WokwiStepByStepAcademy: React.FC<{
     : null;
 
   return (
-    <div className="bg-slate-900 text-white p-5 sm:p-6 rounded-3xl border-2 border-emerald-500/60 shadow-2xl space-y-6">
-      {/* =================================================================== */}
-      {/* HEADER 15 LEVEL + PEMILIH MODE TUTORIAL BERKEDIP VS LATIHAN MANDIRI */}
-      {/* =================================================================== */}
+    <div className="bg-slate-900 text-white p-5 sm:p-6 rounded-3xl border-2 border-emerald-500/60 shadow-2xl space-y-5">
+      {/* HEADER 15 LEVEL + MODE TUTORIAL VS LATIHAN */}
       <div className="flex flex-wrap justify-between items-center gap-4 border-b border-slate-800 pb-4">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="px-3 py-1 rounded-full bg-emerald-400 text-slate-950 font-black text-[10px] uppercase">
-              🎓 AKADEMI WOKWI INTERAKTIF (15 LEVEL DARI DASAR)
+              🎓 LABORATORIUM RAKIT KOMPONEN &amp; TARIK PIN WOKWI (15 LEVEL)
             </span>
             <span className="px-3 py-1 rounded-full bg-amber-400/20 border border-amber-400 text-amber-300 font-black text-[10px]">
-              Tuntas: {levelSelesaiSet.size} / {KURIKULUM_15_LEVEL_IOT.length} Level
+              Selesai: {levelSelesaiSet.size} / {KURIKULUM_15_LEVEL_IOT.length} Level
             </span>
           </div>
           <h2 className="text-lg sm:text-2xl font-black text-white">
@@ -420,7 +447,6 @@ export const WokwiStepByStepAcademy: React.FC<{
           </h2>
         </div>
 
-        {/* SAKELAR 2 MODE: MODE TUTORIAL (ADA BAYANGAN BERKEDIP) VS MODE LATIHAN (TANPA BAYANGAN + CLUE) */}
         <div className="flex flex-wrap items-center gap-2 bg-slate-950 p-1.5 rounded-2xl border border-slate-800">
           <button
             type="button"
@@ -434,7 +460,7 @@ export const WokwiStepByStepAcademy: React.FC<{
                 : "text-slate-300 hover:text-white"
             }`}
           >
-            <Eye className="w-4 h-4" /> 1. Mode Tutorial (Ada Bayangan &amp; Kedap-Kedip)
+            <Eye className="w-4 h-4" /> 1. Mode Tutorial (Ada Bayangan Berkedip)
           </button>
 
           <button
@@ -449,12 +475,12 @@ export const WokwiStepByStepAcademy: React.FC<{
                 : "text-slate-300 hover:text-white"
             }`}
           >
-            <Target className="w-4 h-4" /> 2. Mode Latihan Mandiri (Uji Tanpa Bayangan + Clue)
+            <Target className="w-4 h-4" /> 2. Mode Latihan Mandiri (+ Clue)
           </button>
         </div>
       </div>
 
-      {/* DERETAN NAVIGASI 15 LEVEL */}
+      {/* DERETAN TOMBOL LEVEL 1 S.D. 15 */}
       <div className="flex flex-wrap gap-1.5 bg-slate-950 p-3 rounded-2xl border border-slate-800">
         {KURIKULUM_15_LEVEL_IOT.map((item, idx) => {
           const sedangDibuka = idx === indeksLevel;
@@ -480,168 +506,31 @@ export const WokwiStepByStepAcademy: React.FC<{
       </div>
 
       {/* =================================================================== */}
-      {/* BANNER INSTRUKSI BERKEDIP DINAMIS (MENUNTUN APA YANG HARUS DIKLIK)  */}
+      {/* LACI GUDANG KOMPONEN ELEKTRONIK (DRAG DARI SINI KE KANVAS!)         */}
       {/* =================================================================== */}
-      <div
-        className={`p-4 rounded-2xl border-2 flex flex-wrap justify-between items-center gap-3 ${
-          tampilkanBayanganPanduan
-            ? "bg-amber-950/40 border-amber-400 text-amber-100"
-            : "bg-indigo-950/50 border-indigo-400 text-indigo-100"
-        }`}
-      >
-        <div className="flex items-center gap-3 text-xs sm:text-sm font-bold">
-          <span className="px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-black text-xs animate-pulse shrink-0">
-            {modeBelajar === "tutorial_berkedip"
-              ? "💡 PANDUAN BERKEDIP:"
-              : "🎯 INSTRUKSI LATIHAN:"}
-          </span>
-          <span>
-            {langkahTutorialSaatIni === "taruh_esp32" &&
-              "Langkah 1: Klik/Tarik komponen [1. Board ESP32 DevKit V1] dari Toolbox di bawah ke kotak bayangan berkedip di sebelah kiri kanvas!"}
-            {langkahTutorialSaatIni === "taruh_periferal" &&
-              `Langkah 2: Sekarang Klik/Tarik komponen [2. ${spekHardware.namaPeriferal}] ke kotak bayangan berkedip di sebelah kanan kanvas!`}
-            {langkahTutorialSaatIni === "tarik_kabel" &&
-              sambunganBerkedipTarget &&
-              (tampilkanBayanganPanduan
-                ? `Langkah 3 (Tarik Kabel): Klik titik pin berkedip [${
-                    pinEspBerkedipObj?.labelPin
-                  }] di ESP32 lalu klik titik berkedip [${
-                    pinPerifBerkedipObj?.labelPin
-                  }] (${sambunganBerkedipTarget.keteranganJalur})!`
-                : `Langkah 3 (Latihan): Sambungkan ${spekHardware.sambunganWajib.length} jalur kabel dari pin ESP32 ke kaki komponen sesuai petunjuk soal di bawah!`)}
-            {langkahTutorialSaatIni === "ketik_kode" &&
-              "✅ Rangkaian & Kabel Lengkap! Sekarang ketik kode program C++ di bawah lalu klik 'Periksa Rangkaian & Jalankan Program'!"}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {langkahTutorialSaatIni !== "ketik_kode" &&
-            tampilkanBayanganPanduan && (
-              <button
-                type="button"
-                onClick={lakukanLangkahTutorialBerikutnya}
-                className="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs cursor-pointer shadow animate-bounce"
-              >
-                ⚡ Pasang Langkah Ini Otomatis
-              </button>
-            )}
-
-          {modeBelajar === "latihan_mandiri" && (
-            <button
-              type="button"
-              onClick={() => {
-                setJumlahClueDibuka((c) =>
-                  Math.min(spekHardware.daftarClueLatihan.length, c + 1)
-                );
-                if (jumlahClueDibuka >= 1) {
-                  setIntipBayanganSementara(true);
-                }
-              }}
-              className="px-3.5 py-2 rounded-xl bg-rose-500 hover:bg-rose-400 text-white font-black text-xs flex items-center gap-1.5 cursor-pointer shadow-lg"
-            >
-              <HelpCircle className="w-4 h-4" /> 💡 Butuh Clue? (
-              {jumlahClueDibuka}/{spekHardware.daftarClueLatihan.length})
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* KOTAK DAFTAR CLUE BERTAHAP (MUNCUL JIKA SISWA KLIK TOMBOL BUTUH CLUE) */}
-      {jumlahClueDibuka > 0 && (
-        <div className="p-4 rounded-2xl bg-amber-950/70 border-2 border-amber-400 space-y-2 text-xs">
-          <div className="flex justify-between items-center">
-            <span className="font-black text-amber-300 uppercase">
-              🕵️ Petunjuk / Clue Bantuan yang Dibuka ({jumlahClueDibuka} dari{" "}
-              {spekHardware.daftarClueLatihan.length}):
+      <div className="bg-slate-950 p-4 rounded-3xl border-2 border-indigo-500/50 space-y-3 shadow-inner">
+        <div className="flex flex-wrap justify-between items-center gap-2">
+          <div className="flex items-center gap-2">
+            <PackageOpen className="w-5 h-5 text-amber-400" />
+            <span className="text-xs sm:text-sm font-black uppercase text-amber-300">
+              Gudang Komponen Elektronik (Tarik / Drag Komponen yang Diminta Modul ke Dalam Kanvas di Bawah):
             </span>
-            <button
-              type="button"
-              onClick={() =>
-                setIntipBayanganSementara(!intipBayanganSementara)
-              }
-              className="px-3 py-1 rounded-lg bg-amber-400 text-slate-950 font-black text-[11px] cursor-pointer"
-            >
-              {intipBayanganSementara
-                ? "Sembunyikan Bayangan Kabel"
-                : "👁️ Tampilkan Bayangan Berkedip di Kanvas"}
-            </button>
-          </div>
-          <ul className="list-disc list-inside space-y-1.5 text-amber-100 font-medium">
-            {spekHardware.daftarClueLatihan
-              .slice(0, jumlahClueDibuka)
-              .map((clue, idx) => (
-                <li key={idx}>{clue}</li>
-              ))}
-          </ul>
-        </div>
-      )}
-
-      {/* =================================================================== */}
-      {/* TOOLBOX KOMPONEN & KANVAS RANGKAIAN WOKWI DENGAN BAYANGAN BERKEDIP  */}
-      {/* =================================================================== */}
-      <div className="bg-slate-950 p-5 rounded-3xl border-2 border-slate-800 space-y-4">
-        {/* Baris Toolbox Komponen yang Harus Ditarik ke Kanvas */}
-        <div className="flex flex-wrap justify-between items-center gap-3 border-b border-slate-800 pb-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-black uppercase text-slate-400 mr-1">
-              🧰 Toolbox Komponen:
-            </span>
-
-            {/* Tombol Tarik ESP32 */}
-            <button
-              type="button"
-              draggable
-              onDragEnd={() => setEsp32SudahDitaruh(true)}
-              onClick={() => setEsp32SudahDitaruh(true)}
-              className={`px-3.5 py-2 rounded-xl font-black text-xs flex items-center gap-1.5 cursor-pointer border-2 transition ${
-                esp32SudahDitaruh
-                  ? "bg-emerald-950 text-emerald-300 border-emerald-500/50"
-                  : "bg-amber-400 text-slate-950 border-white animate-pulse shadow-lg scale-105"
-              }`}
-            >
-              <Cpu className="w-4 h-4" />
-              <span>
-                {esp32SudahDitaruh
-                  ? "✓ 1. ESP32 DevKit V1 (Terpasang)"
-                  : "+ 1. Tarik ESP32 DevKit V1 ke Kanvas"}
-              </span>
-            </button>
-
-            {/* Tombol Tarik Komponen Periferal Asli */}
-            <button
-              type="button"
-              draggable
-              onDragEnd={() => setPeriferalSudahDitaruh(true)}
-              onClick={() => setPeriferalSudahDitaruh(true)}
-              className={`px-3.5 py-2 rounded-xl font-black text-xs flex items-center gap-1.5 cursor-pointer border-2 transition ${
-                periferalSudahDitaruh
-                  ? "bg-emerald-950 text-emerald-300 border-emerald-500/50"
-                  : esp32SudahDitaruh
-                  ? "bg-amber-400 text-slate-950 border-white animate-pulse shadow-lg scale-105"
-                  : "bg-slate-900 text-slate-300 border-slate-700"
-              }`}
-            >
-              <Zap className="w-4 h-4" />
-              <span>
-                {periferalSudahDitaruh
-                  ? `✓ 2. ${spekHardware.namaPeriferal} (Terpasang)`
-                  : `+ 2. Tarik ${spekHardware.namaPeriferal}`}
-              </span>
-            </button>
           </div>
 
           <div className="flex items-center gap-2">
-            {kabelTerpasangList.length > 0 && (
+            {modeBelajar === "latihan_mandiri" && (
               <button
                 type="button"
                 onClick={() => {
-                  setKabelTerpasangList([]);
-                  setStatusVerifikasi("belum");
+                  setJumlahClueDibuka((c) =>
+                    Math.min(spekHardware.daftarClueLatihan.length, c + 1)
+                  );
+                  if (jumlahClueDibuka >= 1) setIntipBayanganSementara(true);
                 }}
-                className="px-3 py-1.5 rounded-xl bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-500/40 font-bold text-xs flex items-center gap-1 cursor-pointer"
+                className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs flex items-center gap-1 cursor-pointer"
               >
-                <Trash2 className="w-3.5 h-3.5" /> Lepas Semua Kabel (
-                {kabelTerpasangList.length})
+                <HelpCircle className="w-3.5 h-3.5" /> 💡 Butuh Clue? (
+                {jumlahClueDibuka}/{spekHardware.daftarClueLatihan.length})
               </button>
             )}
             <button
@@ -650,455 +539,633 @@ export const WokwiStepByStepAcademy: React.FC<{
                 setEsp32SudahDitaruh(false);
                 setPeriferalSudahDitaruh(false);
                 setKabelTerpasangList([]);
+                setPinAwalDiklik(null);
                 setStatusVerifikasi("belum");
               }}
-              className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold text-xs cursor-pointer"
+              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs cursor-pointer"
             >
-              Ulangi Rangkaian
+              Bersihkan Kanvas
             </button>
           </div>
         </div>
 
-        {/* KANVAS UTAMA SVG WOKWI (560 x 240) DENGAN BAYANGAN GHOST & TITIK PIN INTERAKTIF */}
-        <div
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={() => {
-            if (!esp32SudahDitaruh) setEsp32SudahDitaruh(true);
-            else if (!periferalSudahDitaruh) setPeriferalSudahDitaruh(true);
-          }}
-          className="bg-[#090d16] rounded-2xl border-2 border-slate-800 p-3 relative overflow-hidden"
-        >
-          <svg viewBox="0 0 560 240" className="w-full h-60 sm:h-72 select-none">
-            {/* Lubang-lubang Breadboard */}
-            {Array.from({ length: 20 }).map((_, gx) =>
-              Array.from({ length: 8 }).map((__, gy) => (
-                <circle
-                  key={`${gx}-${gy}`}
-                  cx={18 + gx * 27}
-                  cy={18 + gy * 27}
-                  r={1.6}
-                  fill="#1e293b"
-                />
-              ))
-            )}
+        {/* Kartu-Kartu Komponen di Dalam Gudang yang Bisa Di-Drag */}
+        <div className="flex gap-2.5 overflow-x-auto pb-2 pt-1">
+          {DAFTAR_GUDANG_KOMPONEN_WOKWI.map((item) => {
+            const adalahKomponenTargetLevelIni =
+              (item.tipeCocok === "esp32_board" && !esp32SudahDitaruh) ||
+              (item.tipeCocok === spekHardware.tipeVisualPeriferal &&
+                !periferalSudahDitaruh);
 
-            {/* ============================================================= */}
-            {/* 1. AREA KIRI: BAYANGAN GHOST ESP32 ATAU BOARD ESP32 ASLI      */}
-            {/* ============================================================= */}
-            {!esp32SudahDitaruh ? (
-              <g
-                onClick={() => setEsp32SudahDitaruh(true)}
-                className="cursor-pointer"
-              >
-                <rect
-                  x={45}
-                  y={25}
-                  width={122}
-                  height={195}
-                  rx={14}
-                  fill="rgba(250, 204, 21, 0.08)"
-                  stroke="#facc15"
-                  strokeWidth={2.5}
-                  strokeDasharray="8 5"
-                >
-                  <animate
-                    attributeName="opacity"
-                    values="0.35;1;0.35"
-                    dur="1.2s"
-                    repeatCount="indefinite"
-                  />
-                </rect>
-                <text
-                  x={106}
-                  y={112}
-                  textAnchor="middle"
-                  fill="#facc15"
-                  fontSize="11"
-                  fontWeight="bold"
-                >
-                  + KLIK / TARIK
-                </text>
-                <text
-                  x={106}
-                  y={130}
-                  textAnchor="middle"
-                  fill="#ffffff"
-                  fontSize="11"
-                  fontWeight="bold"
-                >
-                  ESP32 KE SINI
-                </text>
-                <text
-                  x={106}
-                  y={148}
-                  textAnchor="middle"
-                  fill="#94a3b8"
-                  fontSize="9"
-                >
-                  (Bayangan Papan MCU)
-                </text>
-              </g>
-            ) : (
-              <g>
-                {/* Papan PCB Hitam ESP32 DevKit V1 Asli */}
-                <rect
-                  x={52}
-                  y={25}
-                  width={108}
-                  height={195}
-                  rx={10}
-                  fill="#1e293b"
-                  stroke="#64748b"
-                  strokeWidth={2}
-                />
-                {/* Kaleng Modul Wi-Fi ESP-WROOM-32 Perak */}
-                <rect
-                  x={66}
-                  y={38}
-                  width={80}
-                  height={62}
-                  rx={6}
-                  fill="#cbd5e1"
-                  stroke="#475569"
-                />
-                <text
-                  x={106}
-                  y={66}
-                  textAnchor="middle"
-                  fill="#0f172a"
-                  fontSize="9.5"
-                  fontWeight="bold"
-                >
-                  ESP-WROOM-32
-                </text>
-                <text
-                  x={106}
-                  y={82}
-                  textAnchor="middle"
-                  fill="#334155"
-                  fontSize="8"
-                  fontWeight="bold"
-                >
-                  Wi-Fi + BLE SoC
-                </text>
+            const sudahTerpasangDiKanvas =
+              (item.tipeCocok === "esp32_board" && esp32SudahDitaruh) ||
+              (item.tipeCocok === spekHardware.tipeVisualPeriferal &&
+                periferalSudahDitaruh);
 
-                {/* Port Konektor Micro-USB di Bawah */}
-                <rect
-                  x={86}
-                  y={208}
-                  width={40}
-                  height={16}
-                  rx={3}
-                  fill="#94a3b8"
-                />
-                {/* Tombol EN & BOOT + LED Power */}
-                <rect x={64} y={195} width={14} height={10} rx={2} fill="#0f172a" />
-                <rect x={134} y={195} width={14} height={10} rx={2} fill="#0f172a" />
-                <circle
-                  cx={92}
-                  cy={182}
-                  r={4}
-                  fill={simulasiAktif ? "#22c55e" : "#ef4444"}
-                />
-                <circle
-                  cx={120}
-                  cy={182}
-                  r={4}
-                  fill={
-                    simulasiAktif && detakSimulasi % 2 === 0
-                      ? "#38bdf8"
-                      : "#334155"
-                  }
-                />
+            const sedangTerpilihDrag =
+              itemSedangDiDrag?.idItem === item.idItem;
 
-                {/* Titik-Titik Kaki Pin Emas ESP32 yang Bisa Diklik untuk Tarik Kabel */}
-                {spekHardware.pinEsp32Tersedia.map((pin) => {
-                  const sedangDipilih = pinSedangDitarik?.idPin === pin.idPin;
-                  const harusBerkedip =
-                    tampilkanBayanganPanduan &&
-                    pinEspBerkedipObj?.idPin === pin.idPin;
-
-                  return (
-                    <g
-                      key={pin.idPin}
-                      onClick={() => handleKlikTitikPin(pin)}
-                      className="cursor-pointer"
-                    >
-                      {harusBerkedip && (
-                        <circle
-                          cx={pin.x}
-                          cy={pin.y}
-                          r={13}
-                          fill="none"
-                          stroke="#facc15"
-                          strokeWidth={3}
-                        >
-                          <animate
-                            attributeName="r"
-                            values="6;15;6"
-                            dur="0.9s"
-                            repeatCount="indefinite"
-                          />
-                        </circle>
-                      )}
-                      <circle
-                        cx={pin.x}
-                        cy={pin.y}
-                        r={sedangDipilih ? 8 : 5.5}
-                        fill={
-                          sedangDipilih || harusBerkedip
-                            ? "#facc15"
-                            : pin.warnaPin
-                        }
-                        stroke="#ffffff"
-                        strokeWidth={1.5}
-                      />
-                      <text
-                        x={pin.x > 100 ? pin.x - 10 : pin.x + 10}
-                        y={pin.y + 3}
-                        textAnchor={pin.x > 100 ? "end" : "start"}
-                        fill={harusBerkedip ? "#fde047" : "#e2e8f0"}
-                        fontSize="7.8"
-                        fontWeight="bold"
-                      >
-                        {pin.labelPin}
-                      </text>
-                    </g>
+            return (
+              <div
+                key={item.idItem}
+                draggable={!sudahTerpasangDiKanvas}
+                onDragStart={() => {
+                  setItemSedangDiDrag(item);
+                  setPesanGudang(
+                    `📦 Menarik '${item.namaTampil}'... Jatuhkan (Drop) ke kotak bayangan yang sesuai di kanvas bawah!`
                   );
-                })}
-              </g>
-            )}
-
-            {/* ============================================================= */}
-            {/* 2. AREA KANAN: BAYANGAN GHOST KOMPONEN ATAU PERANGKAT ASLI    */}
-            {/* ============================================================= */}
-            {!periferalSudahDitaruh ? (
-              <g
-                onClick={() => setPeriferalSudahDitaruh(true)}
-                className="cursor-pointer"
+                }}
+                onClick={() => {
+                  if (!sudahTerpasangDiKanvas) handleKlikKartuGudang(item);
+                }}
+                className={`min-w-[155px] p-3 rounded-2xl border-2 select-none transition flex flex-col justify-between gap-1.5 ${
+                  sudahTerpasangDiKanvas
+                    ? "bg-emerald-950/40 border-emerald-600/40 opacity-50 cursor-default"
+                    : sedangTerpilihDrag
+                    ? "bg-amber-400 text-slate-950 border-white scale-105 cursor-grabbing shadow-xl"
+                    : tampilkanBayanganPanduan && adalahKomponenTargetLevelIni
+                    ? "bg-slate-900 border-amber-400 ring-2 ring-amber-400/50 animate-pulse cursor-grab hover:scale-105"
+                    : "bg-slate-900 border-slate-800 hover:border-slate-600 cursor-grab"
+                }`}
               >
-                <rect
-                  x={335}
-                  y={42}
-                  width={185}
-                  height={155}
-                  rx={16}
-                  fill="rgba(56, 189, 248, 0.08)"
-                  stroke="#38bdf8"
-                  strokeWidth={2.5}
-                  strokeDasharray="8 5"
-                >
-                  <animate
-                    attributeName="opacity"
-                    values="0.35;1;0.35"
-                    dur="1.2s"
-                    repeatCount="indefinite"
-                  />
-                </rect>
-                <text
-                  x={427}
-                  y={108}
-                  textAnchor="middle"
-                  fill="#38bdf8"
-                  fontSize="11"
-                  fontWeight="bold"
-                >
-                  + KLIK / TARIK KOMPONEN:
-                </text>
-                <text
-                  x={427}
-                  y={126}
-                  textAnchor="middle"
-                  fill="#ffffff"
-                  fontSize="10"
-                  fontWeight="bold"
-                >
-                  {spekHardware.namaPeriferal.slice(0, 28)}
-                </text>
-                <text
-                  x={427}
-                  y={144}
-                  textAnchor="middle"
-                  fill="#94a3b8"
-                  fontSize="9"
-                >
-                  (Bayangan Tempat Sensor/Aktuator)
-                </text>
-              </g>
-            ) : (
-              <g>
-                {/* Gambar Perangkat Keras Asli Wokwi */}
-                <GambarPeriferalWokwiAsli
-                  tipe={spekHardware.tipeVisualPeriferal}
-                  simulasiHidup={simulasiAktif}
-                  detak={detakSimulasi}
-                  nilaiSensorUji={nilaiSensorUji}
-                />
-
-                {/* Titik Pin pada Komponen Periferal */}
-                {spekHardware.pinPeriferalTersedia.map((pin) => {
-                  const sedangDipilih = pinSedangDitarik?.idPin === pin.idPin;
-                  const harusBerkedip =
-                    tampilkanBayanganPanduan &&
-                    pinPerifBerkedipObj?.idPin === pin.idPin;
-
-                  return (
-                    <g
-                      key={pin.idPin}
-                      onClick={() => handleKlikTitikPin(pin)}
-                      className="cursor-pointer"
-                    >
-                      {harusBerkedip && (
-                        <circle
-                          cx={pin.x}
-                          cy={pin.y}
-                          r={14}
-                          fill="none"
-                          stroke="#facc15"
-                          strokeWidth={3}
-                        >
-                          <animate
-                            attributeName="r"
-                            values="6;15;6"
-                            dur="0.9s"
-                            repeatCount="indefinite"
-                          />
-                        </circle>
-                      )}
-                      <circle
-                        cx={pin.x}
-                        cy={pin.y}
-                        r={sedangDipilih ? 8.5 : 6}
-                        fill={
-                          sedangDipilih || harusBerkedip
-                            ? "#facc15"
-                            : pin.warnaPin
-                        }
-                        stroke="#ffffff"
-                        strokeWidth={1.5}
-                      />
-                      <text
-                        x={pin.x - 10}
-                        y={pin.y - 9}
-                        textAnchor="end"
-                        fill={harusBerkedip ? "#fde047" : "#f8fafc"}
-                        fontSize="8.5"
-                        fontWeight="bold"
-                      >
-                        {pin.labelPin}
-                      </text>
-                    </g>
-                  );
-                })}
-              </g>
-            )}
-
-            {/* ============================================================= */}
-            {/* 3. GARIS BAYANGAN KABEL BERKEDIP (GHOST WIRE GUIDE)           */}
-            {/* ============================================================= */}
-            {esp32SudahDitaruh &&
-              periferalSudahDitaruh &&
-              tampilkanBayanganPanduan &&
-              pinEspBerkedipObj &&
-              pinPerifBerkedipObj && (
-                <g
-                  onClick={lakukanLangkahTutorialBerikutnya}
-                  className="cursor-pointer"
-                >
-                  <path
-                    d={`M ${pinEspBerkedipObj.x} ${pinEspBerkedipObj.y} C ${
-                      (pinEspBerkedipObj.x + pinPerifBerkedipObj.x) / 2
-                    } ${pinEspBerkedipObj.y - 25}, ${
-                      (pinEspBerkedipObj.x + pinPerifBerkedipObj.x) / 2
-                    } ${pinPerifBerkedipObj.y + 25}, ${
-                      pinPerifBerkedipObj.x
-                    } ${pinPerifBerkedipObj.y}`}
-                    fill="none"
-                    stroke="#facc15"
-                    strokeWidth={4}
-                    strokeDasharray="7 5"
+                <div className="flex justify-between items-center gap-1">
+                  <span
+                    style={{
+                      backgroundColor: sedangTerpilihDrag
+                        ? "#0f172a"
+                        : item.warnaAksen,
+                    }}
+                    className="px-2 py-0.5 rounded text-[9px] font-black text-slate-950 uppercase"
                   >
-                    <animate
-                      attributeName="stroke-dashoffset"
-                      from="24"
-                      to="0"
-                      dur="0.7s"
-                      repeatCount="indefinite"
-                    />
-                  </path>
-                  <rect
-                    x={195}
-                    y={12}
-                    width={175}
-                    height={22}
-                    rx={6}
-                    fill="#facc15"
-                  />
-                  <text
-                    x={282}
-                    y={26}
-                    textAnchor="middle"
-                    fill="#0f172a"
-                    fontSize="9"
-                    fontWeight="bold"
-                  >
-                    👆 KLIK PIN BERKEDIP UNTUK HUBUNGKAN KABEL
-                  </text>
-                </g>
-              )}
-
-            {/* ============================================================= */}
-            {/* 4. KABEL JUMPER YANG SUDAH DITARIK OLEH SISWA                 */}
-            {/* ============================================================= */}
-            {kabelTerpasangList.map((k, idx) => {
-              const p1 = spekHardware.pinEsp32Tersedia.find(
-                (p) => p.idPin === k.dariPinEsp32
-              );
-              const p2 = spekHardware.pinPeriferalTersedia.find(
-                (p) => p.idPin === k.kePinPeriferal
-              );
-              if (!p1 || !p2) return null;
-              const midX = (p1.x + p2.x) / 2;
-              return (
-                <g key={idx}>
-                  <path
-                    d={`M ${p1.x} ${p1.y} C ${midX} ${p1.y}, ${midX} ${p2.y}, ${p2.x} ${p2.y}`}
-                    fill="none"
-                    stroke={k.warna}
-                    strokeWidth={4.5}
-                    strokeLinecap="round"
-                  />
-                  {simulasiAktif && (
-                    <circle
-                      cx={
-                        detakSimulasi % 2 === 0
-                          ? p1.x + (p2.x - p1.x) * 0.35
-                          : p1.x + (p2.x - p1.x) * 0.75
-                      }
-                      cy={
-                        detakSimulasi % 2 === 0
-                          ? p1.y + (p2.y - p1.y) * 0.35
-                          : p1.y + (p2.y - p1.y) * 0.75
-                      }
-                      r={4.5}
-                      fill="#fef08a"
-                    />
+                    {item.kategori}
+                  </span>
+                  {sudahTerpasangDiKanvas ? (
+                    <span className="text-[10px] font-black text-emerald-400">
+                      ✓ Di Kanvas
+                    </span>
+                  ) : (
+                    <span className="text-[9.5px] font-bold text-amber-300">
+                      ✋ Drag ke Kanvas
+                    </span>
                   )}
-                </g>
-              );
-            })}
-          </svg>
+                </div>
+
+                <div
+                  className={`font-black text-xs leading-snug ${
+                    sedangTerpilihDrag ? "text-slate-950" : "text-white"
+                  }`}
+                >
+                  {item.namaTampil}
+                </div>
+              </div>
+            );
+          })}
         </div>
 
-        {/* Panel Cepat Pasang Kabel Manual (Untuk Mempermudah Pengguna Mouse maupun Layar Sentuh) */}
-        <div className="bg-slate-900 p-3.5 rounded-2xl border border-slate-800 flex flex-wrap justify-between items-center gap-3 text-xs">
+        {/* Baris Status Interaksi Gudang & Tarikan Kaki Pin */}
+        <div className="px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-800 flex flex-wrap justify-between items-center gap-2 text-xs">
+          <div className="flex items-center gap-2 font-bold text-amber-300">
+            <MousePointerClick className="w-4 h-4 shrink-0" />
+            <span>
+              {pesanGudang ||
+                (langkahTutorialSaatIni === "taruh_esp32"
+                  ? "Langkah 1: Tarik (Drag) kartu 'ESP32 DevKit V1' dari Gudang di atas ke kotak bayangan kuning di sebelah kiri kanvas!"
+                  : langkahTutorialSaatIni === "taruh_periferal"
+                  ? `Langkah 2: Tarik (Drag) kartu '${spekHardware.namaPeriferal}' dari Gudang di atas ke kotak bayangan biru di sebelah kanan kanvas!`
+                  : pinAwalDiklik
+                  ? `🔌 Ujung ke-1 [${pinAwalDiklik.labelPin}] sudah diklik! Sekarang KLIK bulatan kaki pin tujuan di komponen seberangnya!`
+                  : sambunganBerkedipTarget
+                  ? `Langkah 3 (Klik 2 Kaki Pin): ${sambunganBerkedipTarget.keteranganJalur}!`
+                  : "✅ Semua Komponen & Kabel Pin Sudah Terpasang! Silakan ketik kode C++ di bawah.")}
+            </span>
+          </div>
+
+          {pinAwalDiklik && (
+            <button
+              type="button"
+              onClick={() => setPinAwalDiklik(null)}
+              className="px-2.5 py-1 rounded-lg bg-rose-600 text-white font-black text-[10px] cursor-pointer"
+            >
+              Batalkan Pegangan Kabel (ESC)
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* KOTAK CLUE JIKA DIBUKA */}
+      {jumlahClueDibuka > 0 && (
+        <div className="p-4 rounded-2xl bg-amber-950/70 border-2 border-amber-400 space-y-2 text-xs">
+          <div className="flex justify-between items-center">
+            <span className="font-black text-amber-300 uppercase">
+              🕵️ Clue Bantuan ({jumlahClueDibuka}/
+              {spekHardware.daftarClueLatihan.length}):
+            </span>
+            <button
+              type="button"
+              onClick={() => setIntipBayanganSementara(!intipBayanganSementara)}
+              className="px-3 py-1 rounded-lg bg-amber-400 text-slate-950 font-black text-[11px] cursor-pointer"
+            >
+              {intipBayanganSementara
+                ? "Sembunyikan Bayangan"
+                : "👁️ Tampilkan Bayangan Berkedip"}
+            </button>
+          </div>
+          <ul className="list-disc list-inside space-y-1 text-amber-100">
+            {spekHardware.daftarClueLatihan
+              .slice(0, jumlahClueDibuka)
+              .map((c, i) => (
+                <li key={i}>{c}</li>
+              ))}
+          </ul>
+        </div>
+      )}
+
+      {/* =================================================================== */}
+      {/* MEJA KANVAS BREADBOARD WOKWI (DROP ZONE KOMPONEN & KLIK 2 KAKI PIN) */}
+      {/* =================================================================== */}
+      <div className="bg-[#090d16] rounded-3xl border-2 border-slate-800 p-3 relative overflow-hidden shadow-2xl">
+        {/* Banner Petunjuk Rapi di Dalam Kanvas (Tidak Terpotong) */}
+        {esp32SudahDitaruh &&
+          periferalSudahDitaruh &&
+          sambunganBerkedipTarget &&
+          tampilkanBayanganPanduan && (
+            <div className="mb-2 px-4 py-1.5 rounded-xl bg-amber-400 text-slate-950 font-black text-xs text-center shadow">
+              👆 {sambunganBerkedipTarget.keteranganJalur} (Klik Titik ke-1 lalu Klik Titik ke-2)
+            </div>
+          )}
+
+        <svg
+          ref={svgRef}
+          viewBox="0 0 580 250"
+          onMouseMove={handleMouseMoveSvg}
+          onClick={() => {
+            if (pinAwalDiklik) setPinAwalDiklik(null);
+          }}
+          className="w-full h-64 sm:h-76 select-none"
+        >
+          {/* Grid Titik Breadboard */}
+          {Array.from({ length: 21 }).map((_, gx) =>
+            Array.from({ length: 9 }).map((__, gy) => (
+              <circle
+                key={`${gx}-${gy}`}
+                cx={18 + gx * 27}
+                cy={18 + gy * 27}
+                r={1.6}
+                fill="#1e293b"
+              />
+            ))
+          )}
+
+          {/* =============================================================== */}
+          {/* ZONA DROP 1 (KIRI): KOTAK BAYANGAN ESP32 ATAU BOARD ESP32 ASLI  */}
+          {/* =============================================================== */}
+          {!esp32SudahDitaruh ? (
+            <g
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                handleDropKeZonaBayangan("zona_esp32");
+              }}
+              onClick={() => {
+                if (itemSedangDiDrag) handleDropKeZonaBayangan("zona_esp32");
+                else
+                  setPesanGudang(
+                    "👆 Tarik (Drag) kartu 'ESP32 DevKit V1' dari Gudang Komponen di atas ke kotak bayangan kuning ini!"
+                  );
+              }}
+              className="cursor-pointer"
+            >
+              <rect
+                x={42}
+                y={28}
+                width={136}
+                height={198}
+                rx={14}
+                fill="rgba(250, 204, 21, 0.08)"
+                stroke="#facc15"
+                strokeWidth={2.5}
+                strokeDasharray="8 5"
+              >
+                <animate
+                  attributeName="opacity"
+                  values="0.35;1;0.35"
+                  dur="1.2s"
+                  repeatCount="indefinite"
+                />
+              </rect>
+              <text
+                x={110}
+                y={112}
+                textAnchor="middle"
+                fill="#facc15"
+                fontSize="10.5"
+                fontWeight="bold"
+              >
+                📦 DROP DI SINI:
+              </text>
+              <text
+                x={110}
+                y={130}
+                textAnchor="middle"
+                fill="#ffffff"
+                fontSize="11"
+                fontWeight="bold"
+              >
+                ESP32 DevKit V1
+              </text>
+              <text
+                x={110}
+                y={148}
+                textAnchor="middle"
+                fill="#94a3b8"
+                fontSize="8.5"
+              >
+                (Tarik dari Gudang Komponen)
+              </text>
+            </g>
+          ) : (
+            <g>
+              {/* PCB ESP32 DevKit V1 dengan Ruang Label Pin yang Jelas & Kontras */}
+              <rect
+                x={50}
+                y={28}
+                width={120}
+                height={198}
+                rx={10}
+                fill="#1e293b"
+                stroke="#64748b"
+                strokeWidth={2}
+              />
+              {/* Shield Wi-Fi ESP-WROOM-32 diletakkan di tengah agar tidak menabrak teks pin kiri/kanan */}
+              <rect
+                x={74}
+                y={38}
+                width={72}
+                height={52}
+                rx={5}
+                fill="#cbd5e1"
+                stroke="#475569"
+              />
+              <text
+                x={110}
+                y={62}
+                textAnchor="middle"
+                fill="#0f172a"
+                fontSize="8.5"
+                fontWeight="bold"
+              >
+                ESP-WROOM-32
+              </text>
+              <text
+                x={110}
+                y={76}
+                textAnchor="middle"
+                fill="#334155"
+                fontSize="7.5"
+                fontWeight="bold"
+              >
+                Wi-Fi + BLE
+              </text>
+
+              {/* Port Micro-USB */}
+              <rect x={92} y={214} width={36} height={14} rx={3} fill="#94a3b8" />
+              <circle
+                cx={96}
+                cy={196}
+                r={4}
+                fill={simulasiAktif ? "#22c55e" : "#ef4444"}
+              />
+              <circle
+                cx={124}
+                cy={196}
+                r={4}
+                fill={
+                  simulasiAktif && detakSimulasi % 2 === 0
+                    ? "#38bdf8"
+                    : "#334155"
+                }
+              />
+
+              {/* Titik Kaki Pin ESP32 (Wajib Diklik sebagai Titik 1 atau Titik 2) */}
+              {spekHardware.pinEsp32Tersedia.map((pin) => {
+                const sedangDipegang = pinAwalDiklik?.idPin === pin.idPin;
+                const harusBerkedip =
+                  tampilkanBayanganPanduan &&
+                  pinEspBerkedipObj?.idPin === pin.idPin;
+                const isKanan = pin.x > 110;
+
+                return (
+                  <g
+                    key={pin.idPin}
+                    onClick={(e) => handleKlikTitikPinFisik(e, pin)}
+                    className="cursor-pointer"
+                  >
+                    {harusBerkedip && (
+                      <circle
+                        cx={pin.x}
+                        cy={pin.y}
+                        r={13}
+                        fill="none"
+                        stroke="#facc15"
+                        strokeWidth={3}
+                      >
+                        <animate
+                          attributeName="r"
+                          values="6;15;6"
+                          dur="0.85s"
+                          repeatCount="indefinite"
+                        />
+                      </circle>
+                    )}
+                    {/* Badge Latar Teks Pin agar Sangat Jelas Terbaca */}
+                    <rect
+                      x={isKanan ? pin.x - 54 : pin.x + 9}
+                      y={pin.y - 7}
+                      width={45}
+                      height={14}
+                      rx={3}
+                      fill={harusBerkedip ? "#facc15" : "#0f172a"}
+                      opacity={0.92}
+                    />
+                    <text
+                      x={isKanan ? pin.x - 31 : pin.x + 31}
+                      y={pin.y + 3}
+                      textAnchor="middle"
+                      fill={harusBerkedip ? "#0f172a" : "#f8fafc"}
+                      fontSize="7.5"
+                      fontWeight="bold"
+                    >
+                      {pin.labelPin}
+                    </text>
+                    <circle
+                      cx={pin.x}
+                      cy={pin.y}
+                      r={sedangDipegang ? 8.5 : 6}
+                      fill={
+                        sedangDipegang
+                          ? "#ffffff"
+                          : harusBerkedip
+                          ? "#facc15"
+                          : pin.warnaPin
+                      }
+                      stroke="#ffffff"
+                      strokeWidth={2}
+                    />
+                  </g>
+                );
+              })}
+            </g>
+          )}
+
+          {/* =============================================================== */}
+          {/* ZONA DROP 2 (KANAN): KOTAK BAYANGAN ATAU KOMPONEN PERIFERAL     */}
+          {/* =============================================================== */}
+          {!periferalSudahDitaruh ? (
+            <g
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                handleDropKeZonaBayangan("zona_periferal");
+              }}
+              onClick={() => {
+                if (itemSedangDiDrag)
+                  handleDropKeZonaBayangan("zona_periferal");
+                else
+                  setPesanGudang(
+                    `👆 Tarik (Drag) kartu '${spekHardware.namaPeriferal}' dari Gudang Komponen di atas ke kotak bayangan biru ini!`
+                  );
+              }}
+              className="cursor-pointer"
+            >
+              <rect
+                x={345}
+                y={42}
+                width={195}
+                height={165}
+                rx={16}
+                fill="rgba(56, 189, 248, 0.08)"
+                stroke="#38bdf8"
+                strokeWidth={2.5}
+                strokeDasharray="8 5"
+              >
+                <animate
+                  attributeName="opacity"
+                  values="0.35;1;0.35"
+                  dur="1.2s"
+                  repeatCount="indefinite"
+                />
+              </rect>
+              <text
+                x={442}
+                y={108}
+                textAnchor="middle"
+                fill="#38bdf8"
+                fontSize="10.5"
+                fontWeight="bold"
+              >
+                📦 DROP KOMPONEN DI SINI:
+              </text>
+              <text
+                x={442}
+                y={128}
+                textAnchor="middle"
+                fill="#ffffff"
+                fontSize="11"
+                fontWeight="bold"
+              >
+                {spekHardware.namaPeriferal}
+              </text>
+              <text
+                x={442}
+                y={148}
+                textAnchor="middle"
+                fill="#94a3b8"
+                fontSize="8.5"
+              >
+                (Tarik dari Gudang Komponen)
+              </text>
+            </g>
+          ) : (
+            <g>
+              <GambarPeriferalWokwiAsli
+                tipe={spekHardware.tipeVisualPeriferal}
+                simulasiHidup={simulasiAktif}
+                detak={detakSimulasi}
+                nilaiSensorUji={nilaiSensorUji}
+              />
+
+              {/* Titik Kaki Pin pada Komponen Periferal */}
+              {spekHardware.pinPeriferalTersedia.map((pin) => {
+                const sedangDipegang = pinAwalDiklik?.idPin === pin.idPin;
+                const harusBerkedip =
+                  tampilkanBayanganPanduan &&
+                  pinPerifBerkedipObj?.idPin === pin.idPin;
+
+                return (
+                  <g
+                    key={pin.idPin}
+                    onClick={(e) => handleKlikTitikPinFisik(e, pin)}
+                    className="cursor-pointer"
+                  >
+                    {harusBerkedip && (
+                      <circle
+                        cx={pin.x}
+                        cy={pin.y}
+                        r={14}
+                        fill="none"
+                        stroke="#facc15"
+                        strokeWidth={3}
+                      >
+                        <animate
+                          attributeName="r"
+                          values="6;15;6"
+                          dur="0.85s"
+                          repeatCount="indefinite"
+                        />
+                      </circle>
+                    )}
+                    <rect
+                      x={pin.x - 68}
+                      y={pin.y - 22}
+                      width={66}
+                      height={14}
+                      rx={3}
+                      fill={harusBerkedip ? "#facc15" : "#0f172a"}
+                      opacity={0.92}
+                    />
+                    <text
+                      x={pin.x - 35}
+                      y={pin.y - 12}
+                      textAnchor="middle"
+                      fill={harusBerkedip ? "#0f172a" : "#f8fafc"}
+                      fontSize="7.8"
+                      fontWeight="bold"
+                    >
+                      {pin.labelPin}
+                    </text>
+                    <circle
+                      cx={pin.x}
+                      cy={pin.y}
+                      r={sedangDipegang ? 8.5 : 6.5}
+                      fill={
+                        sedangDipegang
+                          ? "#ffffff"
+                          : harusBerkedip
+                          ? "#facc15"
+                          : pin.warnaPin
+                      }
+                      stroke="#ffffff"
+                      strokeWidth={2}
+                    />
+                  </g>
+                );
+              })}
+            </g>
+          )}
+
+          {/* =============================================================== */}
+          {/* GARIS BAYANGAN PANDUAN (TIDAK BISA DIKLIK AGAR WAJIB KLIK 2 PIN)*/}
+          {/* =============================================================== */}
+          {esp32SudahDitaruh &&
+            periferalSudahDitaruh &&
+            tampilkanBayanganPanduan &&
+            pinEspBerkedipObj &&
+            pinPerifBerkedipObj && (
+              <path
+                pointerEvents="none"
+                d={`M ${pinEspBerkedipObj.x} ${pinEspBerkedipObj.y} C ${
+                  (pinEspBerkedipObj.x + pinPerifBerkedipObj.x) / 2
+                } ${pinEspBerkedipObj.y - 25}, ${
+                  (pinEspBerkedipObj.x + pinPerifBerkedipObj.x) / 2
+                } ${pinPerifBerkedipObj.y + 25}, ${pinPerifBerkedipObj.x} ${
+                  pinPerifBerkedipObj.y
+                }`}
+                fill="none"
+                stroke="#facc15"
+                strokeWidth={3.5}
+                strokeDasharray="7 6"
+                opacity={0.75}
+              >
+                <animate
+                  attributeName="stroke-dashoffset"
+                  from="26"
+                  to="0"
+                  dur="0.8s"
+                  repeatCount="indefinite"
+                />
+              </path>
+            )}
+
+          {/* =============================================================== */}
+          {/* KABEL HIDUP YANG SEDANG MENGIKUTI KURSOR MOUSE SAAT TITIK 1 DIKLIK */}
+          {/* =============================================================== */}
+          {pinAwalDiklik && (
+            <path
+              pointerEvents="none"
+              d={`M ${pinAwalDiklik.x} ${pinAwalDiklik.y} Q ${
+                (pinAwalDiklik.x + posisiKursorSvg.x) / 2
+              } ${Math.min(pinAwalDiklik.y, posisiKursorSvg.y) - 20}, ${
+                posisiKursorSvg.x
+              } ${posisiKursorSvg.y}`}
+              fill="none"
+              stroke="#38bdf8"
+              strokeWidth={4}
+              strokeDasharray="4 3"
+            />
+          )}
+
+          {/* =============================================================== */}
+          {/* KABEL JUMPER YANG SUDAH RESMI TERSAMBUNG ANTARA 2 KAKI PIN      */}
+          {/* =============================================================== */}
+          {kabelTerpasangList.map((k, idx) => {
+            const p1 = spekHardware.pinEsp32Tersedia.find(
+              (p) => p.idPin === k.dariPinEsp32
+            );
+            const p2 = spekHardware.pinPeriferalTersedia.find(
+              (p) => p.idPin === k.kePinPeriferal
+            );
+            if (!p1 || !p2) return null;
+            const midX = (p1.x + p2.x) / 2;
+            return (
+              <g key={idx} pointerEvents="none">
+                <path
+                  d={`M ${p1.x} ${p1.y} C ${midX} ${p1.y}, ${midX} ${p2.y}, ${p2.x} ${p2.y}`}
+                  fill="none"
+                  stroke={k.warna}
+                  strokeWidth={4.5}
+                  strokeLinecap="round"
+                />
+                {simulasiAktif && (
+                  <circle
+                    cx={
+                      detakSimulasi % 2 === 0
+                        ? p1.x + (p2.x - p1.x) * 0.35
+                        : p1.x + (p2.x - p1.x) * 0.75
+                    }
+                    cy={
+                      detakSimulasi % 2 === 0
+                        ? p1.y + (p2.y - p1.y) * 0.35
+                        : p1.y + (p2.y - p1.y) * 0.75
+                    }
+                    r={4.5}
+                    fill="#fef08a"
+                  />
+                )}
+              </g>
+            );
+          })}
+        </svg>
+
+        {/* Daftar Kabel Terpasang di Bawah Kanvas */}
+        <div className="mt-2 bg-slate-900 p-3 rounded-2xl border border-slate-800 flex flex-wrap justify-between items-center gap-2 text-xs">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-black text-sky-400 flex items-center gap-1">
-              <Cable className="w-4 h-4" /> Daftar Sambungan Kabel di Kanvas:
+              <Cable className="w-4 h-4" /> Kabel Terpasang ({kabelTerpasangList.length}/
+              {spekHardware.sambunganWajib.length}):
             </span>
             {kabelTerpasangList.length === 0 ? (
-              <span className="text-slate-400 italic">
-                Belum ada kabel terpasang. Klik titik pin pada ESP32 lalu klik titik pin pada komponen di kanvas!
+              <span className="text-slate-400">
+                Klik titik kaki pin ke-1 lalu klik titik kaki pin ke-2 untuk menyambung kabel!
               </span>
             ) : (
               kabelTerpasangList.map((k, i) => {
@@ -1135,19 +1202,14 @@ export const WokwiStepByStepAcademy: React.FC<{
             )}
           </div>
 
-          {materiAktif.level === 3 && simulasiAktif && (
-            <div className="flex items-center gap-2">
-              <span className="text-amber-300 font-bold">☀️ Uji Cahaya LDR:</span>
-              <input
-                type="range"
-                min={50}
-                max={900}
-                value={nilaiSensorUji}
-                onChange={(e) => setNilaiSensorUji(Number(e.target.value))}
-                className="w-28"
-              />
-              <span className="font-mono font-black">{nilaiSensorUji} Lux</span>
-            </div>
+          {kabelTerpasangList.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setKabelTerpasangList([])}
+              className="px-2.5 py-1 rounded-lg bg-rose-950 text-rose-300 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+            >
+              <Trash2 className="w-3 h-3" /> Lepas Semua Kabel
+            </button>
           )}
         </div>
       </div>
@@ -1156,7 +1218,6 @@ export const WokwiStepByStepAcademy: React.FC<{
       {/* BAGIAN BAWAH: INSTRUKSI MODUL (KIRI) & EDITOR KODE C++ (KANAN)      */}
       {/* =================================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* KOLOM KIRI: INSTRUKSI KOMPONEN & PANDUAN BARIS KODE */}
         <div className="lg:col-span-6 space-y-4">
           <div className="p-5 rounded-2xl bg-slate-950 border border-slate-800 space-y-3 text-xs">
             <div className="flex justify-between items-center">
@@ -1164,41 +1225,33 @@ export const WokwiStepByStepAcademy: React.FC<{
                 {materiAktif.badgeLevel}
               </span>
               <span className="font-black text-emerald-400">
-                Hadiah Lulus: +{materiAktif.xpReward} XP
+                Reward: +{materiAktif.xpReward} XP
               </span>
             </div>
 
             <p className="text-slate-200 bg-slate-900 p-3 rounded-xl border border-slate-800 leading-relaxed">
-              <strong className="text-amber-300">🎯 Misi Pembelajaran:</strong>{" "}
+              <strong className="text-amber-300">🎯 Tujuan Praktikum:</strong>{" "}
               {materiAktif.tujuanBelajar}
             </p>
 
-            {/* Daftar Komponen & Pin yang Diminta */}
             <div className="space-y-1.5">
               <div className="font-black uppercase text-sky-400">
-                1. Komponen &amp; Sambungan Kabel yang Diminta:
+                1. Komponen &amp; Kaki Pin yang Harus Dihubungkan:
               </div>
-              {materiAktif.komponenDimasukkan.map((k, i) => (
+              {spekHardware.sambunganWajib.map((w, i) => (
                 <div
                   key={i}
-                  className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5"
+                  className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-amber-300 font-mono text-[11px]"
                 >
-                  <div className="font-black text-white">🔌 {k.namaKomponen}</div>
-                  <div className="text-amber-300 font-mono text-[11px]">
-                    Jalur Pin: {k.pasangKePin}
-                  </div>
+                  🔌 Jalur #{i + 1}: {w.keteranganJalur}
                 </div>
               ))}
             </div>
 
-            {/* Instruksi Ketik Program */}
             <div className="space-y-1.5 pt-1">
               <div className="font-black uppercase text-emerald-400 flex items-center gap-1.5">
                 <Code2 className="w-4 h-4" /> 2. Instruksi Ketik Kodingan C++:
               </div>
-              <p className="text-slate-300 leading-relaxed">
-                {materiAktif.penjelasanTeoriSingkat}
-              </p>
               <ol className="list-decimal list-inside space-y-1.5 text-white bg-emerald-950/30 p-3.5 rounded-xl border border-emerald-500/40 font-medium leading-relaxed">
                 {materiAktif.instruksiKetik.map((inst, i) => (
                   <li key={i}>{inst}</li>
@@ -1206,11 +1259,10 @@ export const WokwiStepByStepAcademy: React.FC<{
               </ol>
             </div>
 
-            {/* Kamus Penjelasan Baris Kode (Disembunyikan di Mode Latihan Mandiri kecuali Clue dibuka) */}
             {(modeBelajar === "tutorial_berkedip" || jumlahClueDibuka >= 2) && (
               <div className="space-y-1.5 pt-1">
                 <div className="font-black uppercase text-amber-300 flex items-center gap-1.5">
-                  <Lightbulb className="w-4 h-4" /> Arti Setiap Baris Perintah:
+                  <Lightbulb className="w-4 h-4" /> Kamus Penjelasan Baris Kode:
                 </div>
                 {materiAktif.penjelasanBarisKode.map((b, i) => (
                   <div
@@ -1230,7 +1282,6 @@ export const WokwiStepByStepAcademy: React.FC<{
           </div>
         </div>
 
-        {/* KOLOM KANAN: EDITOR KODE C++ + TOMBOL VALIDASI + TOMBOL LANJUT LEVEL */}
         <div className="lg:col-span-6 space-y-4">
           <div className="bg-slate-950 rounded-2xl border-2 border-slate-800 overflow-hidden shadow-xl">
             <div className="bg-slate-900 px-4 py-3 border-b border-slate-800 flex flex-wrap justify-between items-center gap-2 text-xs">
@@ -1241,10 +1292,15 @@ export const WokwiStepByStepAcademy: React.FC<{
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={pasangSemuaOtomatis}
+                  onClick={() => {
+                    setKodeKetikanUser(materiAktif.kodeTargetBenar);
+                    setPesanGudang(
+                      "Contoh kode C++ sudah diisi. Pastikan Anda sudah menarik komponen dari Gudang dan mengklik ke-2 kaki pin di kanvas!"
+                    );
+                  }}
                   className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-[11px] flex items-center gap-1 cursor-pointer"
                 >
-                  <Sparkles className="w-3.5 h-3.5" /> Pasang Rangkaian &amp; Kode Contoh
+                  <Sparkles className="w-3.5 h-3.5" /> Isi Contoh Kode C++
                 </button>
                 <button
                   type="button"
@@ -1295,7 +1351,7 @@ export const WokwiStepByStepAcademy: React.FC<{
                   ) : (
                     <>
                       <Lock className="w-3.5 h-3.5" />
-                      <span>Terkunci (Harus Benar Dulu)</span>
+                      <span>Terkunci (Wajib Benar Dulu)</span>
                     </>
                   )}
                 </button>
@@ -1318,10 +1374,9 @@ export const WokwiStepByStepAcademy: React.FC<{
             </div>
           </div>
 
-          {/* KOTAK VALIDASI BERHASIL / GAGAL + TOMBOL CLUE LANGSUNG SAAT SALAH */}
           {statusVerifikasi !== "belum" && (
             <div
-              className={`p-4 rounded-2xl border-2 text-xs font-bold space-y-2.5 ${
+              className={`p-4 rounded-2xl border-2 text-xs font-bold space-y-2 ${
                 simulasiAktif
                   ? "bg-emerald-950/90 border-emerald-400 text-emerald-200"
                   : "bg-rose-950/95 border-rose-500 text-rose-200"
@@ -1348,7 +1403,7 @@ export const WokwiStepByStepAcademy: React.FC<{
                     }}
                     className="px-3 py-1.5 rounded-xl bg-amber-400 text-slate-950 font-black text-[11px] cursor-pointer shrink-0"
                   >
-                    💡 Tampilkan Clue &amp; Bayangan Kabel
+                    💡 Buka Clue &amp; Bayangan
                   </button>
                 )}
               </div>
@@ -1360,27 +1415,9 @@ export const WokwiStepByStepAcademy: React.FC<{
                   ))}
                 </ul>
               )}
-
-              {simulasiAktif && modeBelajar === "tutorial_berkedip" && (
-                <div className="pt-1 flex items-center justify-between border-t border-emerald-800">
-                  <span className="text-amber-300">
-                    🎯 Sudah paham tutorial ini? Coba uji dirimu tanpa bayangan:
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      pindahKeLevel(indeksLevel, "latihan_mandiri")
-                    }
-                    className="px-3 py-1 rounded-lg bg-rose-600 text-white font-black text-[11px] cursor-pointer"
-                  >
-                    Coba Mode Latihan Mandiri di Level Ini ➔
-                  </button>
-                </div>
-              )}
             </div>
           )}
 
-          {/* SERIAL MONITOR */}
           <div className="p-4 rounded-2xl bg-black border border-slate-800 space-y-1.5 font-mono text-xs">
             <div className="text-[11px] font-black text-amber-400">
               📟 Serial Monitor &amp; Compiler Output (115200 baud):
