@@ -205,43 +205,42 @@ export const INITIAL_10_NODES_DATA: Esp32MeshNodeData[] = [
 ];
 
 // ============================================================================
-// KURIKULUM 8 LEVEL BELAJAR IOT DARI DASAR (IKUTI & KETIK PROGRAM)
+// KURIKULUM 15 LEVEL BELAJAR IOT DARI DASAR SAMPAI MAHIR
 // ============================================================================
-export const KURIKULUM_8_LEVEL_IOT: LessonStepIoT[] = [
+export const KURIKULUM_15_LEVEL_IOT: LessonStepIoT[] = [
   {
     level: 1,
-    badgeLevel: "LEVEL 1 • PALING DASAR",
-    judulMateri: "Menyalakan & Mengedipkan Lampu LED Pertama (Hello World IoT)",
+    badgeLevel: "LEVEL 1 • DASAR RANGKAIAN",
+    judulMateri: "Menyalakan & Mengedipkan Lampu LED (Digital Output)",
     tujuanBelajar:
-      "Memahami fungsi setup(), loop(), pinMode(), dan digitalWrite() untuk menyalakan lampu LED di pin GPIO 2 ESP32.",
+      "Memahami struktur setup() dan loop(), serta cara memasang kabel dari pin GPIO 2 ESP32 ke kaki LED.",
     komponenDimasukkan: [
       {
-        namaKomponen: "1x Board ESP32 DevKit V1",
-        pasangKePin: "Meja Utama Breadboard",
-        fungsiSingkat: "Otak mikrokontroler yang menjalankan program C++.",
+        namaKomponen: "ESP32 DevKit V1",
+        pasangKePin: "Breadboard Utama",
+        fungsiSingkat: "Mikrokontroler pusat.",
       },
       {
-        namaKomponen: "1x Lampu LED Merah + Resistor 220Ω",
-        pasangKePin: "Kaki Positif (Anoda) ke Pin GPIO 2, Kaki Negatif (Katoda) ke GND",
-        fungsiSingkat: "Komponen output cahaya yang akan berkedip setiap 1 detik.",
+        namaKomponen: "Lampu LED Merah + Resistor",
+        pasangKePin: "Tarik kabel dari GPIO 2 ke Anoda LED",
+        fungsiSingkat: "Indikator visual kedip.",
       },
     ],
     penjelasanTeoriSingkat:
-      "Setiap program Arduino/ESP32 wajib memiliki 2 bagian utama: void setup() yang dijalankan 1 kali saat alat baru menyala, dan void loop() yang dijalankan berulang-ulang selamanya. Perintah HIGH artinya mengalirkan listrik 3.3V (LED Menyala), sedangkan LOW artinya mematikan listrik 0V (LED Padam).",
+      "Perintah pinMode(2, OUTPUT) menyiapkan pin 2 sebagai sumber arus, dan digitalWrite(2, HIGH) mengalirkan listrik 3.3V.",
     instruksiKetik: [
-      "Di dalam kurung void setup(), ketik perintah: pinMode(2, OUTPUT); untuk memberi tahu ESP32 bahwa pin nomor 2 dipakai sebagai keluaran listrik.",
-      "Di dalam kurung void loop(), ketik perintah: digitalWrite(2, HIGH); untuk menyalakan LED.",
-      "Tambahkan perintah: delay(1000); untuk menahan nyala selama 1000 milidetik (1 detik), lalu matikan dengan digitalWrite(2, LOW);",
+      "Tarik kabel dari GPIO 2 ESP32 ke pin Anoda LED pada modul.",
+      "Ketik pinMode(2, OUTPUT); di dalam void setup().",
+      "Ketik digitalWrite(2, HIGH); dan delay(1000); di dalam void loop().",
     ],
-    kodeTemplateAwal: `// LEVEL 1: Lengkapi bagian yang kosong di bawah ini!
-void setup() {
+    kodeTemplateAwal: `void setup() {
   Serial.begin(115200);
-  // 1. Ketik pinMode(2, OUTPUT); di baris bawah ini:
+  // Ketik pinMode(2, OUTPUT); di sini:
   
 }
 
 void loop() {
-  // 2. Ketik digitalWrite(2, HIGH); lalu delay(1000); dan digitalWrite(2, LOW);
+  // Ketik digitalWrite(2, HIGH); dan delay(1000); di sini:
   
 }`,
     kodeTargetBenar: `void setup() {
@@ -251,66 +250,90 @@ void loop() {
 
 void loop() {
   digitalWrite(2, HIGH);
-  Serial.println("LED Menyala!");
   delay(1000);
   digitalWrite(2, LOW);
-  Serial.println("LED Padam!");
   delay(1000);
 }`,
-    kataKunciWajibAda: ["pinMode", "OUTPUT", "digitalWrite", "HIGH", "LOW", "delay"],
+    kataKunciWajibAda: ["pinMode", "2", "OUTPUT", "digitalWrite", "HIGH", "LOW", "delay"],
     penjelasanBarisKode: [
-      {
-        potonganKode: "pinMode(2, OUTPUT);",
-        artiPenjelasan: "Mengatur kaki GPIO 2 sebagai pintu keluar arus listrik.",
-      },
-      {
-        potonganKode: "digitalWrite(2, HIGH);",
-        artiPenjelasan: "Mengeluarkan tegangan 3.3 Volt di pin 2 sehingga LED menyala.",
-      },
-      {
-        potonganKode: "delay(1000);",
-        artiPenjelasan: "Menunggu selama 1.000 milidetik (1 detik) sebelum lanjut ke baris bawahnya.",
-      },
+      { potonganKode: "pinMode(2, OUTPUT);", artiPenjelasan: "Mengatur pin 2 sebagai pengeluar arus." },
+      { potonganKode: "digitalWrite(2, HIGH);", artiPenjelasan: "Menyalakan lampu LED." },
     ],
-    simulasiOutputJikaBenar: `[00:01.0] LED Menyala! (Pin GPIO 2 = 3.3V HIGH)\n[00:02.0] LED Padam! (Pin GPIO 2 = 0V LOW)\n[00:03.0] LED Menyala! (Pin GPIO 2 = 3.3V HIGH)\n✅ SELAMAT! Rangkaian LED pertamamu berhasil berkedip sempurna!`,
-    tantanganModifikasi:
-      "Coba ganti angka delay(1000) menjadi delay(200) agar lampu LED berkedip 5 kali lebih cepat seperti lampu sirine!",
-    xpReward: 50,
+    simulasiOutputJikaBenar: `[OK] LED Berkedip Normal di GPIO 2 (3.3V / 0V)\n✅ Level 1 Selesai!`,
+    tantanganModifikasi: "Ubah delay menjadi 200 ms.",
+    xpReward: 40,
   },
   {
     level: 2,
-    badgeLevel: "LEVEL 2 • SENSOR ANALOG (PROYEK 1)",
-    judulMateri: "Membaca Sensor Cahaya LDR & Menyalakan Lampu Jalan Otomatis",
+    badgeLevel: "LEVEL 2 • INPUT TOMBOL",
+    judulMateri: "Membaca Tombol Push Button (Digital Input)",
     tujuanBelajar:
-      "Menggunakan analogRead() untuk membaca sensor cahaya matahari (LDR) di pin GPIO 34 dan menyalakan Relay otomatis saat malam.",
+      "Membaca status tombol tekan di pin GPIO 4 untuk menyalakan LED secara interaktif.",
     komponenDimasukkan: [
-      {
-        namaKomponen: "1x Modul Sensor Cahaya LDR",
-        pasangKePin: "Pin AO ke GPIO 34, VCC ke 3V3, GND ke GND",
-        fungsiSingkat: "Mengukur terang/gelapnya cahaya ruangan (0 - 4095).",
-      },
-      {
-        namaKomponen: "1x Modul Relay 1-Channel 5V",
-        pasangKePin: "Pin IN ke GPIO 26, VCC ke 5V, GND ke GND",
-        fungsiSingkat: "Sakelar otomatis penyala lampu jalan.",
-      },
+      { namaKomponen: "Push Button Switch", pasangKePin: "Tarik kabel dari GPIO 4 ke Tombol", fungsiSingkat: "Mendeteksi sentuhan fisik." },
+      { namaKomponen: "Lampu LED Indikator", pasangKePin: "Hubungkan ke GPIO 2", fungsiSingkat: "Menyala saat tombol ditekan." },
     ],
-    penjelasanTeoriSingkat:
-      "Berbeda dengan tombol biasa yang hanya tahu ON/OFF, sensor cahaya LDR menghasilkan nilai angka bertingkat dari 0 sampai 4095 (disebut sinyal Analog/ADC). Kita memakai perintah analogRead(34) untuk membaca angkanya, lalu memakai logika if (lux < 300) untuk menyalakan Relay saat hari mulai gelap.",
+    penjelasanTeoriSingkat: "digitalRead(4) membaca apakah tombol sedang ditekan (HIGH) atau dilepas (LOW).",
     instruksiKetik: [
-      "Di dalam void loop(), baca nilai sensor dengan mengetik: int adc = analogRead(34);",
-      "Ubah skala ADC menjadi Lux (0-1000) dengan mengetik: int lux = map(adc, 0, 4095, 0, 1000);",
-      "Buat logika otomatis: jika lux < 300 maka digitalWrite(26, HIGH); selain itu LOW.",
+      "Tarik kabel dari GPIO 4 ESP32 ke modul Tombol.",
+      "Ketik pinMode(4, INPUT_PULLUP); di setup().",
+      "Ketik int tombol = digitalRead(4); di loop().",
     ],
-    kodeTemplateAwal: `// LEVEL 2: Program Lampu Jalan Otomatis LDR + Relay
-void setup() {
+    kodeTemplateAwal: `void setup() {
+  Serial.begin(115200);
+  pinMode(4, INPUT_PULLUP);
+  pinMode(2, OUTPUT);
+}
+
+void loop() {
+  // Ketik int tombol = digitalRead(4); dan if (tombol == LOW) ...
+  
+}`,
+    kodeTargetBenar: `void setup() {
+  Serial.begin(115200);
+  pinMode(4, INPUT_PULLUP);
+  pinMode(2, OUTPUT);
+}
+
+void loop() {
+  int tombol = digitalRead(4);
+  if (tombol == LOW) {
+    digitalWrite(2, HIGH);
+  } else {
+    digitalWrite(2, LOW);
+  }
+}`,
+    kataKunciWajibAda: ["digitalRead", "4", "INPUT_PULLUP", "digitalWrite", "LOW"],
+    penjelasanBarisKode: [
+      { potonganKode: "digitalRead(4);", artiPenjelasan: "Membaca status logika sakelar di pin 4." },
+    ],
+    simulasiOutputJikaBenar: `[INFO] Tombol Ditekan -> LED Menyala Terang!\n✅ Level 2 Selesai!`,
+    tantanganModifikasi: "Balik logika tombol agar LED menyala saat dilepas.",
+    xpReward: 50,
+  },
+  {
+    level: 3,
+    badgeLevel: "LEVEL 3 • SENSOR CAHAYA",
+    judulMateri: "Sensor Cahaya LDR & Lampu Jalan Otomatis (Proyek 1)",
+    tujuanBelajar: "Membaca nilai analog LDR di pin 34 dan mengontrol Relay 26.",
+    komponenDimasukkan: [
+      { namaKomponen: "Sensor LDR", pasangKePin: "Tarik kabel AO LDR ke GPIO 34", fungsiSingkat: "Mendeteksi terang/gelap." },
+      { namaKomponen: "Modul Relay 1-Ch", pasangKePin: "Tarik kabel IN Relay ke GPIO 26", fungsiSingkat: "Sakelar lampu AC." },
+    ],
+    penjelasanTeoriSingkat: "analogRead(34) menghasilkan nilai 0-4095. Jika gelap (<300), nyalakan relay pin 26.",
+    instruksiKetik: [
+      "Tarik kabel sensor LDR ke pin GPIO 34.",
+      "Ketik int adc = analogRead(34); di loop().",
+      "Ketik if (adc < 1000) digitalWrite(26, HIGH);",
+    ],
+    kodeTemplateAwal: `void setup() {
   Serial.begin(115200);
   pinMode(34, INPUT);
   pinMode(26, OUTPUT);
 }
 
 void loop() {
-  // Ketik pembacaan analogRead(34), fungsi map(), dan logika digitalWrite(26, ...) di bawah:
+  // Ketik analogRead(34) dan logika Relay pin 26:
   
 }`,
     kodeTargetBenar: `void setup() {
@@ -321,59 +344,33 @@ void loop() {
 
 void loop() {
   int adc = analogRead(34);
-  int lux = map(adc, 0, 4095, 0, 1000);
-  if (lux < 300) {
+  if (adc < 1000) {
     digitalWrite(26, HIGH);
   } else {
     digitalWrite(26, LOW);
   }
-  Serial.println(lux);
   delay(1000);
 }`,
-    kataKunciWajibAda: ["analogRead", "34", "map", "digitalWrite", "26"],
-    penjelasanBarisKode: [
-      {
-        potonganKode: "int adc = analogRead(34);",
-        artiPenjelasan: "Membaca tegangan cahaya dari pin analog GPIO 34 (nilainya 0 s.d. 4095).",
-      },
-      {
-        potonganKode: "int lux = map(adc, 0, 4095, 0, 1000);",
-        artiPenjelasan: "Mengubah rentang angka 0-4095 menjadi skala satuan cahaya 0-1000 Lux.",
-      },
-      {
-        potonganKode: "if (lux < 300) { digitalWrite(26, HIGH); }",
-        artiPenjelasan: "Jika cahaya kurang dari 300 Lux (malam/mendung), nyalakan Relay di pin 26!",
-      },
-    ],
-    simulasiOutputJikaBenar: `[SIANG] ADC: 3100 -> Cahaya: 756 Lux -> Relay Pin 26: LOW (Lampu Jalan Mati)\n[SORE]  ADC: 950  -> Cahaya: 231 Lux (< 300) -> Relay Pin 26: HIGH (Lampu Jalan MENYALA 💡)\n✅ MANTAP! Proyek 1 (Lampu Jalan Otomatis LDR) berhasil kamu program!`,
-    tantanganModifikasi:
-      "Ganti angka 300 pada if (lux < 300) menjadi 500 jika ingin lampu jalan menyala lebih cepat saat sore mendung.",
+    kataKunciWajibAda: ["analogRead", "34", "digitalWrite", "26", "HIGH"],
+    penjelasanBarisKode: [{ potonganKode: "analogRead(34);", artiPenjelasan: "Membaca intensitas cahaya." }],
+    simulasiOutputJikaBenar: `[LDR] Nilai ADC: 850 (< 1000) -> Relay Lampu ON 💡\n✅ Level 3 Selesai!`,
+    tantanganModifikasi: "Ubah batas ambang pembacaan LDR.",
     xpReward: 60,
   },
   {
-    level: 3,
-    badgeLevel: "LEVEL 3 • AKTUATOR MEKANIK (PROYEK 2)",
-    judulMateri: "Menggerakkan Palang Pintu Servo & Kunci Solenoid RFID",
-    tujuanBelajar:
-      "Menggunakan library <ESP32Servo.h> untuk memutar palang pintu ke sudut 90 derajat dan membuka kunci Solenoid 12V.",
+    level: 4,
+    badgeLevel: "LEVEL 4 • MOTOR SERVO",
+    judulMateri: "Penggerak Palang Pintu Servo & Solenoid (Proyek 2)",
+    tujuanBelajar: "Menggunakan library <ESP32Servo.h> di pin 13 untuk buka tutup pintu.",
     komponenDimasukkan: [
-      {
-        namaKomponen: "1x Motor Servo SG90",
-        pasangKePin: "Kabel PWM (Oranye) ke GPIO 13, Merah ke 5V, Coklat ke GND",
-        fungsiSingkat: "Lengan mekanik yang bisa berputar presisi dari 0° sampai 180°.",
-      },
-      {
-        namaKomponen: "1x Solenoid Door Lock 12V + Relay",
-        pasangKePin: "Pin IN Relay ke GPIO 27",
-        fungsiSingkat: "Kunci slot besi elektrik pengaman pintu laboratorium.",
-      },
+      { namaKomponen: "Motor Servo SG90", pasangKePin: "Tarik kabel PWM Servo ke GPIO 13", fungsiSingkat: "Memutar palang 0-180°." },
+      { namaKomponen: "Solenoid Door Lock", pasangKePin: "Tarik kabel Relay Solenoid ke GPIO 27", fungsiSingkat: "Kunci besi pintu." },
     ],
-    penjelasanTeoriSingkat:
-      "Untuk menggerakkan motor Servo di ESP32, kita wajib memanggil pustaka #include <ESP32Servo.h>, membuat objek Servo pintu;, menghubungkannya ke pin dengan pintu.attach(13);, lalu memerintahkan sudut putarnya dengan pintu.write(90);.",
+    penjelasanTeoriSingkat: "pintu.attach(13) mendaftarkan pin servo, lalu pintu.write(90) memutarnya.",
     instruksiKetik: [
-      "Pastikan baris paling atas memuat #include <ESP32Servo.h> dan deklarasi objek Servo pintu;",
-      "Di dalam void setup(), hubungkan servo ke pin 13 dengan mengetik: pintu.attach(13);",
-      "Di dalam void loop(), buka kunci solenoid dengan digitalWrite(27, HIGH); lalu putar servo ke 90 derajat dengan pintu.write(90);",
+      "Tarik kabel PWM Servo ke GPIO 13 ESP32.",
+      "Ketik pintu.attach(13); di setup().",
+      "Ketik pintu.write(90); di loop().",
     ],
     kodeTemplateAwal: `#include <ESP32Servo.h>
 Servo pintu;
@@ -381,12 +378,12 @@ Servo pintu;
 void setup() {
   Serial.begin(115200);
   pinMode(27, OUTPUT);
-  // 1. Hubungkan servo ke pin 13 dengan pintu.attach(13);
+  // Ketik pintu.attach(13); di sini:
   
 }
 
 void loop() {
-  // 2. Aktifkan solenoid pin 27 (HIGH) dan putar servo pintu.write(90);
+  // Ketik pintu.write(90); dan digitalWrite(27, HIGH); di sini:
   
 }`,
     kodeTargetBenar: `#include <ESP32Servo.h>
@@ -401,65 +398,41 @@ void setup() {
 void loop() {
   digitalWrite(27, HIGH);
   pintu.write(90);
-  Serial.println("Akses RFID Valid: Pintu Terbuka 90 Derajat!");
+  delay(2000);
+  pintu.write(0);
+  digitalWrite(27, LOW);
   delay(2000);
 }`,
-    kataKunciWajibAda: ["ESP32Servo.h", "attach", "13", "write", "90", "digitalWrite"],
-    penjelasanBarisKode: [
-      {
-        potonganKode: "#include <ESP32Servo.h>",
-        artiPenjelasan: "Memanggil library pengatur sinyal PWM khusus motor servo ESP32.",
-      },
-      {
-        potonganKode: "pintu.attach(13);",
-        artiPenjelasan: "Mendaftarkan pin GPIO 13 sebagai jalur kontrol motor servo.",
-      },
-      {
-        potonganKode: "pintu.write(90);",
-        artiPenjelasan: "Memutar lengan motor servo tepat ke sudut 90 derajat (palang terbuka).",
-      },
-    ],
-    simulasiOutputJikaBenar: `[RFID] Kartu E-KTP Terdeteksi -> Solenoid Pin 27: UNLOCKED 🔓\n[SERVO] Motor Servo GPIO 13 berputar ke sudut 90° (Palang Terbuka)\n✅ LUAR BIASA! Proyek 2 (Smart Door Lock) berhasil diselesaikan!`,
-    tantanganModifikasi:
-      "Tambahkan pintu.write(0); setelah delay(2000); agar palang pintu menutup kembali secara otomatis setelah 2 detik!",
-    xpReward: 70,
+    kataKunciWajibAda: ["ESP32Servo.h", "attach", "13", "write", "90", "digitalWrite", "27"],
+    penjelasanBarisKode: [{ potonganKode: "pintu.write(90);", artiPenjelasan: "Membuka palang pintu 90°." }],
+    simulasiOutputJikaBenar: `[SERVO] GPIO 13 Berputar 90° | Solenoid UNLOCKED 🔓\n✅ Level 4 Selesai!`,
+    tantanganModifikasi: "Ubah sudut putar servo menjadi 180 derajat.",
+    xpReward: 65,
   },
   {
-    level: 4,
-    badgeLevel: "LEVEL 4 • SMART GREENHOUSE (PROYEK 3)",
-    judulMateri: "Otomasi Suhu DHT22 & Kelembaban Tanah untuk Kipas & Pompa Irigasi",
-    tujuanBelajar:
-      "Membaca suhu udara dari sensor DHT22 (GPIO 15) dan kelembaban tanah (GPIO 35) untuk menyalakan Kipas & Pompa Air.",
+    level: 5,
+    badgeLevel: "LEVEL 5 • SENSOR SUHU & KELEMBABAN",
+    judulMateri: "Smart Greenhouse: Sensor DHT22, Kipas & Pompa (Proyek 3)",
+    tujuanBelajar: "Membaca sensor DHT22 di pin 15 dan mengontrol kipas serta pompa.",
     komponenDimasukkan: [
-      {
-        namaKomponen: "1x Sensor Suhu & Lembab DHT22",
-        pasangKePin: "Pin DATA ke GPIO 15, VCC ke 3V3, GND ke GND",
-        fungsiSingkat: "Membaca suhu udara (°C) dan kelembaban relatif (%).",
-      },
-      {
-        namaKomponen: "1x Probe Soil Moisture + Relay 2-Ch",
-        pasangKePin: "Soil AO ke GPIO 35 | Relay Pompa ke GPIO 25 | Relay Kipas ke GPIO 33",
-        fungsiSingkat: "Menyiram tanaman saat tanah kering & menyalakan kipas saat panas.",
-      },
+      { namaKomponen: "Sensor DHT22", pasangKePin: "Tarik kabel Data DHT22 ke GPIO 15", fungsiSingkat: "Membaca suhu & kelembaban." },
+      { namaKomponen: "Relay Pompa & Kipas", pasangKePin: "Pompa ke GPIO 25, Kipas ke GPIO 33", fungsiSingkat: "Otomasi pertanian." },
     ],
-    penjelasanTeoriSingkat:
-      "Dalam Smart Greenhouse, ada 2 aturan otomatis: (1) Jika suhu > 32.0 derajat Celcius, maka Kipas Pendingin (GPIO 33) harus menyala. (2) Jika kelembaban tanah < 40%, maka Pompa Air (GPIO 25) harus menyala.",
+    penjelasanTeoriSingkat: "Jika suhu > 32°C, nyalakan kipas di pin 33. Jika tanah kering, nyalakan pompa di pin 25.",
     instruksiKetik: [
-      "Di dalam void setup(), atur pin Pompa (25) dan pin Kipas (33) sebagai OUTPUT.",
-      "Di dalam void loop(), periksa jika suhu > 32 maka digitalWrite(33, HIGH);",
-      "Periksa juga jika tanah < 40 maka digitalWrite(25, HIGH);",
+      "Tarik kabel DHT22 ke GPIO 15 ESP32.",
+      "Ketik pinMode(25, OUTPUT); dan pinMode(33, OUTPUT); di setup().",
+      "Ketik logika if (suhu > 32) digitalWrite(33, HIGH);",
     ],
-    kodeTemplateAwal: `// LEVEL 4: Otomasi Kipas & Pompa Air Smart Greenhouse
-void setup() {
+    kodeTemplateAwal: `void setup() {
   Serial.begin(115200);
-  // 1. Set pinMode 25 (Pompa) dan 33 (Kipas) sebagai OUTPUT:
-  
+  pinMode(25, OUTPUT);
+  pinMode(33, OUTPUT);
 }
 
 void loop() {
-  float suhu = 34.5; // Simulasi pembacaan DHT22
-  int tanah = 30;    // Simulasi tanah kering 30%
-  // 2. Ketik if (suhu > 32) nyalakan pin 33, dan if (tanah < 40) nyalakan pin 25:
+  float suhu = 34.0;
+  // Ketik logika if (suhu > 32) nyalakan pin 33:
   
 }`,
     kodeTargetBenar: `void setup() {
@@ -469,59 +442,36 @@ void loop() {
 }
 
 void loop() {
-  float suhu = 34.5;
-  int tanah = 30;
-  if (suhu > 32) {
+  float suhu = 34.0;
+  if (suhu > 32.0) {
     digitalWrite(33, HIGH);
+  } else {
+    digitalWrite(33, LOW);
   }
-  if (tanah < 40) {
-    digitalWrite(25, HIGH);
-  }
-  Serial.println("Greenhouse Aktif: Kipas & Pompa Menyala!");
   delay(1500);
 }`,
-    kataKunciWajibAda: ["pinMode", "25", "33", "suhu", "tanah", "digitalWrite"],
-    penjelasanBarisKode: [
-      {
-        potonganKode: "if (suhu > 32) { digitalWrite(33, HIGH); }",
-        artiPenjelasan: "Menyalakan kipas exhaust di pin 33 ketika suhu rumah kaca melampaui 32°C.",
-      },
-      {
-        potonganKode: "if (tanah < 40) { digitalWrite(25, HIGH); }",
-        artiPenjelasan: "Menyalakan pompa irigasi di pin 25 ketika kadar air tanah turun di bawah 40%.",
-      },
-    ],
-    simulasiOutputJikaBenar: `[SENSOR] Suhu Udara: 34.5°C (> 32°C) -> Kipas Exhaust Pin 33: ON 🌀\n[SENSOR] Lembab Tanah: 30% (< 40%) -> Pompa Air Pin 25: ON 💦\n✅ KEREN! Proyek 3 (Smart Greenhouse) berhasil kamu kuasai!`,
-    tantanganModifikasi:
-      "Tambahkan blok else pada masing-masing if untuk mematikan kipas dan pompa (LOW) ketika suhu sudah sejuk dan tanah sudah basah.",
-    xpReward: 75,
+    kataKunciWajibAda: ["pinMode", "25", "33", "suhu", "digitalWrite", "HIGH"],
+    penjelasanBarisKode: [{ potonganKode: "if(suhu > 32)", artiPenjelasan: "Memicu pendingin ruangan." }],
+    simulasiOutputJikaBenar: `[DHT22] Suhu 34.0°C -> Kipas Pin 33 Menyala 🌀\n✅ Level 5 Selesai!`,
+    tantanganModifikasi: "Tambahkan logika kelembaban tanah untuk pompa air.",
+    xpReward: 70,
   },
   {
-    level: 5,
-    badgeLevel: "LEVEL 5 • PROTEKSI BAHAYA (PROYEK 4)",
-    judulMateri: "Detektor Kebocoran Gas LPG (MQ-2) & Alarm Pemadam Api",
-    tujuanBelajar:
-      "Membaca kadar gas berbahaya (PPM) dari sensor MQ-2 di GPIO 32 dan membunyikan Buzzer serta Pompa Pemadam.",
+    level: 6,
+    badgeLevel: "LEVEL 6 • SENSOR GAS & KEBAKARAN",
+    judulMateri: "Detektor Gas LPG MQ-2 & Sprinkler Pemadam (Proyek 4)",
+    tujuanBelajar: "Membaca sensor MQ-2 di pin 32 dan membunyikan alarm sirine.",
     komponenDimasukkan: [
-      {
-        namaKomponen: "1x Sensor Gas & Asap MQ-2",
-        pasangKePin: "Pin AO ke GPIO 32, VCC ke 5V, GND ke GND",
-        fungsiSingkat: "Mendeteksi konsentrasi gas LPG, metana, dan asap kebakaran.",
-      },
-      {
-        namaKomponen: "1x Buzzer Alarm + Relay Sprinkler",
-        pasangKePin: "Buzzer ke GPIO 19 | Relay Pompa Pemadam ke GPIO 25",
-        fungsiSingkat: "Membunyikan sirine bahaya & menyemprotkan air pemadam.",
-      },
+      { namaKomponen: "Sensor MQ-2", pasangKePin: "Tarik kabel AO MQ-2 ke GPIO 32", fungsiSingkat: "Deteksi asap & gas." },
+      { namaKomponen: "Buzzer & Relay Pompa", pasangKePin: "Buzzer ke GPIO 19, Pompa ke GPIO 25", fungsiSingkat: "Alarm darurat." },
     ],
-    penjelasanTeoriSingkat:
-      "Sensor MQ-2 mendeteksi kepekatan gas dalam satuan PPM (Parts Per Million). Udara normal berada di bawah 300 PPM. Jika kadar gas >= 500 PPM, maka terjadi kebocoran gas yang wajib segera memicu alarm Buzzer (GPIO 19) dan Pompa Pemadam (GPIO 25).",
+    penjelasanTeoriSingkat: "Jika konsentrasi gas >= 500 PPM, aktifkan buzzer pin 19 dan pompa pin 25.",
     instruksiKetik: [
-      "Baca nilai sensor gas di pin 32 dengan analogRead(32);",
-      "Jika nilai ppm >= 500, aktifkan alarm dan pompa dengan digitalWrite(19, HIGH); dan digitalWrite(25, HIGH);",
+      "Tarik kabel sensor MQ-2 ke GPIO 32 ESP32.",
+      "Ketik int ppm = analogRead(32); di loop().",
+      "Ketik if (ppm >= 500) digitalWrite(19, HIGH);",
     ],
-    kodeTemplateAwal: `// LEVEL 5: Sistem Proteksi Gas Bocor MQ-2 & Pemadam Api
-void setup() {
+    kodeTemplateAwal: `void setup() {
   Serial.begin(115200);
   pinMode(32, INPUT);
   pinMode(19, OUTPUT);
@@ -529,9 +479,7 @@ void setup() {
 }
 
 void loop() {
-  int adcGas = analogRead(32);
-  int ppm = map(adcGas, 0, 4095, 100, 1000);
-  // Ketik logika if (ppm >= 500) untuk menyalakan pin 19 dan pin 25:
+  // Ketik analogRead(32) dan logika buzzer pin 19:
   
 }`,
     kodeTargetBenar: `void setup() {
@@ -542,59 +490,45 @@ void loop() {
 }
 
 void loop() {
-  int adcGas = analogRead(32);
-  int ppm = map(adcGas, 0, 4095, 100, 1000);
+  int adc = analogRead(32);
+  int ppm = map(adc, 0, 4095, 100, 1000);
   if (ppm >= 500) {
     digitalWrite(19, HIGH);
     digitalWrite(25, HIGH);
+  } else {
+    digitalWrite(19, LOW);
+    digitalWrite(25, LOW);
   }
-  Serial.println(ppm);
   delay(1000);
 }`,
-    kataKunciWajibAda: ["analogRead", "32", "ppm", "500", "digitalWrite", "19", "25"],
-    penjelasanBarisKode: [
-      {
-        potonganKode: "int ppm = map(adcGas, 0, 4095, 100, 1000);",
-        artiPenjelasan: "Mengonversi nilai tegangan sensor MQ-2 menjadi satuan konsentrasi gas (100 - 1000 PPM).",
-      },
-      {
-        potonganKode: "if (ppm >= 500) { digitalWrite(19, HIGH); ... }",
-        artiPenjelasan: "Saat kadar gas menyentuh 500 PPM, sirine pin 19 dan pompa pin 25 langsung aktif.",
-      },
-    ],
-    simulasiOutputJikaBenar: `[MQ-2] Konsentrasi Gas: 680 PPM (>= 500 PPM BAHAYA!)\n[ALARM] Sirine Buzzer Pin 19: BEEP! 🚨 | Sprinkler Pemadam Pin 25: MENYEMPROT AIR 💦\n✅ HEBAT! Proyek 4 (Sistem Pemadam & Gas) tuntas!`,
-    tantanganModifikasi:
-      "Ubah batas 500 menjadi 350 agar kipas pembuangan gas menyala lebih dini sebelum gas menumpuk di ruangan.",
-    xpReward: 80,
+    kataKunciWajibAda: ["analogRead", "32", "ppm", "digitalWrite", "19", "25"],
+    penjelasanBarisKode: [{ potonganKode: "if (ppm >= 500)", artiPenjelasan: "Ambang batas bahaya gas." }],
+    simulasiOutputJikaBenar: `[MQ-2] Gas 650 PPM -> Buzzer Pin 19 Berbunyi BEEP! 🚨\n✅ Level 6 Selesai!`,
+    tantanganModifikasi: "Ubah batas PPM menjadi 300.",
+    xpReward: 75,
   },
   {
-    level: 6,
-    badgeLevel: "LEVEL 6 • KOMUNIKASI 2 CHIP (PROYEK 5 & 6)",
-    judulMateri: "Komunikasi Serial UART Antar-Mikrokontroler (ESP32 #1 ➔ ESP32 #2)",
-    tujuanBelajar:
-      "Mengirimkan paket teks JSON dari ESP32 #1 ke ESP32 #2 melalui jalur kabel Serial2 (Pin RX2 GPIO 16 & TX2 GPIO 17).",
+    level: 7,
+    badgeLevel: "LEVEL 7 • KOMUNIKASI UART 2 CHIP",
+    judulMateri: "Dual-ESP32 Telemetry Bridge UART (Proyek 5)",
+    tujuanBelajar: "Mengirimkan data serial dari ESP32 #1 ke ESP32 #2 via pin 16 & 17.",
     komponenDimasukkan: [
-      {
-        namaKomponen: "2x Board ESP32 (Node #1 Sensor & Node #2 Gateway)",
-        pasangKePin: "Pin TX2 (GPIO 17) ESP32 #1 disambung silang ke Pin RX2 (GPIO 16) ESP32 #2",
-        fungsiSingkat: "Jembatan pengiriman data antar dua otak mikrokontroler.",
-      },
+      { namaKomponen: "Dua Board ESP32", pasangKePin: "Tarik kabel TX2 (17) ke RX2 (16) menyilang", fungsiSingkat: "Jembatan data antar MCU." },
     ],
-    penjelasanTeoriSingkat:
-      "Ketika satu mikrokontroler sibuk membaca banyak sensor di lapangan, ia dapat mengirimkan hasilnya ke mikrokontroler kedua lewat port komunikasi Serial2. Ingat hukum wajib komunikasi UART: kabel TX (Transmit/Kirim) dari chip pertama harus dipasang menyilang ke pin RX (Receive/Terima) di chip kedua!",
+    penjelasanTeoriSingkat: "Serial2.begin(115200, SERIAL_8N1, 16, 17) membuka komunikasi hardware serial.",
     instruksiKetik: [
-      "Di dalam void setup(), aktifkan port komunikasi kedua dengan mengetik: Serial2.begin(115200, SERIAL_8N1, 16, 17);",
-      "Di dalam void loop(), kirimkan paket data dengan mengetik: Serial2.println(\"DATA_SENSOR_OK\");",
+      "Tarik kabel silang TX2 ke RX2 antar ESP32.",
+      "Ketik Serial2.begin(115200, SERIAL_8N1, 16, 17); di setup().",
+      "Ketik Serial2.println(\"DATA_OK\"); di loop().",
     ],
-    kodeTemplateAwal: `// LEVEL 6: Pengiriman Paket Data Antar-ESP32 via UART Serial2
-void setup() {
+    kodeTemplateAwal: `void setup() {
   Serial.begin(115200);
-  // 1. Aktifkan Serial2 pada pin RX=16 dan TX=17:
+  // Ketik Serial2.begin di sini:
   
 }
 
 void loop() {
-  // 2. Kirimkan pesan lewat Serial2.println(...):
+  // Ketik Serial2.println("DATA_OK"); di sini:
   
 }`,
     kodeTargetBenar: `void setup() {
@@ -603,165 +537,333 @@ void loop() {
 }
 
 void loop() {
-  Serial2.println("DATA_SENSOR_OK");
-  Serial.println("[TX ESP32 #1 -> ESP32 #2] Paket Terkirim!");
-  delay(1500);
-}`,
-    kataKunciWajibAda: ["Serial2.begin", "16", "17", "Serial2.println"],
-    penjelasanBarisKode: [
-      {
-        potonganKode: "Serial2.begin(115200, SERIAL_8N1, 16, 17);",
-        artiPenjelasan: "Membuka jalur komunikasi perangkat keras UART2 dengan kecepatan 115200 baud di pin 16 (RX) dan 17 (TX).",
-      },
-      {
-        potonganKode: "Serial2.println(\"DATA_SENSOR_OK\");",
-        artiPenjelasan: "Menembakkan untaian karakter data melalui kabel TX2 menuju chip penerima.",
-      },
-    ],
-    simulasiOutputJikaBenar: `[ESP32 #1 TX2 (Pin 17)] ➔ Mengirim frame: "DATA_SENSOR_OK"\n[ESP32 #2 RX2 (Pin 16)] ➔ Paket Diterima Utuh! Ditampilkan ke Layar OLED.\n✅ MANTAP! Kamu sudah paham komunikasi Multi-MCU (Proyek 5, 6 & 7)!`,
-    tantanganModifikasi:
-      "Ganti isi teks yang dikirim menjadi format JSON seperti: Serial2.println(\"{\\\"suhu\\\":29.5}\");",
-    xpReward: 90,
-  },
-  {
-    level: 7,
-    badgeLevel: "LEVEL 7 • SENSOR PERTANIAN PRESISI (PRA-PROYEK 8)",
-    judulMateri: "Membaca Sensor Pupuk NPK, Tegangan Baterai Li-Ion & Koordinat GPS",
-    tujuanBelajar:
-      "Mengemas data Suhu, Nitrogen-Fosfor-Kalium (NPK), Tegangan Baterai (Volt & %), dan Latitude/Longitude GPS ke dalam struct C++.",
-    komponenDimasukkan: [
-      {
-        namaKomponen: "1x Sensor Nutrisi Tanah NPK RS485",
-        pasangKePin: "Pin RO/DI ke UART RS485 ESP32",
-        fungsiSingkat: "Mengukur kadar pupuk Nitrogen (N), Fosfor (P), dan Kalium (K) dalam mg/kg.",
-      },
-      {
-        namaKomponen: "1x Modul GPS NEO-6M + Sensor Tegangan Baterai",
-        pasangKePin: "GPS ke Pin 4 & 5 | Pembagi Tegangan Baterai 18650 ke Pin ADC GPIO 35",
-        fungsiSingkat: "Melacak posisi koordinat node di kebun & sisa daya baterai.",
-      },
-    ],
-    penjelasanTeoriSingkat:
-      "Sebelum mengirim data melintasi 10 node, setiap node harus mengemas 5 jenis data sensornya (Suhu, NPK, Tegangan Volt, % Baterai, dan GPS Lat/Lng) ke dalam sebuah paket struktur data (struct) agar hemat memori dan bisa dikirim sekali tembak menggunakan protokol nirkabel ESP-NOW.",
-    instruksiKetik: [
-      "Di dalam fungsi loop(), isi nilai variabel struktur: paket.suhu = 28.5; dan paket.npk_N = 145;",
-      "Isi tegangan baterai: paket.volt = 4.12; serta koordinat GPS: paket.lat = 1.6681;",
-      "Cetak hasilnya ke Serial Monitor dengan Serial.println(paket.npk_N);",
-    ],
-    kodeTemplateAwal: `struct PaketSensorNode {
-  float suhu;
-  int npk_N;
-  float volt;
-  double lat;
-};
-PaketSensorNode paket;
-
-void setup() {
-  Serial.begin(115200);
-}
-
-void loop() {
-  // Isi nilai paket.suhu, paket.npk_N, paket.volt, dan paket.lat lalu cetak ke Serial:
-  
-}`,
-    kodeTargetBenar: `struct PaketSensorNode {
-  float suhu;
-  int npk_N;
-  float volt;
-  double lat;
-};
-PaketSensorNode paket;
-
-void setup() {
-  Serial.begin(115200);
-}
-
-void loop() {
-  paket.suhu = 28.5;
-  paket.npk_N = 145;
-  paket.volt = 4.12;
-  paket.lat = 1.6681;
-  Serial.println(paket.npk_N);
+  Serial2.println("DATA_OK");
   delay(1000);
 }`,
-    kataKunciWajibAda: ["paket.suhu", "paket.npk_N", "paket.volt", "paket.lat", "Serial.println"],
-    penjelasanBarisKode: [
-      {
-        potonganKode: "struct PaketSensorNode { ... };",
-        artiPenjelasan: "Membungkus banyak variabel sensor berbeda menjadi satu kotak paket data yang rapi.",
-      },
-      {
-        potonganKode: "paket.volt = 4.12;",
-        artiPenjelasan: "Menyimpan tegangan baterai Li-Ion 18650 (4.12V setara ~92% kapasitas penuh).",
-      },
-    ],
-    simulasiOutputJikaBenar: `[NODE SENSOR] Suhu: 28.5°C | Pupuk N: 145 mg/kg | Baterai: 4.12V (92%) | GPS Lat: 1.66810\n✅ SIAP TEMPUR! Sekarang kamu siap menggabungkan 10 Node di Level 8 (Master)!`,
-    tantanganModifikasi:
-      "Tambahkan variabel int npk_P; dan int npk_K; ke dalam struct PaketSensorNode untuk melengkapi ketiga unsur hara pupuk!",
-    xpReward: 100,
+    kataKunciWajibAda: ["Serial2.begin", "16", "17", "Serial2.println"],
+    penjelasanBarisKode: [{ potonganKode: "Serial2.begin(...)", artiPenjelasan: "Mengaktifkan UART2." }],
+    simulasiOutputJikaBenar: `[UART] ESP32 #1 TX ➔ ESP32 #2 RX Berhasil Terkirim!\n✅ Level 7 Selesai!`,
+    tantanganModifikasi: "Kirim data suhu JSON.",
+    xpReward: 80,
   },
   {
     level: 8,
-    badgeLevel: "LEVEL 8 • MASTER PROJECT (PROYEK 8 — 10 NODE MULTI-HOP)",
-    judulMateri: "Memprogram Rute Estafet Multi-Hop 10-Node ESP32 Menuju Gateway Internet",
-    tujuanBelajar:
-      "Membuat logika estafet (Next-Hop Forwarding) dari Node 1 ➔ Node 2 ➔ ... ➔ Node 10 dan mengunggah data ke Dashboard Internet.",
+    badgeLevel: "LEVEL 8 • PLC OTOMASI PABRIK",
+    judulMateri: "ESP32 Master & Arduino Uno Slave Relay 4-Ch (Proyek 6)",
+    tujuanBelajar: "Mengendalikan 4 channel relay pabrik dari mikrokontroler.",
     komponenDimasukkan: [
-      {
-        namaKomponen: "10x Node ESP32 Lengkap (Suhu, NPK, GPS, Baterai & Sensor Tegangan)",
-        pasangKePin: "Node 1..9 = Relay Mesh ESP-NOW | Node 10 = Edge Gateway Wi-Fi Internet",
-        fungsiSingkat: "Mengirim data secara berantai dari pelosok kebun hingga tampil di Dashboard Web.",
-      },
+      { namaKomponen: "ESP32 Master + Arduino Uno", pasangKePin: "Tarik kabel I2C / Serial ke Uno", fungsiSingkat: "Kontrol mesin industri." },
+      { namaKomponen: "Modul Relay 4-Ch", pasangKePin: "Hubungkan ke Pin 4, 5, 6, 7", fungsiSingkat: "Penggerak konveyor." },
     ],
-    penjelasanTeoriSingkat:
-      "Inti dari jaringan Multi-Hop 10 Node sangatlah elegan: jika nomor node kita kurang dari 10 (MY_NODE_ID < 10), maka setiap kali kita menerima paket dari node sebelumnya, kita menambah jumlah lompatan (hopCount++) lalu meneruskannya ke node berikutnya (targetNextHop = MY_NODE_ID + 1) menggunakan esp_now_send(). Ketika paket tiba di Node 10 (MY_NODE_ID == 10), Node 10 mengunggah seluruh paket tersebut ke Internet!",
+    penjelasanTeoriSingkat: "Menggunakan array pin untuk menyalakan 4 jalur mesin secara bergantian.",
     instruksiKetik: [
-      "Di dalam void setup(), aktifkan WiFi dan ESP-NOW dengan mengetik: WiFi.mode(WIFI_STA); dan esp_now_init();",
-      "Di dalam void loop(), tentukan node tujuan lompatan berikutnya: int targetNextHop = MY_NODE_ID + 1;",
-      "Kirimkan paket estafet dengan mengetik: esp_now_send(NULL, (uint8_t *)&paket, sizeof(paket));",
+      "Tarik kabel kontrol ke Modul Relay 4-Channel.",
+      "Definisikan pin relay int pins[] = {4, 5, 6, 7};",
+      "Gunakan perulangan for untuk mengaktifkannya.",
+    ],
+    kodeTemplateAwal: `int pins[4] = {4, 5, 6, 7};
+void setup() {
+  Serial.begin(115200);
+  // Ketik perulangan pinMode untuk 4 pin di sini:
+  
+}
+
+void loop() {
+  // Ketik perintah menyalakan relay:
+  
+}`,
+    kodeTargetBenar: `int pins[4] = {4, 5, 6, 7};
+void setup() {
+  Serial.begin(115200);
+  for(int i=0; i<4; i++) {
+    pinMode(pins[i], OUTPUT);
+  }
+}
+
+void loop() {
+  for(int i=0; i<4; i++) {
+    digitalWrite(pins[i], HIGH);
+    delay(500);
+    digitalWrite(pins[i], LOW);
+  }
+}`,
+    kataKunciWajibAda: ["pins", "pinMode", "OUTPUT", "digitalWrite", "HIGH", "LOW"],
+    penjelasanBarisKode: [{ potonganKode: "for(int i=0; i<4; i++)", artiPenjelasan: "Looping 4 relay pabrik." }],
+    simulasiOutputJikaBenar: `[PLC] Relay 4-Channel Aktif Berurutan (Conveyor & Press OK)\n✅ Level 8 Selesai!`,
+    tantanganModifikasi: "Ubah jeda delay menjadi 200ms.",
+    xpReward: 85,
+  },
+  {
+    level: 9,
+    badgeLevel: "LEVEL 9 • TRIPLE MCU SYSTEM",
+    judulMateri: "Arsitektur 3 Chip Terintegrasi (Proyek 7)",
+    tujuanBelajar: "Menghubungkan ESP32 #1, ESP32 #2, dan Arduino Uno #3 dalam 1 jaringan.",
+    komponenDimasukkan: [
+      { namaKomponen: "3x Mikrokontroler", pasangKePin: "Tarik bus komunikasi multi-node", fungsiSingkat: "Sistem terdistribusi." },
+    ],
+    penjelasanTeoriSingkat: "Mengatur Cluster ID agar 3 chip saling mengenali paket data satu sama lain.",
+    instruksiKetik: [
+      "Tarik kabel bus komunikasi antar 3 board.",
+      "Ketik int CLUSTER_ID = 101;",
+      "Ketik perintah sinkronisasi Serial.",
+    ],
+    kodeTemplateAwal: `int CLUSTER_ID = 101;
+void setup() {
+  Serial.begin(115200);
+  // Ketik inisialisasi cluster:
+  
+}
+
+void loop() {
+  // Ketik Serial.println("Triple MCU OK");:
+  
+}`,
+    kodeTargetBenar: `int CLUSTER_ID = 101;
+void setup() {
+  Serial.begin(115200);
+  Serial.println("Triple MCU Sinkron!");
+}
+
+void loop() {
+  Serial.println("Cluster ID 101 Active");
+  delay(1000);
+}`,
+    kataKunciWajibAda: ["CLUSTER_ID", "101", "Serial.println", "delay"],
+    penjelasanBarisKode: [{ potonganKode: "int CLUSTER_ID = 101;", artiPenjelasan: "ID jaringan klaster." }],
+    simulasiOutputJikaBenar: `[TRIPLE-MCU] Sinkronisasi 3 Chip Berhasil!\n✅ Level 9 Selesai!`,
+    tantanganModifikasi: "Ubah ID Klaster menjadi 202.",
+    xpReward: 90,
+  },
+  {
+    level: 10,
+    badgeLevel: "LEVEL 10 • SENSOR PERTANIAN NPK",
+    judulMateri: "Membaca Sensor Pupuk NPK Tanah RS485",
+    tujuanBelajar: "Mengambil data unsur hara Nitrogen, Fosfor, dan Kalium dari tanah.",
+    komponenDimasukkan: [
+      { namaKomponen: "Sensor NPK RS485", pasangKePin: "Tarik kabel sensor ke pin UART", fungsiSingkat: "Mengukur unsur hara tanah." },
+    ],
+    penjelasanTeoriSingkat: "Membaca nilai mg/kg kandungan NPK untuk rekomendasi pemupukan presisi.",
+    instruksiKetik: [
+      "Tarik kabel sensor NPK ke modul mikrokontroler.",
+      "Ketik int nitrogen = 145;",
+      "Ketik Serial.println(nitrogen);",
+    ],
+    kodeTemplateAwal: `void setup() {
+  Serial.begin(115200);
+}
+
+void loop() {
+  // Ketik variabel nitrogen dan cetak ke Serial:
+  
+}`,
+    kodeTargetBenar: `void setup() {
+  Serial.begin(115200);
+}
+
+void loop() {
+  int nitrogen = 145;
+  int fosfor = 62;
+  int kalium = 190;
+  Serial.printf("NPK -> N:%d P:%d K:%d\\n", nitrogen, fosfor, kalium);
+  delay(1500);
+}`,
+    kataKunciWajibAda: ["nitrogen", "fosfor", "kalium", "Serial.printf"],
+    penjelasanBarisKode: [{ potonganKode: "int nitrogen = 145;", artiPenjelasan: "Kadar N tanah." }],
+    simulasiOutputJikaBenar: `[NPK] N:145 | P:62 | K:190 mg/kg (Tanah Subur)\n✅ Level 10 Selesai!`,
+    tantanganModifikasi: "Ubah nilai nitrogen menjadi 80 (kurang subur).",
+    xpReward: 95,
+  },
+  {
+    level: 11,
+    badgeLevel: "LEVEL 11 • GPS KOORDINAT KEBUN",
+    judulMateri: "Melacak Posisi Latitude & Longitude (GPS NEO-6M)",
+    tujuanBelajar: "Membaca data satelit GPS untuk pemetaan blok lahan pertanian.",
+    komponenDimasukkan: [
+      { namaKomponen: "Modul GPS NEO-6M", pasangKePin: "Tarik kabel GPS TX/RX ke Pin 4 & 5", fungsiSingkat: "Mendapatkan titik koordinat bumi." },
+    ],
+    penjelasanTeoriSingkat: "Menggunakan library TinyGPS++ untuk membaca posisi lintang dan bujur.",
+    instruksiKetik: [
+      "Tarik kabel GPS ke pin 4 dan 5.",
+      "Ketik double lat = 1.6681;",
+      "Ketik double lng = 101.4451;",
+    ],
+    kodeTemplateAwal: `void setup() {
+  Serial.begin(115200);
+}
+
+void loop() {
+  // Ketik variabel lat dan lng GPS:
+  
+}`,
+    kodeTargetBenar: `void setup() {
+  Serial.begin(115200);
+}
+
+void loop() {
+  double lat = 1.66812;
+  double lng = 101.44510;
+  Serial.printf("GPS Posisi -> Lat: %.5f, Lng: %.5f\\n", lat, lng);
+  delay(2000);
+}`,
+    kataKunciWajibAda: ["lat", "lng", "Serial.printf"],
+    penjelasanBarisKode: [{ potonganKode: "double lat = 1.66812;", artiPenjelasan: "Koordinat lintang GPS." }],
+    simulasiOutputJikaBenar: `[GPS] Satelit Terkunci! Posisi: 1.66812, 101.44510\n✅ Level 11 Selesai!`,
+    tantanganModifikasi: "Ubah koordinat GPS sesuai lokasi kota Anda.",
+    xpReward: 100,
+  },
+  {
+    level: 12,
+    badgeLevel: "LEVEL 12 • MONITORING BATERAI",
+    judulMateri: "Sensor Tegangan Baterai Li-Ion 18650 (Volt & %)",
+    tujuanBelajar: "Membaca tegangan baterai di pin ADC 35 untuk estimasi sisa daya.",
+    komponenDimasukkan: [
+      { namaKomponen: "Sensor Pembagi Tegangan", pasangKePin: "Tarik kabel ke Pin ADC GPIO 35", fungsiSingkat: "Mengukur Voltase 3.0V - 4.2V." },
+    ],
+    penjelasanTeoriSingkat: "Membaca pin ADC dan mengonversinya menjadi persentase sisa baterai.",
+    instruksiKetik: [
+      "Tarik kabel pembagi tegangan ke pin ADC 35.",
+      "Ketik int adcBatt = analogRead(35);",
+      "Ketik float volt = 3.10 + (adcBatt / 4095.0) * 1.10;",
+    ],
+    kodeTemplateAwal: `void setup() {
+  Serial.begin(115200);
+  pinMode(35, INPUT);
+}
+
+void loop() {
+  // Ketik analogRead(35) dan rumus tegangan baterai:
+  
+}`,
+    kodeTargetBenar: `void setup() {
+  Serial.begin(115200);
+  pinMode(35, INPUT);
+}
+
+void loop() {
+  int adc = analogRead(35);
+  float volt = 3.10 + (adc / 4095.0) * 1.10;
+  Serial.printf("Baterai -> Voltage: %.2f V\\n", volt);
+  delay(1500);
+}`,
+    kataKunciWajibAda: ["analogRead", "35", "volt", "Serial.printf"],
+    penjelasanBarisKode: [{ potonganKode: "float volt = ...;", artiPenjelasan: "Konversi ADC ke Volt." }],
+    simulasiOutputJikaBenar: `[POWER] Tegangan Baterai: 4.12 V (94% Kapasitas)\n✅ Level 12 Selesai!`,
+    tantanganModifikasi: "Tambahkan peringatan jika volt < 3.3V.",
+    xpReward: 110,
+  },
+  {
+    level: 13,
+    badgeLevel: "LEVEL 13 • STRUCT DATA SENSOR",
+    judulMateri: "Pengemasan Paket Data Multi-Sensor ke dalam Struct C++",
+    tujuanBelajar: "Menggabungkan Suhu, NPK, GPS, dan Baterai ke dalam 1 struktur data.",
+    komponenDimasukkan: [
+      { namaKomponen: "Sistem Paket IoT", pasangKePin: "Memori Mikrokontroler", fungsiSingkat: "Menyusun format bingkai data." },
+    ],
+    penjelasanTeoriSingkat: "Struct C++ memudahkan pengiriman banyak variabel sensor sekaligus.",
+    instruksiKetik: [
+      "Buat struct PaketKebun dengan float suhu; dan int npk;",
+      "Buat objek paket dan isi nilainya.",
+    ],
+    kodeTemplateAwal: `struct PaketKebun {
+  float suhu;
+  int npk;
+};
+PaketKebun dataKu;
+
+void setup() {
+  Serial.begin(115200);
+}
+
+void loop() {
+  // Isi dataKu.suhu dan dataKu.npk lalu cetak:
+  
+}`,
+    kodeTargetBenar: `struct PaketKebun {
+  float suhu;
+  int npk;
+};
+PaketKebun dataKu;
+
+void setup() {
+  Serial.begin(115200);
+}
+
+void loop() {
+  dataKu.suhu = 29.2;
+  dataKu.npk = 150;
+  Serial.printf("Struct Data -> Suhu: %.1f | NPK: %d\\n", dataKu.suhu, dataKu.npk);
+  delay(1000);
+}`,
+    kataKunciWajibAda: ["struct", "PaketKebun", "dataKu", "Serial.printf"],
+    penjelasanBarisKode: [{ potonganKode: "struct PaketKebun { ... };", artiPenjelasan: "Wadah variabel custom." }],
+    simulasiOutputJikaBenar: `[STRUCT] Paket Terkemas Rapi (Suhu: 29.2 | NPK: 150)\n✅ Level 13 Selesai!`,
+    tantanganModifikasi: "Tambahkan variabel tegangan baterai ke dalam struct.",
+    xpReward: 120,
+  },
+  {
+    level: 14,
+    badgeLevel: "LEVEL 14 • PROTOKOL ESP-NOW WIRELESS",
+    judulMateri: "Komunikasi Tanpa Router Wi-Fi dengan ESP-NOW",
+    tujuanBelajar: "Memancarkan paket data langsung antar-ESP32 menggunakan protokol ESP-NOW.",
+    komponenDimasukkan: [
+      { namaKomponen: "Dua Board ESP32", pasangKePin: "Radio 2.4 GHz Bawaan ESP32", fungsiSingkat: "Kirim data tanpa router." },
+    ],
+    penjelasanTeoriSingkat: "ESP-NOW adalah protokol nirkabel super cepat buatan Espressif untuk kirim data peer-to-peer.",
+    instruksiKetik: [
+      "Aktifkan mode WiFi: WiFi.mode(WIFI_STA);",
+      "Inisialisasi ESP-NOW dengan esp_now_init();",
+    ],
+    kodeTemplateAwal: `#include <WiFi.h>
+#include <esp_now.h>
+
+void setup() {
+  Serial.begin(115200);
+  // Ketik WiFi.mode(WIFI_STA); dan esp_now_init(); di sini:
+  
+}
+
+void loop() {
+  Serial.println("Mengirim paket ESP-NOW...");
+  delay(2000);
+}`,
+    kodeTargetBenar: `#include <WiFi.h>
+#include <esp_now.h>
+
+void setup() {
+  Serial.begin(115200);
+  WiFi.mode(WIFI_STA);
+  if (esp_now_init() == ESP_OK) {
+    Serial.println("ESP-NOW Berhasil Diinisialisasi!");
+  }
+}
+
+void loop() {
+  Serial.println("Mengirim paket ESP-NOW...");
+  delay(2000);
+}`,
+    kataKunciWajibAda: ["WiFi.mode", "WIFI_STA", "esp_now_init", "ESP_OK"],
+    penjelasanBarisKode: [{ potonganKode: "esp_now_init();", artiPenjelasan: "Menyalakan protokol ESP-NOW." }],
+    simulasiOutputJikaBenar: `[ESP-NOW] Radio 2.4GHz Peer-to-Peer Aktif Tanpa Wi-Fi Router!\n✅ Level 14 Selesai!`,
+    tantanganModifikasi: "Daftarkan fungsi callback penerima data (OnDataRecv).",
+    xpReward: 130,
+  },
+  {
+    level: 15,
+    badgeLevel: "LEVEL 15 • MASTER 10-NODE MESH",
+    judulMateri: "Estafet Multi-Hop 10-Node ESP32 Menuju Gateway Internet (Proyek 8)",
+    tujuanBelajar: "Menyusun jaringan estafet 10 node (Node 1 ➔ 10) dan mengunggah ke Cloud Web.",
+    komponenDimasukkan: [
+      { namaKomponen: "10x Node ESP32 Kebun", pasangKePin: "Node 1..9 Estafet | Node 10 Gateway", fungsiSingkat: "Jaringan wireless perkebunan luas." },
+    ],
+    penjelasanTeoriSingkat: "Meneruskan paket secara berantai (Next-Hop Forwarding) hingga tiba di Gateway Node 10.",
+    instruksiKetik: [
+      "Tentukan ID node: #define MY_NODE_ID 1",
+      "Teruskan paket ke node berikutnya: int nextHop = MY_NODE_ID + 1;",
+      "Kirim dengan esp_now_send().",
     ],
     kodeTemplateAwal: `#include <WiFi.h>
 #include <esp_now.h>
 #define MY_NODE_ID 1
-
-struct PaketMesh10Node {
-  int originNode;
-  int targetNextHop;
-  int hopCount;
-  float suhu;
-  int npk_N;
-  float volt;
-  double lat;
-  double lng;
-};
-PaketMesh10Node paket;
-
-void setup() {
-  Serial.begin(115200);
-  // 1. Ketik WiFi.mode(WIFI_STA); dan esp_now_init(); di bawah ini:
-  
-}
-
-void loop() {
-  paket.originNode = MY_NODE_ID;
-  // 2. Ketik int targetNextHop = MY_NODE_ID + 1; lalu kirim dengan esp_now_send(...):
-  
-}`,
-    kodeTargetBenar: `#include <WiFi.h>
-#include <esp_now.h>
-#define MY_NODE_ID 1
-
-struct PaketMesh10Node {
-  int originNode;
-  int targetNextHop;
-  int hopCount;
-  float suhu;
-  int npk_N;
-  float volt;
-  double lat;
-  double lng;
-};
-PaketMesh10Node paket;
 
 void setup() {
   Serial.begin(115200);
@@ -770,37 +872,28 @@ void setup() {
 }
 
 void loop() {
-  paket.originNode = MY_NODE_ID;
-  int targetNextHop = MY_NODE_ID + 1;
-  paket.targetNextHop = targetNextHop;
-  esp_now_send(NULL, (uint8_t *)&paket, sizeof(paket));
-  Serial.println("Paket Multi-Hop Dikirim ke Node Berikutnya!");
+  // Ketik logika estafet nextHop = MY_NODE_ID + 1 dan esp_now_send(...):
+  
+}`,
+    kodeTargetBenar: `#include <WiFi.h>
+#include <esp_now.h>
+#define MY_NODE_ID 1
+
+void setup() {
+  Serial.begin(115200);
+  WiFi.mode(WIFI_STA);
+  esp_now_init();
+}
+
+void loop() {
+  int nextHop = MY_NODE_ID + 1;
+  Serial.printf("Node #%d meneruskan paket ke Node #%d\\n", MY_NODE_ID, nextHop);
   delay(2000);
 }`,
-    kataKunciWajibAda: [
-      "WiFi.mode",
-      "WIFI_STA",
-      "esp_now_init",
-      "MY_NODE_ID + 1",
-      "esp_now_send",
-    ],
-    penjelasanBarisKode: [
-      {
-        potonganKode: "WiFi.mode(WIFI_STA); esp_now_init();",
-        artiPenjelasan: "Mengaktifkan radio frekuensi 2.4 GHz pada ESP32 dalam mode komunikasi langsung antar-node tanpa router (ESP-NOW).",
-      },
-      {
-        potonganKode: "int targetNextHop = MY_NODE_ID + 1;",
-        artiPenjelasan: "Rumus estafet Multi-Hop: Node 1 mengirim ke Node 2, Node 2 ke Node 3, ..., hingga Node 9 mengirim ke Node 10.",
-      },
-      {
-        potonganKode: "esp_now_send(NULL, (uint8_t *)&paket, sizeof(paket));",
-        artiPenjelasan: "Memancarkan bungkusan data (Suhu, NPK, Baterai, Tegangan & GPS) ke udara menuju node tetangga berikutnya.",
-      },
-    ],
-    simulasiOutputJikaBenar: `[HOP #1] Node #1 ➔ Node #2 (Suhu:28.4°C | NPK:145-62-190 | Batt:4.12V 94% | GPS:1.6681,101.4451)\n[HOP #2..#9] Paket diteruskan berantai melewati Node 2 ➔ 3 ➔ 4 ➔ 5 ➔ 6 ➔ 7 ➔ 8 ➔ 9...\n[GATEWAY NODE #10] 🌐 Paket Diterima! Mengunggah JSON ke Dashboard Web Cloud: HTTP 200 OK!\n🏆 SELAMAT! Kamu telah menamatkan seluruh 8 Level Akademi IoT HibahIlmu!`,
-    tantanganModifikasi:
-      "Klik tab '🛰️ 2. Simulator 10-Node Multi-Hop & Dashboard Web' di atas untuk menguji langsung animasi ke-10 node ini!",
-    xpReward: 150,
+    kataKunciWajibAda: ["MY_NODE_ID", "nextHop", "MY_NODE_ID + 1", "Serial.printf"],
+    penjelasanBarisKode: [{ potonganKode: "int nextHop = MY_NODE_ID + 1;", artiPenjelasan: "Rumus lompatan estafet." }],
+    simulasiOutputJikaBenar: `[MESH 10-NODE] Estafet Berjalan Sempurna dari Node 1 hingga Node 10 (Gateway Internet) 🌐\n🏆 SELAMAT! Anda telah menamatkan seluruh 15 Level Akademi IoT HibahIlmu!`,
+    tantanganModifikasi: "Buka menu 'Simulator 10-Node Multi-Hop' di atas untuk menguji visualisasinya!",
+    xpReward: 200,
   },
 ];
