@@ -13,6 +13,9 @@ import {
   Layers,
   BarChart3,
   Copy,
+  Cpu,
+  Globe,
+  GraduationCap,
 } from "lucide-react";
 import { AkunPengguna } from "../../types";
 import {
@@ -23,6 +26,8 @@ import {
   LibrarySimulatorItem,
 } from "./simulatorData";
 import { ElectronicAndIotCanvas } from "./ElectronicAndIotCanvas";
+import { WokwiStepByStepAcademy } from "./WokwiStepByStepAcademy";
+import { WokwiMultihop10NodeSimulator } from "./WokwiMultihop10NodeSimulator";
 import { WokwiMultihop10NodeAndGuides } from "./WokwiMultihop10NodeAndGuides";
 
 interface SimulatorPemrogramanProps {
@@ -35,6 +40,12 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
   tambahXP,
 }) => {
   const [kategoriAktif, setKategoriAktif] = useState<KategoriSimulatorId>("wokwi");
+
+  // SUB-KATEGORI KHUSUS WOKWI AGAR HALAMAN TIDAK PANJANG KE BAWAH!
+  const [subModeWokwi, setSubModeWokwi] = useState<
+    "kanvas_studio" | "akademi_belajar" | "multihop_10_node" | "panduan_8_proyek"
+  >("kanvas_studio");
+
   const [daftarModul, setDaftarModul] = useState<ModulSimulatorItem[]>(
     MODUL_PEMBELAJARAN_SIMULATOR_AWAL
   );
@@ -147,42 +158,37 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* HEADER UTAMA SIMULATOR PROGRAMMING & IOT */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-emerald-950 text-white p-8 rounded-[2.2rem] shadow-2xl flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-        <div className="space-y-2.5 max-w-3xl">
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-emerald-950 text-white p-6 sm:p-8 rounded-[2rem] shadow-2xl flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5">
+        <div className="space-y-2 max-w-3xl">
           <span className="inline-flex items-center gap-2 bg-emerald-400 text-slate-950 text-xs font-black px-3.5 py-1 rounded-full uppercase">
-            <Terminal className="w-4 h-4" /> Multi-Engine Coding, IoT (C++ &amp; MicroPython) &amp;
-            Electronics Lab
+            <Terminal className="w-4 h-4" /> Multi-Engine Coding, IoT &amp; Electronics Lab
           </span>
-          <h1 className="text-2xl sm:text-4xl font-black leading-tight">
-            Laboratorium Simulator Wokwi IoT (C++ &amp; MicroPython), EWB Elektronika, MATLAB,
-            Python, C &amp; Next.js
+          <h1 className="text-xl sm:text-3xl font-black leading-tight">
+            Laboratorium Simulator Wokwi IoT, EWB Elektronika, MATLAB, Python, C &amp; Next.js
           </h1>
-          <p className="text-xs sm:text-sm text-indigo-200 leading-relaxed">
-            Dilengkapi validasi kompilasi library nyata, pemrograman multi-mikrokontroler,
-            simulasi 10-Node Multi-Hop Mesh (Suhu, Pupuk NPK, GPS &amp; Baterai), serta panduan
-            eksperimen kode C++ lengkap untuk seluruh proyek.
+          <p className="text-xs text-indigo-200 leading-relaxed">
+            Pilih engine di bawah. Khusus Wokwi IoT, kini telah dipisah menjadi Sub-Kategori
+            (Studio Kanvas, Akademi Belajar Ketik Program dari Dasar, &amp; Simulator 10-Node Multi-Hop) agar tampilan ringkas dan fokus.
           </p>
         </div>
 
         <button
           type="button"
           onClick={() => setBukaFormTambahModul(!bukaFormTambahModul)}
-          className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-5 py-3.5 rounded-2xl text-xs sm:text-sm flex items-center gap-2 cursor-pointer shrink-0 shadow-xl"
+          className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-4 py-3 rounded-2xl text-xs flex items-center gap-2 cursor-pointer shrink-0 shadow-xl"
         >
           <PlusCircle className="w-4 h-4" />
-          {bukaFormTambahModul
-            ? "Tutup Form Update Modul"
-            : "+ Tambah / Update Modul Simulator Baru"}
+          {bukaFormTambahModul ? "Tutup Form Modul" : "+ Tambah Modul Baru"}
         </button>
       </div>
 
       {bukaFormTambahModul && (
-        <div className="bg-white text-slate-800 p-8 rounded-3xl border-2 border-indigo-500 space-y-4 shadow-xl">
-          <h3 className="text-xl font-black flex items-center gap-2">
-            <PlusCircle className="w-5 h-5 text-indigo-600" /> Tambahkan Modul Pembelajaran Baru ke
-            Simulator ({engineSaatIni.nama})
+        <div className="bg-white text-slate-800 p-6 rounded-3xl border-2 border-indigo-500 space-y-4 shadow-xl">
+          <h3 className="text-lg font-black flex items-center gap-2">
+            <PlusCircle className="w-5 h-5 text-indigo-600" /> Tambahkan Modul Pembelajaran Baru (
+            {engineSaatIni.nama})
           </h3>
           <form
             onSubmit={(e) => {
@@ -214,7 +220,7 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
               setBukaFormTambahModul(false);
               tambahXP(40);
             }}
-            className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs sm:text-sm"
+            className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs"
           >
             <input
               type="text"
@@ -243,14 +249,14 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
               className="sm:col-span-3 p-3 border rounded-xl bg-slate-50"
             />
             <textarea
-              rows={4}
+              rows={3}
               value={kodeAwalBaru}
               onChange={(e) => setKodeAwalBaru(e.target.value)}
               placeholder="Template Kode Awal..."
               className="sm:col-span-2 p-3 border rounded-xl bg-slate-900 text-emerald-300 font-mono text-xs"
             />
             <textarea
-              rows={4}
+              rows={3}
               value={outputBaru}
               onChange={(e) => setOutputBaru(e.target.value)}
               placeholder="Output Terminal..."
@@ -258,7 +264,7 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
             />
             <button
               type="submit"
-              className="sm:col-span-3 bg-indigo-600 hover:bg-indigo-500 text-white font-black py-3.5 rounded-xl cursor-pointer"
+              className="sm:col-span-3 bg-indigo-600 hover:bg-indigo-500 text-white font-black py-3 rounded-xl cursor-pointer"
             >
               Simpan &amp; Terbitkan Modul Simulator
             </button>
@@ -275,7 +281,7 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
               key={eng.id}
               type="button"
               onClick={() => pilihKategoriSimulator(eng.id)}
-              className={`p-4 rounded-2xl border-2 text-left transition cursor-pointer flex flex-col justify-between ${
+              className={`p-3.5 rounded-2xl border-2 text-left transition cursor-pointer flex flex-col justify-between ${
                 aktif
                   ? `bg-gradient-to-br ${eng.warnaGradien} text-white border-transparent shadow-lg`
                   : "bg-white text-slate-800 border-slate-200 hover:border-indigo-400"
@@ -291,15 +297,94 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
         })}
       </div>
 
-      {/* PANEL PROYEK 8 (10-NODE MULTI-HOP MESH) & PANDUAN 8 PROYEK KHUSUS MODE WOKWI */}
+      {/* =================================================================== */}
+      {/* SUB-KATEGORI KHUSUS WOKWI (MEMISAHKAN SIMULASI & MODUL PEMBELAJARAN)*/}
+      {/* =================================================================== */}
       {kategoriAktif === "wokwi" && (
-        <WokwiMultihop10NodeAndGuides onTambahXp={tambahXP} />
+        <div className="space-y-5">
+          <div className="bg-slate-900 text-white p-3.5 rounded-2xl border-2 border-emerald-500/50 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 shadow-lg">
+            {[
+              {
+                id: "kanvas_studio",
+                ikon: <Cpu className="w-4 h-4 text-emerald-400" />,
+                judul: "1. Studio Kanvas Rangkaian Wokwi",
+                sub: "Fokus Simulasi Rangkaian & Denah Ruangan",
+              },
+              {
+                id: "akademi_belajar",
+                ikon: <GraduationCap className="w-4 h-4 text-amber-400" />,
+                judul: "2. Akademi Belajar & Ketik Program",
+                sub: "Belajar dari Dasar (Lv.1 - Lv.8) + Cek Kode",
+              },
+              {
+                id: "multihop_10_node",
+                ikon: <Globe className="w-4 h-4 text-sky-400" />,
+                judul: "3. Simulator 10-Node Multi-Hop",
+                sub: "Suhu, Pupuk NPK, GPS & Baterai -> Web",
+              },
+              {
+                id: "panduan_8_proyek",
+                ikon: <BookOpen className="w-4 h-4 text-pink-400" />,
+                judul: "4. Kamus & Bedah Kode 8 Proyek",
+                sub: "Penjelasan Lengkap & Modifikasi Kode",
+              },
+            ].map((tab) => {
+              const aktif = subModeWokwi === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setSubModeWokwi(tab.id as any)}
+                  className={`p-3 rounded-xl border text-left cursor-pointer transition flex flex-col justify-between gap-1 ${
+                    aktif
+                      ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-amber-300 shadow-md scale-[1.01]"
+                      : "bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-600"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 font-black text-xs">
+                    {tab.ikon}
+                    <span>{tab.judul}</span>
+                  </div>
+                  <div
+                    className={`text-[10px] pl-6 ${
+                      aktif ? "text-amber-200 font-semibold" : "text-slate-400"
+                    }`}
+                  >
+                    {tab.sub}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* TAMPILKAN HANYA 1 SUB-KATEGORI YANG DIPILIH AGAR TIDAK PANJANG KE BAWAH */}
+          {subModeWokwi === "kanvas_studio" && (
+            <ElectronicAndIotCanvas
+              mode="wokwi"
+              userLogin={userLogin}
+              onUpdateKodeDariCloud={(kodeBaru) => setKodeEditor(kodeBaru)}
+            />
+          )}
+
+          {subModeWokwi === "akademi_belajar" && (
+            <WokwiStepByStepAcademy
+              onTambahXp={tambahXP}
+              onBukaSimulator10Node={() => setSubModeWokwi("multihop_10_node")}
+            />
+          )}
+
+          {subModeWokwi === "multihop_10_node" && (
+            <WokwiMultihop10NodeSimulator onTambahXp={tambahXP} />
+          )}
+
+          {subModeWokwi === "panduan_8_proyek" && (
+            <WokwiMultihop10NodeAndGuides onTambahXp={tambahXP} />
+          )}
+        </div>
       )}
 
-      {/* KANVAS DRAG & DROP INTERAKTIF KHUSUS WOKWI IOT, EWB ELEKTRONIKA, & MATLAB SIMULINK */}
-      {(kategoriAktif === "wokwi" ||
-        kategoriAktif === "ewb" ||
-        kategoriAktif === "matlab") && (
+      {/* KANVAS UNTUK EWB ELEKTRONIKA & MATLAB SIMULINK */}
+      {(kategoriAktif === "ewb" || kategoriAktif === "matlab") && (
         <ElectronicAndIotCanvas
           mode={kategoriAktif}
           userLogin={userLogin}
