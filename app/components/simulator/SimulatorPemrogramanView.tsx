@@ -1,4 +1,6 @@
 "use client";
+import { WokwiMultihop10NodeAndGuides } from "./WokwiMultihop10NodeAndGuides";
+
 
 import React, { useState } from "react";
 import {
@@ -476,6 +478,8 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
           </div>
         </div>
       )}
+    
+      <WokwiMultihop10NodeAndGuides onTambahXp={tambahXP} />
     </div>
   );
 };
