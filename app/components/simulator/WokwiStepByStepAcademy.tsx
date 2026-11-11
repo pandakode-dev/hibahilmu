@@ -57,6 +57,8 @@ export const WokwiStepByStepAcademy: React.FC<{
   onBukaSimulator10Node?: () => void;
 }> = ({ onTambahXp, onBukaSimulator10Node }) => {
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const kanvasContainerRef = useRef<HTMLDivElement | null>(null);
+  const editorContainerRef = useRef<HTMLDivElement | null>(null);
 
   const [indeksLevel, setIndeksLevel] = useState<number>(0);
   const [levelSelesaiSet, setLevelSelesaiSet] = useState<Set<number>>(
@@ -67,7 +69,6 @@ export const WokwiStepByStepAcademy: React.FC<{
     "tutorial_berkedip" | "latihan_mandiri"
   >("tutorial_berkedip");
 
-  // State Filter & Pencarian Gudang Komponen (48 Item)
   const [filterKategoriGudang, setFilterKategoriGudang] =
     useState<KategoriFilterGudang48>("Semua");
   const [kataCariGudang, setKataCariGudang] = useState<string>("");
@@ -77,7 +78,6 @@ export const WokwiStepByStepAcademy: React.FC<{
     SPESIFIKASI_HARDWARE_15_LEVEL[materiAktif.level] ||
     SPESIFIKASI_HARDWARE_15_LEVEL[1];
 
-  // State Drag & Drop dari Gudang Komponen (48 Item) ke Kotak Bayangan Kanvas
   const [esp32SudahDitaruh, setEsp32SudahDitaruh] = useState<boolean>(false);
   const [periferalSudahDitaruh, setPeriferalSudahDitaruh] =
     useState<boolean>(false);
@@ -85,7 +85,6 @@ export const WokwiStepByStepAcademy: React.FC<{
     useState<ItemGudang48Master | null>(null);
   const [pesanGudang, setPesanGudang] = useState<string>("");
 
-  // State Klik 2 Titik Kaki Pin & Kabel Hidup Mengikuti Kursor Mouse
   const [kabelTerpasangList, setKabelTerpasangList] = useState<
     KabelTersambung[]
   >([]);
@@ -97,12 +96,21 @@ export const WokwiStepByStepAcademy: React.FC<{
     y: number;
   }>({ x: 280, y: 120 });
 
-  // State Clue Bertahap
+  // STATE GETARAN MERAH (RED SHAKE) & PENUNJUK LOKASI SALAH SPESIFIK
+  const [getarMerahRangkaian, setGetarMerahRangkaian] =
+    useState<boolean>(false);
+  const [getarMerahKodingan, setGetarMerahKodingan] = useState<boolean>(false);
+  const [pinYangSalahAtauKurangIds, setPinYangSalahAtauKurangIds] = useState<
+    string[]
+  >([]);
+  const [barisKodeSalahList, setBarisKodeSalahList] = useState<
+    { nomorBaris: number; pesanBaris: string }[]
+  >([]);
+
   const [jumlahClueDibuka, setJumlahClueDibuka] = useState<number>(0);
   const [intipBayanganSementara, setIntipBayanganSementara] =
     useState<boolean>(false);
 
-  // State Editor Kodingan C++
   const [kodeKetikanUser, setKodeKetikanUser] = useState<string>(
     KURIKULUM_15_LEVEL_IOT[0].kodeTemplateAwal
   );
@@ -127,6 +135,26 @@ export const WokwiStepByStepAcademy: React.FC<{
     return () => clearInterval(timer);
   }, [statusVerifikasi]);
 
+  const picuGetaranMerahRangkaian = () => {
+    setGetarMerahRangkaian(false);
+    setTimeout(() => setGetarMerahRangkaian(true), 20);
+    setTimeout(() => setGetarMerahRangkaian(false), 900);
+    kanvasContainerRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+  };
+
+  const picuGetaranMerahKodingan = () => {
+    setGetarMerahKodingan(false);
+    setTimeout(() => setGetarMerahKodingan(true), 20);
+    setTimeout(() => setGetarMerahKodingan(false), 900);
+    editorContainerRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+  };
+
   const pindahKeLevel = (
     idxBaru: number,
     modeTarget: "tutorial_berkedip" | "latihan_mandiri" = modeBelajar
@@ -141,6 +169,8 @@ export const WokwiStepByStepAcademy: React.FC<{
     setPesanGudang("");
     setKabelTerpasangList([]);
     setPinAwalDiklik(null);
+    setPinYangSalahAtauKurangIds([]);
+    setBarisKodeSalahList([]);
     setJumlahClueDibuka(0);
     setIntipBayanganSementara(false);
     setKodeKetikanUser(target.kodeTemplateAwal);
@@ -177,7 +207,6 @@ export const WokwiStepByStepAcademy: React.FC<{
   const tampilkanBayanganPanduan =
     modeBelajar === "tutorial_berkedip" || intipBayanganSementara;
 
-  // Filter daftar 48 komponen sesuai tab kategori dan pencarian teks
   const daftarGudangTerfilter = GUDANG_KOMPONEN_48_MASTER.filter((item) => {
     const cocokKategori =
       filterKategoriGudang === "Semua" ||
@@ -191,7 +220,7 @@ export const WokwiStepByStepAcademy: React.FC<{
   });
 
   // ==========================================================================
-  // 1. HANDLER DRAG & DROP DARI GUDANG KOMPONEN (48 ITEM) KE ZONA BAYANGAN
+  // 1. HANDLER DRAG & DROP DARI GUDANG 48 ITEM KE KANVAS
   // ==========================================================================
   const handleDropKeZonaBayangan = (
     zonaTarget: "zona_esp32" | "zona_periferal"
@@ -201,12 +230,14 @@ export const WokwiStepByStepAcademy: React.FC<{
     if (zonaTarget === "zona_esp32") {
       if (itemSedangDiDrag.cocokUntukDropZone === "esp32_board") {
         setEsp32SudahDitaruh(true);
+        setPinYangSalahAtauKurangIds([]);
         setPesanGudang(
           `✅ Mantap! '${itemSedangDiDrag.nama}' berhasil ditarik dari Gudang 48 Item ke meja breadboard!`
         );
       } else {
+        picuGetaranMerahRangkaian();
         setPesanGudang(
-          `❌ Salah Tempat! Kotak kiri membutuhkan Mikrokontroler Utama 'ESP32 DevKit V1', bukan '${itemSedangDiDrag.nama}'.`
+          `❌ SALAH KOMPONEN! Kotak kiri khusus untuk 'ESP32 DevKit V1', bukan '${itemSedangDiDrag.nama}'.`
         );
       }
     } else if (zonaTarget === "zona_periferal") {
@@ -217,12 +248,14 @@ export const WokwiStepByStepAcademy: React.FC<{
 
       if (cocokTipe && itemSedangDiDrag.cocokUntukDropZone !== "esp32_board") {
         setPeriferalSudahDitaruh(true);
+        setPinYangSalahAtauKurangIds([]);
         setPesanGudang(
           `✅ Tepat Sekali! Komponen '${itemSedangDiDrag.nama}' berhasil dipasang ke kanvas!`
         );
       } else {
+        picuGetaranMerahRangkaian();
         setPesanGudang(
-          `❌ Komponen Tidak Sesuai Modul! Level ${materiAktif.level} membutuhkan '${spekHardware.namaPeriferal}', bukan '${itemSedangDiDrag.nama}'.`
+          `❌ SALAH KOMPONEN! Level ${materiAktif.level} membutuhkan '${spekHardware.namaPeriferal}', bukan '${itemSedangDiDrag.nama}'.`
         );
       }
     }
@@ -243,7 +276,7 @@ export const WokwiStepByStepAcademy: React.FC<{
   };
 
   // ==========================================================================
-  // 2. HANDLER KLIK 2 TITIK KAKI PIN SECARA BERURUTAN + KABEL IKUT MOUSE
+  // 2. HANDLER KLIK 2 TITIK KAKI PIN SECARA BERURUTAN
   // ==========================================================================
   const handleMouseMoveSvg = (e: React.MouseEvent<SVGSVGElement>) => {
     if (!pinAwalDiklik || !svgRef.current) return;
@@ -263,6 +296,7 @@ export const WokwiStepByStepAcademy: React.FC<{
     e.stopPropagation();
 
     if (!esp32SudahDitaruh || !periferalSudahDitaruh) {
+      picuGetaranMerahRangkaian();
       setPesanGudang(
         "⚠️ Tarik dan pasang dulu ESP32 serta Komponen dari Gudang Komponen (48 Item) ke kanvas sebelum menyambung kaki pin!"
       );
@@ -305,7 +339,7 @@ export const WokwiStepByStepAcademy: React.FC<{
     const cocokWajib = spekHardware.sambunganWajib.find(
       (w) => w.dariPinEsp32 === idEsp && w.kePinPeriferal === idPerif
     );
-    const warnaKabelBaru = cocokWajib?.warnaKabel || pinAwalDiklik.warnaPin;
+    const warnaKabelBaru = cocokWajib?.warnaKabel || "#ef4444";
 
     setKabelTerpasangList((prev) => {
       const bersih = prev.filter(
@@ -318,28 +352,39 @@ export const WokwiStepByStepAcademy: React.FC<{
     });
 
     setPinAwalDiklik(null);
+    setPinYangSalahAtauKurangIds([]);
     setStatusVerifikasi("belum");
-    setPesanGudang(
-      cocokWajib
-        ? `✅ Kabel berhasil disambung: ${cocokWajib.keteranganJalur}!`
-        : `⚠️ Kabel terpasang dari ${pinAwalDiklik.labelPin} ke ${pinDiklik.labelPin}.`
-    );
+
+    if (!cocokWajib) {
+      picuGetaranMerahRangkaian();
+      setPinYangSalahAtauKurangIds([idEsp, idPerif]);
+      setPesanGudang(
+        `❌ SALAH PIN! Sambungan dari ${pinAwalDiklik.labelPin} ke ${pinDiklik.labelPin} tidak sesuai instruksi modul!`
+      );
+    } else {
+      setPesanGudang(
+        `✅ Kabel Tepat: ${cocokWajib.keteranganJalur}!`
+      );
+    }
   };
 
   // ==========================================================================
-  // 3. MESIN VALIDASI KETAT: KOMPONEN + KABEL PIN + SINTAKS KODE C++
+  // 3. MESIN VALIDASI KETAT DENGAN GETARAN MERAH & PENUNJUK TITIK/BARIS SALAH
   // ==========================================================================
   const periksaRangkaianDanJalankanProgram = () => {
     const errors: string[] = [];
+    const pinBermasalah: string[] = [];
+    const barisBermasalah: { nomorBaris: number; pesanBaris: string }[] = [];
 
+    // A. CEK RANGKAIAN FISIK & PIN KABEL
     if (!esp32SudahDitaruh) {
       errors.push(
-        "[KOMPONEN BELUM DITARUH] Tarik 'ESP32 DevKit V1' dari Gudang Komponen (48 Item) ke kotak bayangan kiri!"
+        "[LOKASI SALAH: KOTAK KIRI KANVAS] Papan 'ESP32 DevKit V1' belum ditarik dari Gudang Komponen ke kotak bayangan kiri!"
       );
     }
     if (!periferalSudahDitaruh) {
       errors.push(
-        `[KOMPONEN BELUM DITARUH] Tarik '${spekHardware.namaPeriferal}' dari Gudang Komponen (48 Item) ke kotak bayangan kanan!`
+        `[LOKASI SALAH: KOTAK KANAN KANVAS] Komponen '${spekHardware.namaPeriferal}' belum ditarik dari Gudang Komponen ke kotak bayangan kanan!`
       );
     }
 
@@ -350,7 +395,8 @@ export const WokwiStepByStepAcademy: React.FC<{
           k.kePinPeriferal === wajib.kePinPeriferal
       );
       if (!sudahAda) {
-        errors.push(`[KABEL BELUM TERSAMBUNG] ${wajib.keteranganJalur}.`);
+        errors.push(`[PIN BELUM TERSAMBUNG] ${wajib.keteranganJalur}.`);
+        pinBermasalah.push(wajib.dariPinEsp32, wajib.kePinPeriferal);
       }
     }
 
@@ -370,74 +416,106 @@ export const WokwiStepByStepAcademy: React.FC<{
             (p) => p.idPin === terpasang.kePinPeriferal
           )?.labelPin || terpasang.kePinPeriferal;
         errors.push(
-          `[SALAH SAMBUNG PIN] Kabel dari "${namaEsp}" ke "${namaPerif}" salah alamat! Hapus kabel tersebut.`
+          `[KABEL SALAH ALAMAT] Kabel dari kaki "${namaEsp}" ke "${namaPerif}" salah! Klik tanda ✕ untuk melepasnya.`
         );
+        pinBermasalah.push(terpasang.dariPinEsp32, terpasang.kePinPeriferal);
       }
     }
 
+    // JIKA ADA SALAH DI RANGKAIAN -> GETARKAN KANVAS MERAH & SOROT PIN YANG SALAH!
     if (errors.length > 0) {
       setStatusVerifikasi("gagal_rangkaian");
       setDaftarErrorDetail(errors);
+      setPinYangSalahAtauKurangIds(pinBermasalah);
+      setBarisKodeSalahList([]);
+      picuGetaranMerahRangkaian();
       setPesanFeedback(
-        "❌ SIMULASI GAGAL MENYALA: Komponen belum ditaruh dari Gudang 48 Item atau sambungan kaki pin belum tepat!"
+        `🚨 RANGKAIAN SALAH (${errors.length} Titik Masalah): Perhatikan bagian kanvas yang bergetar merah dan lingkaran merah berkedip pada kaki pin di atas!`
       );
       setOutputSerialSimulasi(
-        `[HARDWARE & WIRING ERROR — RANGKAIAN TIDAK MENYALA]\n--------------------------------------------------\n${errors
-          .map((e, i) => `${i + 1}. ${e}`)
+        `[HARDWARE WIRING CHECK FAILED]\n--------------------------------------------------\n${errors
+          .map((e, i) => `❌ ${i + 1}. ${e}`)
           .join("\n")}`
       );
       return;
     }
 
+    // B. CEK KODINGAN C++ BESERTA NOMOR BARIS YANG SALAH
+    const barisArray = kodeKetikanUser.split("\n");
     const kodeBersih = kodeKetikanUser
       .replace(/\/\/.*$/gm, "")
       .replace(/\/\*[\s\S]*?\*\//g, "")
       .trim();
 
+    // Periksa baris demi baris jika ada perintah yang lupa titik koma (;)
+    barisArray.forEach((isiBaris, idx) => {
+      const nomor = idx + 1;
+      const tanpaKomen = isiBaris.replace(/\/\/.*$/, "").trim();
+      if (!tanpaKomen) return;
+      const adalahBarisPerintah =
+        /^(pinMode|digitalWrite|analogRead|delay|Serial\.|pintu\.|int\s+|float\s+|double\s+|WiFi\.|esp_now_)/.test(
+          tanpaKomen
+        );
+      if (adalahBarisPerintah && !tanpaKomen.endsWith(";")) {
+        const msg = `Baris ke-${nomor}: Kurang tanda titik koma (;) di akhir perintah "${tanpaKomen}"`;
+        errors.push(msg);
+        barisBermasalah.push({ nomorBaris: nomor, pesanBaris: msg });
+      }
+    });
+
     if (!/void\s+setup\s*\(\s*\)/.test(kodeBersih)) {
-      errors.push("Fungsi utama 'void setup()' hilang atau salah ketik.");
+      const msg = "Baris ke-1: Fungsi utama 'void setup()' hilang atau terhapus!";
+      errors.push(msg);
+      barisBermasalah.push({ nomorBaris: 1, pesanBaris: msg });
     }
     if (!/void\s+loop\s*\(\s*\)/.test(kodeBersih)) {
-      errors.push("Fungsi utama 'void loop()' hilang atau salah ketik.");
-    }
-
-    const kurungBuka = (kodeBersih.match(/\{/g) || []).length;
-    const kurungTutup = (kodeBersih.match(/\}/g) || []).length;
-    if (kurungBuka === 0 || kurungBuka !== kurungTutup) {
-      errors.push(
-        `Kurung kurawal tidak seimbang: ada ${kurungBuka} '{' tetapi ada ${kurungTutup} '}'.`
-      );
+      const msg = `Baris ke-${barisArray.length}: Fungsi utama 'void loop()' hilang atau terhapus!`;
+      errors.push(msg);
+      barisBermasalah.push({ nomorBaris: barisArray.length, pesanBaris: msg });
     }
 
     const kurangKw = materiAktif.kataKunciWajibAda.filter(
       (kw) => !kodeBersih.includes(kw)
     );
     if (kurangKw.length > 0) {
-      errors.push(
-        `Perintah C++ yang wajib diketik namun belum ada: ${kurangKw
-          .map((k) => `"${k}"`)
-          .join(", ")}.`
+      // Cari baris komentar petunjuk tempat seharusnya kode diketik
+      const idxKomentarPetunjuk = barisArray.findIndex((b) =>
+        b.includes("//")
       );
+      const targetBaris =
+        idxKomentarPetunjuk >= 0 ? idxKomentarPetunjuk + 2 : 4;
+      const msg = `Sekitar Baris ke-${targetBaris}: Anda belum mengetik perintah wajib: ${kurangKw
+        .map((k) => `"${k}"`)
+        .join(", ")}`;
+      errors.push(msg);
+      barisBermasalah.push({ nomorBaris: targetBaris, pesanBaris: msg });
     }
 
+    // JIKA ADA SALAH DI KODINGAN -> GETARKAN EDITOR KODE MERAH & TUNJUK BARISNYA!
     if (errors.length > 0) {
       setStatusVerifikasi("gagal_kode");
       setDaftarErrorDetail(errors);
+      setPinYangSalahAtauKurangIds([]);
+      setBarisKodeSalahList(barisBermasalah);
+      picuGetaranMerahKodingan();
       setPesanFeedback(
-        `❌ KOMPILASI KODE GAGAL (${errors.length} Kesalahan): Rangkaian fisik sudah benar, tetapi kode C++ Anda masih belum lengkap!`
+        `🚨 KODINGAN C++ MASIH SALAH (${errors.length} Error): Rangkaian kabel sudah benar, tetapi perhatikan kotak Editor Kode yang bergetar merah dan nomor baris yang ditandai di bawah!`
       );
       setOutputSerialSimulasi(
-        `[ESP32 GCC COMPILER ERROR]\n--------------------------------------------------\n${errors
-          .map((e, i) => `${i + 1}. ${e}`)
+        `[ESP32 GCC COMPILER ERROR — LOKASI BARIS DITEMUKAN]\n--------------------------------------------------\n${errors
+          .map((e, i) => `❌ ${i + 1}. ${e}`)
           .join("\n")}`
       );
       return;
     }
 
+    // C. SEMUA BENAR!
     setStatusVerifikasi("lulus");
     setDaftarErrorDetail([]);
+    setPinYangSalahAtauKurangIds([]);
+    setBarisKodeSalahList([]);
     setPesanFeedback(
-      `🎉 SEMPURNA! Perakitan dari Gudang 48 Komponen, sambungan 2 titik pin, dan kodingan C++ Level ${materiAktif.level} Anda 100% BENAR (+${materiAktif.xpReward} XP)!`
+      `🎉 100% BENAR! Rangkaian komponen, tarikan 2 kaki pin, dan kodingan C++ Level ${materiAktif.level} berhasil dijalankan (+${materiAktif.xpReward} XP)!`
     );
     setOutputSerialSimulasi(materiAktif.simulasiOutputJikaBenar);
 
@@ -462,8 +540,24 @@ export const WokwiStepByStepAcademy: React.FC<{
       )
     : null;
 
+  const daftarBarisEditor = kodeKetikanUser.split("\n");
+
   return (
     <div className="bg-slate-900 text-white p-5 sm:p-6 rounded-3xl border-2 border-emerald-500/60 shadow-2xl space-y-5">
+      {/* ANIMASI CSS KEYFRAMES GETARAN MERAH (RED ERROR SHAKE) */}
+      <style>{`
+        @keyframes errorShakeRed {
+          0%, 100% { transform: translateX(0); }
+          15%, 45%, 75% { transform: translateX(-10px); }
+          30%, 60%, 90% { transform: translateX(10px); }
+        }
+        .animate-error-shake {
+          animation: errorShakeRed 0.65s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+          box-shadow: 0 0 35px rgba(244, 63, 94, 0.85) !important;
+          border-color: #f43f5e !important;
+        }
+      `}</style>
+
       {/* HEADER 15 LEVEL + MODE TUTORIAL VS LATIHAN */}
       <div className="flex flex-wrap justify-between items-center gap-4 border-b border-slate-800 pb-4">
         <div className="space-y-1">
@@ -539,10 +633,9 @@ export const WokwiStepByStepAcademy: React.FC<{
       </div>
 
       {/* =================================================================== */}
-      {/* GUDANG KOMPONEN (48 ITEM) TERPADU — SAMA PERSIS DENGAN KANVAS UTAMA */}
+      {/* GUDANG KOMPONEN (48 ITEM) PERSIS DATABASE STUDIO WOKWI UTAMA        */}
       {/* =================================================================== */}
       <div className="bg-[#0b101e] p-5 rounded-3xl border-2 border-slate-800 space-y-4 shadow-2xl">
-        {/* Baris Judul Gudang Komponen (48 Item) + Kotak Pencarian */}
         <div className="flex flex-wrap justify-between items-center gap-3">
           <div className="flex items-center gap-2">
             <Move className="w-4 h-4 text-amber-400" />
@@ -556,7 +649,7 @@ export const WokwiStepByStepAcademy: React.FC<{
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
               <input
                 type="text"
-                placeholder="Cari NPK, Pompa, RFID, Keypad, PIR, LED..."
+                placeholder="Cari NPK, Pompa, RFID, Keypad, PIR,"
                 value={kataCariGudang}
                 onChange={(e) => setKataCariGudang(e.target.value)}
                 className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
@@ -586,6 +679,7 @@ export const WokwiStepByStepAcademy: React.FC<{
                 setPeriferalSudahDitaruh(false);
                 setKabelTerpasangList([]);
                 setPinAwalDiklik(null);
+                setPinYangSalahAtauKurangIds([]);
                 setStatusVerifikasi("belum");
               }}
               className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs cursor-pointer"
@@ -617,8 +711,8 @@ export const WokwiStepByStepAcademy: React.FC<{
           })}
         </div>
 
-        {/* Grid Kartu Gudang Komponen (48 Item) dengan Gambar Miniatur SVG Asli */}
-        <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-8 lg:grid-cols-10 gap-2.5 max-h-52 overflow-y-auto pr-1 pt-1">
+        {/* Grid 10 Kolom Kartu Gudang Komponen (48 Item) Persis Screenshot Studio Wokwi */}
+        <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-8 lg:grid-cols-10 gap-2.5 max-h-56 overflow-y-auto pr-1 pt-1">
           {daftarGudangTerfilter.map((item) => {
             const dibutuhkanEsp32 =
               item.cocokUntukDropZone === "esp32_board" && !esp32SudahDitaruh;
@@ -649,26 +743,23 @@ export const WokwiStepByStepAcademy: React.FC<{
                   sedangTerpilihDrag
                     ? "bg-amber-400/20 border-amber-300 scale-105 shadow-xl"
                     : harusDisorotBerkedip
-                    ? "bg-slate-900 border-amber-400 ring-2 ring-amber-400/60 animate-pulse"
+                    ? "bg-[#111827] border-amber-400 ring-2 ring-amber-400/60 animate-pulse"
                     : "bg-[#111827] border-slate-800 hover:border-indigo-500/60"
                 }`}
               >
-                {/* Header Badge Kategori & Jumlah Pin (2P, 3P, 8P, 30P) */}
-                <div className="flex justify-between items-center gap-1">
-                  <span className="text-[8.5px] font-black uppercase text-sky-400 tracking-tighter">
+                <div className="flex justify-between items-center gap-1 bg-black/50 px-1.5 py-0.5 rounded-md">
+                  <span className="text-[8px] font-black uppercase text-indigo-400 truncate">
                     {item.badgeAtas}
                   </span>
-                  <span className="text-[8.5px] font-black uppercase text-amber-400">
+                  <span className="text-[8px] font-black uppercase text-amber-400 shrink-0">
                     {item.jumlahPinLabel}
                   </span>
                 </div>
 
-                {/* Gambar Miniatur SVG Asli */}
                 <div className="py-0.5">
-                  <MiniaturSvgGudang48 tipe={item.tipeVisualThumb} />
+                  <MiniaturSvgGudang48 idItem={item.id} />
                 </div>
 
-                {/* Nama Komponen */}
                 <div className="text-[10px] font-bold text-white leading-tight truncate text-center">
                   {item.nama}
                 </div>
@@ -676,73 +767,40 @@ export const WokwiStepByStepAcademy: React.FC<{
             );
           })}
         </div>
-
-        {/* Baris Status Panduan Tarik Komponen & Klik 2 Kaki Pin */}
-        <div className="px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 flex flex-wrap justify-between items-center gap-2 text-xs">
-          <div className="flex items-center gap-2 font-bold text-amber-300">
-            <MousePointerClick className="w-4 h-4 shrink-0" />
-            <span>
-              {pesanGudang ||
-                (langkahTutorialSaatIni === "taruh_esp32"
-                  ? "Langkah 1: Tarik (Drag) kartu 'ESP32 DevKit V1 (30P)' yang berkedip di Gudang Komponen atas ke kotak bayangan kiri di kanvas!"
-                  : langkahTutorialSaatIni === "taruh_periferal"
-                  ? `Langkah 2: Tarik (Drag) kartu '${spekHardware.namaPeriferal}' yang berkedip di Gudang Komponen atas ke kotak bayangan kanan di kanvas!`
-                  : pinAwalDiklik
-                  ? `🔌 Ujung ke-1 [${pinAwalDiklik.labelPin}] sudah diklik! Sekarang KLIK bulatan kaki pin tujuan di komponen seberangnya!`
-                  : sambunganBerkedipTarget
-                  ? `Langkah 3 (Klik 2 Kaki Pin): ${sambunganBerkedipTarget.keteranganJalur}!`
-                  : "✅ Semua Komponen & Kabel Pin Sudah Terpasang! Silakan ketik kode C++ di bawah.")}
-            </span>
-          </div>
-
-          {pinAwalDiklik && (
-            <button
-              type="button"
-              onClick={() => setPinAwalDiklik(null)}
-              className="px-2.5 py-1 rounded-lg bg-rose-600 text-white font-black text-[10px] cursor-pointer"
-            >
-              Batalkan Pegangan Kabel
-            </button>
-          )}
-        </div>
       </div>
 
-      {/* KOTAK CLUE JIKA DIBUKA */}
-      {jumlahClueDibuka > 0 && (
-        <div className="p-4 rounded-2xl bg-amber-950/70 border-2 border-amber-400 space-y-2 text-xs">
-          <div className="flex justify-between items-center">
-            <span className="font-black text-amber-300 uppercase">
-              🕵️ Clue Bantuan ({jumlahClueDibuka}/
-              {spekHardware.daftarClueLatihan.length}):
+      {/* =================================================================== */}
+      {/* MEJA KANVAS BREADBOARD WOKWI (BERGETAR MERAH JIKA RANGKAIAN SALAH!) */}
+      {/* =================================================================== */}
+      <div
+        ref={kanvasContainerRef}
+        className={`bg-[#090d16] rounded-3xl border-2 p-3 relative overflow-hidden shadow-2xl transition ${
+          getarMerahRangkaian
+            ? "animate-error-shake border-rose-500 bg-rose-950/20"
+            : statusVerifikasi === "gagal_rangkaian"
+            ? "border-rose-500"
+            : simulasiAktif
+            ? "border-emerald-400"
+            : "border-slate-800"
+        }`}
+      >
+        {/* Banner Lokasi Kesalahan Rangkaian di Atas Kanvas */}
+        {statusVerifikasi === "gagal_rangkaian" && (
+          <div className="mb-2 px-4 py-2 rounded-xl bg-rose-600 text-white font-black text-xs flex items-center justify-between gap-2 animate-pulse">
+            <span>
+              🚨 KESALAHAN DI MEJA RANGKAIAN INI: {daftarErrorDetail[0]}
             </span>
-            <button
-              type="button"
-              onClick={() => setIntipBayanganSementara(!intipBayanganSementara)}
-              className="px-3 py-1 rounded-lg bg-amber-400 text-slate-950 font-black text-[11px] cursor-pointer"
-            >
-              {intipBayanganSementara
-                ? "Sembunyikan Bayangan"
-                : "👁️ Tampilkan Bayangan Berkedip"}
-            </button>
+            <span className="px-2 py-0.5 rounded bg-black/30 text-[10px]">
+              Lihat Lingkaran Merah Berkedip di Bawah 👇
+            </span>
           </div>
-          <ul className="list-disc list-inside space-y-1 text-amber-100">
-            {spekHardware.daftarClueLatihan
-              .slice(0, jumlahClueDibuka)
-              .map((c, i) => (
-                <li key={i}>{c}</li>
-              ))}
-          </ul>
-        </div>
-      )}
+        )}
 
-      {/* =================================================================== */}
-      {/* MEJA KANVAS BREADBOARD WOKWI (DROP ZONE KOMPONEN & KLIK 2 KAKI PIN) */}
-      {/* =================================================================== */}
-      <div className="bg-[#090d16] rounded-3xl border-2 border-slate-800 p-3 relative overflow-hidden shadow-2xl">
         {esp32SudahDitaruh &&
           periferalSudahDitaruh &&
           sambunganBerkedipTarget &&
-          tampilkanBayanganPanduan && (
+          tampilkanBayanganPanduan &&
+          statusVerifikasi !== "gagal_rangkaian" && (
             <div className="mb-2 px-4 py-1.5 rounded-xl bg-amber-400 text-slate-950 font-black text-xs text-center shadow">
               👆 {sambunganBerkedipTarget.keteranganJalur} (Klik Titik ke-1 lalu Klik Titik ke-2)
             </div>
@@ -781,7 +839,7 @@ export const WokwiStepByStepAcademy: React.FC<{
                 if (itemSedangDiDrag) handleDropKeZonaBayangan("zona_esp32");
                 else
                   setPesanGudang(
-                    "👆 Tarik (Drag) kartu 'ESP32 DevKit V1 (30P)' dari Gudang Komponen (48 Item) di atas ke kotak bayangan kuning ini!"
+                    "👆 Tarik (Drag) kartu 'ESP32 DevKit V1 (30P)' dari Gudang Komponen di atas ke kotak bayangan kiri ini!"
                   );
               }}
               className="cursor-pointer"
@@ -792,46 +850,47 @@ export const WokwiStepByStepAcademy: React.FC<{
                 width={136}
                 height={198}
                 rx={14}
-                fill="rgba(250, 204, 21, 0.08)"
-                stroke="#facc15"
-                strokeWidth={2.5}
+                fill={
+                  statusVerifikasi === "gagal_rangkaian"
+                    ? "rgba(244, 63, 94, 0.22)"
+                    : "rgba(250, 204, 21, 0.08)"
+                }
+                stroke={
+                  statusVerifikasi === "gagal_rangkaian" ? "#f43f5e" : "#facc15"
+                }
+                strokeWidth={3}
                 strokeDasharray="8 5"
               >
                 <animate
                   attributeName="opacity"
                   values="0.35;1;0.35"
-                  dur="1.2s"
+                  dur="0.9s"
                   repeatCount="indefinite"
                 />
               </rect>
               <text
                 x={110}
-                y={112}
+                y={108}
                 textAnchor="middle"
-                fill="#facc15"
+                fill={
+                  statusVerifikasi === "gagal_rangkaian" ? "#fda4af" : "#facc15"
+                }
                 fontSize="10.5"
                 fontWeight="bold"
               >
-                📦 DROP DI SINI:
+                {statusVerifikasi === "gagal_rangkaian"
+                  ? "❌ BELUM DITARUH!"
+                  : "📦 DROP DI SINI:"}
               </text>
               <text
                 x={110}
-                y={130}
+                y={128}
                 textAnchor="middle"
                 fill="#ffffff"
                 fontSize="11"
                 fontWeight="bold"
               >
                 ESP32 DevKit V1
-              </text>
-              <text
-                x={110}
-                y={148}
-                textAnchor="middle"
-                fill="#94a3b8"
-                fontSize="8.5"
-              >
-                (Tarik dari Gudang 48 Item)
               </text>
             </g>
           ) : (
@@ -865,40 +924,17 @@ export const WokwiStepByStepAcademy: React.FC<{
               >
                 ESP-WROOM-32
               </text>
-              <text
-                x={110}
-                y={76}
-                textAnchor="middle"
-                fill="#334155"
-                fontSize="7.5"
-                fontWeight="bold"
-              >
-                Wi-Fi + BLE
-              </text>
 
               <rect x={92} y={214} width={36} height={14} rx={3} fill="#94a3b8" />
-              <circle
-                cx={96}
-                cy={196}
-                r={4}
-                fill={simulasiAktif ? "#22c55e" : "#ef4444"}
-              />
-              <circle
-                cx={124}
-                cy={196}
-                r={4}
-                fill={
-                  simulasiAktif && detakSimulasi % 2 === 0
-                    ? "#38bdf8"
-                    : "#334155"
-                }
-              />
 
               {spekHardware.pinEsp32Tersedia.map((pin) => {
                 const sedangDipegang = pinAwalDiklik?.idPin === pin.idPin;
                 const harusBerkedip =
                   tampilkanBayanganPanduan &&
                   pinEspBerkedipObj?.idPin === pin.idPin;
+                const adalahPinSalah = pinYangSalahAtauKurangIds.includes(
+                  pin.idPin
+                );
                 const isKanan = pin.x > 110;
 
                 return (
@@ -907,7 +943,26 @@ export const WokwiStepByStepAcademy: React.FC<{
                     onClick={(e) => handleKlikTitikPinFisik(e, pin)}
                     className="cursor-pointer"
                   >
-                    {harusBerkedip && (
+                    {/* LINGKARAN BIDIK MERAH BERKEDIP JIKA PIN INI SALAH / BELUM DISAMBUNG */}
+                    {adalahPinSalah && (
+                      <circle
+                        cx={pin.x}
+                        cy={pin.y}
+                        r={16}
+                        fill="rgba(244, 63, 94, 0.35)"
+                        stroke="#f43f5e"
+                        strokeWidth={3.5}
+                      >
+                        <animate
+                          attributeName="r"
+                          values="7;18;7"
+                          dur="0.6s"
+                          repeatCount="indefinite"
+                        />
+                      </circle>
+                    )}
+
+                    {harusBerkedip && !adalahPinSalah && (
                       <circle
                         cx={pin.x}
                         cy={pin.y}
@@ -924,20 +979,33 @@ export const WokwiStepByStepAcademy: React.FC<{
                         />
                       </circle>
                     )}
+
                     <rect
                       x={isKanan ? pin.x - 54 : pin.x + 9}
                       y={pin.y - 7}
                       width={45}
                       height={14}
                       rx={3}
-                      fill={harusBerkedip ? "#facc15" : "#0f172a"}
-                      opacity={0.92}
+                      fill={
+                        adalahPinSalah
+                          ? "#e11d48"
+                          : harusBerkedip
+                          ? "#facc15"
+                          : "#0f172a"
+                      }
+                      opacity={0.95}
                     />
                     <text
                       x={isKanan ? pin.x - 31 : pin.x + 31}
                       y={pin.y + 3}
                       textAnchor="middle"
-                      fill={harusBerkedip ? "#0f172a" : "#f8fafc"}
+                      fill={
+                        adalahPinSalah
+                          ? "#ffffff"
+                          : harusBerkedip
+                          ? "#0f172a"
+                          : "#f8fafc"
+                      }
                       fontSize="7.5"
                       fontWeight="bold"
                     >
@@ -946,9 +1014,11 @@ export const WokwiStepByStepAcademy: React.FC<{
                     <circle
                       cx={pin.x}
                       cy={pin.y}
-                      r={sedangDipegang ? 8.5 : 6}
+                      r={sedangDipegang || adalahPinSalah ? 8.5 : 6}
                       fill={
-                        sedangDipegang
+                        adalahPinSalah
+                          ? "#f43f5e"
+                          : sedangDipegang
                           ? "#ffffff"
                           : harusBerkedip
                           ? "#facc15"
@@ -976,7 +1046,7 @@ export const WokwiStepByStepAcademy: React.FC<{
                   handleDropKeZonaBayangan("zona_periferal");
                 else
                   setPesanGudang(
-                    `👆 Tarik (Drag) kartu '${spekHardware.namaPeriferal}' dari Gudang Komponen (48 Item) di atas ke kotak bayangan biru ini!`
+                    `👆 Tarik (Drag) kartu '${spekHardware.namaPeriferal}' dari Gudang Komponen di atas ke kotak bayangan kanan ini!`
                   );
               }}
               className="cursor-pointer"
@@ -987,15 +1057,21 @@ export const WokwiStepByStepAcademy: React.FC<{
                 width={195}
                 height={165}
                 rx={16}
-                fill="rgba(56, 189, 248, 0.08)"
-                stroke="#38bdf8"
-                strokeWidth={2.5}
+                fill={
+                  statusVerifikasi === "gagal_rangkaian"
+                    ? "rgba(244, 63, 94, 0.22)"
+                    : "rgba(56, 189, 248, 0.08)"
+                }
+                stroke={
+                  statusVerifikasi === "gagal_rangkaian" ? "#f43f5e" : "#38bdf8"
+                }
+                strokeWidth={3}
                 strokeDasharray="8 5"
               >
                 <animate
                   attributeName="opacity"
                   values="0.35;1;0.35"
-                  dur="1.2s"
+                  dur="0.9s"
                   repeatCount="indefinite"
                 />
               </rect>
@@ -1003,11 +1079,15 @@ export const WokwiStepByStepAcademy: React.FC<{
                 x={442}
                 y={108}
                 textAnchor="middle"
-                fill="#38bdf8"
+                fill={
+                  statusVerifikasi === "gagal_rangkaian" ? "#fda4af" : "#38bdf8"
+                }
                 fontSize="10.5"
                 fontWeight="bold"
               >
-                📦 DROP KOMPONEN DI SINI:
+                {statusVerifikasi === "gagal_rangkaian"
+                  ? "❌ KOMPONEN BELUM DITARUH!"
+                  : "📦 DROP KOMPONEN DI SINI:"}
               </text>
               <text
                 x={442}
@@ -1018,15 +1098,6 @@ export const WokwiStepByStepAcademy: React.FC<{
                 fontWeight="bold"
               >
                 {spekHardware.namaPeriferal}
-              </text>
-              <text
-                x={442}
-                y={148}
-                textAnchor="middle"
-                fill="#94a3b8"
-                fontSize="8.5"
-              >
-                (Tarik dari Gudang 48 Item)
               </text>
             </g>
           ) : (
@@ -1043,6 +1114,9 @@ export const WokwiStepByStepAcademy: React.FC<{
                 const harusBerkedip =
                   tampilkanBayanganPanduan &&
                   pinPerifBerkedipObj?.idPin === pin.idPin;
+                const adalahPinSalah = pinYangSalahAtauKurangIds.includes(
+                  pin.idPin
+                );
 
                 return (
                   <g
@@ -1050,7 +1124,25 @@ export const WokwiStepByStepAcademy: React.FC<{
                     onClick={(e) => handleKlikTitikPinFisik(e, pin)}
                     className="cursor-pointer"
                   >
-                    {harusBerkedip && (
+                    {adalahPinSalah && (
+                      <circle
+                        cx={pin.x}
+                        cy={pin.y}
+                        r={16}
+                        fill="rgba(244, 63, 94, 0.35)"
+                        stroke="#f43f5e"
+                        strokeWidth={3.5}
+                      >
+                        <animate
+                          attributeName="r"
+                          values="7;18;7"
+                          dur="0.6s"
+                          repeatCount="indefinite"
+                        />
+                      </circle>
+                    )}
+
+                    {harusBerkedip && !adalahPinSalah && (
                       <circle
                         cx={pin.x}
                         cy={pin.y}
@@ -1067,20 +1159,33 @@ export const WokwiStepByStepAcademy: React.FC<{
                         />
                       </circle>
                     )}
+
                     <rect
                       x={pin.x - 68}
                       y={pin.y - 22}
                       width={66}
                       height={14}
                       rx={3}
-                      fill={harusBerkedip ? "#facc15" : "#0f172a"}
-                      opacity={0.92}
+                      fill={
+                        adalahPinSalah
+                          ? "#e11d48"
+                          : harusBerkedip
+                          ? "#facc15"
+                          : "#0f172a"
+                      }
+                      opacity={0.95}
                     />
                     <text
                       x={pin.x - 35}
                       y={pin.y - 12}
                       textAnchor="middle"
-                      fill={harusBerkedip ? "#0f172a" : "#f8fafc"}
+                      fill={
+                        adalahPinSalah
+                          ? "#ffffff"
+                          : harusBerkedip
+                          ? "#0f172a"
+                          : "#f8fafc"
+                      }
                       fontSize="7.8"
                       fontWeight="bold"
                     >
@@ -1089,9 +1194,11 @@ export const WokwiStepByStepAcademy: React.FC<{
                     <circle
                       cx={pin.x}
                       cy={pin.y}
-                      r={sedangDipegang ? 8.5 : 6.5}
+                      r={sedangDipegang || adalahPinSalah ? 8.5 : 6.5}
                       fill={
-                        sedangDipegang
+                        adalahPinSalah
+                          ? "#f43f5e"
+                          : sedangDipegang
                           ? "#ffffff"
                           : harusBerkedip
                           ? "#facc15"
@@ -1106,7 +1213,7 @@ export const WokwiStepByStepAcademy: React.FC<{
             </g>
           )}
 
-          {/* GARIS BAYANGAN PANDUAN (NON-CLICKABLE AGAR WAJIB KLIK 2 TITIK PIN) */}
+          {/* GARIS BAYANGAN PANDUAN */}
           {esp32SudahDitaruh &&
             periferalSudahDitaruh &&
             tampilkanBayanganPanduan &&
@@ -1137,7 +1244,7 @@ export const WokwiStepByStepAcademy: React.FC<{
               </path>
             )}
 
-          {/* KABEL HIDUP YANG MENGIKUTI KURSOR MOUSE */}
+          {/* KABEL HIDUP MENGIKUTI MOUSE */}
           {pinAwalDiklik && (
             <path
               pointerEvents="none"
@@ -1163,31 +1270,22 @@ export const WokwiStepByStepAcademy: React.FC<{
             );
             if (!p1 || !p2) return null;
             const midX = (p1.x + p2.x) / 2;
+            const adalahKabelValid = spekHardware.sambunganWajib.some(
+              (w) =>
+                w.dariPinEsp32 === k.dariPinEsp32 &&
+                w.kePinPeriferal === k.kePinPeriferal
+            );
+
             return (
               <g key={idx} pointerEvents="none">
                 <path
                   d={`M ${p1.x} ${p1.y} C ${midX} ${p1.y}, ${midX} ${p2.y}, ${p2.x} ${p2.y}`}
                   fill="none"
-                  stroke={k.warna}
+                  stroke={adalahKabelValid ? k.warna : "#f43f5e"}
                   strokeWidth={4.5}
+                  strokeDasharray={adalahKabelValid ? "none" : "6 4"}
                   strokeLinecap="round"
                 />
-                {simulasiAktif && (
-                  <circle
-                    cx={
-                      detakSimulasi % 2 === 0
-                        ? p1.x + (p2.x - p1.x) * 0.35
-                        : p1.x + (p2.x - p1.x) * 0.75
-                    }
-                    cy={
-                      detakSimulasi % 2 === 0
-                        ? p1.y + (p2.y - p1.y) * 0.35
-                        : p1.y + (p2.y - p1.y) * 0.75
-                    }
-                    r={4.5}
-                    fill="#fef08a"
-                  />
-                )}
               </g>
             );
           })}
@@ -1199,58 +1297,53 @@ export const WokwiStepByStepAcademy: React.FC<{
               <Cable className="w-4 h-4" /> Kabel Terpasang ({kabelTerpasangList.length}/
               {spekHardware.sambunganWajib.length}):
             </span>
-            {kabelTerpasangList.length === 0 ? (
-              <span className="text-slate-400">
-                Klik titik kaki pin ke-1 lalu klik titik kaki pin ke-2 untuk menyambung kabel!
-              </span>
-            ) : (
-              kabelTerpasangList.map((k, i) => {
-                const l1 =
-                  spekHardware.pinEsp32Tersedia.find(
-                    (p) => p.idPin === k.dariPinEsp32
-                  )?.labelPin || k.dariPinEsp32;
-                const l2 =
-                  spekHardware.pinPeriferalTersedia.find(
-                    (p) => p.idPin === k.kePinPeriferal
-                  )?.labelPin || k.kePinPeriferal;
-                return (
-                  <span
-                    key={i}
-                    className="px-2.5 py-1 rounded-lg bg-slate-950 border border-emerald-500/50 text-emerald-300 font-mono text-[11px] flex items-center gap-1.5"
-                  >
-                    <span>
-                      {l1} ➔ {l2}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setKabelTerpasangList((prev) =>
-                          prev.filter((_, idx) => idx !== i)
-                        )
-                      }
-                      className="text-rose-400 hover:text-rose-200 font-black cursor-pointer"
-                    >
-                      ✕
-                    </button>
+            {kabelTerpasangList.map((k, i) => {
+              const l1 =
+                spekHardware.pinEsp32Tersedia.find(
+                  (p) => p.idPin === k.dariPinEsp32
+                )?.labelPin || k.dariPinEsp32;
+              const l2 =
+                spekHardware.pinPeriferalTersedia.find(
+                  (p) => p.idPin === k.kePinPeriferal
+                )?.labelPin || k.kePinPeriferal;
+              const valid = spekHardware.sambunganWajib.some(
+                (w) =>
+                  w.dariPinEsp32 === k.dariPinEsp32 &&
+                  w.kePinPeriferal === k.kePinPeriferal
+              );
+              return (
+                <span
+                  key={i}
+                  className={`px-2.5 py-1 rounded-lg border font-mono text-[11px] flex items-center gap-1.5 ${
+                    valid
+                      ? "bg-slate-950 border-emerald-500/50 text-emerald-300"
+                      : "bg-rose-950 border-rose-500 text-rose-200 animate-pulse"
+                  }`}
+                >
+                  <span>
+                    {valid ? "✓" : "❌ SALAH:"} {l1} ➔ {l2}
                   </span>
-                );
-              })
-            )}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setKabelTerpasangList((prev) =>
+                        prev.filter((_, idx) => idx !== i)
+                      )
+                    }
+                    className="text-rose-400 hover:text-white font-black cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </span>
+              );
+            })}
           </div>
-
-          {kabelTerpasangList.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setKabelTerpasangList([])}
-              className="px-2.5 py-1 rounded-lg bg-rose-950 text-rose-300 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
-            >
-              <Trash2 className="w-3 h-3" /> Lepas Semua Kabel
-            </button>
-          )}
         </div>
       </div>
 
-      {/* BAGIAN BAWAH: INSTRUKSI MODUL (KIRI) & EDITOR KODE C++ (KANAN) */}
+      {/* =================================================================== */}
+      {/* BAGIAN BAWAH: INSTRUKSI (KIRI) & EDITOR KODE BERGETAR MERAH (KANAN) */}
+      {/* =================================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <div className="lg:col-span-6 space-y-4">
           <div className="p-5 rounded-2xl bg-slate-950 border border-slate-800 space-y-3 text-xs">
@@ -1272,14 +1365,32 @@ export const WokwiStepByStepAcademy: React.FC<{
               <div className="font-black uppercase text-sky-400">
                 1. Kaki Pin yang Harus Diklik &amp; Dihubungkan:
               </div>
-              {spekHardware.sambunganWajib.map((w, i) => (
-                <div
-                  key={i}
-                  className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-amber-300 font-mono text-[11px]"
-                >
-                  🔌 Jalur #{i + 1}: {w.keteranganJalur}
-                </div>
-              ))}
+              {spekHardware.sambunganWajib.map((w, i) => {
+                const sudah = kabelTerpasangList.some(
+                  (k) =>
+                    k.dariPinEsp32 === w.dariPinEsp32 &&
+                    k.kePinPeriferal === w.kePinPeriferal
+                );
+                return (
+                  <div
+                    key={i}
+                    className={`p-2.5 rounded-xl border font-mono text-[11px] flex justify-between items-center ${
+                      sudah
+                        ? "bg-emerald-950/40 border-emerald-500/50 text-emerald-300"
+                        : statusVerifikasi === "gagal_rangkaian"
+                        ? "bg-rose-950/60 border-rose-500 text-rose-200"
+                        : "bg-slate-900 border-slate-800 text-amber-300"
+                    }`}
+                  >
+                    <span>
+                      {sudah ? "✅" : "🔌"} Jalur #{i + 1}: {w.keteranganJalur}
+                    </span>
+                    <span className="text-[10px] font-black">
+                      {sudah ? "TERSAMBUNG" : "BELUM"}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
 
             <div className="space-y-1.5 pt-1">
@@ -1292,32 +1403,22 @@ export const WokwiStepByStepAcademy: React.FC<{
                 ))}
               </ol>
             </div>
-
-            {(modeBelajar === "tutorial_berkedip" || jumlahClueDibuka >= 2) && (
-              <div className="space-y-1.5 pt-1">
-                <div className="font-black uppercase text-amber-300 flex items-center gap-1.5">
-                  <Lightbulb className="w-4 h-4" /> Kamus Penjelasan Baris Kode:
-                </div>
-                {materiAktif.penjelasanBarisKode.map((b, i) => (
-                  <div
-                    key={i}
-                    className="p-2.5 rounded-xl bg-slate-900 border border-slate-800"
-                  >
-                    <code className="text-emerald-400 font-mono font-bold block">
-                      {b.potonganKode}
-                    </code>
-                    <span className="text-slate-300 text-[11px]">
-                      ➔ {b.artiPenjelasan}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         </div>
 
-        <div className="lg:col-span-6 space-y-4">
-          <div className="bg-slate-950 rounded-2xl border-2 border-slate-800 overflow-hidden shadow-xl">
+        {/* KOLOM KANAN: EDITOR KODE DENGAN PENUNJUK BARIS MERAH & GETARAN SAAT SALAH */}
+        <div ref={editorContainerRef} className="lg:col-span-6 space-y-4">
+          <div
+            className={`bg-slate-950 rounded-2xl border-2 overflow-hidden shadow-xl transition ${
+              getarMerahKodingan
+                ? "animate-error-shake border-rose-500"
+                : statusVerifikasi === "gagal_kode"
+                ? "border-rose-500"
+                : simulasiAktif
+                ? "border-emerald-400"
+                : "border-slate-800"
+            }`}
+          >
             <div className="bg-slate-900 px-4 py-3 border-b border-slate-800 flex flex-wrap justify-between items-center gap-2 text-xs">
               <span className="font-mono font-black text-amber-300">
                 ✍️ Editor C++ — Level {materiAktif.level} (sketch.ino)
@@ -1328,9 +1429,7 @@ export const WokwiStepByStepAcademy: React.FC<{
                   type="button"
                   onClick={() => {
                     setKodeKetikanUser(materiAktif.kodeTargetBenar);
-                    setPesanGudang(
-                      "Contoh kode C++ sudah diisi. Pastikan Anda sudah menarik komponen dari Gudang 48 Item dan mengklik ke-2 kaki pin di kanvas!"
-                    );
+                    setBarisKodeSalahList([]);
                   }}
                   className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-[11px] flex items-center gap-1 cursor-pointer"
                 >
@@ -1346,16 +1445,54 @@ export const WokwiStepByStepAcademy: React.FC<{
               </div>
             </div>
 
-            <textarea
-              rows={11}
-              value={kodeKetikanUser}
-              onChange={(e) => {
-                setKodeKetikanUser(e.target.value);
-                if (simulasiAktif) setStatusVerifikasi("belum");
-              }}
-              spellCheck={false}
-              className="w-full p-4 bg-black text-emerald-300 font-mono text-xs sm:text-sm leading-relaxed focus:outline-none"
-            />
+            {/* Banner Merah Penunjuk Baris Kode yang Salah */}
+            {barisKodeSalahList.length > 0 && (
+              <div className="bg-rose-950 border-b border-rose-500 px-4 py-2.5 text-xs space-y-1">
+                <div className="font-black text-rose-300 uppercase">
+                  🚨 LOKASI KESALAHAN KODINGAN C++ DITEMUKAN:
+                </div>
+                {barisKodeSalahList.map((b, i) => (
+                  <div key={i} className="text-white font-mono text-[11px]">
+                    👉 <strong>Baris #{b.nomorBaris}:</strong> {b.pesanBaris}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Editor dengan Kolom Nomor Baris di Sisi Kiri (Menyala Merah pada Baris yang Error!) */}
+            <div className="grid grid-cols-12 bg-black font-mono text-xs sm:text-sm">
+              <div className="col-span-1 py-4 bg-slate-950 border-r border-slate-800 text-right pr-2 select-none space-y-[2px]">
+                {daftarBarisEditor.map((_, idx) => {
+                  const noBaris = idx + 1;
+                  const barisIniError = barisKodeSalahList.some(
+                    (b) => b.nomorBaris === noBaris
+                  );
+                  return (
+                    <div
+                      key={noBaris}
+                      className={`leading-relaxed px-1 rounded ${
+                        barisIniError
+                          ? "bg-rose-600 text-white font-black animate-pulse"
+                          : "text-slate-600"
+                      }`}
+                    >
+                      {noBaris}
+                    </div>
+                  );
+                })}
+              </div>
+              <textarea
+                rows={Math.max(11, daftarBarisEditor.length)}
+                value={kodeKetikanUser}
+                onChange={(e) => {
+                  setKodeKetikanUser(e.target.value);
+                  setBarisKodeSalahList([]);
+                  if (simulasiAktif) setStatusVerifikasi("belum");
+                }}
+                spellCheck={false}
+                className="col-span-11 p-4 bg-black text-emerald-300 font-mono leading-relaxed focus:outline-none resize-y"
+              />
+            </div>
 
             <div className="p-4 bg-slate-900 border-t border-slate-800 flex flex-wrap justify-between items-center gap-3">
               <button
@@ -1385,7 +1522,7 @@ export const WokwiStepByStepAcademy: React.FC<{
                   ) : (
                     <>
                       <Lock className="w-3.5 h-3.5" />
-                      <span>Terkunci (Wajib Benar Dulu)</span>
+                      <span>Terkunci</span>
                     </>
                   )}
                 </button>
@@ -1407,50 +1544,6 @@ export const WokwiStepByStepAcademy: React.FC<{
               )}
             </div>
           </div>
-
-          {statusVerifikasi !== "belum" && (
-            <div
-              className={`p-4 rounded-2xl border-2 text-xs font-bold space-y-2 ${
-                simulasiAktif
-                  ? "bg-emerald-950/90 border-emerald-400 text-emerald-200"
-                  : "bg-rose-950/95 border-rose-500 text-rose-200"
-              }`}
-            >
-              <div className="flex flex-wrap justify-between items-start gap-2">
-                <div className="flex items-start gap-2 flex-1">
-                  {simulasiAktif ? (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-                  ) : (
-                    <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
-                  )}
-                  <span>{pesanFeedback}</span>
-                </div>
-
-                {!simulasiAktif && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setJumlahClueDibuka((c) =>
-                        Math.min(spekHardware.daftarClueLatihan.length, c + 1)
-                      );
-                      setIntipBayanganSementara(true);
-                    }}
-                    className="px-3 py-1.5 rounded-xl bg-amber-400 text-slate-950 font-black text-[11px] cursor-pointer shrink-0"
-                  >
-                    💡 Buka Clue &amp; Bayangan
-                  </button>
-                )}
-              </div>
-
-              {daftarErrorDetail.length > 0 && (
-                <ul className="list-disc list-inside space-y-1 text-[11px] text-rose-300 bg-black/40 p-3 rounded-xl border border-rose-500/40">
-                  {daftarErrorDetail.map((err, idx) => (
-                    <li key={idx}>{err}</li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
 
           <div className="p-4 rounded-2xl bg-black border border-slate-800 space-y-1.5 font-mono text-xs">
             <div className="text-[11px] font-black text-amber-400">
