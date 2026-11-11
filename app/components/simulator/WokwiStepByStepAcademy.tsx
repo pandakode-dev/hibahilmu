@@ -757,7 +757,7 @@ export const WokwiStepByStepAcademy: React.FC<{
                 </div>
 
                 <div className="py-0.5">
-                  <MiniaturSvgGudang48 idItem={item.id} />
+                  <MiniaturSvgGudang48 idItem={item.id} namaItem={item.nama} />
                 </div>
 
                 <div className="text-[10px] font-bold text-white leading-tight truncate text-center">
