@@ -50,11 +50,85 @@ export interface ItemGudang48Master {
   rawSourceItem?: any;
 }
 
+export interface ParameterFisikaInteraktif {
+  pwmLedBrightness: number; // 0 - 255 (Redup - Terang)
+  nilaiOhmResistor: number; // 100, 220, 330, 470, 1000, 4700, 10000 Ohm
+  luxCahaya: number; // 0 - 1000 Lux
+  suhuCelcius: number; // 15 - 60 C (Jika > 35 muncul uap panas/api)
+  jarakUltrasonikCm: number; // 5 - 200 cm (Objek bergerak mendekat/menjauh)
+  pirAdaOrang: boolean; // Orang berjalan terdeteksi
+  rfidKartuDekat: boolean; // Kartu E-KTP didekatkan ke reader
+  kadarGasPpm: number; // 100 - 1000 PPM (Asap mengepul)
+  apiTerdeteksi: boolean; // Kobaran api menyala
+  rpmKipas: number; // Kecepatan putar baling-baling kipas
+  debitPompaAir: boolean; // Air menyembur dari pompa
+  sudutServo: number; // 0 - 180 derajat
+}
+
+// ============================================================================
+// KALKULATOR OTOMATIS GELANG WARNA RESISTOR SESUAI NILAI OHM (Ω)
+// ============================================================================
+const PETA_WARNA_ANGKA_RESISTOR: Record<number, string> = {
+  0: "#000000", // Hitam
+  1: "#78350f", // Coklat
+  2: "#ef4444", // Merah
+  3: "#f97316", // Oranye
+  4: "#facc15", // Kuning
+  5: "#22c55e", // Hijau
+  6: "#2563eb", // Biru
+  7: "#9333ea", // Ungu
+  8: "#64748b", // Abu-abu
+  9: "#ffffff", // Putih
+};
+
+const NAMA_WARNA_INDONESIA: Record<number, string> = {
+  0: "Hitam",
+  1: "Coklat",
+  2: "Merah",
+  3: "Oranye",
+  4: "Kuning",
+  5: "Hijau",
+  6: "Biru",
+  7: "Ungu",
+  8: "Abu-abu",
+  9: "Putih",
+};
+
+export function hitungGelangWarnaResistor(ohm: number): {
+  warna1: string;
+  warna2: string;
+  warnaMultiplier: string;
+  warnaToleransi: string;
+  teksGelang: string;
+  labelFormatted: string;
+} {
+  const bersih = Math.max(10, Math.round(ohm));
+  const str = String(bersih);
+  const d1 = parseInt(str[0] || "2", 10);
+  const d2 = parseInt(str[1] || "2", 10);
+  const jmlNol = Math.max(0, str.length - 2);
+
+  const w1 = PETA_WARNA_ANGKA_RESISTOR[d1] || "#ef4444";
+  const w2 = PETA_WARNA_ANGKA_RESISTOR[d2] || "#ef4444";
+  const wMul = PETA_WARNA_ANGKA_RESISTOR[Math.min(9, jmlNol)] || "#78350f";
+
+  const labelFormatted =
+    bersih >= 1000 ? `${(bersih / 1000).toFixed(bersih % 1000 === 0 ? 0 : 1)} kΩ` : `${bersih} Ω`;
+
+  return {
+    warna1: w1,
+    warna2: w2,
+    warnaMultiplier: wMul,
+    warnaToleransi: "#eab308", // Emas (5%)
+    teksGelang: `${NAMA_WARNA_INDONESIA[d1]} - ${NAMA_WARNA_INDONESIA[d2]} - ${NAMA_WARNA_INDONESIA[Math.min(9, jmlNol)]} - Emas`,
+    labelFormatted,
+  };
+}
+
 // ============================================================================
 // DAFTAR 48 ITEM MASTER (URUTAN & NAMA SAMA PERSIS DENGAN STUDIO WOKWI UTAMA)
 // ============================================================================
 const FALLBACK_48_ITEMS_IDENTIK: ItemGudang48Master[] = [
-  // BARIS 1 (1 - 10):
   { id: "esp32_c6", nama: "ESP32-C6 DevKit", badgeAtas: "MICROCONTROLLER", jumlahPinLabel: "30P", kategoriFilter: "Microcontroller", cocokUntukDropZone: "esp32_board", levelTerkait: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15] },
   { id: "esp32_devkit", nama: "ESP32 DevKit V1", badgeAtas: "MICROCONTROLLER", jumlahPinLabel: "30P", kategoriFilter: "Microcontroller", cocokUntukDropZone: "esp32_board", levelTerkait: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15] },
   { id: "arduino_uno", nama: "Arduino Uno (28P)", badgeAtas: "MICROCONTROLLER", jumlahPinLabel: "28P", kategoriFilter: "Microcontroller", cocokUntukDropZone: "triple_mcu", levelTerkait: [8, 9] },
@@ -66,7 +140,6 @@ const FALLBACK_48_ITEMS_IDENTIK: ItemGudang48Master[] = [
   { id: "relay_1ch", nama: "Relay 1-Channel 5V", badgeAtas: "MODUL", jumlahPinLabel: "6P", kategoriFilter: "Modul Relay", cocokUntukDropZone: "ldr_relay", levelTerkait: [3, 4, 6] },
   { id: "relay_2ch", nama: "Relay 2-Channel 5V", badgeAtas: "MODUL", jumlahPinLabel: "10P", kategoriFilter: "Modul Relay", cocokUntukDropZone: "dht22_greenhouse", levelTerkait: [5] },
 
-  // BARIS 2 (11 - 20):
   { id: "relay_4ch", nama: "Relay 4-Channel PLC", badgeAtas: "MODUL", jumlahPinLabel: "18P", kategoriFilter: "Modul Relay", cocokUntukDropZone: "relay_4ch_plc", levelTerkait: [8] },
   { id: "gps_neo6m", nama: "GPS NEO-6M u-blox", badgeAtas: "GERAK", jumlahPinLabel: "5P", kategoriFilter: "Sensor (25)", cocokUntukDropZone: "gps_neo6m", levelTerkait: [11, 15] },
   { id: "sensor_suhu_dht", nama: "Sensor Suhu DHT22", badgeAtas: "CAHAYA,", jumlahPinLabel: "4P", kategoriFilter: "Sensor (25)", cocokUntukDropZone: "dht22_greenhouse", levelTerkait: [5, 13, 15] },
@@ -78,7 +151,6 @@ const FALLBACK_48_ITEMS_IDENTIK: ItemGudang48Master[] = [
   { id: "kelembapan_tanah", nama: "Kelembapan Tanah Soil", badgeAtas: "TANAH", jumlahPinLabel: "4P", kategoriFilter: "Sensor (25)", cocokUntukDropZone: "dht22_greenhouse", levelTerkait: [5] },
   { id: "sensor_hujan", nama: "Sensor Hujan Raindrop", badgeAtas: "AIR", jumlahPinLabel: "4P", kategoriFilter: "Sensor (25)", cocokUntukDropZone: "dht22_greenhouse", levelTerkait: [5] },
 
-  // BARIS 3 (21 - 30):
   { id: "sensor_mq2", nama: "Sensor Gas MQ-2", badgeAtas: "GAS", jumlahPinLabel: "4P", kategoriFilter: "Sensor (25)", cocokUntukDropZone: "mq2_alarm", levelTerkait: [6] },
   { id: "rfid_rc522", nama: "RFID Card Reader RC522", badgeAtas: "AKSES", jumlahPinLabel: "8P", kategoriFilter: "Sensor (25)", cocokUntukDropZone: "servo_solenoid", levelTerkait: [4] },
   { id: "solenoid_lock", nama: "Solenoid Lock 12V", badgeAtas: "AKTUATOR", jumlahPinLabel: "2P", kategoriFilter: "Aktuator & Motor", cocokUntukDropZone: "servo_solenoid", levelTerkait: [4] },
@@ -90,7 +162,6 @@ const FALLBACK_48_ITEMS_IDENTIK: ItemGudang48Master[] = [
   { id: "lcd_16x2", nama: "LCD 16x2 I2C (4p)", badgeAtas: "LAYAR", jumlahPinLabel: "4P", kategoriFilter: "Aktuator & Motor", cocokUntukDropZone: "dual_esp32_uart", levelTerkait: [7] },
   { id: "buzzer_piezo", nama: "Buzzer Piezo (2p)", badgeAtas: "AKTUATOR", jumlahPinLabel: "2P", kategoriFilter: "Aktuator & Motor", cocokUntukDropZone: "mq2_alarm", levelTerkait: [6] },
 
-  // BARIS 4 (31 - 40):
   { id: "keypad_4x4", nama: "Keypad Matriks 4x4", badgeAtas: "PASIF", jumlahPinLabel: "8P", kategoriFilter: "Pasif & Input", cocokUntukDropZone: "push_button", levelTerkait: [2] },
   { id: "led_hijau", nama: "LED Hijau 5mm", badgeAtas: "PASIF", jumlahPinLabel: "2P", kategoriFilter: "Pasif & Input", cocokUntukDropZone: "led_merah", levelTerkait: [1, 2] },
   { id: "led_merah", nama: "LED Merah 5mm", badgeAtas: "PASIF", jumlahPinLabel: "2P", kategoriFilter: "Pasif & Input", cocokUntukDropZone: "led_merah", levelTerkait: [1, 2] },
@@ -102,7 +173,6 @@ const FALLBACK_48_ITEMS_IDENTIK: ItemGudang48Master[] = [
   { id: "sensor_turbidity", nama: "Sensor Turbidity", badgeAtas: "AIR", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", cocokUntukDropZone: "npk_rs485", levelTerkait: [10] },
   { id: "sensor_do", nama: "Sensor DO Oksigen", badgeAtas: "AIR", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", cocokUntukDropZone: "npk_rs485", levelTerkait: [10] },
 
-  // BARIS 5 (41 - 48):
   { id: "sensor_flow", nama: "Sensor Debit Air", badgeAtas: "AIR", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", cocokUntukDropZone: "dht22_greenhouse", levelTerkait: [5] },
   { id: "sensor_water_lvl", nama: "Sensor Level Air", badgeAtas: "AIR", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", cocokUntukDropZone: "dht22_greenhouse", levelTerkait: [5] },
   { id: "sensor_ds18b20", nama: "Sensor Suhu Air", badgeAtas: "AIR", jumlahPinLabel: "3P", kategoriFilter: "Sensor (25)", cocokUntukDropZone: "dht22_greenhouse", levelTerkait: [5, 15] },
@@ -127,7 +197,6 @@ export function ambilGudangKomponen48Terpadu(): ItemGudang48Master[] {
         FALLBACK_48_ITEMS_IDENTIK[idx] || FALLBACK_48_ITEMS_IDENTIK[0];
       return {
         ...pasangan,
-        // Tetap gunakan ID standar atau gabungan agar pencocokan gambar SVG 100% akurat!
         id: pasangan.id,
         nama: raw.nama || raw.label || pasangan.nama,
         badgeAtas: (raw.kategori || pasangan.badgeAtas).toUpperCase(),
@@ -145,21 +214,27 @@ export const GUDANG_KOMPONEN_48_MASTER: ItemGudang48Master[] =
   ambilGudangKomponen48Terpadu();
 
 // ============================================================================
-// PENGGAMBAR IKON MINIATUR SVG 48 KOMPONEN LENGKAP (DETEKSI ID & NAMA CERDAS)
+// PENGGAMBAR IKON MINIATUR SVG 48 KOMPONEN DENGAN ANIMASI HIDUP!
 // ============================================================================
 export const MiniaturSvgGudang48: React.FC<{
   idItem: string;
   namaItem?: string;
-}> = ({ idItem, namaItem = "" }) => {
+  nilaiOhmResistor?: number;
+}> = ({ idItem, namaItem = "", nilaiOhmResistor = 220 }) => {
   const key = `${idItem} ${namaItem}`.toLowerCase();
+  const gelang = hitungGelangWarnaResistor(nilaiOhmResistor);
 
-  // 1. ESP32 / NodeMCU
+  // 1. ESP32 / NodeMCU (Dilengkapi LED Indikator Berkedip)
   if (key.includes("esp32") || key.includes("nodemcu") || key.includes("esp8266")) {
     return (
       <svg viewBox="0 0 64 56" className="w-14 h-12 mx-auto">
         <rect x={18} y={3} width={28} height={50} rx={3} fill="#111827" stroke="#374151" strokeWidth={1.5} />
         <rect x={22} y={6} width={20} height={16} rx={1.5} fill="#d1d5db" stroke="#9ca3af" />
         <rect x={24} y={26} width={16} height={14} rx={1.5} fill="#030712" />
+        <circle cx={28} cy={44} r={1.8} fill="#ef4444" />
+        <circle cx={36} cy={44} r={1.8} fill="#38bdf8">
+          <animate attributeName="opacity" values="0.2;1;0.2" dur="0.8s" repeatCount="indefinite" />
+        </circle>
         {[8, 13, 18, 23, 28, 33, 38, 43, 48].map((y) => (
           <g key={y}>
             <circle cx={19.5} cy={y} r={1.2} fill="#facc15" />
@@ -179,47 +254,45 @@ export const MiniaturSvgGudang48: React.FC<{
         <rect x={5} y={14} width={8} height={10} rx={1} fill="#d1d5db" />
         <rect x={6} y={34} width={9} height={8} rx={1} fill="#111827" />
         <rect x={24} y={32} width={22} height={8} rx={1} fill="#1e293b" />
-        <text x={32} y={22} textAnchor="middle" fill="#ffffff" fontSize="5" fontWeight="bold">ARDUINO UNO R3</text>
+        <circle cx={20} cy={26} r={2} fill="#facc15">
+          <animate attributeName="opacity" values="0.2;1;0.2" dur="0.9s" repeatCount="indefinite" />
+        </circle>
+        <text x={32} y={20} textAnchor="middle" fill="#ffffff" fontSize="5" fontWeight="bold">ARDUINO UNO R3</text>
       </svg>
     );
   }
 
-  // 3. STM32 BluePill
-  if (key.includes("stm32") || key.includes("bluepill")) {
+  // 3. STM32 / Raspberry Pi Pico
+  if (key.includes("stm32") || key.includes("bluepill") || key.includes("pico") || key.includes("raspberry")) {
+    const isPico = key.includes("pico") || key.includes("raspberry");
     return (
       <svg viewBox="0 0 64 56" className="w-14 h-12 mx-auto">
-        <rect x={20} y={4} width={24} height={48} rx={3} fill="#1d4ed8" stroke="#60a5fa" strokeWidth={1.5} />
+        <rect x={20} y={4} width={24} height={48} rx={3} fill={isPico ? "#15803d" : "#1d4ed8"} stroke={isPico ? "#4ade80" : "#60a5fa"} strokeWidth={1.5} />
         <rect x={26} y={20} width={12} height={12} rx={1.5} fill="#0f172a" />
-        <circle cx={32} cy={12} r={2} fill="#facc15" />
+        <circle cx={32} cy={12} r={2.2} fill="#facc15">
+          <animate attributeName="opacity" values="0.3;1;0.3" dur="1s" repeatCount="indefinite" />
+        </circle>
       </svg>
     );
   }
 
-  // 4. Raspberry Pi Pico
-  if (key.includes("pico") || key.includes("raspberry")) {
-    return (
-      <svg viewBox="0 0 64 56" className="w-14 h-12 mx-auto">
-        <rect x={20} y={4} width={24} height={48} rx={3} fill="#15803d" stroke="#4ade80" strokeWidth={1.5} />
-        <rect x={26} y={20} width={12} height={12} rx={1.5} fill="#0f172a" />
-        <circle cx={32} cy={12} r={2} fill="#f8fafc" />
-      </svg>
-    );
-  }
-
-  // 5. Socket Baterai 18650
+  // 4. Socket Baterai 18650 (Animasi Pengisian Energi)
   if (key.includes("baterai") || key.includes("18650")) {
     return (
       <svg viewBox="0 0 64 56" className="w-14 h-12 mx-auto">
         <rect x={8} y={10} width={48} height={34} rx={5} fill="#1e293b" stroke="#f59e0b" strokeWidth={1.5} />
         <rect x={13} y={14} width={38} height={11} rx={3} fill="#2563eb" />
         <rect x={13} y={28} width={38} height={11} rx={3} fill="#2563eb" />
-        <text x={32} y={21} textAnchor="middle" fill="#fef08a" fontSize="4.8" fontWeight="bold">LI-ION 18650 4.2V</text>
-        <text x={32} y={35} textAnchor="middle" fill="#ffffff" fontSize="4.8" fontWeight="bold">TOTAL: 8.4V DC</text>
+        <circle cx={52} cy={27} r={2.5} fill="#22c55e">
+          <animate attributeName="r" values="1.5;3.2;1.5" dur="1s" repeatCount="indefinite" />
+        </circle>
+        <text x={31} y={21} textAnchor="middle" fill="#fef08a" fontSize="4.8" fontWeight="bold">⚡ LI-ION 4.2V</text>
+        <text x={31} y={35} textAnchor="middle" fill="#ffffff" fontSize="4.8" fontWeight="bold">TOTAL: 8.4V DC</text>
       </svg>
     );
   }
 
-  // 6. Sensor Tegangan 0-25V
+  // 5. Sensor Tegangan 0-25V
   if (key.includes("tegangan") || key.includes("voltage")) {
     return (
       <svg viewBox="0 0 64 56" className="w-14 h-12 mx-auto">
@@ -234,227 +307,268 @@ export const MiniaturSvgGudang48: React.FC<{
     );
   }
 
-  // 7. Relay 1, 2, 4 Channel
-  if (key.includes("relay 4") || key.includes("relay_4ch")) {
-    return (
-      <svg viewBox="0 0 64 56" className="w-14 h-12 mx-auto">
-        <rect x={4} y={10} width={56} height={36} rx={4} fill="#991b1b" stroke="#f87171" strokeWidth={1.5} />
-        {[0, 1, 2, 3].map((i) => (
-          <rect key={i} x={8 + i * 12.5} y={17} width={10.5} height={20} rx={1.5} fill="#2563eb" stroke="#93c5fd" />
-        ))}
-        <rect x={8} y={10} width={48} height={4} fill="#16a34a" />
-      </svg>
-    );
-  }
-  if (key.includes("relay 2") || key.includes("relay_2ch")) {
-    return (
-      <svg viewBox="0 0 64 56" className="w-14 h-12 mx-auto">
-        <rect x={8} y={8} width={48} height={40} rx={4} fill="#991b1b" stroke="#f87171" strokeWidth={1.5} />
-        <rect x={12} y={15} width={18} height={22} rx={2} fill="#2563eb" stroke="#93c5fd" />
-        <rect x={34} y={15} width={18} height={22} rx={2} fill="#2563eb" stroke="#93c5fd" />
-        <rect x={14} y={8} width={36} height={5} fill="#16a34a" />
-      </svg>
-    );
-  }
+  // 6. Relay 1, 2, 4 Channel (Dengan Indikator Kontak Berkedip)
   if (key.includes("relay")) {
+    const is4 = key.includes("4");
+    const is2 = key.includes("2");
     return (
       <svg viewBox="0 0 64 56" className="w-14 h-12 mx-auto">
-        <rect x={14} y={8} width={36} height={40} rx={4} fill="#991b1b" stroke="#f87171" strokeWidth={1.5} />
-        <rect x={19} y={14} width={26} height={22} rx={2} fill="#2563eb" stroke="#93c5fd" />
-        <rect x={24} y={8} width={16} height={5} fill="#16a34a" />
+        <rect x={6} y={10} width={52} height={36} rx={4} fill="#991b1b" stroke="#f87171" strokeWidth={1.5} />
+        {is4 ? (
+          [0, 1, 2, 3].map((i) => (
+            <rect key={i} x={10 + i * 11.5} y={17} width={9.5} height={20} rx={1.5} fill="#2563eb" stroke="#93c5fd" />
+          ))
+        ) : is2 ? (
+          <>
+            <rect x={12} y={16} width={18} height={22} rx={2} fill="#2563eb" stroke="#93c5fd" />
+            <rect x={34} y={16} width={18} height={22} rx={2} fill="#2563eb" stroke="#93c5fd" />
+          </>
+        ) : (
+          <rect x={19} y={15} width={26} height={22} rx={2} fill="#2563eb" stroke="#93c5fd" />
+        )}
+        <circle cx={14} cy={41} r={2} fill="#22c55e">
+          <animate attributeName="opacity" values="0.2;1;0.2" dur="0.7s" repeatCount="indefinite" />
+        </circle>
       </svg>
     );
   }
 
-  // 8. GPS NEO-6M
+  // 7. GPS NEO-6M (Dengan Gelombang Satelit Radar Berdenyut)
   if (key.includes("gps") || key.includes("neo")) {
     return (
       <svg viewBox="0 0 64 56" className="w-14 h-12 mx-auto">
         <rect x={8} y={10} width={48} height={36} rx={4} fill="#1d4ed8" stroke="#60a5fa" strokeWidth={1.5} />
         <rect x={32} y={15} width={20} height={20} rx={3} fill="#d97706" stroke="#fef08a" strokeWidth={1.5} />
-        <circle cx={42} cy={25} r={4} fill="#9ca3af" />
+        <circle cx={42} cy={25} r={3} fill="#fef08a" />
+        <circle cx={42} cy={25} r={7} fill="none" stroke="#fef08a" strokeWidth={1.2}>
+          <animate attributeName="r" values="3;10;3" dur="1.4s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="1;0;1" dur="1.4s" repeatCount="indefinite" />
+        </circle>
         <rect x={12} y={16} width={16} height={12} rx={1.5} fill="#f8fafc" />
         <text x={20} y={24} textAnchor="middle" fill="#0f172a" fontSize="4.5" fontWeight="bold">u-blox</text>
       </svg>
     );
   }
 
-  // 9. Sensor Suhu DHT22
+  // 8. Sensor Suhu DHT22 (Dengan Air Raksa Termometer Naik-Turun & Efek Panas)
   if (key.includes("dht") || (key.includes("suhu") && !key.includes("air"))) {
     return (
       <svg viewBox="0 0 64 56" className="w-14 h-12 mx-auto">
-        <rect x={18} y={6} width={26} height={34} rx={4} fill="#f8fafc" stroke="#cbd5e1" strokeWidth={1.5} />
-        <line x1={22} y1={13} x2={40} y2={13} stroke="#94a3b8" strokeWidth={1.5} />
-        <line x1={22} y1={19} x2={40} y2={19} stroke="#94a3b8" strokeWidth={1.5} />
-        <text x={31} y={32} textAnchor="middle" fill="#0284c7" fontSize="5.5" fontWeight="bold">26.5°C</text>
-        <circle cx={48} cy={32} r={4} fill="#22c55e" />
-        <line x1={48} y1={16} x2={48} y2={32} stroke="#22c55e" strokeWidth={3} strokeLinecap="round" />
+        <rect x={14} y={6} width={26} height={36} rx={4} fill="#f8fafc" stroke="#cbd5e1" strokeWidth={1.5} />
+        <line x1={18} y1={13} x2={36} y2={13} stroke="#94a3b8" strokeWidth={1.5} />
+        <line x1={18} y1={19} x2={36} y2={19} stroke="#94a3b8" strokeWidth={1.5} />
+        <text x={27} y={33} textAnchor="middle" fill="#e11d48" fontSize="5.5" fontWeight="bold">34.5°C</text>
+        <circle cx={48} cy={36} r={5} fill="#ef4444" />
+        <line x1={48} y1={12} x2={48} y2={36} stroke="#ef4444" strokeWidth={3.5} strokeLinecap="round">
+          <animate attributeName="y1" values="24;10;24" dur="1.5s" repeatCount="indefinite" />
+        </line>
       </svg>
     );
   }
 
-  // 10. Ultrasonik HC-SR04
+  // 9. Ultrasonik HC-SR04 (Gelombang Sonar Memantul ke Objek Bergerak)
   if (key.includes("ultrasonik") || key.includes("sr04")) {
     return (
       <svg viewBox="0 0 64 56" className="w-14 h-12 mx-auto">
-        <rect x={6} y={12} width={52} height={28} rx={4} fill="#1d4ed8" stroke="#60a5fa" strokeWidth={1.5} />
-        <circle cx={20} cy={26} r={9} fill="#e2e8f0" stroke="#475569" strokeWidth={2} />
-        <circle cx={44} cy={26} r={9} fill="#e2e8f0" stroke="#475569" strokeWidth={2} />
-        <circle cx={20} cy={26} r={4} fill="#334155" />
-        <circle cx={44} cy={26} r={4} fill="#334155" />
+        <rect x={6} y={18} width={52} height={24} rx={4} fill="#1d4ed8" stroke="#60a5fa" strokeWidth={1.5} />
+        <circle cx={20} cy={30} r={8} fill="#e2e8f0" stroke="#475569" strokeWidth={2} />
+        <circle cx={44} cy={30} r={8} fill="#e2e8f0" stroke="#475569" strokeWidth={2} />
+        {/* Gelombang Sonar & Objek Bergerak di Atas */}
+        <path d="M 24 14 Q 32 8 40 14" fill="none" stroke="#38bdf8" strokeWidth={1.8}>
+          <animate attributeName="opacity" values="0.2;1;0.2" dur="0.7s" repeatCount="indefinite" />
+        </path>
+        <rect x={24} y={3} width={16} height={5} rx={2} fill="#facc15">
+          <animate attributeName="x" values="14;34;14" dur="2s" repeatCount="indefinite" />
+        </rect>
       </svg>
     );
   }
 
-  // 11. Sensor PIR
+  // 10. Sensor Gerak PIR (Kubah Merah Berdenyut & Siluet Orang Bergerak)
   if (key.includes("pir")) {
     return (
       <svg viewBox="0 0 64 56" className="w-14 h-12 mx-auto">
-        <path d="M 20 24 A 12 12 0 0 1 44 24 Z" fill="#ef4444" stroke="#fca5a5" strokeWidth={1.5} />
-        <rect x={14} y={24} width={36} height={16} rx={3} fill="#15803d" stroke="#4ade80" strokeWidth={1.5} />
-        <text x={32} y={34} textAnchor="middle" fill="#ffffff" fontSize="5" fontWeight="bold">PIR HC-SR501</text>
+        <circle cx={32} cy={20} r={14} fill="rgba(239,68,68,0.25)">
+          <animate attributeName="r" values="10;18;10" dur="1.1s" repeatCount="indefinite" />
+        </circle>
+        <path d="M 20 26 A 12 12 0 0 1 44 26 Z" fill="#ef4444" stroke="#fca5a5" strokeWidth={1.5} />
+        <rect x={14} y={26} width={36} height={16} rx={3} fill="#15803d" stroke="#4ade80" strokeWidth={1.5} />
+        <text x={32} y={36} textAnchor="middle" fill="#ffffff" fontSize="4.8" fontWeight="bold">🚶 PIR MOTION</text>
       </svg>
     );
   }
 
-  // 12. Sensor Infrared Obstacle
+  // 11. Sensor Infrared Obstacle
   if (key.includes("infrared") || key.includes("obstacle") || key.includes("sensor_ir")) {
     return (
       <svg viewBox="0 0 64 56" className="w-14 h-12 mx-auto">
         <circle cx={24} cy={14} r={4} fill="#0f172a" stroke="#ef4444" strokeWidth={1.5} />
-        <circle cx={40} cy={14} r={4} fill="#38bdf8" stroke="#bae6fd" strokeWidth={1.5} />
+        <circle cx={40} cy={14} r={4} fill="#38bdf8" stroke="#bae6fd" strokeWidth={1.5}>
+          <animate attributeName="r" values="3.5;5.5;3.5" dur="0.8s" repeatCount="indefinite" />
+        </circle>
         <rect x={14} y={20} width={36} height={18} rx={3} fill="#1d4ed8" stroke="#60a5fa" strokeWidth={1.5} />
         <text x={32} y={31} textAnchor="middle" fill="#ffffff" fontSize="4.8" fontWeight="bold">IR OBSTACLE</text>
       </svg>
     );
   }
 
-  // 13. Sensor Cahaya LDR
+  // 12. Sensor Cahaya LDR (Dengan Sinar Matahari Berdenyut)
   if (key.includes("ldr") || key.includes("cahaya")) {
     return (
       <svg viewBox="0 0 64 56" className="w-14 h-12 mx-auto">
-        <rect x={14} y={12} width={36} height={26} rx={4} fill="#111827" stroke="#facc15" strokeWidth={1.5} />
-        <circle cx={32} cy={25} r={8} fill="#ef4444" stroke="#fde047" strokeWidth={1.5} />
-        <path d="M 27 23 L 37 23 M 27 27 L 37 27" stroke="#fef08a" strokeWidth={1.5} />
+        <rect x={14} y={14} width={36} height={26} rx={4} fill="#111827" stroke="#facc15" strokeWidth={1.5} />
+        <circle cx={32} cy={27} r={8} fill="#ef4444" stroke="#fde047" strokeWidth={1.5} />
+        <circle cx={48} cy={10} r={5} fill="#facc15">
+          <animate attributeName="r" values="4;7;4" dur="1.2s" repeatCount="indefinite" />
+        </circle>
       </svg>
     );
   }
 
-  // 14. Sensor Api Flame
+  // 13. Sensor Api Flame (Dengan Kobaran Api Menyala Bergerak!)
   if (key.includes("flame") || key.includes("api")) {
     return (
       <svg viewBox="0 0 64 56" className="w-14 h-12 mx-auto">
-        <circle cx={32} cy={11} r={4} fill="#78350f" stroke="#facc15" strokeWidth={1.5} />
-        <rect x={14} y={16} width={36} height={22} rx={4} fill="#991b1b" stroke="#f87171" strokeWidth={1.5} />
-        <text x={32} y={29} textAnchor="middle" fill="#ffffff" fontSize="5" fontWeight="bold">FLAME (80%)</text>
+        {/* Animasi Lidah Api Berkobar */}
+        <path d="M 32 2 C 26 10, 22 14, 27 20 C 30 23, 34 23, 37 20 C 42 14, 38 10, 32 2 Z" fill="#f97316">
+          <animate attributeName="transform" type="scale" values="1 1; 1.12 0.92; 1 1" dur="0.45s" repeatCount="indefinite" />
+        </path>
+        <circle cx={32} cy={15} r={3.5} fill="#fde047" />
+        <rect x={14} y={20} width={36} height={22} rx={4} fill="#991b1b" stroke="#f87171" strokeWidth={1.5} />
+        <text x={32} y={33} textAnchor="middle" fill="#ffffff" fontSize="5" fontWeight="bold">🔥 FLAME ON</text>
       </svg>
     );
   }
 
-  // 15. Kelembapan Tanah Soil
-  if (key.includes("kelembapan") || key.includes("soil")) {
+  // 14. Kelembapan Tanah Soil & Hujan Raindrop (Dengan Tetes Air Jatuh)
+  if (key.includes("kelembapan") || key.includes("soil") || key.includes("hujan") || key.includes("rain")) {
     return (
       <svg viewBox="0 0 64 56" className="w-14 h-12 mx-auto">
-        <rect x={12} y={24} width={40} height={18} rx={4} fill="#0369a1" stroke="#38bdf8" strokeWidth={1.5} />
-        <rect x={20} y={10} width={14} height={6} rx={1.5} fill="#ef4444" />
-        <line x1={23} y1={16} x2={23} y2={36} stroke="#facc15" strokeWidth={3.5} />
-        <line x1={31} y1={16} x2={31} y2={36} stroke="#facc15" strokeWidth={3.5} />
-      </svg>
-    );
-  }
-
-  // 16. Sensor Hujan Raindrop
-  if (key.includes("hujan") || key.includes("rain")) {
-    return (
-      <svg viewBox="0 0 64 56" className="w-14 h-12 mx-auto">
-        <rect x={12} y={12} width={40} height={26} rx={4} fill="#0369a1" stroke="#facc15" strokeWidth={1.5} />
-        {[18, 24, 30, 36, 42, 46].map((x) => (
-          <line key={x} x1={x} y1={15} x2={x} y2={35} stroke="#fde047" strokeWidth={1.8} />
+        <rect x={12} y={20} width={40} height={22} rx={4} fill="#0369a1" stroke="#38bdf8" strokeWidth={1.5} />
+        {[20, 28, 36, 44].map((x) => (
+          <line key={x} x1={x} y1={23} x2={x} y2={39} stroke="#fde047" strokeWidth={2} />
         ))}
+        <circle cx={26} cy={10} r={2.5} fill="#38bdf8">
+          <animate attributeName="cy" values="4;18;4" dur="0.9s" repeatCount="indefinite" />
+        </circle>
+        <circle cx={38} cy={14} r={2.5} fill="#38bdf8">
+          <animate attributeName="cy" values="6;20;6" dur="1.1s" repeatCount="indefinite" />
+        </circle>
       </svg>
     );
   }
 
-  // 17. Sensor Gas MQ-2 / MQ-135 / CO
+  // 15. Sensor Gas MQ-2 / MQ-135 / CO (Dengan Kepulan Asap Naik!)
   if (key.includes("mq") || key.includes("gas") || key.includes("udara")) {
-    const warnaPcb = key.includes("135") ? "#1d4ed8" : key.includes("co") ? "#4338ca" : "#1e3a8a";
     return (
       <svg viewBox="0 0 64 56" className="w-14 h-12 mx-auto">
-        <rect x={12} y={10} width={40} height={32} rx={4} fill={warnaPcb} stroke="#60a5fa" strokeWidth={1.5} />
-        <circle cx={32} cy={23} r={10} fill="#94a3b8" stroke="#f8fafc" strokeWidth={1.5} />
-        <circle cx={32} cy={23} r={6} fill="#334155" />
-        <text x={32} y={39} textAnchor="middle" fill="#fde047" fontSize="4.8" fontWeight="bold">
-          {key.includes("135") ? "MQ135 280ppm" : key.includes("co") ? "CO 45ppm" : "MQ-2 LPG"}
-        </text>
+        <rect x={12} y={16} width={40} height={28} rx={4} fill="#1e3a8a" stroke="#60a5fa" strokeWidth={1.5} />
+        <circle cx={32} cy={28} r={9} fill="#94a3b8" stroke="#f8fafc" strokeWidth={1.5} />
+        {/* Gelembung Kepulan Asap Gas Naik */}
+        <circle cx={26} cy={10} r={3.5} fill="#cbd5e1" opacity={0.75}>
+          <animate attributeName="cy" values="16;3;16" dur="1.3s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.8;0;0.8" dur="1.3s" repeatCount="indefinite" />
+        </circle>
+        <circle cx={37} cy={8} r={4.5} fill="#94a3b8" opacity={0.7}>
+          <animate attributeName="cy" values="15;2;15" dur="1.6s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.8;0;0.8" dur="1.6s" repeatCount="indefinite" />
+        </circle>
+        <text x={32} y={42} textAnchor="middle" fill="#fde047" fontSize="4.5" fontWeight="bold">☁️ GAS SMOKE</text>
       </svg>
     );
   }
 
-  // 18. RFID RC522
+  // 16. RFID RC522 (Dengan Kartu RFID Bergerak Mendekat)
   if (key.includes("rfid") || key.includes("rc522")) {
     return (
       <svg viewBox="0 0 64 56" className="w-14 h-12 mx-auto">
-        <rect x={10} y={8} width={44} height={36} rx={4} fill="#1e3a8a" stroke="#38bdf8" strokeWidth={1.5} />
-        <rect x={16} y={13} width={32} height={20} rx={2} fill="none" stroke="#fde047" strokeWidth={1.2} />
-        <circle cx={32} cy={23} r={6} fill="none" stroke="#fde047" strokeWidth={1.2} />
-        <text x={32} y={40} textAnchor="middle" fill="#ffffff" fontSize="5" fontWeight="bold">RFID RC522</text>
+        <rect x={8} y={10} width={36} height={34} rx={4} fill="#1e3a8a" stroke="#38bdf8" strokeWidth={1.5} />
+        <circle cx={26} cy={27} r={8} fill="none" stroke="#fde047" strokeWidth={1.2} />
+        {/* Kartu E-KTP Biru Muda Bergerak Mendekat */}
+        <rect x={36} y={14} width={22} height={15} rx={2.5} fill="#38bdf8" stroke="#ffffff" strokeWidth={1.2}>
+          <animate attributeName="x" values="42;26;42" dur="1.6s" repeatCount="indefinite" />
+        </rect>
+        <text x={26} y={41} textAnchor="middle" fill="#ffffff" fontSize="4.5" fontWeight="bold">RFID TAP</text>
       </svg>
     );
   }
 
-  // 19. Solenoid Door Lock 12V
+  // 17. Solenoid Door Lock 12V (Batang Kunci Maju-Mundur)
   if (key.includes("solenoid")) {
     return (
       <svg viewBox="0 0 64 56" className="w-14 h-12 mx-auto">
-        <rect x={10} y={14} width={32} height={24} rx={3} fill="#475569" stroke="#cbd5e1" strokeWidth={1.5} />
-        <rect x={42} y={20} width={14} height={12} rx={2} fill="#facc15" stroke="#ca8a04" strokeWidth={1.2} />
-        <circle cx={20} cy={26} r={3} fill="#0f172a" />
-        <circle cx={32} cy={26} r={3} fill="#0f172a" />
+        <rect x={10} y={14} width={30} height={24} rx={3} fill="#475569" stroke="#cbd5e1" strokeWidth={1.5} />
+        <rect x={40} y={20} width={14} height={12} rx={2} fill="#facc15" stroke="#ca8a04" strokeWidth={1.2}>
+          <animate attributeName="width" values="15;6;15" dur="1.2s" repeatCount="indefinite" />
+        </rect>
       </svg>
     );
   }
 
-  // 20. Pompa Air Mini & Motor DC
+  // 18. Pompa Air Mini (Dengan Semburan Pancuran Air Biru!)
   if (key.includes("pompa") || key.includes("motor dc")) {
     return (
       <svg viewBox="0 0 64 56" className="w-14 h-12 mx-auto">
-        <rect x={16} y={14} width={32} height={26} rx={5} fill="#0284c7" stroke="#38bdf8" strokeWidth={1.5} />
-        <circle cx={32} cy={27} r={8} fill="#e2e8f0" stroke="#0f172a" strokeWidth={1.5} />
-        <circle cx={32} cy={27} r={3} fill="#0284c7" />
-        <rect x={28} y={7} width={8} height={7} rx={1.5} fill="#38bdf8" />
-        <text x={32} y={47} textAnchor="middle" fill="#34d399" fontSize="5" fontWeight="bold">PUMP / MOTOR</text>
+        <rect x={16} y={18} width={32} height={24} rx={5} fill="#0284c7" stroke="#38bdf8" strokeWidth={1.5} />
+        <circle cx={32} cy={30} r={7} fill="#e2e8f0" stroke="#0f172a" strokeWidth={1.5} />
+        <rect x={28} y={11} width={8} height={7} rx={1.5} fill="#38bdf8" />
+        {/* Semburan Air keluar dari Pipa Atas */}
+        <circle cx={32} cy={6} r={2.5} fill="#38bdf8">
+          <animate attributeName="cy" values="10;2;10" dur="0.55s" repeatCount="indefinite" />
+        </circle>
+        <circle cx={25} cy={5} r={2} fill="#7dd3fc">
+          <animate attributeName="cy" values="10;3;10" dur="0.65s" repeatCount="indefinite" />
+        </circle>
+        <circle cx={39} cy={5} r={2} fill="#7dd3fc">
+          <animate attributeName="cy" values="10;3;10" dur="0.65s" repeatCount="indefinite" />
+        </circle>
       </svg>
     );
   }
 
-  // 21. Servo SG90 180 & Servo MG996R 360
+  // 19. Servo SG90 180 & Servo MG996R 360 (Lengan Berayun / Berputar!)
   if (key.includes("servo")) {
-    const is360 = key.includes("360") || key.includes("mg996");
     return (
       <svg viewBox="0 0 64 56" className="w-14 h-12 mx-auto">
-        <rect x={12} y={16} width={30} height={24} rx={3} fill={is360 ? "#1e293b" : "#0284c7"} stroke="#38bdf8" strokeWidth={1.5} />
-        <circle cx={34} cy={28} r={6} fill="#f8fafc" />
-        <line x1={34} y1={28} x2={52} y2={14} stroke="#facc15" strokeWidth={4.5} strokeLinecap="round" />
-        <text x={27} y={37} textAnchor="middle" fill="#ffffff" fontSize="4.8" fontWeight="bold">
-          {is360 ? "MG996R 360°" : "SG90 180°"}
-        </text>
+        <rect x={12} y={18} width={28} height={22} rx={3} fill="#0284c7" stroke="#38bdf8" strokeWidth={1.5} />
+        <circle cx={34} cy={29} r={5} fill="#f8fafc" />
+        <g>
+          <line x1={34} y1={29} x2={52} y2={14} stroke="#facc15" strokeWidth={4.5} strokeLinecap="round" />
+          <animateTransform
+            attributeName="transform"
+            type="rotate"
+            values="0 34 29; 65 34 29; 0 34 29"
+            dur="1.2s"
+            repeatCount="indefinite"
+          />
+        </g>
       </svg>
     );
   }
 
-  // 22. Kipas DC (PWM)
+  // 20. Kipas DC PWM (Baling-Baling Berputar 360 Derajat Mulus!)
   if (key.includes("kipas") || key.includes("fan")) {
     return (
       <svg viewBox="0 0 64 56" className="w-14 h-12 mx-auto">
         <rect x={14} y={8} width={36} height={36} rx={6} fill="#1e293b" stroke="#64748b" strokeWidth={1.5} />
         <circle cx={32} cy={26} r={14} fill="#0f172a" stroke="#38bdf8" strokeWidth={1.2} />
-        <path d="M 32 14 L 36 24 L 28 24 Z M 32 38 L 36 28 L 28 28 Z M 20 26 L 30 22 L 30 30 Z M 44 26 L 34 22 L 34 30 Z" fill="#38bdf8" />
+        <g>
+          <path d="M 32 13 L 36 24 L 28 24 Z M 32 39 L 36 28 L 28 28 Z M 19 26 L 30 22 L 30 30 Z M 45 26 L 34 22 L 34 30 Z" fill="#38bdf8" />
+          <animateTransform
+            attributeName="transform"
+            type="rotate"
+            from="0 32 26"
+            to="360 32 26"
+            dur="0.7s"
+            repeatCount="indefinite"
+          />
+        </g>
         <circle cx={32} cy={26} r={3.5} fill="#facc15" />
       </svg>
     );
   }
 
-  // 23. Layar OLED I2C & LCD 16x2
+  // 21. Layar OLED I2C & LCD 16x2
   if (key.includes("oled") || key.includes("lcd") || key.includes("layar")) {
     const isLcd = key.includes("lcd") || key.includes("16x2");
     return (
@@ -468,18 +582,20 @@ export const MiniaturSvgGudang48: React.FC<{
     );
   }
 
-  // 24. Buzzer Piezo
+  // 22. Buzzer Piezo (Gelombang Suara Berdenyut)
   if (key.includes("buzzer")) {
     return (
       <svg viewBox="0 0 64 56" className="w-14 h-12 mx-auto">
-        <circle cx={32} cy={26} r={16} fill="#111827" stroke="#94a3b8" strokeWidth={2} />
-        <circle cx={32} cy={26} r={6} fill="#e2e8f0" />
-        <path d="M 50 18 Q 56 26 50 34" fill="none" stroke="#f43f5e" strokeWidth={2} />
+        <circle cx={28} cy={26} r={15} fill="#111827" stroke="#94a3b8" strokeWidth={2} />
+        <circle cx={28} cy={26} r={5} fill="#e2e8f0" />
+        <path d="M 46 18 Q 54 26 46 34" fill="none" stroke="#f43f5e" strokeWidth={2.2}>
+          <animate attributeName="opacity" values="0.1;1;0.1" dur="0.5s" repeatCount="indefinite" />
+        </path>
       </svg>
     );
   }
 
-  // 25. Keypad Matriks 4x4 (Persis Gambar Screenshot!)
+  // 23. Keypad Matriks 4x4
   if (key.includes("keypad")) {
     return (
       <svg viewBox="0 0 64 56" className="w-14 h-12 mx-auto">
@@ -501,12 +617,16 @@ export const MiniaturSvgGudang48: React.FC<{
     );
   }
 
-  // 26. LED Hijau 5mm & LED Merah 5mm (Persis Gambar Screenshot!)
+  // 24. LED Hijau 5mm & LED Merah 5mm (Dengan Cahaya Berpendar Redup-Terang!)
   if (key.includes("led")) {
     const isHijau = key.includes("hijau") || key.includes("green");
     const warna = isHijau ? "#22c55e" : "#ef4444";
     return (
       <svg viewBox="0 0 64 56" className="w-14 h-12 mx-auto">
+        <circle cx={32} cy={20} r={18} fill={isHijau ? "rgba(34,197,94,0.35)" : "rgba(239,68,68,0.35)"}>
+          <animate attributeName="r" values="8;20;8" dur="1.1s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.2;0.9;0.2" dur="1.1s" repeatCount="indefinite" />
+        </circle>
         <line x1={28} y1={30} x2={28} y2={50} stroke="#94a3b8" strokeWidth={2.5} />
         <line x1={36} y1={30} x2={36} y2={46} stroke="#94a3b8" strokeWidth={2.5} />
         <path d="M 21 30 L 21 17 A 11 11 0 0 1 43 17 L 43 30 Z" fill={warna} stroke="#ffffff" strokeWidth={1.5} />
@@ -514,27 +634,33 @@ export const MiniaturSvgGudang48: React.FC<{
     );
   }
 
-  // 27. Resistor Gelang 220 Ohm (Persis Gambar Screenshot!)
+  // 25. Resistor Gelang Dinamis (Warna Gelang Berubah Otomatis Sesuai Nilai Ohm!)
   if (key.includes("resistor")) {
     return (
       <svg viewBox="0 0 64 56" className="w-14 h-12 mx-auto">
-        <line x1={6} y1={26} x2={58} y2={26} stroke="#94a3b8" strokeWidth={2.5} />
-        <rect x={16} y={19} width={32} height={14} rx={4} fill="#d97706" stroke="#fde047" strokeWidth={1.2} />
-        <line x1={23} y1={19} x2={23} y2={33} stroke="#ef4444" strokeWidth={2.8} />
-        <line x1={30} y1={19} x2={30} y2={33} stroke="#ef4444" strokeWidth={2.8} />
-        <line x1={37} y1={19} x2={37} y2={33} stroke="#78350f" strokeWidth={2.8} />
-        <text x={32} y={44} textAnchor="middle" fill="#cbd5e1" fontSize="6" fontWeight="bold">220 Ω</text>
+        <line x1={6} y1={24} x2={58} y2={24} stroke="#94a3b8" strokeWidth={2.5} />
+        <rect x={15} y={17} width={34} height={14} rx={4} fill="#d97706" stroke="#fde047" strokeWidth={1.2} />
+        <line x1={21} y1={17} x2={21} y2={31} stroke={gelang.warna1} strokeWidth={3} />
+        <line x1={27} y1={17} x2={27} y2={31} stroke={gelang.warna2} strokeWidth={3} />
+        <line x1={33} y1={17} x2={33} y2={31} stroke={gelang.warnaMultiplier} strokeWidth={3} />
+        <line x1={41} y1={17} x2={41} y2={31} stroke={gelang.warnaToleransi} strokeWidth={2.5} />
+        <text x={32} y={44} textAnchor="middle" fill="#fde047" fontSize="6.5" fontWeight="bold">
+          {gelang.labelFormatted}
+        </text>
       </svg>
     );
   }
 
-  // 28. Potensiometer 10k (Persis Gambar Screenshot!)
+  // 26. Potensiometer 10k (Jarum Putar Bergerak)
   if (key.includes("potensiometer") || key.includes("potensio")) {
     return (
       <svg viewBox="0 0 64 56" className="w-14 h-12 mx-auto">
         <rect x={14} y={8} width={36} height={28} rx={4} fill="#1e3a8a" stroke="#facc15" strokeWidth={1.5} />
         <circle cx={32} cy={22} r={9} fill="#0f172a" stroke="#38bdf8" strokeWidth={1.5} />
-        <line x1={32} y1={22} x2={39} y2={16} stroke="#facc15" strokeWidth={2.2} />
+        <g>
+          <line x1={32} y1={22} x2={39} y2={16} stroke="#facc15" strokeWidth={2.2} />
+          <animateTransform attributeName="transform" type="rotate" values="-40 32 22; 60 32 22; -40 32 22" dur="2s" repeatCount="indefinite" />
+        </g>
         <line x1={23} y1={36} x2={23} y2={49} stroke="#facc15" strokeWidth={2.2} />
         <line x1={32} y1={36} x2={32} y2={49} stroke="#facc15" strokeWidth={2.2} />
         <line x1={41} y1={36} x2={41} y2={49} stroke="#facc15" strokeWidth={2.2} />
@@ -542,7 +668,7 @@ export const MiniaturSvgGudang48: React.FC<{
     );
   }
 
-  // 29. Sensor Pupuk NPK Tanah (Persis Gambar Screenshot!)
+  // 27. Sensor Pupuk NPK Tanah
   if (key.includes("npk") || key.includes("pupuk")) {
     return (
       <svg viewBox="0 0 64 56" className="w-14 h-12 mx-auto">
@@ -558,7 +684,7 @@ export const MiniaturSvgGudang48: React.FC<{
     );
   }
 
-  // 30. Sensor Air (pH, TDS, Turbidity, DO, Debit, Level, Suhu Air - Persis Gambar Screenshot!)
+  // 28. Sensor Air (pH, TDS, Turbidity, DO, Debit, Level, Suhu Air)
   if (
     key.includes("ph") ||
     key.includes("tds") ||
@@ -584,25 +710,27 @@ export const MiniaturSvgGudang48: React.FC<{
         <rect x={36} y={12} width={18} height={28} rx={3} fill="#065f46" stroke="#34d399" strokeWidth={1.5} />
         <line x1={30} y1={26} x2={36} y2={26} stroke="#facc15" strokeWidth={2} />
         <line x1={45} y1={7} x2={45} y2={38} stroke="#38bdf8" strokeWidth={3.5} />
-        <text x={19} y={30} textAnchor="middle" fill="#fde047" fontSize="5" fontWeight="bold">
-          {key.includes("ph") ? "7.0 pH" : key.includes("tds") ? "320ppm" : "WATER"}
-        </text>
+        <circle cx={45} cy={32} r={2.5} fill="#7dd3fc">
+          <animate attributeName="cy" values="35;16;35" dur="1.2s" repeatCount="indefinite" />
+        </circle>
       </svg>
     );
   }
 
-  // 31. Sensor Detak Jantung Medis (Persis Gambar Screenshot!)
+  // 29. Sensor Detak Jantung Medis (Garis EKG Berdenyut)
   if (key.includes("jantung") || key.includes("heart") || key.includes("medis")) {
     return (
       <svg viewBox="0 0 64 56" className="w-14 h-12 mx-auto">
         <rect x={10} y={12} width={44} height={30} rx={4} fill="#881337" stroke="#fb7185" strokeWidth={1.5} />
-        <polyline points="14,28 24,28 28,16 33,36 37,25 50,25" fill="none" stroke="#ffffff" strokeWidth={2} />
-        <text x={32} y={39} textAnchor="middle" fill="#fecdd3" fontSize="4.5" fontWeight="bold">82 BPM (98%)</text>
+        <polyline points="14,28 24,28 28,16 33,36 37,25 50,25" fill="none" stroke="#ffffff" strokeWidth={2}>
+          <animate attributeName="opacity" values="0.3;1;0.3" dur="0.7s" repeatCount="indefinite" />
+        </polyline>
+        <text x={32} y={39} textAnchor="middle" fill="#fecdd3" fontSize="4.5" fontWeight="bold">❤️ 82 BPM</text>
       </svg>
     );
   }
 
-  // 32. Sensor Daya PZEM (Persis Gambar Screenshot!)
+  // 30. Sensor Daya PZEM
   if (key.includes("pzem") || key.includes("daya")) {
     return (
       <svg viewBox="0 0 64 56" className="w-14 h-12 mx-auto">
@@ -614,15 +742,13 @@ export const MiniaturSvgGudang48: React.FC<{
     );
   }
 
-  // 33. Push Button Tactile Switch (4P)
+  // 31. Push Button Switch (Tombol Naik-Turun)
   return (
     <svg viewBox="0 0 64 56" className="w-14 h-12 mx-auto">
       <rect x={16} y={10} width={32} height={32} rx={5} fill="#334155" stroke="#94a3b8" strokeWidth={1.5} />
-      <circle cx={21} cy={15} r={2} fill="#cbd5e1" />
-      <circle cx={43} cy={15} r={2} fill="#cbd5e1" />
-      <circle cx={21} cy={37} r={2} fill="#cbd5e1" />
-      <circle cx={43} cy={37} r={2} fill="#cbd5e1" />
-      <circle cx={32} cy={26} r={9} fill="#ef4444" stroke="#ffffff" strokeWidth={1.5} />
+      <circle cx={32} cy={26} r={9} fill="#ef4444" stroke="#ffffff" strokeWidth={1.5}>
+        <animate attributeName="r" values="9;7;9" dur="1.1s" repeatCount="indefinite" />
+      </circle>
     </svg>
   );
 };
@@ -703,7 +829,7 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
   3: {
     level: 3,
     tipeVisualPeriferal: "ldr_relay",
-    namaPeriferal: "Sensor Cahaya LDR + Relay 1-Channel",
+    namaPeriferal: "Sensor Cahaya LDR + Sensor Gerak PIR + Relay",
     pinEsp32Tersedia: PIN_FISIK_ESP32_STANDAR,
     pinPeriferalTersedia: [
       { idPin: "LDR_AO", labelPin: "LDR Pin AO", x: 355, y: 82, warnaPin: "#22c55e", posisiKomponen: "periferal" },
@@ -722,7 +848,7 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
   4: {
     level: 4,
     tipeVisualPeriferal: "servo_solenoid",
-    namaPeriferal: "Servo SG90 180° + Solenoid Lock 12V",
+    namaPeriferal: "RFID RC522 + Ultrasonik + Servo SG90 + Solenoid",
     pinEsp32Tersedia: PIN_FISIK_ESP32_STANDAR,
     pinPeriferalTersedia: [
       { idPin: "SERVO_PWM", labelPin: "Servo PWM", x: 355, y: 82, warnaPin: "#a855f7", posisiKomponen: "periferal" },
@@ -733,7 +859,7 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
       { dariPinEsp32: "ESP_GPIO27", kePinPeriferal: "SOLENOID_IN", warnaKabel: "#14b8a6", keteranganJalur: "Klik kaki [GPIO 27] di ESP32 lalu klik kaki [Solenoid IN]" },
     ],
     daftarClueLatihan: [
-      "Clue 1 (Komponen): Tarik 'Servo SG90 180°' atau 'Solenoid Lock 12V' dari Gudang 48 Item.",
+      "Clue 1 (Komponen): Tarik 'Servo SG90 180°', 'RFID RC522', atau 'Solenoid Lock 12V' dari Gudang 48 Item.",
       "Clue 2 (Kabel): Klik 'GPIO 13' -> 'Servo PWM', lalu klik 'GPIO 27' -> 'Solenoid IN'.",
       "Clue 3 (Kode): pintu.attach(13); di setup(), dan digitalWrite(27, HIGH); pintu.write(90); di loop().",
     ],
@@ -741,7 +867,7 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
   5: {
     level: 5,
     tipeVisualPeriferal: "dht22_greenhouse",
-    namaPeriferal: "Sensor Suhu DHT22 + Relay 2-Channel",
+    namaPeriferal: "Sensor Suhu DHT22 + Kipas Berputar + Pompa Air",
     pinEsp32Tersedia: PIN_FISIK_ESP32_STANDAR,
     pinPeriferalTersedia: [
       { idPin: "DHT_DATA", labelPin: "DHT22 Data", x: 355, y: 70, warnaPin: "#10b981", posisiKomponen: "periferal" },
@@ -754,14 +880,14 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
       { dariPinEsp32: "ESP_GPIO25", kePinPeriferal: "PUMP_IN", warnaKabel: "#3b82f6", keteranganJalur: "Klik kaki [GPIO 25] lalu klik kaki [Pompa IN]" },
     ],
     daftarClueLatihan: [
-      "Clue 1 (Komponen): Tarik 'Sensor Suhu DHT22' atau 'Relay 2-Channel' ke kotak kanan.",
+      "Clue 1 (Komponen): Tarik 'Sensor Suhu DHT22', 'Kipas DC', atau 'Pompa Air Mini' ke kotak kanan.",
       "Clue 2 (Kabel): GPIO 15 -> DHT22 Data, GPIO 33 -> Kipas IN, dan GPIO 25 -> Pompa IN.",
     ],
   },
   6: {
     level: 6,
     tipeVisualPeriferal: "mq2_alarm",
-    namaPeriferal: "Sensor Gas MQ-2 + Sensor Api Flame",
+    namaPeriferal: "Sensor Gas Asap MQ-2 + Api Flame + Pompa Sprinkler",
     pinEsp32Tersedia: PIN_FISIK_ESP32_STANDAR,
     pinPeriferalTersedia: [
       { idPin: "MQ2_AO", labelPin: "MQ-2 AO", x: 355, y: 85, warnaPin: "#f43f5e", posisiKomponen: "periferal" },
@@ -779,7 +905,7 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
   7: {
     level: 7,
     tipeVisualPeriferal: "dual_esp32_uart",
-    namaPeriferal: "NodeMCU / ESP32 #2 UART",
+    namaPeriferal: "NodeMCU / ESP32 #2 UART + OLED",
     pinEsp32Tersedia: PIN_FISIK_ESP32_STANDAR,
     pinPeriferalTersedia: [
       { idPin: "MCU2_RX16", labelPin: "ESP32#2 RX2(16)", x: 355, y: 95, warnaPin: "#f97316", posisiKomponen: "periferal" },
@@ -797,7 +923,7 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
   8: {
     level: 8,
     tipeVisualPeriferal: "relay_4ch_plc",
-    namaPeriferal: "Relay 4-Channel PLC",
+    namaPeriferal: "Relay 4-Channel PLC + Konveyor",
     pinEsp32Tersedia: PIN_FISIK_ESP32_STANDAR,
     pinPeriferalTersedia: [
       { idPin: "REL4_IN1", labelPin: "Relay IN1", x: 355, y: 90, warnaPin: "#38bdf8", posisiKomponen: "periferal" },
@@ -831,7 +957,7 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
   10: {
     level: 10,
     tipeVisualPeriferal: "npk_rs485",
-    namaPeriferal: "Sensor Pupuk NPK",
+    namaPeriferal: "Sensor Pupuk NPK RS485",
     pinEsp32Tersedia: PIN_FISIK_ESP32_STANDAR,
     pinPeriferalTersedia: [
       { idPin: "NPK_RO", labelPin: "RS485 RO", x: 355, y: 95, warnaPin: "#06b6d4", posisiKomponen: "periferal" },
@@ -849,7 +975,7 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
   11: {
     level: 11,
     tipeVisualPeriferal: "gps_neo6m",
-    namaPeriferal: "GPS NEO-6M u-blox",
+    namaPeriferal: "GPS NEO-6M u-blox Satelit",
     pinEsp32Tersedia: PIN_FISIK_ESP32_STANDAR,
     pinPeriferalTersedia: [
       { idPin: "GPS_TX", labelPin: "GPS TX", x: 355, y: 95, warnaPin: "#38bdf8", posisiKomponen: "periferal" },
@@ -934,34 +1060,82 @@ export const SPESIFIKASI_HARDWARE_15_LEVEL: Record<number, SpesifikasiHardwareLe
   },
 };
 
+// ============================================================================
+// KOMPONEN PENGGAMBAR ANIMASI PERANGKAT KERAS ASLI DI MEJA KANVAS UTAMA
+// ============================================================================
 export const GambarPeriferalWokwiAsli: React.FC<{
   tipe: TipePeriferalWokwi;
   simulasiHidup: boolean;
   detak: number;
   nilaiSensorUji: number;
-}> = ({ tipe, simulasiHidup, detak, nilaiSensorUji }) => {
+  fisika?: ParameterFisikaInteraktif;
+}> = ({ tipe, simulasiHidup, detak, nilaiSensorUji, fisika }) => {
+  const pwm = fisika?.pwmLedBrightness ?? 255;
+  const ohm = fisika?.nilaiOhmResistor ?? 220;
+  const gelang = hitungGelangWarnaResistor(ohm);
+  const suhu = fisika?.suhuCelcius ?? 34.5;
+  const jarakCm = fisika?.jarakUltrasonikCm ?? 45;
+  const pirOrang = fisika?.pirAdaOrang ?? true;
+  const rfidDekat = fisika?.rfidKartuDekat ?? true;
+  const gasPpm = fisika?.kadarGasPpm ?? 650;
+  const apiNyala = fisika?.apiTerdeteksi ?? true;
+  const sudutServo = fisika?.sudutServo ?? 90;
+
+  // Hitung redup/terang cahaya LED dari nilai PWM (0-255) DAN hambatan Resistor (semakin besar Ohm, semakin redup!)
+  const faktorResistor = ohm <= 220 ? 1 : ohm <= 1000 ? 0.72 : 0.4;
+  const intensitasCahaya = Math.max(0.15, (pwm / 255) * faktorResistor);
+
   switch (tipe) {
     case "led_merah": {
-      const nyala = simulasiHidup && detak % 2 === 0;
+      const sedangNyala = simulasiHidup && (pwm < 255 ? true : detak % 2 === 0);
       return (
         <g>
-          <line x1={365} y1={105} x2={425} y2={105} stroke="#94a3b8" strokeWidth={4} />
-          <line x1={365} y1={155} x2={425} y2={135} stroke="#94a3b8" strokeWidth={4} />
-          <rect x={380} y={99} width={32} height={12} rx={4} fill="#d97706" stroke="#78350f" />
-          {nyala && (
+          <line x1={365} y1={105} x2={435} y2={105} stroke="#94a3b8" strokeWidth={4} />
+          <line x1={365} y1={155} x2={435} y2={135} stroke="#94a3b8" strokeWidth={4} />
+
+          {/* RESISTOR DENGAN 4 GELANG WARNA OTOMATIS SESUAI NILAI OHM */}
+          <rect x={376} y={97} width={44} height={16} rx={5} fill="#d97706" stroke="#fde047" strokeWidth={1.2} />
+          <line x1={384} y1={97} x2={384} y2={113} stroke={gelang.warna1} strokeWidth={3.5} />
+          <line x1={392} y1={97} x2={392} y2={113} stroke={gelang.warna2} strokeWidth={3.5} />
+          <line x1={400} y1={97} x2={400} y2={113} stroke={gelang.warnaMultiplier} strokeWidth={3.5} />
+          <line x1={411} y1={97} x2={411} y2={113} stroke={gelang.warnaToleransi} strokeWidth={3} />
+          <text x={398} y={91} textAnchor="middle" fill="#fde047" fontSize="8" fontWeight="bold">
+            {gelang.labelFormatted} ({gelang.teksGelang.split(" - ").slice(0, 3).join("-")})
+          </text>
+
+          {/* Pendaran Cahaya LED yang Bisa Redup & Terang Sesuai PWM & Resistor */}
+          {sedangNyala && (
             <>
-              <circle cx={445} cy={118} r={46} fill="rgba(239, 68, 68, 0.28)" />
-              <circle cx={445} cy={118} r={32} fill="rgba(250, 204, 21, 0.35)" />
+              <circle
+                cx={462}
+                cy={118}
+                r={25 + intensitasCahaya * 35}
+                fill={`rgba(239, 68, 68, ${(0.38 * intensitasCahaya).toFixed(2)})`}
+              >
+                <animate attributeName="r" values={`${22 + intensitasCahaya * 28};${30 + intensitasCahaya * 38};${22 + intensitasCahaya * 28}`} dur="0.9s" repeatCount="indefinite" />
+              </circle>
+              <circle
+                cx={462}
+                cy={118}
+                r={16 + intensitasCahaya * 18}
+                fill={`rgba(250, 204, 21, ${(0.45 * intensitasCahaya).toFixed(2)})`}
+              />
             </>
           )}
+
+          {/* Kubah Kaca LED 5mm */}
           <path
-            d="M 425 98 L 450 98 A 20 20 0 0 1 450 138 L 425 138 Z"
-            fill={nyala ? "#ef4444" : "#7f1d1d"}
-            stroke={nyala ? "#fef08a" : "#991b1b"}
+            d="M 435 96 L 465 96 A 22 22 0 0 1 465 140 L 435 140 Z"
+            fill={sedangNyala ? "#ef4444" : "#450a0a"}
+            fillOpacity={sedangNyala ? Math.max(0.35, intensitasCahaya) : 1}
+            stroke={sedangNyala ? "#fef08a" : "#991b1b"}
             strokeWidth={2.5}
           />
-          <text x={442} y={162} textAnchor="middle" fill="#f8fafc" fontSize="10" fontWeight="bold">
-            {nyala ? "💡 LED ON (3.3V)" : "LED 5mm (220Ω)"}
+          <circle cx={460} cy={110} r={5} fill="#fef08a" opacity={sedangNyala ? intensitasCahaya : 0.2} />
+          <text x={455} y={164} textAnchor="middle" fill="#f8fafc" fontSize="9.5" fontWeight="bold">
+            {sedangNyala
+              ? `💡 LED ON (Kecerahan ${Math.round(intensitasCahaya * 100)}%)`
+              : "⚫ LED PADAM (0V)"}
           </text>
         </g>
       );
@@ -977,13 +1151,18 @@ export const GambarPeriferalWokwiAsli: React.FC<{
           <circle
             cx={443}
             cy={125}
-            r={ditekan ? 19 : 23}
+            r={ditekan ? 17 : 23}
             fill={ditekan ? "#22c55e" : "#ef4444"}
             stroke="#ffffff"
-            strokeWidth={2}
+            strokeWidth={2.5}
           />
+          {ditekan && (
+            <circle cx={443} cy={125} r={32} fill="none" stroke="#22c55e" strokeWidth={2}>
+              <animate attributeName="r" values="20;36;20" dur="0.7s" repeatCount="indefinite" />
+            </circle>
+          )}
           <text x={443} y={184} textAnchor="middle" fill="#f8fafc" fontSize="10" fontWeight="bold">
-            {ditekan ? "👇 TOMBOL DITEKAN" : "PUSH BUTTON"}
+            {ditekan ? "👇 TOMBOL DITEKAN (LOW)" : "👆 TOMBOL DILEPAS (HIGH)"}
           </text>
         </g>
       );
@@ -993,17 +1172,232 @@ export const GambarPeriferalWokwiAsli: React.FC<{
       const malamNyala = simulasiHidup && nilaiSensorUji < 300;
       return (
         <g>
-          <line x1={355} y1={82} x2={390} y2={82} stroke="#94a3b8" strokeWidth={3.5} />
-          <rect x={390} y={52} width={115} height={56} rx={8} fill="#111827" stroke="#facc15" strokeWidth={2} />
-          <circle cx={478} cy={80} r={14} fill="#ef4444" stroke="#fde047" strokeWidth={2} />
-          <text x={425} y={76} textAnchor="middle" fill="#ffffff" fontSize="9.5" fontWeight="bold">LDR SENSOR</text>
-          <text x={425} y={92} textAnchor="middle" fill="#fde047" fontSize="9.5" fontWeight="bold">{nilaiSensorUji} Lux</text>
+          <line x1={355} y1={82} x2={388} y2={82} stroke="#94a3b8" strokeWidth={3.5} />
+          <rect x={388} y={44} width={110} height={58} rx={8} fill="#111827" stroke="#facc15" strokeWidth={2} />
+          {/* Matahari / Bulan bergerak sesuai Lux */}
+          <circle
+            cx={476}
+            cy={73}
+            r={13}
+            fill={nilaiSensorUji >= 300 ? "#fde047" : "#475569"}
+            stroke="#ca8a04"
+            strokeWidth={2}
+          >
+            {nilaiSensorUji >= 300 && (
+              <animate attributeName="r" values="11;15;11" dur="1s" repeatCount="indefinite" />
+            )}
+          </circle>
+          <text x={425} y={68} textAnchor="middle" fill="#ffffff" fontSize="9" fontWeight="bold">LDR + PIR</text>
+          <text x={425} y={84} textAnchor="middle" fill="#fde047" fontSize="9.5" fontWeight="bold">{nilaiSensorUji} Lux</text>
 
-          <line x1={355} y1={168} x2={390} y2={168} stroke="#94a3b8" strokeWidth={3.5} />
-          <rect x={390} y={135} width={85} height={60} rx={8} fill="#991b1b" stroke="#f87171" strokeWidth={2} />
-          <rect x={400} y={145} width={65} height={38} rx={4} fill="#2563eb" />
-          <text x={432} y={168} textAnchor="middle" fill="#ffffff" fontSize="9.5" fontWeight="bold">RELAY 1-CH</text>
-          <circle cx={505} cy={165} r={16} fill={malamNyala ? "#facc15" : "#475569"} stroke="#ffffff" strokeWidth={2} />
+          {/* Animasi Siluet Orang Berjalan di Depan Sensor PIR */}
+          {pirOrang && (
+            <g>
+              <circle cx={532} cy={58} r={6} fill="#22c55e" />
+              <line x1={532} y1={64} x2={532} y2={82} stroke="#22c55e" strokeWidth={3} />
+              <line x1={523} y1={70} x2={541} y2={70} stroke="#22c55e" strokeWidth={2.5} />
+              <line x1={532} y1={82} x2={524} y2={95} stroke="#22c55e" strokeWidth={2.5} />
+              <line x1={532} y1={82} x2={540} y2={95} stroke="#22c55e" strokeWidth={2.5} />
+              <animateTransform attributeName="transform" type="translate" values="-18 0; 12 0; -18 0" dur="1.8s" repeatCount="indefinite" />
+            </g>
+          )}
+
+          {/* Modul Relay + Lampu Jalan Menyala */}
+          <line x1={355} y1={168} x2={388} y2={168} stroke="#94a3b8" strokeWidth={3.5} />
+          <rect x={388} y={132} width={86} height={60} rx={8} fill="#991b1b" stroke="#f87171" strokeWidth={2} />
+          <rect x={398} y={142} width={66} height={38} rx={4} fill="#2563eb" />
+          <text x={431} y={165} textAnchor="middle" fill="#ffffff" fontSize="9" fontWeight="bold">
+            {malamNyala ? "RELAY: ON" : "RELAY: OFF"}
+          </text>
+
+          {malamNyala && (
+            <circle cx={512} cy={162} r={32} fill="rgba(250, 204, 21, 0.4)">
+              <animate attributeName="r" values="24;36;24" dur="0.9s" repeatCount="indefinite" />
+            </circle>
+          )}
+          <circle cx={512} cy={162} r={16} fill={malamNyala ? "#facc15" : "#334155"} stroke="#ffffff" strokeWidth={2} />
+        </g>
+      );
+    }
+
+    case "servo_solenoid": {
+      const buka = simulasiHidup && rfidDekat;
+      const posObjekUltrasonik = 465 + Math.min(85, Math.max(10, jarakCm * 0.5));
+      return (
+        <g>
+          {/* RFID Reader + Kartu E-KTP Bergerak Mendekat */}
+          <rect x={385} y={24} width={72} height={42} rx={6} fill="#1e3a8a" stroke="#38bdf8" strokeWidth={1.8} />
+          <text x={421} y={48} textAnchor="middle" fill="#ffffff" fontSize="8.5" fontWeight="bold">RFID RC522</text>
+          {rfidDekat && (
+            <g>
+              <rect x={440} y={28} width={46} height={30} rx={4} fill="#0284c7" stroke="#fef08a" strokeWidth={1.5} />
+              <text x={463} y={46} textAnchor="middle" fill="#ffffff" fontSize="7.5" fontWeight="bold">🪪 E-KTP</text>
+              <animateTransform attributeName="transform" type="translate" values="28 0; -12 0; 28 0" dur="1.6s" repeatCount="indefinite" />
+            </g>
+          )}
+
+          {/* Motor Servo SG90 dengan Lengan Berputar Halus */}
+          <line x1={355} y1={82} x2={388} y2={98} stroke="#a855f7" strokeWidth={3.5} />
+          <rect x={388} y={78} width={74} height={44} rx={7} fill="#0284c7" stroke="#38bdf8" strokeWidth={2} />
+          <text x={425} y={104} textAnchor="middle" fill="#ffffff" fontSize="8.5" fontWeight="bold">
+            SERVO {buka ? `${sudutServo}°` : "0°"}
+          </text>
+          <circle cx={452} cy={100} r={8} fill="#f8fafc" />
+          <g transform={`rotate(${buka ? -sudutServo : 0} 452 100)`}>
+            <line x1={452} y1={100} x2={505} y2={100} stroke="#facc15" strokeWidth={6.5} strokeLinecap="round" />
+          </g>
+
+          {/* Sensor Ultrasonik + Gelombang Sonar + Objek Bergerak */}
+          <line x1={355} y1={168} x2={388} y2={168} stroke="#14b8a6" strokeWidth={3.5} />
+          <rect x={388} y={142} width={74} height={52} rx={6} fill="#475569" stroke="#cbd5e1" strokeWidth={2} />
+          <text x={425} y={164} textAnchor="middle" fill="#ffffff" fontSize="8.5" fontWeight="bold">
+            {buka ? "🔓 UNLOCK" : "🔒 LOCKED"}
+          </text>
+          <text x={425} y={180} textAnchor="middle" fill="#38bdf8" fontSize="8" fontWeight="bold">
+            Sonar: {jarakCm}cm
+          </text>
+
+          {/* Gelombang Ultrasonik Memantul ke Objek */}
+          <path d="M 468 156 Q 478 168 468 180" fill="none" stroke="#38bdf8" strokeWidth={2}>
+            <animate attributeName="opacity" values="0.2;1;0.2" dur="0.5s" repeatCount="indefinite" />
+          </path>
+          <rect x={posObjekUltrasonik} y={146} width={18} height={42} rx={4} fill="#f97316" stroke="#fde047" strokeWidth={1.5} />
+        </g>
+      );
+    }
+
+    case "dht22_greenhouse": {
+      const suhuPanasTerbakar = suhu >= 36;
+      return (
+        <g>
+          {/* Sensor Suhu DHT22 + Efek Panas Terbakar jika Suhu Tinggi */}
+          <line x1={355} y1={70} x2={388} y2={70} stroke="#10b981" strokeWidth={3} />
+          <rect
+            x={388}
+            y={36}
+            width={72}
+            height={56}
+            rx={6}
+            fill={suhuPanasTerbakar ? "#fef2f2" : "#f8fafc"}
+            stroke={suhuPanasTerbakar ? "#ef4444" : "#0284c7"}
+            strokeWidth={2}
+          />
+          <text x={424} y={56} textAnchor="middle" fill="#0f172a" fontSize="9" fontWeight="bold">DHT22 SUHU</text>
+          <text x={424} y={76} textAnchor="middle" fill="#e11d48" fontSize="11" fontWeight="bold">
+            {suhu.toFixed(1)}°C
+          </text>
+
+          {/* Kobaran Api Panas / Uap Merah saat Suhu Panas */}
+          {suhuPanasTerbakar && (
+            <g>
+              <path d="M 474 82 C 466 64, 464 52, 474 36 C 484 52, 482 64, 474 82 Z" fill="#f97316">
+                <animate attributeName="opacity" values="0.5;1;0.5" dur="0.4s" repeatCount="indefinite" />
+              </path>
+              <circle cx={474} cy={70} r={5} fill="#fde047" />
+              <text x={474} y={30} textAnchor="middle" fill="#f87171" fontSize="8" fontWeight="bold">🔥 OVERHEAT!</text>
+            </g>
+          )}
+
+          {/* KIPAS DC DENGAN BALING-BALING BERPUTAR KENCANG 360 DERAJAT */}
+          <line x1={355} y1={135} x2={388} y2={135} stroke="#8b5cf6" strokeWidth={3} />
+          <rect x={388} y={108} width={66} height={66} rx={10} fill="#1e293b" stroke="#38bdf8" strokeWidth={2} />
+          <circle cx={421} cy={141} r={26} fill="#0f172a" stroke="#475569" />
+          <g>
+            <path
+              d="M 421 117 L 428 137 L 414 137 Z M 421 165 L 428 145 L 414 145 Z M 397 141 L 417 134 L 417 148 Z M 445 141 L 425 134 L 425 148 Z"
+              fill="#38bdf8"
+            />
+            {simulasiHidup && (
+              <animateTransform
+                attributeName="transform"
+                type="rotate"
+                from="0 421 141"
+                to="360 421 141"
+                dur="0.45s"
+                repeatCount="indefinite"
+              />
+            )}
+          </g>
+          <circle cx={421} cy={141} r={5} fill="#facc15" />
+
+          {/* POMPA AIR MINI DENGAN SEMBURAN AIR MENGALIR */}
+          <line x1={355} y1={185} x2={472} y2={185} stroke="#3b82f6" strokeWidth={3} />
+          <rect x={472} y={120} width={64} height={74} rx={8} fill="#0369a1" stroke="#38bdf8" strokeWidth={2} />
+          <text x={504} y={156} textAnchor="middle" fill="#ffffff" fontSize="9" fontWeight="bold">POMPA AIR</text>
+          <text x={504} y={172} textAnchor="middle" fill="#a7f3d0" fontSize="8" fontWeight="bold">
+            {simulasiHidup ? "💦 MENYIRAM" : "STANDBY"}
+          </text>
+
+          {/* Partikel Semburan Air Biru saat Pompa Aktif */}
+          {simulasiHidup && (
+            <g>
+              <circle cx={504} cy={105} r={4} fill="#38bdf8">
+                <animate attributeName="cy" values="118;88;118" dur="0.5s" repeatCount="indefinite" />
+              </circle>
+              <circle cx={492} cy={100} r={3.5} fill="#7dd3fc">
+                <animate attributeName="cy" values="118;84;118" dur="0.6s" repeatCount="indefinite" />
+                <animate attributeName="cx" values="500;484;500" dur="0.6s" repeatCount="indefinite" />
+              </circle>
+              <circle cx={516} cy={100} r={3.5} fill="#7dd3fc">
+                <animate attributeName="cy" values="118;84;118" dur="0.6s" repeatCount="indefinite" />
+                <animate attributeName="cx" values="508;524;508" dur="0.6s" repeatCount="indefinite" />
+              </circle>
+            </g>
+          )}
+        </g>
+      );
+    }
+
+    case "mq2_alarm": {
+      return (
+        <g>
+          {/* Sensor Gas MQ-2 + Kepulan Asap Tebal */}
+          <line x1={355} y1={85} x2={392} y2={85} stroke="#f43f5e" strokeWidth={3.5} />
+          <rect x={392} y={48} width={108} height={68} rx={8} fill="#1e3a8a" stroke="#60a5fa" strokeWidth={2} />
+          <circle cx={446} cy={76} r={16} fill="#94a3b8" stroke="#f8fafc" strokeWidth={2} />
+          <text x={446} y={108} textAnchor="middle" fill="#fde047" fontSize="9" fontWeight="bold">
+            MQ-2 GAS: {gasPpm} PPM
+          </text>
+
+          {/* Partikel Kepulan Asap Membubung + Kobaran Api */}
+          {gasPpm >= 400 && (
+            <g>
+              <circle cx={430} cy={38} r={8} fill="#cbd5e1" opacity={0.7}>
+                <animate attributeName="cy" values="55;14;55" dur="1.4s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.8;0;0.8" dur="1.4s" repeatCount="indefinite" />
+              </circle>
+              <circle cx={455} cy={32} r={10} fill="#94a3b8" opacity={0.65}>
+                <animate attributeName="cy" values="52;10;52" dur="1.7s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.75;0;0.75" dur="1.7s" repeatCount="indefinite" />
+              </circle>
+            </g>
+          )}
+
+          {apiNyala && (
+            <path d="M 522 105 C 510 82, 512 64, 522 45 C 532 64, 534 82, 522 105 Z" fill="#f97316">
+              <animate attributeName="transform" type="scale" values="1 1; 1.08 0.94; 1 1" dur="0.35s" repeatCount="indefinite" />
+            </path>
+          )}
+
+          {/* Sirine Buzzer Bergetar & Semprotan Air Sprinkler */}
+          <line x1={355} y1={165} x2={392} y2={165} stroke="#ec4899" strokeWidth={3.5} />
+          <circle
+            cx={446}
+            cy={165}
+            r={25}
+            fill={simulasiHidup && detak % 2 === 0 ? "#e11d48" : "#0f172a"}
+            stroke="#f43f5e"
+            strokeWidth={2.5}
+          />
+          {simulasiHidup && (
+            <circle cx={446} cy={165} r={35} fill="none" stroke="#f43f5e" strokeWidth={2}>
+              <animate attributeName="r" values="25;42;25" dur="0.5s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="1;0;1" dur="0.5s" repeatCount="indefinite" />
+            </circle>
+          )}
+          <text x={446} y={204} textAnchor="middle" fill="#ffffff" fontSize="9.5" fontWeight="bold">
+            {simulasiHidup ? "🚨 SIRINE & SPRINKLER AKTIF!" : "PIEZO BUZZER"}
+          </text>
         </g>
       );
     }
@@ -1015,22 +1409,28 @@ export const GambarPeriferalWokwiAsli: React.FC<{
           <line x1={355} y1={155} x2={395} y2={155} stroke="#f97316" strokeWidth={3.5} />
           <rect
             x={390}
-            y={58}
-            width={125}
-            height={128}
+            y={52}
+            width={135}
+            height={138}
             rx={12}
             fill={simulasiHidup ? "#065f46" : "#1e293b"}
             stroke={simulasiHidup ? "#34d399" : "#38bdf8"}
             strokeWidth={2.5}
           />
-          <text x={452} y={105} textAnchor="middle" fill="#ffffff" fontSize="10.5" fontWeight="bold">
+          {simulasiHidup && (
+            <circle cx={457} cy={90} r={16} fill="none" stroke="#34d399" strokeWidth={2}>
+              <animate attributeName="r" values="8;26;8" dur="1.1s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="1;0;1" dur="1.1s" repeatCount="indefinite" />
+            </circle>
+          )}
+          <text x={457} y={120} textAnchor="middle" fill="#ffffff" fontSize="10.5" fontWeight="bold">
             MODUL HARDWARE
           </text>
-          <text x={452} y={125} textAnchor="middle" fill="#facc15" fontSize="10" fontWeight="bold">
+          <text x={457} y={138} textAnchor="middle" fill="#facc15" fontSize="10" fontWeight="bold">
             {tipe.toUpperCase()}
           </text>
-          <text x={452} y={148} textAnchor="middle" fill="#34d399" fontSize="9.5" fontWeight="bold">
-            {simulasiHidup ? "⚡ ONLINE & AKTIF" : "STANDBY"}
+          <text x={457} y={160} textAnchor="middle" fill="#34d399" fontSize="9.5" fontWeight="bold">
+            {simulasiHidup ? "⚡ LIVE ANIMATION ACTIVE" : "STANDBY"}
           </text>
         </g>
       );

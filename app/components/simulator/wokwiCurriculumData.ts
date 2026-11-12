@@ -17,9 +17,18 @@ export interface Esp32MeshNodeData {
   nextHopNodeId: number;
 }
 
+export type KategoriKesulitanAcademy =
+  | "Semua"
+  | "Bab 1: Standalone 1-ESP32 (Blink, Timer, Wi-Fi, WebServer, Blynk)"
+  | "Bab 2: Output LED Tunggal & Lampu Lalu Lintas"
+  | "Bab 3: Digital/Analog Input & External Interrupt"
+  | "Bab 4: Sensor, Aktuator & Otomasi Cerdas"
+  | "Bab 5: Multi-MCU, NPK, GPS & 10-Node Mesh";
+
 export interface LessonStepIoT {
   level: number;
-  badgeLevel: string;
+  jumlahSlotAktif?: 1 | 2 | 3;
+  kategoriKesulitan?: Exclude<KategoriKesulitanAcademy, "Semua">;badgeLevel: string;
   judulMateri: string;
   tujuanBelajar: string;
   komponenDimasukkan: {
