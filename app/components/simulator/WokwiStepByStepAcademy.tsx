@@ -21,23 +21,24 @@ import {
   X,
   Cpu,
   Check,
+  Lightbulb,
+  Cable,
+  Trash2,
 } from "lucide-react";
 import {
   KURIKULUM_15_LEVEL_IOT,
   LessonStepIoT as BaseLessonStepIoT,
 } from "./wokwiCurriculumData";
 import {
-  SPESIFIKASI_HARDWARE_15_LEVEL,
   GUDANG_KOMPONEN_48_MASTER,
   MiniaturSvgGudang48,
-  GambarPeriferalWokwiAsli,
+  PIN_FISIK_ESP32_STANDAR,
   TitikPinFisik,
   ItemGudang48Master,
   KategoriFilterGudang48,
   ParameterFisikaInteraktif,
 } from "./wokwiHardwareVisuals";
 
-// Deklarasi lokal mandiri agar 100% aman dari error missing export / property TypeScript
 export type KategoriKesulitanAcademy =
   | "Semua"
   | "Bab 1: Standalone 1-ESP32 (Blink, Timer, Wi-Fi, WebServer, Blynk)"
@@ -47,7 +48,7 @@ export type KategoriKesulitanAcademy =
   | "Bab 5: Multi-MCU, NPK, GPS & 10-Node Mesh";
 
 export type ExtendedLessonStepIoT = BaseLessonStepIoT & {
-  jumlahSlotAktif?: 1 | 2 | 3;
+  jumlahSlotAktif?: number;
   kategoriKesulitan?: string;
 };
 
@@ -55,6 +56,691 @@ export interface KabelTersambung {
   dariPinEsp32: string;
   kePinPeriferal: string;
   warna: string;
+}
+
+// ============================================================================
+// DEFINISI SLOT KOMPONEN INDEPENDEN & KAKI PINNYA MASING-MASING (REAL STEP-BY-STEP)
+// Setiap slot komponen periferal memiliki kotak, gambar, dan titik pinnya sendiri!
+// ============================================================================
+export interface DefinisiSlotPeriferalMandiri {
+  nomorSlot: number; // 2, 3, atau 4 (Slot 1 selalu ESP32 di kiri)
+  namaTarget: string;
+  fungsiSingkat: string;
+  kataKunciCocokGudang: string[]; // Kata kunci untuk mencocokkan kartu dari Gudang 48 Item
+  idGambarMiniatur: string;
+  boxX: number;
+  boxY: number;
+  boxW: number;
+  boxH: number;
+  daftarPinSlotIni: (TitikPinFisik & {
+    targetPinEsp32: string;
+    labelPinEsp32: string;
+    warnaKabel: string;
+    keteranganSambung: string;
+  })[];
+}
+
+export interface BlueprintMultiKomponenLevel {
+  analogiMudahPaham: string;
+  ringkasanCaraKerja: string;
+  slotPeriferalList: DefinisiSlotPeriferalMandiri[];
+}
+
+// GENERATOR BLUEPRINT MULTI-KOMPONEN (MENDUKUNG 1 SAMPAI 4 KOMPONEN TERPISAH!)
+function ambilBlueprintMultiKomponen(
+  materi: ExtendedLessonStepIoT
+): BlueprintMultiKomponenLevel {
+  const judul = (materi.judulMateri || "").toLowerCase();
+  const kode = (materi.kodeTargetBenar || "").toLowerCase();
+
+  // 1. KHUSUS MATERI STANDALONE 1-BOARD ESP32 (Tanpa Komponen Luar)
+  if (
+    judul.includes("internal") ||
+    judul.includes("tanpa komponen") ||
+    judul.includes("web server") ||
+    judul.includes("blynk") ||
+    (judul.includes("wi-fi") && !judul.includes("mesh")) ||
+    (judul.includes("timer") && !judul.includes("dht"))
+  ) {
+    return {
+      analogiMudahPaham:
+        "Bayangkan papan ESP32 ini seperti smartphone mini. Di dalamnya sudah ada lampu LED kecil (di kaki GPIO 2), jam pengatur waktu (Timer), dan antena Wi-Fi. Jadi kita bisa langsung memprogramnya tanpa perlu memasang kabel luar!",
+      ringkasanCaraKerja:
+        "Kamu cukup menarik 1 papan ESP32 DevKit V1 ke Slot #1 di kanvas, lalu ketik program C++ di editor untuk mengendalikan fitur bawaan di dalam chip ESP32.",
+      slotPeriferalList: [],
+    };
+  }
+
+  // 2. LAMPU LALU LINTAS / MULTI-LED + RESISTOR (4 KOMPONEN: ESP32 + LED MERAH + LED HIJAU + RESISTOR)
+  if (judul.includes("lalu lintas") || (judul.includes("merah") && judul.includes("hijau"))) {
+    return {
+      analogiMudahPaham:
+        "Persis seperti lampu merah di perempatan jalan raya: tidak boleh lampu Merah dan lampu Hijau menyala bersamaan! Saat GPIO 2 mengirim listrik ke LED Merah (Berhenti), GPIO 15 harus mematikan LED Hijau, begitu pula sebaliknya.",
+      ringkasanCaraKerja:
+        "Di modul ini kita menggunakan 4 komponen terpisah yang harus kamu tarik satu per satu dari Gudang Komponen: (1) ESP32, (2) LED Merah, (3) LED Hijau, dan (4) Resistor 220Ω.",
+      slotPeriferalList: [
+        {
+          nomorSlot: 2,
+          namaTarget: "LED Merah 5mm (Lampu STOP)",
+          fungsiSingkat: "Menyala saat logika GPIO 2 bernilai HIGH.",
+          kataKunciCocokGudang: ["led merah", "led_merah", "led"],
+          idGambarMiniatur: "led_merah",
+          boxX: 330,
+          boxY: 16,
+          boxW: 225,
+          boxH: 68,
+          daftarPinSlotIni: [
+            {
+              idPin: "SLOT2_LED_M",
+              labelPin: "Anoda Merah (+)",
+              x: 345,
+              y: 50,
+              warnaPin: "#ef4444",
+              posisiKomponen: "periferal",
+              targetPinEsp32: "ESP_GPIO2",
+              labelPinEsp32: "GPIO 2",
+              warnaKabel: "#ef4444",
+              keteranganSambung: "Klik [GPIO 2] di ESP32 ➔ Klik [Anoda Merah (+)] di Slot 2",
+            },
+          ],
+        },
+        {
+          nomorSlot: 3,
+          namaTarget: "LED Hijau 5mm (Lampu JALAN)",
+          fungsiSingkat: "Menyala saat logika GPIO 15 bernilai HIGH.",
+          kataKunciCocokGudang: ["led hijau", "led_hijau", "led"],
+          idGambarMiniatur: "led_hijau",
+          boxX: 330,
+          boxY: 92,
+          boxW: 225,
+          boxH: 68,
+          daftarPinSlotIni: [
+            {
+              idPin: "SLOT3_LED_H",
+              labelPin: "Anoda Hijau (+)",
+              x: 345,
+              y: 126,
+              warnaPin: "#22c55e",
+              posisiKomponen: "periferal",
+              targetPinEsp32: "ESP_GPIO15",
+              labelPinEsp32: "GPIO 15",
+              warnaKabel: "#22c55e",
+              keteranganSambung: "Klik [GPIO 15] di ESP32 ➔ Klik [Anoda Hijau (+)] di Slot 3",
+            },
+          ],
+        },
+        {
+          nomorSlot: 4,
+          namaTarget: "Resistor Gelang 220Ω (Ground)",
+          fungsiSingkat: "Membatasi arus LED agar tidak putus menuju GND.",
+          kataKunciCocokGudang: ["resistor", "220", "led"],
+          idGambarMiniatur: "resistor_gelang",
+          boxX: 330,
+          boxY: 168,
+          boxW: 225,
+          boxH: 68,
+          daftarPinSlotIni: [
+            {
+              idPin: "SLOT4_RES_GND",
+              labelPin: "Kaki Resistor (GND)",
+              x: 345,
+              y: 202,
+              warnaPin: "#64748b",
+              posisiKomponen: "periferal",
+              targetPinEsp32: "ESP_GND",
+              labelPinEsp32: "GND",
+              warnaKabel: "#64748b",
+              keteranganSambung: "Klik [GND] di ESP32 ➔ Klik [Kaki Resistor (GND)] di Slot 4",
+            },
+          ],
+        },
+      ],
+    };
+  }
+
+  // 3. SMART GREENHOUSE (4 KOMPONEN TERPISAH: ESP32 + SENSOR DHT22 + KIPAS DC + POMPA AIR)
+  if (judul.includes("greenhouse") || judul.includes("dht22")) {
+    return {
+      analogiMudahPaham:
+        "Bayangkan kamu punya rumah kaca tanaman otomatis: Sensor DHT22 bertugas sebagai 'indra peraba suhu'. Kalau udara kepanasan (> 32°C), ESP32 menyuruh Kipas DC berputar. Kalau tanahnya kering, ESP32 menyuruh Pompa Air menyiram tanaman!",
+      ringkasanCaraKerja:
+        "Modul ini memakai 4 perangkat berbeda yang wajib kamu tarik satu per satu ke kanvas: (1) ESP32, (2) Sensor Suhu DHT22, (3) Kipas DC Exhaust, dan (4) Pompa Air Mini / Relay.",
+      slotPeriferalList: [
+        {
+          nomorSlot: 2,
+          namaTarget: "Sensor Suhu & Lembab DHT22",
+          fungsiSingkat: "Membaca suhu udara (°C) dan mengirimnya ke GPIO 15.",
+          kataKunciCocokGudang: ["dht", "suhu", "soil", "kelembapan"],
+          idGambarMiniatur: "sensor_suhu_dht",
+          boxX: 330,
+          boxY: 16,
+          boxW: 225,
+          boxH: 68,
+          daftarPinSlotIni: [
+            {
+              idPin: "SLOT2_DHT_DATA",
+              labelPin: "DHT22 Pin Data",
+              x: 345,
+              y: 50,
+              warnaPin: "#10b981",
+              posisiKomponen: "periferal",
+              targetPinEsp32: "ESP_GPIO15",
+              labelPinEsp32: "GPIO 15",
+              warnaKabel: "#10b981",
+              keteranganSambung: "Klik [GPIO 15] di ESP32 ➔ Klik [DHT22 Pin Data] di Slot 2",
+            },
+          ],
+        },
+        {
+          nomorSlot: 3,
+          namaTarget: "Kipas DC (PWM) Pendingin",
+          fungsiSingkat: "Memutar baling-baling saat GPIO 33 bernilai HIGH.",
+          kataKunciCocokGudang: ["kipas", "fan", "relay"],
+          idGambarMiniatur: "kipas_dc",
+          boxX: 330,
+          boxY: 92,
+          boxW: 225,
+          boxH: 68,
+          daftarPinSlotIni: [
+            {
+              idPin: "SLOT3_FAN_IN",
+              labelPin: "Pin Kontrol Kipas",
+              x: 345,
+              y: 126,
+              warnaPin: "#8b5cf6",
+              posisiKomponen: "periferal",
+              targetPinEsp32: "ESP_GPIO33",
+              labelPinEsp32: "GPIO 33",
+              warnaKabel: "#8b5cf6",
+              keteranganSambung: "Klik [GPIO 33] di ESP32 ➔ Klik [Pin Kontrol Kipas] di Slot 3",
+            },
+          ],
+        },
+        {
+          nomorSlot: 4,
+          namaTarget: "Pompa Air Mini 5V + Relay",
+          fungsiSingkat: "Menyemprotkan air irigasi saat GPIO 25 bernilai HIGH.",
+          kataKunciCocokGudang: ["pompa", "relay", "air"],
+          idGambarMiniatur: "pompa_air",
+          boxX: 330,
+          boxY: 168,
+          boxW: 225,
+          boxH: 68,
+          daftarPinSlotIni: [
+            {
+              idPin: "SLOT4_PUMP_IN",
+              labelPin: "Pin Relay Pompa",
+              x: 345,
+              y: 202,
+              warnaPin: "#3b82f6",
+              posisiKomponen: "periferal",
+              targetPinEsp32: "ESP_GPIO25",
+              labelPinEsp32: "GPIO 25",
+              warnaKabel: "#3b82f6",
+              keteranganSambung: "Klik [GPIO 25] di ESP32 ➔ Klik [Pin Relay Pompa] di Slot 4",
+            },
+          ],
+        },
+      ],
+    };
+  }
+
+  // 4. PROTEKSI KEBAKARAN & GAS (4 KOMPONEN: ESP32 + SENSOR GAS MQ-2 + BUZZER SIRINE + POMPA SPRINKLER)
+  if (judul.includes("mq-2") || judul.includes("gas") || judul.includes("kebakaran")) {
+    return {
+      analogiMudahPaham:
+        "Seperti sistem alarm kebakaran di mal: Sensor MQ-2 mencium bau gas bocor atau asap (PPM). Begitu kepekatan asap berbahaya (>= 500 PPM), ESP32 langsung membunyikan Sirine Buzzer (GPIO 19) dan menyalakan Pompa Air Pemadam (GPIO 25)!",
+      ringkasanCaraKerja:
+        "Tarik 4 komponen secara bertahap ke kanvas: (1) ESP32, (2) Sensor Gas MQ-2, (3) Buzzer Piezo Sirine, dan (4) Pompa Air / Relay Pemadam.",
+      slotPeriferalList: [
+        {
+          nomorSlot: 2,
+          namaTarget: "Sensor Gas & Asap MQ-2",
+          fungsiSingkat: "Mendeteksi kadar gas PPM melalui kaki analog GPIO 32.",
+          kataKunciCocokGudang: ["mq-2", "mq2", "gas", "flame", "api"],
+          idGambarMiniatur: "sensor_mq2",
+          boxX: 330,
+          boxY: 16,
+          boxW: 225,
+          boxH: 68,
+          daftarPinSlotIni: [
+            {
+              idPin: "SLOT2_MQ2_AO",
+              labelPin: "MQ-2 Pin AO",
+              x: 345,
+              y: 50,
+              warnaPin: "#f43f5e",
+              posisiKomponen: "periferal",
+              targetPinEsp32: "ESP_GPIO32",
+              labelPinEsp32: "GPIO 32",
+              warnaKabel: "#f43f5e",
+              keteranganSambung: "Klik [GPIO 32] di ESP32 ➔ Klik [MQ-2 Pin AO] di Slot 2",
+            },
+          ],
+        },
+        {
+          nomorSlot: 3,
+          namaTarget: "Buzzer Piezo Sirine Darurat",
+          fungsiSingkat: "Berbunyi nyaring saat GPIO 19 bernilai HIGH.",
+          kataKunciCocokGudang: ["buzzer", "piezo", "sirine"],
+          idGambarMiniatur: "buzzer_piezo",
+          boxX: 330,
+          boxY: 92,
+          boxW: 225,
+          boxH: 68,
+          daftarPinSlotIni: [
+            {
+              idPin: "SLOT3_BUZ_POS",
+              labelPin: "Buzzer Positif (+)",
+              x: 345,
+              y: 126,
+              warnaPin: "#ec4899",
+              posisiKomponen: "periferal",
+              targetPinEsp32: "ESP_GPIO19",
+              labelPinEsp32: "GPIO 19",
+              warnaKabel: "#ec4899",
+              keteranganSambung: "Klik [GPIO 19] di ESP32 ➔ Klik [Buzzer Positif (+)] di Slot 3",
+            },
+          ],
+        },
+        {
+          nomorSlot: 4,
+          namaTarget: "Pompa Sprinkler Pemadam",
+          fungsiSingkat: "Menyemprotkan air pemadam saat GPIO 25 bernilai HIGH.",
+          kataKunciCocokGudang: ["pompa", "relay", "flame"],
+          idGambarMiniatur: "pompa_air",
+          boxX: 330,
+          boxY: 168,
+          boxW: 225,
+          boxH: 68,
+          daftarPinSlotIni: [
+            {
+              idPin: "SLOT4_SPRINKLER",
+              labelPin: "Pin Pompa Pemadam",
+              x: 345,
+              y: 202,
+              warnaPin: "#3b82f6",
+              posisiKomponen: "periferal",
+              targetPinEsp32: "ESP_GPIO25",
+              labelPinEsp32: "GPIO 25",
+              warnaKabel: "#3b82f6",
+              keteranganSambung: "Klik [GPIO 25] di ESP32 ➔ Klik [Pin Pompa Pemadam] di Slot 4",
+            },
+          ],
+        },
+      ],
+    };
+  }
+
+  // 5. PUSH BUTTON + LED / EXTERNAL INTERRUPT (3 KOMPONEN: ESP32 + PUSH BUTTON + LED/BUZZER)
+  if (judul.includes("button") || judul.includes("tombol") || judul.includes("interrupt")) {
+    return {
+      analogiMudahPaham:
+        "Bayangkan sakelar bel rumah: Tombol Push Button dipasang di kaki GPIO 4 sebagai 'Penerima Perintah Tangan', sedangkan Lampu LED dipasang di kaki GPIO 2 sebagai 'Penerima Hasil'. Saat tombol ditekan, ESP32 langsung menyalakan lampu!",
+      ringkasanCaraKerja:
+        "Tarik 3 komponen berbeda secara berurutan ke kanvas: (1) ESP32 ke Slot 1, (2) Push Button Switch ke Slot 2, dan (3) LED Merah / Buzzer ke Slot 3.",
+      slotPeriferalList: [
+        {
+          nomorSlot: 2,
+          namaTarget: "Push Button Switch (Input)",
+          fungsiSingkat: "Mengirim sinyal LOW ke GPIO 4 saat tombol ditekan.",
+          kataKunciCocokGudang: ["button", "tombol", "keypad"],
+          idGambarMiniatur: "push_button_sw",
+          boxX: 330,
+          boxY: 28,
+          boxW: 225,
+          boxH: 88,
+          daftarPinSlotIni: [
+            {
+              idPin: "SLOT2_BTN_SIG",
+              labelPin: "Kaki Tombol (SIG)",
+              x: 345,
+              y: 72,
+              warnaPin: "#38bdf8",
+              posisiKomponen: "periferal",
+              targetPinEsp32: "ESP_GPIO4",
+              labelPinEsp32: "GPIO 4",
+              warnaKabel: "#38bdf8",
+              keteranganSambung: "Klik [GPIO 4] di ESP32 ➔ Klik [Kaki Tombol (SIG)] di Slot 2",
+            },
+          ],
+        },
+        {
+          nomorSlot: 3,
+          namaTarget: "LED Merah 5mm / Buzzer (Output)",
+          fungsiSingkat: "Menyala seketika saat GPIO 2 bernilai HIGH.",
+          kataKunciCocokGudang: ["led", "buzzer", "resistor"],
+          idGambarMiniatur: "led_merah",
+          boxX: 330,
+          boxY: 134,
+          boxW: 225,
+          boxH: 88,
+          daftarPinSlotIni: [
+            {
+              idPin: "SLOT3_LED_OUT",
+              labelPin: "Anoda LED (+)",
+              x: 345,
+              y: 178,
+              warnaPin: "#ef4444",
+              posisiKomponen: "periferal",
+              targetPinEsp32: "ESP_GPIO2",
+              labelPinEsp32: "GPIO 2",
+              warnaKabel: "#ef4444",
+              keteranganSambung: "Klik [GPIO 2] di ESP32 ➔ Klik [Anoda LED (+)] di Slot 3",
+            },
+          ],
+        },
+      ],
+    };
+  }
+
+  // 6. SENSOR CAHAYA LDR + RELAY LAMPU JALAN (3 KOMPONEN: ESP32 + SENSOR LDR + MODUL RELAY)
+  if (judul.includes("ldr") || judul.includes("cahaya")) {
+    return {
+      analogiMudahPaham:
+        "Cara kerja lampu jalan pintar di jalan tol: Sensor Cahaya LDR berperan sebagai 'Mata' yang melihat apakah langit sudah gelap. Jika gelap, ESP32 menyuruh Modul Relay ('Sakelar Otomatis') untuk menyalakan lampu jalan!",
+      ringkasanCaraKerja:
+        "Tarik 3 perangkat terpisah dari Gudang Komponen: (1) ESP32 ke Slot 1, (2) Sensor Cahaya LDR ke Slot 2, dan (3) Modul Relay 1-Channel 5V ke Slot 3.",
+      slotPeriferalList: [
+        {
+          nomorSlot: 2,
+          namaTarget: "Sensor Cahaya LDR",
+          fungsiSingkat: "Mengirim nilai terang/gelap cahaya ke pin ADC GPIO 34.",
+          kataKunciCocokGudang: ["ldr", "cahaya", "pir", "potensiometer"],
+          idGambarMiniatur: "sensor_ldr",
+          boxX: 330,
+          boxY: 28,
+          boxW: 225,
+          boxH: 88,
+          daftarPinSlotIni: [
+            {
+              idPin: "SLOT2_LDR_AO",
+              labelPin: "LDR Pin AO",
+              x: 345,
+              y: 72,
+              warnaPin: "#22c55e",
+              posisiKomponen: "periferal",
+              targetPinEsp32: "ESP_GPIO34",
+              labelPinEsp32: "GPIO 34",
+              warnaKabel: "#22c55e",
+              keteranganSambung: "Klik [GPIO 34] di ESP32 ➔ Klik [LDR Pin AO] di Slot 2",
+            },
+          ],
+        },
+        {
+          nomorSlot: 3,
+          namaTarget: "Relay 1-Channel 5V (Sakelar Lampu)",
+          fungsiSingkat: "Menyalakan lampu jalan saat GPIO 26 bernilai HIGH.",
+          kataKunciCocokGudang: ["relay", "led", "lampu"],
+          idGambarMiniatur: "relay_1ch",
+          boxX: 330,
+          boxY: 134,
+          boxW: 225,
+          boxH: 88,
+          daftarPinSlotIni: [
+            {
+              idPin: "SLOT3_RELAY_IN",
+              labelPin: "Relay Pin IN",
+              x: 345,
+              y: 178,
+              warnaPin: "#eab308",
+              posisiKomponen: "periferal",
+              targetPinEsp32: "ESP_GPIO26",
+              labelPinEsp32: "GPIO 26",
+              warnaKabel: "#eab308",
+              keteranganSambung: "Klik [GPIO 26] di ESP32 ➔ Klik [Relay Pin IN] di Slot 3",
+            },
+          ],
+        },
+      ],
+    };
+  }
+
+  // 7. SERVO SG90 + SOLENOID / RFID / ULTRASONIK (3 KOMPONEN TERPISAH)
+  if (judul.includes("servo") || judul.includes("solenoid") || judul.includes("rfid") || judul.includes("ultrasonik")) {
+    return {
+      analogiMudahPaham:
+        "Bayangkan gerbang tol atau pintu akses kartu hotel: Sensor di Slot 2 memeriksa kartu RFID / jarak mobil, lalu Aktuator Mekanik di Slot 3 (Motor Servo & Solenoid Lock) bergerak membuka palang pintu!",
+      ringkasanCaraKerja:
+        "Tarik 3 perangkat satu per satu: (1) ESP32 ke Slot 1, (2) Motor Servo SG90 180° ke Slot 2, dan (3) Solenoid Door Lock / Sensor ke Slot 3.",
+      slotPeriferalList: [
+        {
+          nomorSlot: 2,
+          namaTarget: "Servo SG90 180° (Penggerak Palang)",
+          fungsiSingkat: "Berputar ke sudut 90° melalui sinyal PWM dari GPIO 13.",
+          kataKunciCocokGudang: ["servo", "rfid", "ultrasonik"],
+          idGambarMiniatur: "servo_sg90",
+          boxX: 330,
+          boxY: 28,
+          boxW: 225,
+          boxH: 88,
+          daftarPinSlotIni: [
+            {
+              idPin: "SLOT2_SERVO_PWM",
+              labelPin: "Servo Kabel PWM",
+              x: 345,
+              y: 72,
+              warnaPin: "#a855f7",
+              posisiKomponen: "periferal",
+              targetPinEsp32: "ESP_GPIO13",
+              labelPinEsp32: "GPIO 13",
+              warnaKabel: "#a855f7",
+              keteranganSambung: "Klik [GPIO 13] di ESP32 ➔ Klik [Servo Kabel PWM] di Slot 2",
+            },
+          ],
+        },
+        {
+          nomorSlot: 3,
+          namaTarget: "Solenoid Lock 12V / Sensor",
+          fungsiSingkat: "Terhubung ke jalur kontrol GPIO 27 pada ESP32.",
+          kataKunciCocokGudang: ["solenoid", "relay", "ultrasonik", "rfid"],
+          idGambarMiniatur: "solenoid_lock",
+          boxX: 330,
+          boxY: 134,
+          boxW: 225,
+          boxH: 88,
+          daftarPinSlotIni: [
+            {
+              idPin: "SLOT3_SOLENOID_IN",
+              labelPin: "Pin Solenoid / Sonar",
+              x: 345,
+              y: 178,
+              warnaPin: "#14b8a6",
+              posisiKomponen: "periferal",
+              targetPinEsp32: "ESP_GPIO27",
+              labelPinEsp32: "GPIO 27",
+              warnaKabel: "#14b8a6",
+              keteranganSambung: "Klik [GPIO 27] di ESP32 ➔ Klik [Pin Solenoid / Sonar] di Slot 3",
+            },
+          ],
+        },
+      ],
+    };
+  }
+
+  // 8. SENSOR PUPUK NPK + GPS NEO-6M (3 KOMPONEN: ESP32 + SENSOR NPK + MODUL GPS)
+  if (judul.includes("npk") || judul.includes("gps") || judul.includes("multi-hop") || judul.includes("10-node")) {
+    return {
+      analogiMudahPaham:
+        "Di perkebunan kelapa sawit atau pertanian luas, kita tidak cukup hanya tahu tanahnya kurang pupuk (Sensor NPK), tapi juga wajib tahu di titik koordinat mana pohon itu berada (Modul Satelit GPS) sebelum dikirim ke Node 10 Internet!",
+      ringkasanCaraKerja:
+        "Tarik 3 perangkat utama ke kanvas: (1) ESP32 ke Slot 1, (2) Sensor Pupuk NPK RS485 ke Slot 2, dan (3) Modul GPS Satelit NEO-6M / Gateway ke Slot 3.",
+      slotPeriferalList: [
+        {
+          nomorSlot: 2,
+          namaTarget: "Sensor Pupuk NPK RS485",
+          fungsiSingkat: "Mengirim data Nitrogen, Fosfor, Kalium lewat pin UART (16/17).",
+          kataKunciCocokGudang: ["npk", "pupuk", "tanah", "ph", "tds", "esp32"],
+          idGambarMiniatur: "sensor_npk",
+          boxX: 330,
+          boxY: 28,
+          boxW: 225,
+          boxH: 88,
+          daftarPinSlotIni: [
+            {
+              idPin: "SLOT2_NPK_TX",
+              labelPin: "Pin Data NPK / Hop",
+              x: 345,
+              y: 72,
+              warnaPin: "#10b981",
+              posisiKomponen: "periferal",
+              targetPinEsp32: "ESP_GPIO17",
+              labelPinEsp32: "TX2 (17)",
+              warnaKabel: "#10b981",
+              keteranganSambung: "Klik [TX2 (17)] di ESP32 ➔ Klik [Pin Data NPK / Hop] di Slot 2",
+            },
+          ],
+        },
+        {
+          nomorSlot: 3,
+          namaTarget: "Modul Satelit GPS NEO-6M / Cloud",
+          fungsiSingkat: "Mengirim titik koordinat Latitude & Longitude kebun.",
+          kataKunciCocokGudang: ["gps", "neo", "nodemcu", "esp32", "oled"],
+          idGambarMiniatur: "gps_neo6m",
+          boxX: 330,
+          boxY: 134,
+          boxW: 225,
+          boxH: 88,
+          daftarPinSlotIni: [
+            {
+              idPin: "SLOT3_GPS_PIN",
+              labelPin: "Pin GPS / Cloud",
+              x: 345,
+              y: 178,
+              warnaPin: "#38bdf8",
+              posisiKomponen: "periferal",
+              targetPinEsp32: kode.includes("16") ? "ESP_GPIO16" : "ESP_GPIO4",
+              labelPinEsp32: kode.includes("16") ? "RX2 (16)" : "GPIO 4",
+              warnaKabel: "#38bdf8",
+              keteranganSambung: `Klik [${kode.includes("16") ? "RX2 (16)" : "GPIO 4"}] di ESP32 ➔ Klik [Pin GPS / Cloud] di Slot 3`,
+            },
+          ],
+        },
+      ],
+    };
+  }
+
+  // 9. BATERAI 18650 + SENSOR TEGANGAN (3 KOMPONEN: ESP32 + SOCKET BATERAI + SENSOR TEGANGAN)
+  if (judul.includes("baterai") || judul.includes("tegangan")) {
+    return {
+      analogiMudahPaham:
+        "Agar alat IoT di kebun bisa menyala tanpa colokan listrik PLN, kita memakai Baterai Li-Ion 18650 (Slot 2) dan memasang Sensor Tegangan (Slot 3) ke kaki ADC GPIO 35 untuk memantau sisa persentase baterainya!",
+      ringkasanCaraKerja:
+        "Tarik 3 perangkat secara berurutan: (1) ESP32 ke Slot 1, (2) Socket Baterai 18650 ke Slot 2, dan (3) Sensor Tegangan 0-25V ke Slot 3.",
+      slotPeriferalList: [
+        {
+          nomorSlot: 2,
+          namaTarget: "Socket Baterai Li-Ion 18650",
+          fungsiSingkat: "Menyuplai daya DC 3.7V–4.2V dan terhubung ke jalur GND.",
+          kataKunciCocokGudang: ["baterai", "18650", "daya"],
+          idGambarMiniatur: "socket_baterai",
+          boxX: 330,
+          boxY: 28,
+          boxW: 225,
+          boxH: 88,
+          daftarPinSlotIni: [
+            {
+              idPin: "SLOT2_BATT_GND",
+              labelPin: "Kutub Baterai (-)",
+              x: 345,
+              y: 72,
+              warnaPin: "#64748b",
+              posisiKomponen: "periferal",
+              targetPinEsp32: "ESP_GND",
+              labelPinEsp32: "GND",
+              warnaKabel: "#64748b",
+              keteranganSambung: "Klik [GND] di ESP32 ➔ Klik [Kutub Baterai (-)] di Slot 2",
+            },
+          ],
+        },
+        {
+          nomorSlot: 3,
+          namaTarget: "Sensor Tegangan 0-25V (INA219)",
+          fungsiSingkat: "Mengirim nilai voltase baterai ke pin ADC GPIO 35.",
+          kataKunciCocokGudang: ["tegangan", "pzem", "daya", "baterai"],
+          idGambarMiniatur: "sensor_tegangan",
+          boxX: 330,
+          boxY: 134,
+          boxW: 225,
+          boxH: 88,
+          daftarPinSlotIni: [
+            {
+              idPin: "SLOT3_VOLT_OUT",
+              labelPin: "Pin Voltase (V_OUT)",
+              x: 345,
+              y: 178,
+              warnaPin: "#f59e0b",
+              posisiKomponen: "periferal",
+              targetPinEsp32: "ESP_GPIO35",
+              labelPinEsp32: "GPIO 35",
+              warnaKabel: "#f59e0b",
+              keteranganSambung: "Klik [GPIO 35] di ESP32 ➔ Klik [Pin Voltase (V_OUT)] di Slot 3",
+            },
+          ],
+        },
+      ],
+    };
+  }
+
+  // 10. DEFAULT: RANGKAIAN DASAR (3 KOMPONEN: ESP32 + LED MERAH 5MM + RESISTOR 220 OHM)
+  return {
+    analogiMudahPaham:
+      "Ibarat menyalakan lampu senter: Papan ESP32 mengeluarkan tegangan 3.3 Volt dari kaki GPIO 2 menuju lampu LED Merah (Slot 2), lalu arusnya ditahan sedikit oleh Resistor 220Ω (Slot 3) menuju GND agar lampu LED tidak putus karena kelebihan arus!",
+    ringkasanCaraKerja:
+      "Tarik 3 komponen satu per satu dari Gudang Komponen: (1) ESP32 DevKit V1 ke Slot 1, (2) Lampu LED Merah 5mm ke Slot 2, dan (3) Resistor Gelang 220Ω ke Slot 3.",
+    slotPeriferalList: [
+      {
+        nomorSlot: 2,
+        namaTarget: "Lampu LED Merah 5mm",
+        fungsiSingkat: "Komponen pemancar cahaya saat menerima tegangan dari GPIO 2.",
+        kataKunciCocokGudang: ["led", "merah", "hijau"],
+        idGambarMiniatur: "led_merah",
+        boxX: 330,
+        boxY: 28,
+        boxW: 225,
+        boxH: 88,
+        daftarPinSlotIni: [
+          {
+            idPin: "SLOT2_LED_ANODA",
+            labelPin: "Kaki Anoda LED (+)",
+            x: 345,
+            y: 72,
+            warnaPin: "#ef4444",
+            posisiKomponen: "periferal",
+            targetPinEsp32: "ESP_GPIO2",
+            labelPinEsp32: "GPIO 2",
+            warnaKabel: "#ef4444",
+            keteranganSambung: "Klik [GPIO 2] di ESP32 ➔ Klik [Kaki Anoda LED (+)] di Slot 2",
+          },
+        ],
+      },
+      {
+        nomorSlot: 3,
+        namaTarget: "Resistor Gelang 220Ω (Penahan Arus)",
+        fungsiSingkat: "Menghubungkan jalur balik negatif LED menuju pin GND ESP32.",
+        kataKunciCocokGudang: ["resistor", "220", "potensiometer", "led"],
+        idGambarMiniatur: "resistor_gelang",
+        boxX: 330,
+        boxY: 134,
+        boxW: 225,
+        boxH: 88,
+        daftarPinSlotIni: [
+          {
+            idPin: "SLOT3_RES_GND",
+            labelPin: "Kaki Resistor (GND)",
+            x: 345,
+            y: 178,
+            warnaPin: "#64748b",
+            posisiKomponen: "periferal",
+            targetPinEsp32: "ESP_GND",
+            labelPinEsp32: "GND",
+            warnaKabel: "#64748b",
+            keteranganSambung: "Klik [GND] di ESP32 ➔ Klik [Kaki Resistor (GND)] di Slot 3",
+          },
+        ],
+      },
+    ],
+  };
 }
 
 const DAFTAR_BAB_SILABUS: {
@@ -108,7 +794,6 @@ const DAFTAR_TAB_FILTER_GUDANG: KategoriFilterGudang48[] = [
 
 const PILIHAN_OHM_RESISTOR = [100, 220, 330, 470, 1000, 4700, 10000];
 
-// Helper otomatis penentu Bab & Jumlah Slot jika data kurikulum belum memilikinya
 function dapatkanBabDariLevel(item: ExtendedLessonStepIoT): string {
   if (item.kategoriKesulitan) return item.kategoriKesulitan;
   if (item.level <= 3)
@@ -118,16 +803,6 @@ function dapatkanBabDariLevel(item: ExtendedLessonStepIoT): string {
     return "Bab 3: Digital/Analog Input & External Interrupt";
   if (item.level <= 12) return "Bab 4: Sensor, Aktuator & Otomasi Cerdas";
   return "Bab 5: Multi-MCU, NPK, GPS & 10-Node Mesh";
-}
-
-function dapatkanJumlahSlotDariLevel(
-  item: ExtendedLessonStepIoT,
-  sambunganWajibLength: number
-): 1 | 2 | 3 {
-  if (item.jumlahSlotAktif) return item.jumlahSlotAktif;
-  if (sambunganWajibLength === 0) return 1;
-  if (item.komponenDimasukkan && item.komponenDimasukkan.length === 2) return 2;
-  return 3;
 }
 
 function hitungGelangResistorLokal(ohm: number) {
@@ -175,156 +850,141 @@ function hitungGelangResistorLokal(ohm: number) {
 }
 
 // ============================================================================
-// KOMPONEN ANIMASI SVG DASAR TEORI DI DALAM POP-UP MODAL (MENGAJARKAN KONSEP!)
+// DIAGRAM ANIMASI VISUAL KONSEP DASAR TEORI (DIPAKAI DI POP-UP & DI PANEL KIRI)
 // ============================================================================
-const AnimasiVisualDasarTeoriModal: React.FC<{ level: number }> = ({ level }) => {
-  if (level >= 3 && level <= 5) {
-    return (
-      <svg viewBox="0 0 520 175" className="w-full h-44 bg-slate-950 rounded-2xl border border-slate-800">
-        <rect x={28} y={32} width={105} height={110} rx={12} fill="#1e293b" stroke="#38bdf8" strokeWidth={2} />
-        <rect x={44} y={44} width={72} height={44} rx={5} fill="#cbd5e1" />
-        <text x={80} y={69} textAnchor="middle" fill="#0f172a" fontSize="9.5" fontWeight="bold">ESP32 Wi-Fi</text>
-        <text x={80} y={115} textAnchor="middle" fill="#38bdf8" fontSize="9" fontWeight="bold">Client / Server</text>
+const AnimasiVisualDasarTeoriModal: React.FC<{
+  blueprint: BlueprintMultiKomponenLevel;
+  totalKomponen: number;
+}> = ({ blueprint, totalKomponen }) => {
+  return (
+    <svg
+      viewBox="0 0 540 155"
+      className="w-full h-36 sm:h-40 bg-slate-950 rounded-2xl border border-slate-800"
+    >
+      {/* Kotak 1: Papan ESP32 */}
+      <rect
+        x={20}
+        y={25}
+        width={135}
+        height={105}
+        rx={12}
+        fill="#0f172a"
+        stroke="#facc15"
+        strokeWidth={2.5}
+      />
+      <text
+        x={87}
+        y={55}
+        textAnchor="middle"
+        fill="#facc15"
+        fontSize="10"
+        fontWeight="bold"
+      >
+        SLOT #1 (OTAK MCU)
+      </text>
+      <text
+        x={87}
+        y={76}
+        textAnchor="middle"
+        fill="#ffffff"
+        fontSize="10.5"
+        fontWeight="bold"
+      >
+        ESP32 DevKit V1
+      </text>
+      <text
+        x={87}
+        y={96}
+        textAnchor="middle"
+        fill="#38bdf8"
+        fontSize="8.5"
+      >
+        Mengatur Pin GPIO &amp; Kode C++
+      </text>
 
-        {[0, 1, 2].map((i) => (
-          <circle key={i} cx={175 + i * 75} cy={87} r={10} fill="none" stroke="#38bdf8" strokeWidth={2.5}>
-            <animate attributeName="r" values="6;28;6" dur="1.6s" begin={`${i * 0.35}s`} repeatCount="indefinite" />
-            <animate attributeName="opacity" values="1;0.1;1" dur="1.6s" begin={`${i * 0.35}s`} repeatCount="indefinite" />
-          </circle>
-        ))}
-        <path d="M 140 87 L 365 87" stroke="#facc15" strokeWidth={3} strokeDasharray="8 6">
-          <animate attributeName="stroke-dashoffset" from="28" to="0" dur="0.7s" repeatCount="indefinite" />
-        </path>
-        <rect x={182} y={22} width={156} height={26} rx={8} fill="#0284c7" />
-        <text x={260} y={39} textAnchor="middle" fill="#ffffff" fontSize="10" fontWeight="bold">
-          📡 SSID: &quot;HibahIlmu-Guest&quot;
-        </text>
+      {/* Garis Aliran Kabel Beranimasi */}
+      <path
+        d="M 155 78 L 215 78"
+        stroke="#38bdf8"
+        strokeWidth={3.5}
+        strokeDasharray="6 4"
+      >
+        <animate
+          attributeName="stroke-dashoffset"
+          from="20"
+          to="0"
+          dur="0.6s"
+          repeatCount="indefinite"
+        />
+      </path>
+      <circle cx={185} cy={78} r={5} fill="#fde047">
+        <animate
+          attributeName="cx"
+          values="158;212;158"
+          dur="1.2s"
+          repeatCount="indefinite"
+        />
+      </circle>
 
-        <rect x={375} y={32} width={118} height={110} rx={14} fill="#064e3b" stroke="#34d399" strokeWidth={2} />
-        <text x={434} y={68} textAnchor="middle" fill="#fde047" fontSize="10" fontWeight="bold">
-          🌐 HibahIlmu Cloud
-        </text>
-        <text x={434} y={92} textAnchor="middle" fill="#ffffff" fontSize="9.5" fontWeight="bold">
-          IP: 192.168.1.105
-        </text>
-        <text x={434} y={116} textAnchor="middle" fill="#a7f3d0" fontSize="8.5">
-          Komunikasi 2 Arah Aktif
-        </text>
-      </svg>
-    );
-  }
+      {/* Kotak Kanan: Daftar Slot Komponen yang Harus Ditarik Bertahap */}
+      <rect
+        x={215}
+        y={16}
+        width={305}
+        height={122}
+        rx={12}
+        fill="#064e3b"
+        stroke="#34d399"
+        strokeWidth={2}
+      />
+      <text
+        x={367}
+        y={38}
+        textAnchor="middle"
+        fill="#fde047"
+        fontSize="10"
+        fontWeight="bold"
+      >
+        {totalKomponen === 1
+          ? "⚡ MODE 1 KOMPONEN (HANYA PAPAN ESP32 SAJA)"
+          : `🛠️ RAKIT BERTAHAP ${totalKomponen} KOMPONEN TERPISAH:`}
+      </text>
 
-  if (level === 2 || level === 6 || level === 10) {
-    return (
-      <svg viewBox="0 0 520 175" className="w-full h-44 bg-slate-950 rounded-2xl border border-slate-800">
-        <rect x={25} y={28} width={200} height={50} rx={10} fill="#1e293b" stroke="#64748b" strokeWidth={2} />
-        <text x={125} y={50} textAnchor="middle" fill="#cbd5e1" fontSize="10" fontWeight="bold">
-          1. void loop() Berjalan Normal
+      {blueprint.slotPeriferalList.length === 0 ? (
+        <text
+          x={367}
+          y={82}
+          textAnchor="middle"
+          fill="#ffffff"
+          fontSize="9.5"
+          fontWeight="bold"
+        >
+          LED &amp; Wi-Fi sudah ada di dalam ESP32 (Tanpa Kabel Luar)
         </text>
-        <text x={125} y={66} textAnchor="middle" fill="#94a3b8" fontSize="8.5">
-          CPU mengeksekusi baris demi baris
-        </text>
-
-        <path d="M 225 53 L 285 88" stroke="#facc15" strokeWidth={3.5} strokeDasharray="6 4">
-          <animate attributeName="stroke-dashoffset" from="20" to="0" dur="0.5s" repeatCount="indefinite" />
-        </path>
-        <rect x={165} y={102} width={185} height={54} rx={12} fill="#881337" stroke="#fb7185" strokeWidth={2.5}>
-          <animate attributeName="opacity" values="0.75;1;0.75" dur="0.8s" repeatCount="indefinite" />
-        </rect>
-        <text x={257} y={125} textAnchor="middle" fill="#fde047" fontSize="10" fontWeight="bold">
-          ⚡ HARDWARE INTERRUPT TRIGGER!
-        </text>
-        <text x={257} y={142} textAnchor="middle" fill="#ffffff" fontSize="8.8">
-          Langsung lompat ke IRAM_ATTR ISR (2 µs)
-        </text>
-
-        <rect x={375} y={38} width={120} height={95} rx={12} fill="#065f46" stroke="#34d399" strokeWidth={2} />
-        <circle cx={435} cy={72} r={14} fill="#facc15">
-          <animate attributeName="r" values="10;18;10" dur="0.6s" repeatCount="indefinite" />
-        </circle>
-        <text x={435} y={112} textAnchor="middle" fill="#ffffff" fontSize="9.5" fontWeight="bold">
-          Respons Instan!
-        </text>
-        <text x={435} y={125} textAnchor="middle" fill="#a7f3d0" fontSize="8">
-          Tanpa Terhalang delay()
-        </text>
-      </svg>
-    );
-  }
-
-  if (level >= 13) {
-    return (
-      <svg viewBox="0 0 520 175" className="w-full h-44 bg-slate-950 rounded-2xl border border-slate-800">
-        {[
-          { x: 30, label: "Node Kebun #1", sub: "Suhu, NPK, GPS, Batt", warna: "#0284c7" },
-          { x: 200, label: "Relay Node #2..#9", sub: "Estafet Hop (N+1)", warna: "#7c3aed" },
-          { x: 370, label: "Gateway Node #10", sub: "Upload Cloud Web", warna: "#059669" },
-        ].map((n, idx) => (
-          <g key={idx}>
-            <rect x={n.x} y={42} width={120} height={90} rx={12} fill={n.warna} stroke="#ffffff" strokeWidth={1.8} />
-            <text x={n.x + 60} y={82} textAnchor="middle" fill="#ffffff" fontSize="10" fontWeight="bold">
-              {n.label}
-            </text>
-            <text x={n.x + 60} y={102} textAnchor="middle" fill="#fef08a" fontSize="8.5" fontWeight="bold">
-              {n.sub}
+      ) : (
+        blueprint.slotPeriferalList.map((s, idx) => (
+          <g key={s.nomorSlot}>
+            <rect
+              x={230}
+              y={48 + idx * 27}
+              width={275}
+              height={22}
+              rx={5}
+              fill="#022c22"
+              stroke="#10b981"
+            />
+            <text
+              x={240}
+              y={63 + idx * 27}
+              fill="#a7f3d0"
+              fontSize="8.8"
+              fontWeight="bold"
+            >
+              Slot #{s.nomorSlot}: {s.namaTarget} ➔ ({s.daftarPinSlotIni[0]?.labelPinEsp32})
             </text>
           </g>
-        ))}
-        <path d="M 150 87 L 200 87 M 320 87 L 370 87" stroke="#facc15" strokeWidth={4} strokeDasharray="6 4">
-          <animate attributeName="stroke-dashoffset" from="20" to="0" dur="0.6s" repeatCount="indefinite" />
-        </path>
-        <circle cx={175} cy={87} r={6} fill="#fde047">
-          <animate attributeName="cx" values="150;200;150" dur="1.2s" repeatCount="indefinite" />
-        </circle>
-        <circle cx={345} cy={87} r={6} fill="#fde047">
-          <animate attributeName="cx" values="320;370;320" dur="1.2s" repeatCount="indefinite" />
-        </circle>
-      </svg>
-    );
-  }
-
-  return (
-    <svg viewBox="0 0 520 175" className="w-full h-44 bg-slate-950 rounded-2xl border border-slate-800">
-      <rect x={24} y={38} width={130} height={98} rx={12} fill="#1e293b" stroke="#38bdf8" strokeWidth={2} />
-      <text x={89} y={72} textAnchor="middle" fill="#38bdf8" fontSize="10" fontWeight="bold">
-        1. INPUT / SENSOR
-      </text>
-      <text x={89} y={92} textAnchor="middle" fill="#ffffff" fontSize="9">
-        {level === 1 ? "Program setup() & loop()" : "Baca Pin Digital / ADC"}
-      </text>
-      <text x={89} y={112} textAnchor="middle" fill="#94a3b8" fontSize="8">
-        Sinyal Tegangan 0V – 3.3V
-      </text>
-
-      <path d="M 154 87 L 198 87" stroke="#38bdf8" strokeWidth={3.5} strokeDasharray="6 4">
-        <animate attributeName="stroke-dashoffset" from="20" to="0" dur="0.6s" repeatCount="indefinite" />
-      </path>
-
-      <rect x={198} y={28} width={125} height={118} rx={14} fill="#0f172a" stroke="#facc15" strokeWidth={2.5} />
-      <text x={260} y={66} textAnchor="middle" fill="#facc15" fontSize="10.5" fontWeight="bold">
-        2. OTAK ESP32
-      </text>
-      <text x={260} y={88} textAnchor="middle" fill="#ffffff" fontSize="9.5" fontWeight="bold">
-        Logika C++ (if / PWM)
-      </text>
-      <text x={260} y={110} textAnchor="middle" fill="#34d399" fontSize="8.5">
-        Memutuskan HIGH / LOW
-      </text>
-
-      <path d="M 323 87 L 366 87" stroke="#facc15" strokeWidth={3.5} strokeDasharray="6 4">
-        <animate attributeName="stroke-dashoffset" from="20" to="0" dur="0.6s" repeatCount="indefinite" />
-      </path>
-
-      <rect x={366} y={38} width={130} height={98} rx={12} fill="#064e3b" stroke="#34d399" strokeWidth={2} />
-      <circle cx={431} cy={68} r={13} fill="#ef4444">
-        <animate attributeName="r" values="9;16;9" dur="0.9s" repeatCount="indefinite" />
-      </circle>
-      <text x={431} y={102} textAnchor="middle" fill="#ffffff" fontSize="10" fontWeight="bold">
-        3. AKTUATOR / LED
-      </text>
-      <text x={431} y={120} textAnchor="middle" fill="#fde047" fontSize="8.5">
-        Arus Mengalir ➔ Menyala!
-      </text>
+        ))
+      )}
     </svg>
   );
 };
@@ -344,7 +1004,6 @@ export const WokwiStepByStepAcademy: React.FC<{
     new Set()
   );
 
-  // POP-UP MODAL DASAR TEORI BERANIMASI
   const [tampilModalTeori, setTampilModalTeori] = useState<boolean>(true);
 
   const [modeBelajar, setModeBelajar] = useState<
@@ -359,29 +1018,41 @@ export const WokwiStepByStepAcademy: React.FC<{
     KURIKULUM_15_LEVEL_IOT as ExtendedLessonStepIoT[];
   const materiAktif: ExtendedLessonStepIoT =
     daftarKurikulumExtended[indeksLevel] || daftarKurikulumExtended[0];
-  const spekHardware =
-    SPESIFIKASI_HARDWARE_15_LEVEL[materiAktif.level] ||
-    SPESIFIKASI_HARDWARE_15_LEVEL[1];
 
-  const jmlSlot = dapatkanJumlahSlotDariLevel(
-    materiAktif,
-    spekHardware.sambunganWajib.length
+  // Ambil Blueprint Multi-Komponen Independen (Bisa 1, 3, atau 4 Komponen Terpisah!)
+  const blueprintLevelIni = ambilBlueprintMultiKomponen(materiAktif);
+  const daftarSlotPeriferal = blueprintLevelIni.slotPeriferalList;
+  const totalKomponenWajib = 1 + daftarSlotPeriferal.length; // 1 (ESP32) + N Periferal
+
+  // Kumpulkan semua sambungan kabel wajib dari seluruh slot periferal
+  const semuaSambunganWajibLevelIni = daftarSlotPeriferal.flatMap((slot) =>
+    slot.daftarPinSlotIni.map((p) => ({
+      nomorSlot: slot.nomorSlot,
+      idPinPeriferal: p.idPin,
+      labelPinPeriferal: p.labelPin,
+      dariPinEsp32: p.targetPinEsp32,
+      labelPinEsp32: p.labelPinEsp32,
+      warnaKabel: p.warnaKabel,
+      keteranganJalur: p.keteranganSambung,
+      x: p.x,
+      y: p.y,
+    }))
   );
 
   const bersihkanKeHibahIlmu = (teks: string) =>
     (teks || "").replace(/Wokwi-GUEST/g, "HibahIlmu-Guest");
 
+  // ==========================================================================
+  // STATE PERAKITAN BERTAHAP PER SLOT (SETIAP SLOT INDEPENDEN!)
+  // ==========================================================================
   const [slot1Esp32Terpasang, setSlot1Esp32Terpasang] =
     useState<boolean>(false);
-  const [slot2SensorTerpasang, setSlot2SensorTerpasang] =
-    useState<boolean>(false);
-  const [slot3AktuatorTerpasang, setSlot3AktuatorTerpasang] =
-    useState<boolean>(false);
+  // Menyimpan status terpasang masing-masing slot periferal (Slot 2, Slot 3, Slot 4) secara terpisah!
+  const [slotPeriferalTerpasangMap, setSlotPeriferalTerpasangMap] = useState<
+    Record<number, { terpasang: boolean; namaKartu: string; idKartu: string }>
+  >({});
 
-  const [namaKomponenSlot2, setNamaKomponenSlot2] = useState<string>("");
-  const [namaKomponenSlot3, setNamaKomponenSlot3] = useState<string>("");
   const [blynkVirtualV0, setBlynkVirtualV0] = useState<boolean>(true);
-
   const [itemSedangDiDrag, setItemSedangDiDrag] =
     useState<ItemGudang48Master | null>(null);
   const [pesanGudang, setPesanGudang] = useState<string>("");
@@ -436,7 +1107,7 @@ export const WokwiStepByStepAcademy: React.FC<{
   const [daftarErrorDetail, setDaftarErrorDetail] = useState<string[]>([]);
   const [pesanFeedback, setPesanFeedback] = useState<string>("");
   const [outputSerialSimulasi, setOutputSerialSimulasi] = useState<string>(
-    "// Baca Pop-Up Dasar Teori, lalu tarik ESP32 ke kanvas dan ketik program C++!"
+    "// Rakit setiap komponen satu per satu ke slotnya di kanvas, sambungkan kaki pinnya, lalu jalankan program!"
   );
 
   const [detakSimulasi, setDetakSimulasi] = useState<number>(0);
@@ -476,22 +1147,13 @@ export const WokwiStepByStepAcademy: React.FC<{
   ) => {
     const target = daftarKurikulumExtended[idxBaru];
     if (!target) return;
-    const spekTarget =
-      SPESIFIKASI_HARDWARE_15_LEVEL[target.level] ||
-      SPESIFIKASI_HARDWARE_15_LEVEL[1];
-    const slotTargetCount = dapatkanJumlahSlotDariLevel(
-      target,
-      spekTarget.sambunganWajib.length
-    );
+    const bp = ambilBlueprintMultiKomponen(target);
 
     setIndeksLevel(idxBaru);
     setModeBelajar(modeTarget);
     setTampilModalTeori(bukaPopUpTeori);
     setSlot1Esp32Terpasang(false);
-    setSlot2SensorTerpasang(false);
-    setSlot3AktuatorTerpasang(false);
-    setNamaKomponenSlot2("");
-    setNamaKomponenSlot3("");
+    setSlotPeriferalTerpasangMap({});
     setItemSedangDiDrag(null);
     setPesanGudang("");
     setKabelTerpasangList([]);
@@ -505,25 +1167,40 @@ export const WokwiStepByStepAcademy: React.FC<{
     setDaftarErrorDetail([]);
     setPesanFeedback("");
     setOutputSerialSimulasi(
-      slotTargetCount === 1
-        ? `// Level ${target.level} (Hanya 1 ESP32 Saja): Tarik 1 papan ESP32 ke kanvas (Tanpa kabel luar!) lalu ketik kodingannya.`
-        : `// Level ${target.level}: Tarik ${slotTargetCount} komponen yang diminta ke slot kanvas, hubungkan kaki pin, lalu jalankan!`
+      `// Level ${target.level}: Wajib menarik ${
+        1 + bp.slotPeriferalList.length
+      } komponen secara bertahap ke kanvas, lalu menyambungkan ${
+        bp.slotPeriferalList.length
+      } jalur kabelnya!`
     );
   };
 
-  const semuaKomponenSudahDitaruh =
-    jmlSlot === 1
-      ? slot1Esp32Terpasang
-      : jmlSlot === 2
-      ? slot1Esp32Terpasang && slot2SensorTerpasang
-      : slot1Esp32Terpasang && slot2SensorTerpasang && slot3AktuatorTerpasang;
+  // Hitung berapa slot yang sudah dipasang oleh pengguna saat ini
+  const jumlahPeriferalSudahTerpasang = daftarSlotPeriferal.filter(
+    (s) => slotPeriferalTerpasangMap[s.nomorSlot]?.terpasang
+  ).length;
+  const jumlahKomponenTerpasangSaatIni =
+    (slot1Esp32Terpasang ? 1 : 0) + jumlahPeriferalSudahTerpasang;
 
-  const sambunganWajibBelumTerpasang = spekHardware.sambunganWajib.filter(
+  const semuaKomponenSudahDitaruh =
+    slot1Esp32Terpasang &&
+    daftarSlotPeriferal.every(
+      (s) => slotPeriferalTerpasangMap[s.nomorSlot]?.terpasang
+    );
+
+  // Cari slot periferal pertama yang masih kosong (untuk panduan berkedip bertahap)
+  const slotPeriferalKosongBerikutnya =
+    daftarSlotPeriferal.find(
+      (s) => !slotPeriferalTerpasangMap[s.nomorSlot]?.terpasang
+    ) || null;
+
+  // Cari sambungan kabel wajib yang slotnya SUDAH terpasang tetapi kabelnya BELUM ditarik
+  const sambunganWajibBelumTerpasang = semuaSambunganWajibLevelIni.filter(
     (wajib) =>
       !kabelTerpasangList.some(
         (k) =>
           k.dariPinEsp32 === wajib.dariPinEsp32 &&
-          k.kePinPeriferal === wajib.kePinPeriferal
+          k.kePinPeriferal === wajib.idPinPeriferal
       )
   );
 
@@ -543,57 +1220,83 @@ export const WokwiStepByStepAcademy: React.FC<{
     return cocokKategori && cocokKata;
   });
 
-  const handleDropKeSlotKanvas = (
-    slotTarget: "slot1_esp32" | "slot2_sensor" | "slot3_aktuator"
-  ) => {
+  // ==========================================================================
+  // HANDLER DRAG & DROP SATU PER SATU KE MASING-MASING SLOT INDEPENDEN
+  // ==========================================================================
+  const handleDropKeSlotTertentu = (nomorSlotTarget: number) => {
     if (!itemSedangDiDrag) return;
 
-    if (slotTarget === "slot1_esp32") {
+    // SLOT 1: WAJIB PAPAN MIKROKONTROLER ESP32
+    if (nomorSlotTarget === 1) {
       if (itemSedangDiDrag.cocokUntukDropZone === "esp32_board") {
         setSlot1Esp32Terpasang(true);
         setPinYangSalahAtauKurangIds([]);
+        const nextSlot = daftarSlotPeriferal[0];
         setPesanGudang(
-          jmlSlot === 1
-            ? `✅ '${itemSedangDiDrag.nama}' terpasang! Karena Level ${materiAktif.level} hanya memakai 1 ESP32 saja, langsung ketik kodingan C++ di bawah!`
-            : `✅ Slot 1 Terisi: '${itemSedangDiDrag.nama}' terpasang! Sekarang tarik komponen berikutnya ke Slot 2!`
+          nextSlot
+            ? `✅ Komponen 1/${totalKomponenWajib} ('${itemSedangDiDrag.nama}') terpasang di Slot #1! Sekarang tarik '${nextSlot.namaTarget}' dari Gudang ke Slot #2!`
+            : `✅ '${itemSedangDiDrag.nama}' terpasang di Slot #1! Silakan ketik kode C++ di bawah.`
         );
       } else {
         picuGetaranMerahRangkaian();
         setPesanGudang(
-          `❌ Salah Slot! Slot 1 khusus untuk Mikrokontroler 'ESP32 DevKit V1', bukan '${itemSedangDiDrag.nama}'.`
+          `❌ Salah Komponen! Slot #1 (Kiri) khusus untuk papan 'ESP32 DevKit V1', bukan '${itemSedangDiDrag.nama}'.`
         );
       }
-    } else if (slotTarget === "slot2_sensor") {
-      if (itemSedangDiDrag.cocokUntukDropZone !== "esp32_board") {
-        setSlot2SensorTerpasang(true);
-        setNamaKomponenSlot2(itemSedangDiDrag.nama);
-        setPinYangSalahAtauKurangIds([]);
-        setPesanGudang(
-          jmlSlot === 2
-            ? `✅ Komponen '${itemSedangDiDrag.nama}' terpasang! Sekarang klik 2 titik kaki pin yang berkedip untuk menyambung kabel!`
-            : `✅ Slot 2 Terisi: '${itemSedangDiDrag.nama}' terpasang! Sekarang tarik komponen ke-3 ke Slot 3 di bawahnya!`
-        );
-      } else {
-        picuGetaranMerahRangkaian();
-        setPesanGudang(
-          "❌ Slot 2 adalah tempat komponen periferal, bukan ESP32 utama!"
-        );
-      }
-    } else if (slotTarget === "slot3_aktuator") {
-      if (itemSedangDiDrag.cocokUntukDropZone !== "esp32_board") {
-        setSlot3AktuatorTerpasang(true);
-        setNamaKomponenSlot3(itemSedangDiDrag.nama);
-        setPinYangSalahAtauKurangIds([]);
-        setPesanGudang(
-          `✅ Ketiga Komponen Lengkap Terpasang! Sekarang klik ke-2 titik kaki pin yang berkedip untuk menarik kabel jumper!`
-        );
-      } else {
-        picuGetaranMerahRangkaian();
-        setPesanGudang(
-          "❌ Slot 3 adalah tempat komponen periferal kedua, bukan ESP32 utama!"
-        );
-      }
+      setItemSedangDiDrag(null);
+      return;
     }
+
+    // SLOT 2, 3, ATAU 4: PERIKSA APAKAH KOMPONEN COCOK DENGAN SLOT TERSEBUT
+    const defSlot = daftarSlotPeriferal.find(
+      (s) => s.nomorSlot === nomorSlotTarget
+    );
+    if (!defSlot) return;
+
+    const teksKartu = `${itemSedangDiDrag.id} ${itemSedangDiDrag.nama} ${itemSedangDiDrag.badgeAtas}`.toLowerCase();
+    const apakahCocokSlotIni =
+      itemSedangDiDrag.cocokUntukDropZone !== "esp32_board" &&
+      (defSlot.kataKunciCocokGudang.some((kw) => teksKartu.includes(kw)) ||
+        itemSedangDiDrag.levelTerkait.includes(materiAktif.level));
+
+    if (apakahCocokSlotIni) {
+      // HANYA ISI SLOT INI SAJA (TIDAK MENGISI SLOT LAIN SECARA OTOMATIS!)
+      setSlotPeriferalTerpasangMap((prev) => ({
+        ...prev,
+        [nomorSlotTarget]: {
+          terpasang: true,
+          namaKartu: itemSedangDiDrag.nama,
+          idKartu: itemSedangDiDrag.id,
+        },
+      }));
+      setPinYangSalahAtauKurangIds([]);
+
+      const sisaSlotKosong = daftarSlotPeriferal.filter(
+        (s) =>
+          s.nomorSlot !== nomorSlotTarget &&
+          !slotPeriferalTerpasangMap[s.nomorSlot]?.terpasang
+      );
+
+      if (sisaSlotKosong.length > 0) {
+        setPesanGudang(
+          `✅ Slot #${nomorSlotTarget} ('${itemSedangDiDrag.nama}') berhasil dipasang! Masih ada ${sisaSlotKosong.length} komponen lagi: sekarang tarik '${sisaSlotKosong[0].namaTarget}' ke Slot #${sisaSlotKosong[0].nomorSlot}!`
+        );
+      } else if (!slot1Esp32Terpasang) {
+        setPesanGudang(
+          `✅ Slot #${nomorSlotTarget} terpasang! Jangan lupa tarik 'ESP32 DevKit V1' ke Slot #1 (Kiri)!`
+        );
+      } else {
+        setPesanGudang(
+          `🎉 Seluruh ${totalKomponenWajib} Komponen berhasil dirakit! Sekarang klik titik kaki pin yang berkedip untuk memasang ${semuaSambunganWajibLevelIni.length} jalur kabel!`
+        );
+      }
+    } else {
+      picuGetaranMerahRangkaian();
+      setPesanGudang(
+        `❌ Belum Tepat! Slot #${nomorSlotTarget} membutuhkan '${defSlot.namaTarget}', sedangkan kamu menarik '${itemSedangDiDrag.nama}'.`
+      );
+    }
+
     setItemSedangDiDrag(null);
   };
 
@@ -601,19 +1304,22 @@ export const WokwiStepByStepAcademy: React.FC<{
     setItemSedangDiDrag(item);
     if (item.cocokUntukDropZone === "esp32_board") {
       setPesanGudang(
-        `👉 '${item.nama}' dipilih! Klik atau Drop ke [Slot 1: Papan ESP32] di kanvas.`
-      );
-    } else if (!slot2SensorTerpasang) {
-      setPesanGudang(
-        `👉 '${item.nama}' dipilih! Klik atau Drop ke [Slot 2] di sebelah kanan kanvas.`
+        `👉 '${item.nama}' dipilih! Sekarang Drop atau KLIK kotak [Slot #1: ESP32 DevKit V1] di sebelah kiri kanvas.`
       );
     } else {
+      const slotTarget =
+        slotPeriferalKosongBerikutnya || daftarSlotPeriferal[0];
       setPesanGudang(
-        `👉 '${item.nama}' dipilih! Klik atau Drop ke [Slot 3] di kanan bawah kanvas.`
+        slotTarget
+          ? `👉 '${item.nama}' dipilih! Sekarang Drop atau KLIK kotak [Slot #${slotTarget.nomorSlot}: ${slotTarget.namaTarget}] di sebelah kanan kanvas.`
+          : `👉 '${item.nama}' dipilih! Klik slot tujuan di kanvas.`
       );
     }
   };
 
+  // ==========================================================================
+  // HANDLER KLIK 2 TITIK KAKI PIN SECARA BERURUTAN
+  // ==========================================================================
   const handleMouseMoveSvg = (e: React.MouseEvent<SVGSVGElement>) => {
     if (!pinAwalDiklik || !svgRef.current) return;
     const rect = svgRef.current.getBoundingClientRect();
@@ -631,9 +1337,9 @@ export const WokwiStepByStepAcademy: React.FC<{
   ) => {
     e.stopPropagation();
 
-    if (jmlSlot === 1) {
+    if (daftarSlotPeriferal.length === 0) {
       setPesanGudang(
-        `💡 Level ${materiAktif.level} hanya menggunakan 1 papan ESP32 saja, jadi tidak perlu memasang kabel keluar!`
+        `💡 Level ${materiAktif.level} hanya menggunakan 1 papan ESP32 saja, tidak perlu menarik kabel keluar!`
       );
       return;
     }
@@ -641,7 +1347,7 @@ export const WokwiStepByStepAcademy: React.FC<{
     if (!semuaKomponenSudahDitaruh) {
       picuGetaranMerahRangkaian();
       setPesanGudang(
-        `⚠️ Pasang dulu seluruh komponen (${jmlSlot} Slot) ke kanvas sebelum menyambung kaki pin!`
+        `⚠️ Kamu baru memasang ${jumlahKomponenTerpasangSaatIni} dari ${totalKomponenWajib} komponen! Tarik dulu semua komponen ke Slot #1 s.d. Slot #${totalKomponenWajib} sebelum menyambung kabel!`
       );
       return;
     }
@@ -650,7 +1356,7 @@ export const WokwiStepByStepAcademy: React.FC<{
       setPinAwalDiklik(pinDiklik);
       setPosisiKursorSvg({ x: pinDiklik.x, y: pinDiklik.y });
       setPesanGudang(
-        `🔌 Titik ke-1 [${pinDiklik.labelPin}] terpegang! Sekarang arahkan kabel dan KLIK titik kaki pin ke-2 pada komponen pasangan!`
+        `🔌 Titik ke-1 [${pinDiklik.labelPin}] terpegang! Sekarang arahkan kabel dan KLIK titik kaki pin ke-2 pada komponen pasangannya!`
       );
       return;
     }
@@ -679,8 +1385,8 @@ export const WokwiStepByStepAcademy: React.FC<{
         ? pinAwalDiklik.idPin
         : pinDiklik.idPin;
 
-    const cocokWajib = spekHardware.sambunganWajib.find(
-      (w) => w.dariPinEsp32 === idEsp && w.kePinPeriferal === idPerif
+    const cocokWajib = semuaSambunganWajibLevelIni.find(
+      (w) => w.dariPinEsp32 === idEsp && w.idPinPeriferal === idPerif
     );
     const warnaKabelBaru = cocokWajib?.warnaKabel || "#ef4444";
 
@@ -702,13 +1408,16 @@ export const WokwiStepByStepAcademy: React.FC<{
       picuGetaranMerahRangkaian();
       setPinYangSalahAtauKurangIds([idEsp, idPerif]);
       setPesanGudang(
-        `❌ Salah Pin! Sambungan dari ${pinAwalDiklik.labelPin} ke ${pinDiklik.labelPin} tidak sesuai instruksi modul.`
+        `❌ Salah Alamat Pin! Sambungan dari ${pinAwalDiklik.labelPin} ke ${pinDiklik.labelPin} tidak sesuai petunjuk. Lepas kabel merah tersebut!`
       );
     } else {
-      setPesanGudang(`✅ Kabel Tepat: ${cocokWajib.keteranganJalur}!`);
+      setPesanGudang(`✅ Kabel Tersambung: ${cocokWajib.keteranganJalur}!`);
     }
   };
 
+  // ==========================================================================
+  // MESIN VALIDASI KETAT: CEK SETIAP SLOT SATU PER SATU + KABEL + KODE C++
+  // ==========================================================================
   const periksaRangkaianDanJalankanProgram = () => {
     const errors: string[] = [];
     const pinBermasalah: string[] = [];
@@ -716,53 +1425,41 @@ export const WokwiStepByStepAcademy: React.FC<{
 
     if (!slot1Esp32Terpasang) {
       errors.push(
-        "[SLOT 1 KOSONG] Tarik papan 'ESP32 DevKit V1' dari Gudang Komponen ke kotak Slot 1 di kanvas!"
-      );
-    }
-    if (jmlSlot >= 2 && !slot2SensorTerpasang) {
-      errors.push(
-        `[SLOT 2 KOSONG] Tarik komponen '${
-          materiAktif.komponenDimasukkan[1]?.namaKomponen || "Komponen Kedua"
-        }' dari Gudang Komponen ke Slot 2!`
-      );
-    }
-    if (jmlSlot >= 3 && !slot3AktuatorTerpasang) {
-      errors.push(
-        `[SLOT 3 KOSONG] Tarik komponen '${
-          materiAktif.komponenDimasukkan[2]?.namaKomponen || "Komponen Ketiga"
-        }' dari Gudang Komponen ke Slot 3!`
+        "[SLOT #1 KOSONG] Kamu belum menarik 'ESP32 DevKit V1' ke kotak Slot #1 (Kiri)!"
       );
     }
 
-    for (const wajib of spekHardware.sambunganWajib) {
+    for (const slot of daftarSlotPeriferal) {
+      if (!slotPeriferalTerpasangMap[slot.nomorSlot]?.terpasang) {
+        errors.push(
+          `[SLOT #${slot.nomorSlot} KOSONG] Kamu belum menarik '${slot.namaTarget}' dari Gudang Komponen ke kotak Slot #${slot.nomorSlot} (Kanan)!`
+        );
+      }
+    }
+
+    for (const wajib of semuaSambunganWajibLevelIni) {
       const sudahAda = kabelTerpasangList.some(
         (k) =>
           k.dariPinEsp32 === wajib.dariPinEsp32 &&
-          k.kePinPeriferal === wajib.kePinPeriferal
+          k.kePinPeriferal === wajib.idPinPeriferal
       );
       if (!sudahAda) {
-        errors.push(`[PIN BELUM TERSAMBUNG] ${wajib.keteranganJalur}.`);
-        pinBermasalah.push(wajib.dariPinEsp32, wajib.kePinPeriferal);
+        errors.push(
+          `[KABEL SLOT #${wajib.nomorSlot} BELUM DISAMBUNG] ${wajib.keteranganJalur}.`
+        );
+        pinBermasalah.push(wajib.dariPinEsp32, wajib.idPinPeriferal);
       }
     }
 
     for (const terpasang of kabelTerpasangList) {
-      const valid = spekHardware.sambunganWajib.some(
+      const valid = semuaSambunganWajibLevelIni.some(
         (w) =>
           w.dariPinEsp32 === terpasang.dariPinEsp32 &&
-          w.kePinPeriferal === terpasang.kePinPeriferal
+          w.idPinPeriferal === terpasang.kePinPeriferal
       );
       if (!valid) {
-        const namaEsp =
-          spekHardware.pinEsp32Tersedia.find(
-            (p) => p.idPin === terpasang.dariPinEsp32
-          )?.labelPin || terpasang.dariPinEsp32;
-        const namaPerif =
-          spekHardware.pinPeriferalTersedia.find(
-            (p) => p.idPin === terpasang.kePinPeriferal
-          )?.labelPin || terpasang.kePinPeriferal;
         errors.push(
-          `[KABEL SALAH ALAMAT] Kabel dari kaki "${namaEsp}" ke "${namaPerif}" salah! Klik tanda ✕ untuk melepasnya.`
+          `[KABEL SALAH PASANG] Ada kabel merah putus-putus yang salah sambung! Klik tanda ✕ untuk melepasnya.`
         );
         pinBermasalah.push(terpasang.dariPinEsp32, terpasang.kePinPeriferal);
       }
@@ -775,10 +1472,10 @@ export const WokwiStepByStepAcademy: React.FC<{
       setBarisKodeSalahList([]);
       picuGetaranMerahRangkaian();
       setPesanFeedback(
-        `🚨 Rangkaian Belum Tepat (${errors.length} Masalah): Perhatikan bagian kanvas yang bergetar merah di atas!`
+        `🚨 Rangkaian Belum Lengkap (${errors.length} Masalah): Pastikan seluruh ${totalKomponenWajib} komponen sudah ditarik satu per satu dan semua kaki pin sudah dihubungkan!`
       );
       setOutputSerialSimulasi(
-        `[HARDWARE CHECK FAILED]\n--------------------------------------------------\n${errors
+        `[HARDWARE & WIRING CHECK FAILED]\n--------------------------------------------------\n${errors
           .map((e, i) => `❌ ${i + 1}. ${e}`)
           .join("\n")}`
       );
@@ -826,7 +1523,7 @@ export const WokwiStepByStepAcademy: React.FC<{
       );
       const targetBaris =
         idxKomentarPetunjuk >= 0 ? idxKomentarPetunjuk + 2 : 4;
-      const msg = `Sekitar Baris ke-${targetBaris}: Anda belum mengetik perintah wajib: ${kurangKw
+      const msg = `Sekitar Baris ke-${targetBaris}: Kamu belum mengetik perintah wajib: ${kurangKw
         .map((k) => `"${k}"`)
         .join(", ")}`;
       errors.push(msg);
@@ -840,10 +1537,10 @@ export const WokwiStepByStepAcademy: React.FC<{
       setBarisKodeSalahList(barisBermasalah);
       picuGetaranMerahKodingan();
       setPesanFeedback(
-        `🚨 Kodingan C++ Masih Salah (${errors.length} Error): Perhatikan kotak Editor Kode yang bergetar merah dan nomor baris yang ditandai merah!`
+        `🚨 Kodingan C++ Masih Salah (${errors.length} Error): Rangkaian ${totalKomponenWajib} komponenmu sudah benar, tetapi perhatikan baris merah di Editor Kode!`
       );
       setOutputSerialSimulasi(
-        `[ESP32 GCC COMPILER ERROR — LOKASI BARIS DITEMUKAN]\n--------------------------------------------------\n${errors
+        `[ESP32 GCC COMPILER ERROR]\n--------------------------------------------------\n${errors
           .map((e, i) => `❌ ${i + 1}. ${e}`)
           .join("\n")}`
       );
@@ -855,7 +1552,7 @@ export const WokwiStepByStepAcademy: React.FC<{
     setPinYangSalahAtauKurangIds([]);
     setBarisKodeSalahList([]);
     setPesanFeedback(
-      `🎉 100% Sempurna! Praktikum Level ${materiAktif.level} (${materiAktif.judulMateri}) berhasil dijalankan (+${materiAktif.xpReward} XP)!`
+      `🎉 100% SEMPURNA! Seluruh ${totalKomponenWajib} komponen, sambungan kabel, dan kodingan C++ Level ${materiAktif.level} berhasil dijalankan (+${materiAktif.xpReward} XP)!`
     );
     setOutputSerialSimulasi(
       bersihkanKeHibahIlmu(materiAktif.simulasiOutputJikaBenar)
@@ -872,13 +1569,8 @@ export const WokwiStepByStepAcademy: React.FC<{
     statusVerifikasi === "lulus" || levelSelesaiSet.has(materiAktif.level);
 
   const pinEspBerkedipObj = sambunganBerkedipTarget
-    ? spekHardware.pinEsp32Tersedia.find(
+    ? PIN_FISIK_ESP32_STANDAR.find(
         (p) => p.idPin === sambunganBerkedipTarget.dariPinEsp32
-      )
-    : null;
-  const pinPerifBerkedipObj = sambunganBerkedipTarget
-    ? spekHardware.pinPeriferalTersedia.find(
-        (p) => p.idPin === sambunganBerkedipTarget.kePinPeriferal
       )
     : null;
 
@@ -909,22 +1601,23 @@ export const WokwiStepByStepAcademy: React.FC<{
       `}</style>
 
       {/* =================================================================== */}
-      {/* POP-UP MODAL DASAR TEORI BERANIMASI DI TENGAH LAYAR                 */}
+      {/* POP-UP MODAL DASAR TEORI BERANIMASI (BAHASA MUDAH DIMENGERTI)       */}
+      {/* Ketika di-close, seluruh isinya tetap tampil permanen di Panel Kiri */}
       {/* =================================================================== */}
       {tampilModalTeori && (
         <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-slate-900 border-2 border-emerald-400/80 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl space-y-5 my-auto">
+          <div className="bg-slate-900 border-2 border-emerald-400/90 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl space-y-5 my-auto">
             <div className="flex justify-between items-start gap-4 border-b border-slate-800 pb-4">
               <div className="space-y-1.5">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="px-3 py-1 rounded-full bg-emerald-400 text-slate-950 font-extrabold text-xs">
-                    MODUL LEVEL {materiAktif.level} DARI {daftarKurikulumExtended.length}
+                    PANDUAN AWAL • LEVEL {materiAktif.level}
                   </span>
-                  <span className="px-3 py-1 rounded-full bg-sky-500/20 border border-sky-400/50 text-sky-300 font-semibold text-xs">
-                    +{materiAktif.xpReward} XP
+                  <span className="px-3 py-1 rounded-full bg-amber-400/20 border border-amber-400/50 text-amber-300 font-bold text-xs">
+                    Wajib Merakit {totalKomponenWajib} Komponen Bertahap
                   </span>
                 </div>
-                <h3 className="text-xl sm:text-2xl font-extrabold text-white leading-snug tracking-tight">
+                <h3 className="text-xl sm:text-2xl font-extrabold text-white leading-snug">
                   {materiAktif.judulMateri}
                 </h3>
               </div>
@@ -938,53 +1631,76 @@ export const WokwiStepByStepAcademy: React.FC<{
               </button>
             </div>
 
+            {/* Diagram Animasi Visual */}
             <div className="space-y-2">
               <div className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4" /> Animasi Cara Kerja Sistem di Modul Ini:
+                <Sparkles className="w-4 h-4" /> Gambaran Animasi Rangkaian yang Akan Kamu Buat:
               </div>
-              <AnimasiVisualDasarTeoriModal level={materiAktif.level} />
+              <AnimasiVisualDasarTeoriModal
+                blueprint={blueprintLevelIni}
+                totalKomponen={totalKomponenWajib}
+              />
             </div>
 
-            <div className="bg-slate-950/90 p-4 sm:p-5 rounded-2xl border border-slate-800 space-y-2.5">
-              <div className="text-sm font-bold text-emerald-400">
-                📖 Dasar Teori &amp; Konsep Utama:
+            {/* Analogi Bahasa Sehari-hari yang Sangat Mudah Dimengerti */}
+            <div className="bg-slate-950 p-4 sm:p-5 rounded-2xl border border-emerald-500/40 space-y-3 text-sm leading-relaxed">
+              <div className="font-extrabold text-emerald-400 flex items-center gap-1.5">
+                <Lightbulb className="w-4 h-4 text-amber-400" /> Pahami dengan Bahasa Sederhana (Analogi):
               </div>
-              <p className="text-sm text-slate-200 leading-relaxed font-normal">
+              <p className="text-slate-200">{blueprintLevelIni.analogiMudahPaham}</p>
+              <p className="text-slate-300 text-xs bg-slate-900 p-3 rounded-xl border border-slate-800">
+                <strong className="text-sky-300">📖 Dasar Teori Teknis:</strong>{" "}
                 {bersihkanKeHibahIlmu(materiAktif.penjelasanTeoriSingkat)}
               </p>
-              <div className="pt-2 border-t border-slate-800/80 text-xs text-amber-300/90 font-medium">
-                <strong>🎯 Target Praktikum:</strong>{" "}
-                {bersihkanKeHibahIlmu(materiAktif.tujuanBelajar)}
-              </div>
             </div>
 
+            {/* Urutan Langkah Pengerjaan Step-by-Step */}
             <div className="space-y-2">
-              <div className="text-xs font-bold text-sky-300">
-                🧰 Perangkat yang Akan Kamu Gunakan ({jmlSlot} Slot):
+              <div className="text-xs font-bold text-sky-300 uppercase">
+                🛠️ Apa Saja yang Harus Kamu Lakukan Sebentar Lagi? ({totalKomponenWajib} Komponen):
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {materiAktif.komponenDimasukkan.map((k, idx) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                <div className="p-3 rounded-xl bg-slate-950 border border-amber-400/50 flex items-start gap-2.5">
+                  <span className="px-2 py-0.5 rounded bg-amber-400 text-slate-950 font-black">
+                    Slot #1
+                  </span>
+                  <div>
+                    <div className="font-bold text-white">ESP32 DevKit V1 (30P)</div>
+                    <div className="text-slate-400">
+                      Tarik dari Gudang ke kotak kiri kanvas.
+                    </div>
+                  </div>
+                </div>
+
+                {daftarSlotPeriferal.map((s) => (
                   <div
-                    key={idx}
-                    className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-start gap-2.5"
+                    key={s.nomorSlot}
+                    className="p-3 rounded-xl bg-slate-950 border border-sky-400/50 flex items-start gap-2.5"
                   >
-                    <Cpu className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <div className="text-xs space-y-0.5">
-                      <div className="font-bold text-white">{k.namaKomponen}</div>
-                      <div className="text-slate-400">{k.pasangKePin}</div>
+                    <span className="px-2 py-0.5 rounded bg-sky-400 text-slate-950 font-black">
+                      Slot #{s.nomorSlot}
+                    </span>
+                    <div>
+                      <div className="font-bold text-white">{s.namaTarget}</div>
+                      <div className="text-amber-300 font-mono text-[11px]">
+                        {s.daftarPinSlotIni[0]?.keteranganSambung}
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="pt-2 flex flex-wrap justify-end gap-3">
+            <div className="pt-2 flex flex-wrap justify-between items-center gap-3">
+              <span className="text-xs text-slate-400">
+                💡 Tenang! Saat pop-up ini ditutup, semua panduan ini tetap ada di sebelah kiri layar.
+              </span>
               <button
                 type="button"
                 onClick={() => setTampilModalTeori(false)}
-                className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-extrabold text-sm flex items-center justify-center gap-2 cursor-pointer shadow-xl transition"
+                className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-extrabold text-sm flex items-center justify-center gap-2 cursor-pointer shadow-xl"
               >
-                <Check className="w-5 h-5 stroke-[2.5]" /> Saya Paham! Mulai Rakit &amp; Koding Sekarang
+                <Check className="w-5 h-5 stroke-[2.5]" /> Siap Mengerti! Mulai Merakit ({totalKomponenWajib} Komponen)
               </button>
             </div>
           </div>
@@ -997,17 +1713,13 @@ export const WokwiStepByStepAcademy: React.FC<{
           <div className="space-y-1.5">
             <div className="flex flex-wrap items-center gap-2">
               <span className="px-3 py-1 rounded-full bg-emerald-400 text-slate-950 font-bold text-xs">
-                🎓 Akademi Aplikasi IoT HibahIlmu ({daftarKurikulumExtended.length} Level)
+                🎓 Akademi IoT HibahIlmu ({daftarKurikulumExtended.length} Level)
               </span>
               <span className="px-3 py-1 rounded-full bg-sky-500/20 border border-sky-400/50 text-sky-300 font-semibold text-xs">
-                {jmlSlot === 1
-                  ? "⚡ Standalone 1-ESP32 (Tanpa Kabel Luar)"
-                  : jmlSlot === 2
-                  ? "🔌 2-Slot (ESP32 + 1 Komponen)"
-                  : "🛠️ 3-Slot (Multi-Komponen)"}
+                Rakit Bertahap: {jumlahKomponenTerpasangSaatIni} / {totalKomponenWajib} Komponen Terpasang
               </span>
               <span className="px-3 py-1 rounded-full bg-amber-400/20 border border-amber-400/50 text-amber-300 font-semibold text-xs">
-                Progres: {levelSelesaiSet.size} / {daftarKurikulumExtended.length} Selesai
+                Kabel: {kabelTerpasangList.length} / {semuaSambunganWajibLevelIni.length} Tersambung
               </span>
             </div>
             <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
@@ -1021,7 +1733,7 @@ export const WokwiStepByStepAcademy: React.FC<{
               onClick={() => setTampilModalTeori(true)}
               className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md"
             >
-              <BookOpen className="w-4 h-4" /> 📖 Buka Animasi Dasar Teori
+              <BookOpen className="w-4 h-4" /> 📖 Buka Pop-Up Teori &amp; Animasi
             </button>
 
             <div className="flex items-center gap-1.5 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
@@ -1123,7 +1835,7 @@ export const WokwiStepByStepAcademy: React.FC<{
           <div className="flex items-center gap-2">
             <Move className="w-4 h-4 text-amber-400" />
             <span className="text-sm font-bold text-amber-300">
-              Gudang Komponen ({GUDANG_KOMPONEN_48_MASTER.length} Perangkat Beranimasi):
+              Gudang Komponen (Tarik Satu per Satu ke Slot #1 s.d. Slot #{totalKomponenWajib} di Bawah):
             </span>
           </div>
 
@@ -1132,35 +1844,18 @@ export const WokwiStepByStepAcademy: React.FC<{
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
               <input
                 type="text"
-                placeholder="Cari ESP32, LED, NPK, Pompa, RFID..."
+                placeholder="Cari ESP32, LED, Resistor, NPK, Pompa..."
                 value={kataCariGudang}
                 onChange={(e) => setKataCariGudang(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
               />
             </div>
 
-            {modeBelajar === "latihan_mandiri" && (
-              <button
-                type="button"
-                onClick={() => {
-                  setJumlahClueDibuka((c) =>
-                    Math.min(spekHardware.daftarClueLatihan.length, c + 1)
-                  );
-                  if (jumlahClueDibuka >= 1) setIntipBayanganSementara(true);
-                }}
-                className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer"
-              >
-                <HelpCircle className="w-4 h-4" /> Butuh Clue ({jumlahClueDibuka}/
-                {spekHardware.daftarClueLatihan.length})
-              </button>
-            )}
-
             <button
               type="button"
               onClick={() => {
                 setSlot1Esp32Terpasang(false);
-                setSlot2SensorTerpasang(false);
-                setSlot3AktuatorTerpasang(false);
+                setSlotPeriferalTerpasangMap({});
                 setKabelTerpasangList([]);
                 setPinAwalDiklik(null);
                 setPinYangSalahAtauKurangIds([]);
@@ -1196,20 +1891,20 @@ export const WokwiStepByStepAcademy: React.FC<{
 
         <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-8 lg:grid-cols-10 gap-2.5 max-h-56 overflow-y-auto pr-1 pt-1">
           {daftarGudangTerfilter.map((item) => {
-            const dibutuhkanEsp32 =
-              item.cocokUntukDropZone === "esp32_board" && !slot1Esp32Terpasang;
-            const dibutuhkanPeriferal =
-              jmlSlot >= 2 &&
-              item.cocokUntukDropZone !== "esp32_board" &&
-              (item.cocokUntukDropZone === spekHardware.tipeVisualPeriferal ||
-                item.levelTerkait.includes(materiAktif.level)) &&
-              (!slot2SensorTerpasang ||
-                (jmlSlot === 3 && !slot3AktuatorTerpasang));
+            const teksItem = `${item.id} ${item.nama}`.toLowerCase();
+            const sorotUntukSlot1 =
+              !slot1Esp32Terpasang &&
+              item.cocokUntukDropZone === "esp32_board";
+            const sorotUntukSlotBerikutnya =
+              slot1Esp32Terpasang &&
+              slotPeriferalKosongBerikutnya &&
+              slotPeriferalKosongBerikutnya.kataKunciCocokGudang.some((kw) =>
+                teksItem.includes(kw)
+              );
 
             const harusDisorotBerkedip =
               tampilkanBayanganPanduan &&
-              (dibutuhkanEsp32 ||
-                (slot1Esp32Terpasang && dibutuhkanPeriferal));
+              (sorotUntukSlot1 || sorotUntukSlotBerikutnya);
 
             const sedangTerpilihDrag = itemSedangDiDrag?.id === item.id;
 
@@ -1220,7 +1915,7 @@ export const WokwiStepByStepAcademy: React.FC<{
                 onDragStart={() => {
                   setItemSedangDiDrag(item);
                   setPesanGudang(
-                    `📦 Menarik '${item.nama}'... Jatuhkan ke Slot yang berkedip di meja kanvas bawah!`
+                    `📦 Menarik '${item.nama}'... Jatuhkan tepat ke kotak Slot yang sesuai di kanvas bawah!`
                   );
                 }}
                 onClick={() => handleKlikKartuGudang(item)}
@@ -1260,7 +1955,9 @@ export const WokwiStepByStepAcademy: React.FC<{
         </div>
       </div>
 
-      {/* MEJA KANVAS ADAPTIF */}
+      {/* =================================================================== */}
+      {/* MEJA KANVAS MULTI-SLOT BERTAHAP (TIAP SLOT DITAMPILKAN MANDIRI!)    */}
+      {/* =================================================================== */}
       <div
         ref={kanvasContainerRef}
         className={`bg-[#090d16] rounded-3xl border-2 p-4 relative overflow-hidden shadow-2xl transition ${
@@ -1273,84 +1970,74 @@ export const WokwiStepByStepAcademy: React.FC<{
             : "border-slate-800"
         }`}
       >
-        <div
-          className={`mb-3 grid grid-cols-1 ${
-            jmlSlot === 1
-              ? "sm:grid-cols-1"
-              : jmlSlot === 2
-              ? "sm:grid-cols-2"
-              : "sm:grid-cols-3"
-          } gap-2.5 text-xs`}
-        >
+        {/* Baris Indikator Semua Slot (1, 2, 3, atau 4 Slot Sesuai Modul!) */}
+        <div className="mb-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
+          {/* Indikator Slot #1: Selalu ESP32 */}
           <div
             onClick={() => {
-              if (itemSedangDiDrag) handleDropKeSlotKanvas("slot1_esp32");
+              if (itemSedangDiDrag) handleDropKeSlotTertentu(1);
             }}
-            className={`px-3.5 py-2.5 rounded-xl border font-semibold flex items-center justify-between cursor-pointer ${
+            className={`px-3 py-2 rounded-xl border font-semibold flex items-center justify-between cursor-pointer ${
               slot1Esp32Terpasang
                 ? "bg-emerald-950/60 border-emerald-500/60 text-emerald-300"
                 : "bg-amber-950/40 border-amber-400 text-amber-200 animate-pulse"
             }`}
           >
-            <span>1. {materiAktif.komponenDimasukkan[0]?.namaKomponen}</span>
-            <span>
-              {slot1Esp32Terpasang
-                ? "✓ ESP32 Terpasang"
-                : "📦 Tarik ESP32 ke Slot 1"}
+            <span className="truncate">Slot #1: ESP32 DevKit V1</span>
+            <span className="shrink-0 ml-1">
+              {slot1Esp32Terpasang ? "✓ Terpasang" : "📦 Tarik ke Sini"}
             </span>
           </div>
 
-          {jmlSlot >= 2 && (
-            <div
-              onClick={() => {
-                if (itemSedangDiDrag) handleDropKeSlotKanvas("slot2_sensor");
-              }}
-              className={`px-3.5 py-2.5 rounded-xl border font-semibold flex items-center justify-between cursor-pointer ${
-                slot2SensorTerpasang
-                  ? "bg-emerald-950/60 border-emerald-500/60 text-emerald-300"
-                  : "bg-sky-950/40 border-sky-400 text-sky-200 animate-pulse"
-              }`}
-            >
-              <span className="truncate">
-                2.{" "}
-                {namaKomponenSlot2 ||
-                  materiAktif.komponenDimasukkan[1]?.namaKomponen}
-              </span>
-              <span className="shrink-0 ml-1">
-                {slot2SensorTerpasang ? "✓ Terpasang" : "📦 Tarik ke Slot 2"}
-              </span>
-            </div>
-          )}
-
-          {jmlSlot >= 3 && (
-            <div
-              onClick={() => {
-                if (itemSedangDiDrag) handleDropKeSlotKanvas("slot3_aktuator");
-              }}
-              className={`px-3.5 py-2.5 rounded-xl border font-semibold flex items-center justify-between cursor-pointer ${
-                slot3AktuatorTerpasang
-                  ? "bg-emerald-950/60 border-emerald-500/60 text-emerald-300"
-                  : "bg-purple-950/40 border-purple-400 text-purple-200 animate-pulse"
-              }`}
-            >
-              <span className="truncate">
-                3.{" "}
-                {namaKomponenSlot3 ||
-                  materiAktif.komponenDimasukkan[2]?.namaKomponen ||
-                  "Komponen Output / Aktuator"}
-              </span>
-              <span className="shrink-0 ml-1">
-                {slot3AktuatorTerpasang ? "✓ Terpasang" : "📦 Tarik ke Slot 3"}
-              </span>
-            </div>
-          )}
+          {/* Indikator Slot #2, #3, #4 secara Independen */}
+          {daftarSlotPeriferal.map((slot) => {
+            const sudah = slotPeriferalTerpasangMap[slot.nomorSlot]?.terpasang;
+            return (
+              <div
+                key={slot.nomorSlot}
+                onClick={() => {
+                  if (itemSedangDiDrag)
+                    handleDropKeSlotTertentu(slot.nomorSlot);
+                }}
+                className={`px-3 py-2 rounded-xl border font-semibold flex items-center justify-between cursor-pointer ${
+                  sudah
+                    ? "bg-emerald-950/60 border-emerald-500/60 text-emerald-300"
+                    : "bg-sky-950/40 border-sky-400 text-sky-200 animate-pulse"
+                }`}
+              >
+                <span className="truncate">
+                  Slot #{slot.nomorSlot}: {slot.namaTarget}
+                </span>
+                <span className="shrink-0 ml-1">
+                  {sudah ? "✓ Terpasang" : "📦 Tarik ke Sini"}
+                </span>
+              </div>
+            );
+          })}
         </div>
 
-        {statusVerifikasi === "gagal_rangkaian" && (
-          <div className="mb-3 px-4 py-2.5 rounded-xl bg-rose-600 text-white font-bold text-xs flex items-center justify-between gap-2 animate-pulse">
-            <span>🚨 Letak Kesalahan Rangkaian: {daftarErrorDetail[0]}</span>
-          </div>
-        )}
+        {/* Banner Panduan Langkah Saat Ini */}
+        <div className="mb-3 px-4 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs font-semibold text-amber-300 flex justify-between items-center">
+          <span>
+            {pesanGudang ||
+              (!slot1Esp32Terpasang
+                ? `👉 Langkah 1/${totalKomponenWajib}: Tarik 'ESP32 DevKit V1' dari Gudang ke kotak [Slot #1] di sebelah kiri!`
+                : slotPeriferalKosongBerikutnya
+                ? `👉 Langkah Berikutnya: Tarik '${slotPeriferalKosongBerikutnya.namaTarget}' dari Gudang ke kotak [Slot #${slotPeriferalKosongBerikutnya.nomorSlot}] di sebelah kanan!`
+                : sambunganBerkedipTarget
+                ? `🔌 Sekarang Pasang Kabel: ${sambunganBerkedipTarget.keteranganJalur}!`
+                : `✅ Seluruh ${totalKomponenWajib} Komponen & ${semuaSambunganWajibLevelIni.length} Kabel Lengkap! Ketik kode C++ di bawah.`)}
+          </span>
+          {kabelTerpasangList.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setKabelTerpasangList([])}
+              className="px-2.5 py-1 rounded bg-rose-950 text-rose-300 text-[11px] flex items-center gap-1 cursor-pointer shrink-0"
+            >
+              <Trash2 className="w-3 h-3" /> Lepas Kabel
+            </button>
+          )}
+        </div>
 
         <svg
           ref={svgRef}
@@ -1373,25 +2060,27 @@ export const WokwiStepByStepAcademy: React.FC<{
             ))
           )}
 
-          {/* SLOT 1 (KIRI): PAPAN MIKROKONTROLER ESP32 */}
+          {/* =============================================================== */}
+          {/* SLOT #1 (KIRI): PAPAN MIKROKONTROLER ESP32                      */}
+          {/* =============================================================== */}
           {!slot1Esp32Terpasang ? (
             <g
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => {
                 e.preventDefault();
-                handleDropKeSlotKanvas("slot1_esp32");
+                handleDropKeSlotTertentu(1);
               }}
               onClick={() => {
-                if (itemSedangDiDrag) handleDropKeSlotKanvas("slot1_esp32");
+                if (itemSedangDiDrag) handleDropKeSlotTertentu(1);
                 else setSlot1Esp32Terpasang(true);
               }}
               className="cursor-pointer"
             >
               <rect
                 x={42}
-                y={28}
+                y={24}
                 width={136}
-                height={198}
+                height={204}
                 rx={14}
                 fill="rgba(250, 204, 21, 0.08)"
                 stroke="#facc15"
@@ -1413,7 +2102,7 @@ export const WokwiStepByStepAcademy: React.FC<{
                 fontSize="10"
                 fontWeight="bold"
               >
-                📦 SLOT 1 (MCU):
+                📦 SLOT #1 (MCU):
               </text>
               <text
                 x={110}
@@ -1432,16 +2121,16 @@ export const WokwiStepByStepAcademy: React.FC<{
                 fill="#94a3b8"
                 fontSize="8.5"
               >
-                (Tarik dari Gudang / Klik)
+                (Drop ESP32 ke Sini)
               </text>
             </g>
           ) : (
             <g>
               <rect
                 x={50}
-                y={28}
+                y={24}
                 width={120}
-                height={198}
+                height={204}
                 rx={10}
                 fill="#1e293b"
                 stroke="#64748b"
@@ -1449,16 +2138,16 @@ export const WokwiStepByStepAcademy: React.FC<{
               />
               <rect
                 x={74}
-                y={38}
+                y={34}
                 width={72}
-                height={52}
+                height={50}
                 rx={5}
                 fill="#cbd5e1"
                 stroke="#475569"
               />
               <text
                 x={110}
-                y={62}
+                y={58}
                 textAnchor="middle"
                 fill="#0f172a"
                 fontSize="8.5"
@@ -1468,29 +2157,12 @@ export const WokwiStepByStepAcademy: React.FC<{
               </text>
 
               <circle cx={92} cy={196} r={4} fill="#ef4444" />
-              {(simulasiAktif || jmlSlot === 1) &&
-                detakSimulasi % 2 === 0 &&
-                blynkVirtualV0 && (
-                  <circle
-                    cx={126}
-                    cy={196}
-                    r={18}
-                    fill="rgba(56, 189, 248, 0.45)"
-                  >
-                    <animate
-                      attributeName="r"
-                      values="10;22;10"
-                      dur="0.8s"
-                      repeatCount="indefinite"
-                    />
-                  </circle>
-                )}
               <circle
                 cx={126}
                 cy={196}
                 r={5.5}
                 fill={
-                  (simulasiAktif || jmlSlot === 1) &&
+                  (simulasiAktif || daftarSlotPeriferal.length === 0) &&
                   detakSimulasi % 2 === 0 &&
                   blynkVirtualV0
                     ? "#38bdf8"
@@ -1508,7 +2180,7 @@ export const WokwiStepByStepAcademy: React.FC<{
                 fill="#94a3b8"
               />
 
-              {spekHardware.pinEsp32Tersedia.map((pin) => {
+              {PIN_FISIK_ESP32_STANDAR.map((pin) => {
                 const sedangDipegang = pinAwalDiklik?.idPin === pin.idPin;
                 const harusBerkedip =
                   tampilkanBayanganPanduan &&
@@ -1529,14 +2201,14 @@ export const WokwiStepByStepAcademy: React.FC<{
                       <circle
                         cx={pin.x}
                         cy={pin.y}
-                        r={16}
+                        r={15}
                         fill="rgba(244, 63, 94, 0.35)"
                         stroke="#f43f5e"
-                        strokeWidth={3.5}
+                        strokeWidth={3}
                       >
                         <animate
                           attributeName="r"
-                          values="7;18;7"
+                          values="7;17;7"
                           dur="0.6s"
                           repeatCount="indefinite"
                         />
@@ -1612,8 +2284,8 @@ export const WokwiStepByStepAcademy: React.FC<{
             </g>
           )}
 
-          {/* VISUAL STANDALONE 1-ESP32 HIBAHILMU-GUEST */}
-          {jmlSlot === 1 && slot1Esp32Terpasang && (
+          {/* VISUAL KHUSUS STANDALONE 1-ESP32 */}
+          {daftarSlotPeriferal.length === 0 && slot1Esp32Terpasang && (
             <g>
               <path
                 d="M 135 196 C 210 196, 230 125, 295 125"
@@ -1671,138 +2343,139 @@ export const WokwiStepByStepAcademy: React.FC<{
             </g>
           )}
 
-          {/* SLOT 2 & SLOT 3 */}
-          {jmlSlot >= 2 && !slot2SensorTerpasang && (
-            <g
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault();
-                handleDropKeSlotKanvas("slot2_sensor");
-              }}
-              onClick={() => {
-                if (itemSedangDiDrag) handleDropKeSlotKanvas("slot2_sensor");
-                else setSlot2SensorTerpasang(true);
-              }}
-              className="cursor-pointer"
-            >
-              <rect
-                x={345}
-                y={jmlSlot === 2 ? 42 : 24}
-                width={205}
-                height={jmlSlot === 2 ? 165 : 92}
-                rx={14}
-                fill="rgba(56, 189, 248, 0.08)"
-                stroke="#38bdf8"
-                strokeWidth={2.5}
-                strokeDasharray="7 5"
-              >
-                <animate
-                  attributeName="opacity"
-                  values="0.35;1;0.35"
-                  dur="0.9s"
-                  repeatCount="indefinite"
-                />
-              </rect>
-              <text
-                x={447}
-                y={jmlSlot === 2 ? 108 : 62}
-                textAnchor="middle"
-                fill="#38bdf8"
-                fontSize="9.5"
-                fontWeight="bold"
-              >
-                📦 SLOT 2 (KOMPONEN EKSTERNAL):
-              </text>
-              <text
-                x={447}
-                y={jmlSlot === 2 ? 128 : 80}
-                textAnchor="middle"
-                fill="#ffffff"
-                fontSize="9.5"
-                fontWeight="bold"
-              >
-                {materiAktif.komponenDimasukkan[1]?.namaKomponen.replace(
-                  "Slot 2: ",
-                  ""
-                )}
-              </text>
-            </g>
-          )}
+          {/* =============================================================== */}
+          {/* RENDER TIAP SLOT PERIFERAL SECARA MANDIRI (SLOT #2, #3, #4)     */}
+          {/* HANYA SLOT YANG SUDAH DITARIK YANG MUNCUL GAMBAR & PINNYA!      */}
+          {/* =============================================================== */}
+          {daftarSlotPeriferal.map((slot) => {
+            const infoTerpasang = slotPeriferalTerpasangMap[slot.nomorSlot];
+            const sudahTerpasang = Boolean(infoTerpasang?.terpasang);
 
-          {jmlSlot >= 3 && !slot3AktuatorTerpasang && (
-            <g
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault();
-                handleDropKeSlotKanvas("slot3_aktuator");
-              }}
-              onClick={() => {
-                if (itemSedangDiDrag) handleDropKeSlotKanvas("slot3_aktuator");
-                else setSlot3AktuatorTerpasang(true);
-              }}
-              className="cursor-pointer"
-            >
-              <rect
-                x={345}
-                y={130}
-                width={205}
-                height={95}
-                rx={14}
-                fill="rgba(168, 85, 247, 0.08)"
-                stroke="#a855f7"
-                strokeWidth={2.5}
-                strokeDasharray="7 5"
-              >
-                <animate
-                  attributeName="opacity"
-                  values="0.35;1;0.35"
-                  dur="0.9s"
-                  repeatCount="indefinite"
-                />
-              </rect>
-              <text
-                x={447}
-                y={168}
-                textAnchor="middle"
-                fill="#c084fc"
-                fontSize="9.5"
-                fontWeight="bold"
-              >
-                📦 SLOT 3 (KOMPONEN KEDUA):
-              </text>
-              <text
-                x={447}
-                y={186}
-                textAnchor="middle"
-                fill="#ffffff"
-                fontSize="9.5"
-                fontWeight="bold"
-              >
-                {(
-                  materiAktif.komponenDimasukkan[2]?.namaKomponen ||
-                  "Komponen Kedua"
-                ).replace("Slot 3: ", "")}
-              </text>
-            </g>
-          )}
+            if (!sudahTerpasang) {
+              // Tampilkan Kotak Bayangan Kosong untuk Slot Ini
+              return (
+                <g
+                  key={slot.nomorSlot}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    handleDropKeSlotTertentu(slot.nomorSlot);
+                  }}
+                  onClick={() => {
+                    if (itemSedangDiDrag)
+                      handleDropKeSlotTertentu(slot.nomorSlot);
+                    else
+                      setPesanGudang(
+                        `👆 Tarik (Drag) kartu '${slot.namaTarget}' dari Gudang Komponen di atas ke kotak Slot #${slot.nomorSlot} ini!`
+                      );
+                  }}
+                  className="cursor-pointer"
+                >
+                  <rect
+                    x={slot.boxX}
+                    y={slot.boxY}
+                    width={slot.boxW}
+                    height={slot.boxH}
+                    rx={12}
+                    fill="rgba(56, 189, 248, 0.07)"
+                    stroke={
+                      slotPeriferalKosongBerikutnya?.nomorSlot ===
+                      slot.nomorSlot
+                        ? "#facc15"
+                        : "#38bdf8"
+                    }
+                    strokeWidth={2}
+                    strokeDasharray="7 5"
+                  >
+                    <animate
+                      attributeName="opacity"
+                      values="0.4;1;0.4"
+                      dur="1s"
+                      repeatCount="indefinite"
+                    />
+                  </rect>
+                  <text
+                    x={slot.boxX + slot.boxW / 2}
+                    y={slot.boxY + slot.boxH / 2 - 6}
+                    textAnchor="middle"
+                    fill="#38bdf8"
+                    fontSize="9.5"
+                    fontWeight="bold"
+                  >
+                    📦 SLOT #{slot.nomorSlot} (BELUM DITARIK):
+                  </text>
+                  <text
+                    x={slot.boxX + slot.boxW / 2}
+                    y={slot.boxY + slot.boxH / 2 + 11}
+                    textAnchor="middle"
+                    fill="#ffffff"
+                    fontSize="9.5"
+                    fontWeight="bold"
+                  >
+                    {slot.namaTarget}
+                  </text>
+                </g>
+              );
+            }
 
-          {jmlSlot >= 2 &&
-            slot2SensorTerpasang &&
-            (jmlSlot === 2 || slot3AktuatorTerpasang) && (
-              <g>
-                <GambarPeriferalWokwiAsli
-                  tipe={spekHardware.tipeVisualPeriferal}
-                  simulasiHidup={simulasiAktif || semuaKomponenSudahDitaruh}
-                  detak={detakSimulasi}
-                  nilaiSensorUji={fisika.luxCahaya}
-                  fisika={fisika}
+            // Jika Slot Ini SUDAH Ditarik -> Gambar Komponen Spesifik Slot Ini + Titik Kaki Pinnya!
+            return (
+              <g key={slot.nomorSlot}>
+                <rect
+                  x={slot.boxX}
+                  y={slot.boxY}
+                  width={slot.boxW}
+                  height={slot.boxH}
+                  rx={12}
+                  fill={simulasiAktif ? "#064e3b" : "#111827"}
+                  stroke={simulasiAktif ? "#34d399" : "#475569"}
+                  strokeWidth={2}
                 />
 
-                {spekHardware.pinPeriferalTersedia.map((pin) => {
+                {/* Render Ikon SVG Komponen yang Ditarik di Dalam Kotak Slot */}
+                <svg
+                  x={slot.boxX + 18}
+                  y={slot.boxY + 6}
+                  width={68}
+                  height={slot.boxH - 12}
+                  viewBox="0 0 64 56"
+                >
+                  <MiniaturSvgGudang48
+                    idItem={infoTerpasang.idKartu || slot.idGambarMiniatur}
+                    namaItem={infoTerpasang.namaKartu || slot.namaTarget}
+                    nilaiOhmResistor={fisika.nilaiOhmResistor}
+                  />
+                </svg>
+
+                {/* Nama & Status Komponen di Slot Ini */}
+                <text
+                  x={slot.boxX + 92}
+                  y={slot.boxY + slot.boxH / 2 - 4}
+                  fill="#ffffff"
+                  fontSize="9.5"
+                  fontWeight="bold"
+                >
+                  {infoTerpasang.namaKartu || slot.namaTarget}
+                </text>
+                <text
+                  x={slot.boxX + 92}
+                  y={slot.boxY + slot.boxH / 2 + 12}
+                  fill={simulasiAktif ? "#fde047" : "#34d399"}
+                  fontSize="8.5"
+                  fontWeight="bold"
+                >
+                  {simulasiAktif
+                    ? "⚡ AKTIF BERJALAN!"
+                    : `✓ Slot #${slot.nomorSlot} Siap Disambung`}
+                </text>
+
+                {/* Titik Kaki Pin Milik Slot Ini */}
+                {slot.daftarPinSlotIni.map((pin) => {
                   const sedangDipegang = pinAwalDiklik?.idPin === pin.idPin;
                   const harusBerkedip =
                     tampilkanBayanganPanduan &&
-                    pinPerifBerkedipObj?.idPin === pin.idPin;
+                    semuaKomponenSudahDitaruh &&
+                    sambunganBerkedipTarget?.idPinPeriferal === pin.idPin;
                   const adalahPinSalah = pinYangSalahAtauKurangIds.includes(
                     pin.idPin
                   );
@@ -1817,14 +2490,14 @@ export const WokwiStepByStepAcademy: React.FC<{
                         <circle
                           cx={pin.x}
                           cy={pin.y}
-                          r={16}
+                          r={15}
                           fill="rgba(244, 63, 94, 0.35)"
                           stroke="#f43f5e"
-                          strokeWidth={3.5}
+                          strokeWidth={3}
                         >
                           <animate
                             attributeName="r"
-                            values="7;18;7"
+                            values="7;17;7"
                             dur="0.6s"
                             repeatCount="indefinite"
                           />
@@ -1848,10 +2521,10 @@ export const WokwiStepByStepAcademy: React.FC<{
                         </circle>
                       )}
                       <rect
-                        x={pin.x - 68}
-                        y={pin.y - 22}
-                        width={66}
-                        height={14}
+                        x={pin.x - 82}
+                        y={pin.y - 8}
+                        width={74}
+                        height={15}
                         rx={3}
                         fill={
                           adalahPinSalah
@@ -1860,11 +2533,12 @@ export const WokwiStepByStepAcademy: React.FC<{
                             ? "#facc15"
                             : "#0f172a"
                         }
+                        stroke="#334155"
                         opacity={0.95}
                       />
                       <text
-                        x={pin.x - 35}
-                        y={pin.y - 12}
+                        x={pin.x - 45}
+                        y={pin.y + 2.5}
                         textAnchor="middle"
                         fill={
                           adalahPinSalah
@@ -1873,7 +2547,7 @@ export const WokwiStepByStepAcademy: React.FC<{
                             ? "#0f172a"
                             : "#f8fafc"
                         }
-                        fontSize="7.8"
+                        fontSize="7.5"
                         fontWeight="bold"
                       >
                         {pin.labelPin}
@@ -1898,26 +2572,28 @@ export const WokwiStepByStepAcademy: React.FC<{
                   );
                 })}
               </g>
-            )}
+            );
+          })}
 
+          {/* GARIS BAYANGAN PANDUAN TARIK KABEL */}
           {semuaKomponenSudahDitaruh &&
             tampilkanBayanganPanduan &&
             pinEspBerkedipObj &&
-            pinPerifBerkedipObj && (
+            sambunganBerkedipTarget && (
               <path
                 pointerEvents="none"
                 d={`M ${pinEspBerkedipObj.x} ${pinEspBerkedipObj.y} C ${
-                  (pinEspBerkedipObj.x + pinPerifBerkedipObj.x) / 2
-                } ${pinEspBerkedipObj.y - 25}, ${
-                  (pinEspBerkedipObj.x + pinPerifBerkedipObj.x) / 2
-                } ${pinPerifBerkedipObj.y + 25}, ${pinPerifBerkedipObj.x} ${
-                  pinPerifBerkedipObj.y
-                }`}
+                  (pinEspBerkedipObj.x + sambunganBerkedipTarget.x) / 2
+                } ${pinEspBerkedipObj.y - 20}, ${
+                  (pinEspBerkedipObj.x + sambunganBerkedipTarget.x) / 2
+                } ${sambunganBerkedipTarget.y + 20}, ${
+                  sambunganBerkedipTarget.x
+                } ${sambunganBerkedipTarget.y}`}
                 fill="none"
                 stroke="#facc15"
                 strokeWidth={3.5}
                 strokeDasharray="7 6"
-                opacity={0.75}
+                opacity={0.8}
               >
                 <animate
                   attributeName="stroke-dashoffset"
@@ -1929,6 +2605,7 @@ export const WokwiStepByStepAcademy: React.FC<{
               </path>
             )}
 
+          {/* KABEL MENGIKUTI KURSOR MOUSE SAAT TITIK 1 DIKLIK */}
           {pinAwalDiklik && (
             <path
               pointerEvents="none"
@@ -1944,20 +2621,19 @@ export const WokwiStepByStepAcademy: React.FC<{
             />
           )}
 
+          {/* KABEL JUMPER YANG SUDAH TERSAMBUNG */}
           {kabelTerpasangList.map((k, idx) => {
-            const p1 = spekHardware.pinEsp32Tersedia.find(
+            const p1 = PIN_FISIK_ESP32_STANDAR.find(
               (p) => p.idPin === k.dariPinEsp32
             );
-            const p2 = spekHardware.pinPeriferalTersedia.find(
-              (p) => p.idPin === k.kePinPeriferal
+            const p2 = semuaSambunganWajibLevelIni.find(
+              (p) => p.idPinPeriferal === k.kePinPeriferal
             );
             if (!p1 || !p2) return null;
             const midX = (p1.x + p2.x) / 2;
-            const adalahKabelValid = spekHardware.sambunganWajib.some(
-              (w) =>
-                w.dariPinEsp32 === k.dariPinEsp32 &&
-                w.kePinPeriferal === k.kePinPeriferal
-            );
+            const adalahKabelValid =
+              p2.dariPinEsp32 === k.dariPinEsp32 &&
+              p2.idPinPeriferal === k.kePinPeriferal;
 
             return (
               <g key={idx} pointerEvents="none">
@@ -2090,48 +2766,20 @@ export const WokwiStepByStepAcademy: React.FC<{
                 }
                 className="w-full"
               />
-              <div className="flex gap-1.5 pt-1">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFisika((f) => ({
-                      ...f,
-                      rfidKartuDekat: !f.rfidKartuDekat,
-                    }))
-                  }
-                  className={`flex-1 py-1 rounded text-[10px] font-bold cursor-pointer ${
-                    fisika.rfidKartuDekat
-                      ? "bg-sky-600 text-white"
-                      : "bg-slate-800 text-slate-400"
-                  }`}
-                >
-                  🪪 {fisika.rfidKartuDekat ? "RFID: Dekat" : "RFID: Jauh"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFisika((f) => ({ ...f, pirAdaOrang: !f.pirAdaOrang }))
-                  }
-                  className={`flex-1 py-1 rounded text-[10px] font-bold cursor-pointer ${
-                    fisika.pirAdaOrang
-                      ? "bg-emerald-600 text-white"
-                      : "bg-slate-800 text-slate-400"
-                  }`}
-                >
-                  🚶 {fisika.pirAdaOrang ? "PIR: Orang" : "PIR: Sepi"}
-                </button>
-              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* INSTRUKSI & EDITOR KODE */}
+      {/* =================================================================== */}
+      {/* BAGIAN BAWAH: PANEL KIRI (DASAR TEORI + CHECKLIST SLOT + INSTRUKSI) */}
+      {/* Tetap tampil lengkap walaupun Pop-Up Modal sudah di-close!          */}
+      {/* =================================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <div className="lg:col-span-6 space-y-4">
           <div className="p-5 sm:p-6 rounded-2xl bg-slate-950 border border-slate-800 space-y-4 text-sm">
-            <div className="flex justify-between items-center">
-              <span className="px-3 py-1 rounded-lg bg-amber-400 text-slate-950 font-bold text-xs">
+            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+              <span className="px-3 py-1 rounded-lg bg-amber-400 text-slate-950 font-extrabold text-xs">
                 {materiAktif.badgeLevel}
               </span>
               <button
@@ -2139,43 +2787,98 @@ export const WokwiStepByStepAcademy: React.FC<{
                 onClick={() => setTampilModalTeori(true)}
                 className="text-xs font-bold text-sky-400 hover:underline flex items-center gap-1 cursor-pointer"
               >
-                <BookOpen className="w-3.5 h-3.5" /> Lihat Animasi Teori
+                <BookOpen className="w-3.5 h-3.5" /> Perbesar Pop-Up Teori
               </button>
             </div>
 
-            <p className="text-slate-200 bg-slate-900 p-4 rounded-xl border border-slate-800 leading-relaxed">
-              <strong className="text-amber-300">🎯 Tujuan Praktikum:</strong>{" "}
-              {bersihkanKeHibahIlmu(materiAktif.tujuanBelajar)}
-            </p>
-
-            <div className="space-y-2">
-              <div className="font-bold text-sky-400 text-xs uppercase tracking-wider">
-                1. Sambungan Kabel Pin yang Diminta:
+            {/* 1. Dasar Teori & Analogi Permanen di Sebelah Kiri */}
+            <div className="p-4 rounded-xl bg-slate-900 border border-emerald-500/30 space-y-2">
+              <div className="font-bold text-emerald-400 text-xs uppercase flex items-center gap-1.5">
+                <Lightbulb className="w-4 h-4 text-amber-400" /> 1. Penjelasan Dasar Teori &amp; Analogi Mudah:
               </div>
-              {spekHardware.sambunganWajib.length === 0 ? (
+              <p className="text-slate-200 text-xs sm:text-sm leading-relaxed">
+                {blueprintLevelIni.analogiMudahPaham}
+              </p>
+              <p className="text-slate-400 text-xs leading-relaxed pt-1 border-t border-slate-800">
+                {bersihkanKeHibahIlmu(materiAktif.penjelasanTeoriSingkat)}
+              </p>
+            </div>
+
+            {/* 2. Checklist Komponen yang Wajib Ditarik Bertahap */}
+            <div className="space-y-2">
+              <div className="font-bold text-amber-300 text-xs uppercase">
+                2. Checklist Merakit {totalKomponenWajib} Komponen (Tarik Satu per Satu):
+              </div>
+              <div className="space-y-1.5 text-xs">
+                <div
+                  className={`p-2.5 rounded-xl border flex justify-between items-center ${
+                    slot1Esp32Terpasang
+                      ? "bg-emerald-950/40 border-emerald-500/50 text-emerald-300"
+                      : "bg-slate-900 border-slate-800 text-slate-300"
+                  }`}
+                >
+                  <span>
+                    {slot1Esp32Terpasang ? "✅" : "⬜"} <strong>Slot #1:</strong>{" "}
+                    ESP32 DevKit V1 (30P)
+                  </span>
+                  <span className="font-bold text-[10px]">
+                    {slot1Esp32Terpasang ? "SUDAH DITARIK" : "BELUM DITARIK"}
+                  </span>
+                </div>
+
+                {daftarSlotPeriferal.map((s) => {
+                  const sudah =
+                    slotPeriferalTerpasangMap[s.nomorSlot]?.terpasang;
+                  return (
+                    <div
+                      key={s.nomorSlot}
+                      className={`p-2.5 rounded-xl border flex justify-between items-center ${
+                        sudah
+                          ? "bg-emerald-950/40 border-emerald-500/50 text-emerald-300"
+                          : "bg-slate-900 border-slate-800 text-slate-300"
+                      }`}
+                    >
+                      <span>
+                        {sudah ? "✅" : "⬜"} <strong>Slot #{s.nomorSlot}:</strong>{" "}
+                        {s.namaTarget}
+                      </span>
+                      <span className="font-bold text-[10px]">
+                        {sudah ? "SUDAH DITARIK" : "BELUM DITARIK"}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 3. Checklist Sambungan Kabel Pin */}
+            <div className="space-y-2">
+              <div className="font-bold text-sky-400 text-xs uppercase">
+                3. Checklist Sambungan Kabel Pin ({kabelTerpasangList.length}/
+                {semuaSambunganWajibLevelIni.length}):
+              </div>
+              {semuaSambunganWajibLevelIni.length === 0 ? (
                 <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 text-xs font-semibold">
-                  ✅ Materi Standalone 1-Board ESP32: Tidak memerlukan tarikan kabel keluar!
+                  ✅ Materi Standalone 1-Board ESP32: Tidak memerlukan kabel luar!
                 </div>
               ) : (
-                spekHardware.sambunganWajib.map((w, i) => {
+                semuaSambunganWajibLevelIni.map((w, i) => {
                   const sudah = kabelTerpasangList.some(
                     (k) =>
                       k.dariPinEsp32 === w.dariPinEsp32 &&
-                      k.kePinPeriferal === w.kePinPeriferal
+                      k.kePinPeriferal === w.idPinPeriferal
                   );
                   return (
                     <div
                       key={i}
-                      className={`p-3 rounded-xl border font-mono text-xs flex justify-between items-center ${
+                      className={`p-2.5 rounded-xl border font-mono text-xs flex justify-between items-center ${
                         sudah
                           ? "bg-emerald-950/40 border-emerald-500/50 text-emerald-300"
-                          : statusVerifikasi === "gagal_rangkaian"
-                          ? "bg-rose-950/60 border-rose-500 text-rose-200"
                           : "bg-slate-900 border-slate-800 text-amber-300"
                       }`}
                     >
                       <span>
-                        {sudah ? "✅" : "🔌"} Jalur #{i + 1}: {w.keteranganJalur}
+                        {sudah ? "✅" : "🔌"} {w.keteranganJalur}
                       </span>
                       <span className="text-[10px] font-bold">
                         {sudah ? "TERSAMBUNG" : "BELUM"}
@@ -2186,9 +2889,10 @@ export const WokwiStepByStepAcademy: React.FC<{
               )}
             </div>
 
+            {/* 4. Instruksi Ketik Program C++ */}
             <div className="space-y-2 pt-1">
-              <div className="font-bold text-emerald-400 text-xs uppercase tracking-wider flex items-center gap-1.5">
-                <Code2 className="w-4 h-4" /> 2. Langkah-Langkah Ketik Program C++:
+              <div className="font-bold text-emerald-400 text-xs uppercase flex items-center gap-1.5">
+                <Code2 className="w-4 h-4" /> 4. Instruksi Ketik Program C++ di Sebelah Kanan:
               </div>
               <ol className="list-decimal list-inside space-y-2 text-slate-100 bg-emerald-950/25 p-4 rounded-xl border border-emerald-500/30 text-xs sm:text-sm leading-relaxed">
                 {materiAktif.instruksiKetik.map((inst, i) => (
@@ -2199,6 +2903,7 @@ export const WokwiStepByStepAcademy: React.FC<{
           </div>
         </div>
 
+        {/* KOLOM KANAN: EDITOR KODE C++ */}
         <div ref={editorContainerRef} className="lg:col-span-6 space-y-4">
           <div
             className={`bg-slate-950 rounded-2xl border-2 overflow-hidden shadow-xl transition ${
@@ -2221,12 +2926,22 @@ export const WokwiStepByStepAcademy: React.FC<{
                   type="button"
                   onClick={() => {
                     setSlot1Esp32Terpasang(true);
-                    setSlot2SensorTerpasang(true);
-                    setSlot3AktuatorTerpasang(true);
+                    const mapPenuh: Record<
+                      number,
+                      { terpasang: boolean; namaKartu: string; idKartu: string }
+                    > = {};
+                    daftarSlotPeriferal.forEach((s) => {
+                      mapPenuh[s.nomorSlot] = {
+                        terpasang: true,
+                        namaKartu: s.namaTarget,
+                        idKartu: s.idGambarMiniatur,
+                      };
+                    });
+                    setSlotPeriferalTerpasangMap(mapPenuh);
                     setKabelTerpasangList(
-                      spekHardware.sambunganWajib.map((w) => ({
+                      semuaSambunganWajibLevelIni.map((w) => ({
                         dariPinEsp32: w.dariPinEsp32,
-                        kePinPeriferal: w.kePinPeriferal,
+                        kePinPeriferal: w.idPinPeriferal,
                         warna: w.warnaKabel,
                       }))
                     );
@@ -2238,7 +2953,7 @@ export const WokwiStepByStepAcademy: React.FC<{
                   }}
                   className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1 cursor-pointer"
                 >
-                  <Sparkles className="w-3.5 h-3.5" /> Isi Contoh Kode &amp; Rangkaian
+                  <Sparkles className="w-3.5 h-3.5" /> Bantuan Rakit &amp; Isi Kode
                 </button>
                 <button
                   type="button"
@@ -2303,7 +3018,7 @@ export const WokwiStepByStepAcademy: React.FC<{
                 onClick={periksaRangkaianDanJalankanProgram}
                 className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg"
               >
-                <Play className="w-4 h-4 fill-slate-950" /> 1. Periksa &amp; Jalankan Program
+                <Play className="w-4 h-4 fill-slate-950" /> 1. Periksa {totalKomponenWajib} Komponen &amp; Jalankan
               </button>
 
               {indeksLevel < daftarKurikulumExtended.length - 1 ? (
