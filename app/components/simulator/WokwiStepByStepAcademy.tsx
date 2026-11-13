@@ -6,7 +6,6 @@ import {
   ChevronRight,
   Play,
   Sparkles,
-  Code2,
   RotateCcw,
   Award,
   Lock,
@@ -16,7 +15,6 @@ import {
   Filter,
   Move,
   BookOpen,
-  Lightbulb,
 } from "lucide-react";
 import { KURIKULUM_15_LEVEL_IOT } from "./wokwiCurriculumData";
 import {
@@ -40,6 +38,10 @@ import {
   WokwiMultiSlotCanvas,
   KabelMultiPinTersambung,
 } from "./WokwiMultiSlotCanvas";
+import {
+  WokwiCodeAssistantPanel,
+  ekstrakChecklistBarisKode,
+} from "./WokwiCodeAssistantPanel";
 
 const DAFTAR_BAB_SILABUS: {
   id: KategoriKesulitanAcademy;
@@ -288,7 +290,6 @@ export const WokwiStepByStepAcademy: React.FC<{
     return cocokKategori && cocokKata;
   });
 
-  // VALIDASI KETAT SAAT DROP KOMPONEN (OLED TIDAK AKAN BISA MASUK KE SLOT LED!)
   const handleDropKeSlotTertentu = (nomorSlotTarget: number) => {
     if (!itemSedangDiDrag) return;
 
@@ -426,6 +427,44 @@ export const WokwiStepByStepAcademy: React.FC<{
     }
   };
 
+  // Fungsi Bantuan Rakit Semua Kaki & Kode (Sekaligus Mereset Error Merah!)
+  const jalankanBantuanRakitDanKode = () => {
+    setSlot1Esp32Terpasang(true);
+    const mapPenuh: Record<
+      number,
+      { terpasang: boolean; namaKartu: string; idKartu: string }
+    > = {};
+    daftarSlotPeriferal.forEach((s) => {
+      mapPenuh[s.nomorSlot] = {
+        terpasang: true,
+        namaKartu: s.namaTarget,
+        idKartu: s.idGambarMiniatur,
+      };
+    });
+    setSlotPeriferalTerpasangMap(mapPenuh);
+    setKabelTerpasangList(
+      semuaSambunganWajibLevelIni.map((w) => ({
+        pinAsalId: w.pinAsalId,
+        pinTujuanId: w.pinTujuanId,
+        warna: w.warnaKabel,
+      }))
+    );
+    setKodeKetikanUser(bersihkanKeHibahIlmu(materiAktif.kodeTargetBenar));
+    setBarisKodeSalahList([]);
+    setPinYangSalahAtauKurangIds([]);
+    setDaftarErrorDetail([]);
+    setStatusVerifikasi("belum");
+    setPesanGudang(
+      "✨ Seluruh komponen, kabel kaki pin, dan kode C++ yang tepat telah dipasang! Sekarang klik tombol hijau '1. Periksa Semua Kaki & Jalankan'!"
+    );
+    setOutputSerialSimulasi(
+      "// Rangkaian dan kode C++ sudah siap 100%! Klik tombol '1. Periksa Semua Kaki & Jalankan' di atas untuk menyalakan simulasi!"
+    );
+  };
+
+  // ==========================================================================
+  // VALIDATOR SINKRON 100% DENGAN CHECKLIST BARIS KODE DI KIRI!
+  // ==========================================================================
   const periksaRangkaianDanJalankanProgram = () => {
     const errors: string[] = [];
     const pinBermasalah: string[] = [];
@@ -449,7 +488,6 @@ export const WokwiStepByStepAcademy: React.FC<{
       }
     }
 
-    // Cek jika ada kabel merah (salah pasang) yang belum dihapus
     for (const terpasang of kabelTerpasangList) {
       const valid = semuaSambunganWajibLevelIni.some(
         (w) =>
@@ -460,7 +498,7 @@ export const WokwiStepByStepAcademy: React.FC<{
       );
       if (!valid) {
         errors.push(
-          `[ADA KABEL SALAH] Hapus dulu kabel yang salah (garis merah putus-putus) dengan mengklik tombol ✕ pada kabel tersebut!`
+          `[ADA KABEL SALAH] Hapus dulu kabel merah yang salah pasang dengan mengklik tombol ✕ pada kabel tersebut!`
         );
         pinBermasalah.push(terpasang.pinAsalId, terpasang.pinTujuanId);
       }
@@ -480,27 +518,35 @@ export const WokwiStepByStepAcademy: React.FC<{
       return;
     }
 
-    const kodeBersih = kodeKetikanUser
-      .replace(/\/\/.*$/gm, "")
-      .replace(/\/\*[\s\S]*?\*\//g, "")
-      .trim();
-
-    const kurangKw = materiAktif.kataKunciWajibAda.filter(
-      (kw) => !kodeBersih.includes(kw)
+    // Periksa kelengkapan baris kode berdasarkan checklist di panel kiri (toleran spasi)
+    const checklistBaris = ekstrakChecklistBarisKode(
+      materiAktif.kodeTargetBenar,
+      kodeKetikanUser,
+      bersihkanKeHibahIlmu
     );
-    if (kurangKw.length > 0) {
-      const msg = `Perintah wajib yang belum diketik: ${kurangKw
-        .map((k) => `"${k}"`)
-        .join(", ")}`;
-      errors.push(msg);
-      barisBermasalah.push({ nomorBaris: 4, pesanBaris: msg });
-    }
+    const barisBelumDiketik = checklistBaris.filter((b) => !b.sudahDiketik);
 
-    if (errors.length > 0) {
+    if (barisBelumDiketik.length > 0) {
+      barisBelumDiketik.forEach((b) => {
+        const msg = `Di dalam ${b.bagianFungsi}: kurang perintah '${b.kodePersis}' (Klik tombol '+ Sisipkan Baris Ini' di panel kiri!)`;
+        errors.push(msg);
+        barisBermasalah.push({
+          nomorBaris: b.bagianFungsi === "void setup()" ? 3 : 8,
+          pesanBaris: msg,
+        });
+      });
+
       setStatusVerifikasi("gagal_kode");
       setDaftarErrorDetail(errors);
       setBarisKodeSalahList(barisBermasalah);
       picuGetaranMerahKodingan();
+      setOutputSerialSimulasi(
+        `[COMPILER CHECK — MASIH ADA ${barisBelumDiketik.length} BARIS KODE YANG KURANG]\n--------------------------------------------------\n${errors
+          .map((e, i) => `❌ ${i + 1}. ${e}`)
+          .join(
+            "\n"
+          )}\n--------------------------------------------------\n💡 Tips Mudah: Klik tombol '+ Sisipkan Baris Ini' pada kotak panduan di sebelah kiri!`
+      );
       return;
     }
 
@@ -669,7 +715,7 @@ export const WokwiStepByStepAcademy: React.FC<{
         </div>
       </div>
 
-      {/* LACI GUDANG 48 KOMPONEN (SOROT HANYA KOMPONEN YANG VALID!) */}
+      {/* LACI GUDANG 48 KOMPONEN */}
       <div className="bg-[#0b101e] p-5 rounded-3xl border border-slate-800 space-y-4 shadow-xl">
         <div className="flex flex-wrap justify-between items-center gap-3">
           <div className="flex items-center gap-2">
@@ -804,57 +850,24 @@ export const WokwiStepByStepAcademy: React.FC<{
         kodeKetikanUser={kodeKetikanUser}
       />
 
-      {/* PANEL BAWAH: INSTRUKSI PERMANEN DI KIRI & EDITOR KODE DI KANAN */}
+      {/* PANEL BAWAH: ASISTEN KODE INTERAKTIF DI KIRI & EDITOR C++ DI KANAN */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <div className="lg:col-span-6 space-y-4">
-          <div className="p-5 sm:p-6 rounded-2xl bg-slate-950 border border-slate-800 space-y-4 text-sm">
-            <div className="p-4 rounded-xl bg-slate-900 border border-emerald-500/30 space-y-2">
-              <div className="font-bold text-emerald-400 text-xs uppercase flex items-center gap-1.5">
-                <Lightbulb className="w-4 h-4 text-amber-400" /> 1. Dasar Teori &amp; Aliran Arus Rangkaian Tertutup:
-              </div>
-              <p className="text-slate-200 text-xs sm:text-sm leading-relaxed">
-                {blueprintLevelIni.analogiMudahPaham}
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <div className="font-bold text-sky-400 text-xs uppercase">
-                2. Checklist Semua Kaki Pin yang Wajib Disambung ({kabelTerpasangList.length}/
-                {semuaSambunganWajibLevelIni.length} Kabel):
-              </div>
-              {semuaSambunganWajibLevelIni.map((w) => {
-                const sudah = apakahKabelSudahAda(w.pinAsalId, w.pinTujuanId);
-                return (
-                  <div
-                    key={w.idSambungan}
-                    className={`p-2.5 rounded-xl border font-mono text-xs flex justify-between items-center ${
-                      sudah
-                        ? "bg-emerald-950/40 border-emerald-500/50 text-emerald-300"
-                        : "bg-slate-900 border-slate-800 text-amber-300"
-                    }`}
-                  >
-                    <span>
-                      {sudah ? "✅" : "🔌"} {w.keteranganJalur}
-                    </span>
-                    <span className="text-[10px] font-bold">
-                      {sudah ? "TERSAMBUNG" : "BELUM"}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="space-y-2 pt-1">
-              <div className="font-bold text-emerald-400 text-xs uppercase flex items-center gap-1.5">
-                <Code2 className="w-4 h-4" /> 3. Langkah Ketik Program C++:
-              </div>
-              <ol className="list-decimal list-inside space-y-2 text-slate-100 bg-emerald-950/25 p-4 rounded-xl border border-emerald-500/30 text-xs sm:text-sm leading-relaxed">
-                {materiAktif.instruksiKetik.map((inst, i) => (
-                  <li key={i}>{bersihkanKeHibahIlmu(inst)}</li>
-                ))}
-              </ol>
-            </div>
-          </div>
+        <div className="lg:col-span-6">
+          <WokwiCodeAssistantPanel
+            materiAktif={materiAktif}
+            blueprint={blueprintLevelIni}
+            kodeKetikanUser={kodeKetikanUser}
+            setKodeKetikanUser={(kodeBaru) => {
+              setKodeKetikanUser(kodeBaru);
+              setBarisKodeSalahList([]);
+              if (statusVerifikasi !== "lulus") setStatusVerifikasi("belum");
+            }}
+            apakahKabelSudahAda={apakahKabelSudahAda}
+            kabelTerpasangCount={kabelTerpasangList.length}
+            onBukaPopUpTeori={() => setTampilModalTeori(true)}
+            onGunakanKodeLengkap={jalankanBantuanRakitDanKode}
+            bersihkanKeHibahIlmu={bersihkanKeHibahIlmu}
+          />
         </div>
 
         {/* EDITOR KODE C++ */}
@@ -878,33 +891,7 @@ export const WokwiStepByStepAcademy: React.FC<{
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    setSlot1Esp32Terpasang(true);
-                    const mapPenuh: Record<
-                      number,
-                      { terpasang: boolean; namaKartu: string; idKartu: string }
-                    > = {};
-                    daftarSlotPeriferal.forEach((s) => {
-                      mapPenuh[s.nomorSlot] = {
-                        terpasang: true,
-                        namaKartu: s.namaTarget,
-                        idKartu: s.idGambarMiniatur,
-                      };
-                    });
-                    setSlotPeriferalTerpasangMap(mapPenuh);
-                    setKabelTerpasangList(
-                      semuaSambunganWajibLevelIni.map((w) => ({
-                        pinAsalId: w.pinAsalId,
-                        pinTujuanId: w.pinTujuanId,
-                        warna: w.warnaKabel,
-                      }))
-                    );
-                    setKodeKetikanUser(
-                      bersihkanKeHibahIlmu(materiAktif.kodeTargetBenar)
-                    );
-                    setBarisKodeSalahList([]);
-                    setPinYangSalahAtauKurangIds([]);
-                  }}
+                  onClick={jalankanBantuanRakitDanKode}
                   className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1 cursor-pointer"
                 >
                   <Sparkles className="w-3.5 h-3.5" /> Bantuan Rakit Semua Kaki &amp; Kode
@@ -919,18 +906,39 @@ export const WokwiStepByStepAcademy: React.FC<{
               </div>
             </div>
 
+            {barisKodeSalahList.length > 0 && (
+              <div className="bg-rose-950 border-b border-rose-500 px-4 py-3 text-xs space-y-1">
+                <div className="font-bold text-rose-300">
+                  🚨 Baris Program yang Masih Kurang (Klik &quot;+ Sisipkan Baris Ini&quot; di Panel Kiri):
+                </div>
+                {barisKodeSalahList.map((b, i) => (
+                  <div key={i} className="text-white font-mono text-[11px]">
+                    👉 {b.pesanBaris}
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="grid grid-cols-12 bg-black font-mono text-xs sm:text-sm">
               <div className="col-span-1 py-4 bg-slate-950 border-r border-slate-800 text-right pr-2 select-none space-y-[2px]">
                 {daftarBarisEditor.map((_, idx) => (
-                  <div key={idx + 1} className="leading-relaxed px-1 text-slate-500">
+                  <div
+                    key={idx + 1}
+                    className="leading-relaxed px-1 text-slate-500"
+                  >
                     {idx + 1}
                   </div>
                 ))}
               </div>
               <textarea
-                rows={Math.max(11, daftarBarisEditor.length)}
+                rows={Math.max(12, daftarBarisEditor.length)}
                 value={kodeKetikanUser}
-                onChange={(e) => setKodeKetikanUser(e.target.value)}
+                onChange={(e) => {
+                  setKodeKetikanUser(e.target.value);
+                  setBarisKodeSalahList([]);
+                  if (statusVerifikasi !== "lulus")
+                    setStatusVerifikasi("belum");
+                }}
                 spellCheck={false}
                 className="col-span-11 p-4 bg-black text-emerald-300 font-mono leading-relaxed focus:outline-none resize-y"
               />
@@ -974,7 +982,9 @@ export const WokwiStepByStepAcademy: React.FC<{
                 <button
                   type="button"
                   disabled={!sudahLulusLevelIni}
-                  onClick={() => onBukaSimulator10Node && onBukaSimulator10Node()}
+                  onClick={() =>
+                    onBukaSimulator10Node && onBukaSimulator10Node()
+                  }
                   className="py-3 px-4 rounded-xl bg-amber-400 text-slate-950 font-extrabold text-xs cursor-pointer"
                 >
                   <Award className="w-4 h-4 inline mr-1" /> Buka Simulator 10-Node ➔
