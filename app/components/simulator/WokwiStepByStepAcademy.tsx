@@ -46,6 +46,18 @@ import {
 } from "./WokwiCodeAssistantPanel";
 import { buatSkenarioLatihanMandiri } from "./wokwiPracticeChallenges";
 import { ambilMateriMicroPython } from "./wokwiMicroPythonData";
+import {
+  periksaKerusakanFisikRangkaian,
+  hitungPembacaanMultimeter,
+  hitungProfilDayaBaterai18650,
+} from "./wokwiLabInstrumentsEngine";
+import { WokwiInstrumentsAndPlotterPanel } from "./WokwiInstrumentsAndPlotterPanel";
+import {
+  WokwiDebuggerAndTestbenchPanel,
+  HasilUjiSkenarioTestbench,
+} from "./WokwiDebuggerAndTestbenchPanel";
+import { unduhLaporanPraktikumDocx } from "./wokwiDocxReportGenerator";
+import { WokwiStage2AdvancedLabSuite } from "./WokwiStage2AdvancedLabSuite";
 
 const DAFTAR_BAB_SILABUS: {
   id: KategoriKesulitanAcademy;
@@ -240,6 +252,10 @@ export const WokwiStepByStepAcademy: React.FC<{
   );
 
   const [detakSimulasi, setDetakSimulasi] = useState<number>(0);
+  const [pinProbeMerah, setPinProbeMerah] = useState<string>("ESP_GPIO2");
+  const [barisSedangDieksekusi, setBarisSedangDieksekusi] = useState<number | null>(null);
+  const [sedangMengunduhDocx, setSedangMengunduhDocx] = useState<boolean>(false);
+  const [hasilTestbench, setHasilTestbench] = useState<HasilUjiSkenarioTestbench[]>([]);
 
   useEffect(() => {
     if (statusVerifikasi !== "lulus") return;
@@ -657,6 +673,72 @@ export const WokwiStepByStepAcademy: React.FC<{
     statusVerifikasi === "lulus" || levelSelesaiSet.has(materiAktif.level);
   const daftarBarisEditor = kodeKetikanUser.split("\n");
   const infoResistor = hitungGelangResistorModular(fisika.nilaiOhmResistor);
+  const kerusakanFisik = periksaKerusakanFisikRangkaian(
+    kabelTerpasangList,
+    daftarSlotPeriferal,
+    slotPeriferalTerpasangMap,
+    fisika,
+    simulasiAktif
+  );
+  const bacaanMultimeter = hitungPembacaanMultimeter(
+    pinProbeMerah,
+    "ESP_GND",
+    fisika,
+    kodeKetikanUser,
+    simulasiAktif && !kerusakanFisik.terjadiKorsletingDaya,
+    detakSimulasi % 2 === 0
+  );
+  const profilBaterai = hitungProfilDayaBaterai18650(
+    kodeKetikanUser,
+    jumlahKomponenTerpasangSaatIni,
+    simulasiAktif
+  );
+
+  const jalankanUjiOtomatis3Skenario = () => {
+    periksaRangkaianDanJalankanProgram();
+    setHasilTestbench([
+      {
+        nomorSkenario: 1,
+        namaSkenario: "Uji Kondisi Pemicu Aktif",
+        kondisiInput: "Sensor Melampaui Ambang / Tombol LOW",
+        responDiharapkan: "Aktuator Menyala (3.3V HIGH)",
+        lulus: semuaKomponenSudahDitaruh && sambunganWajibBelumTerpasang.length === 0,
+      },
+      {
+        nomorSkenario: 2,
+        namaSkenario: "Uji Kondisi Idle / Aman",
+        kondisiInput: "Sensor Normal / Tombol Dilepas (HIGH)",
+        responDiharapkan: "Aktuator Padam (0.0V LOW)",
+        lulus: semuaKomponenSudahDitaruh && !kerusakanFisik.terjadiKorsletingDaya,
+      },
+      {
+        nomorSkenario: 3,
+        namaSkenario: "Uji Keamanan Arus & Korsleting",
+        kondisiInput: `Resistor ${fisika.nilaiOhmResistor}O Terpasang`,
+        responDiharapkan: `Arus Aman (${bacaanMultimeter.arusTerukurMa} mA < 20 mA)`,
+        lulus: !kerusakanFisik.terjadiKorsletingDaya && !kerusakanFisik.ledPutusTanpaResistor,
+      },
+    ]);
+  };
+
+  const handleUnduhDocx = async () => {
+    setSedangMengunduhDocx(true);
+    try {
+      await unduhLaporanPraktikumDocx({
+        materi: materiAktif,
+        blueprint: blueprintLevelIni,
+        bahasa: bahasaPemrograman,
+        modeBelajar,
+        kodeProgram: kodeKetikanUser,
+        outputSerial: outputSerialSimulasi,
+        multimeter: bacaanMultimeter,
+        profilBaterai,
+        hasilTestbench,
+      });
+    } finally {
+      setSedangMengunduhDocx(false);
+    }
+  };
 
   const daftarLevelSesuaiKategori = daftarKurikulumExtended
     .map((item, originalIdx) => ({ item, originalIdx }))
@@ -992,6 +1074,100 @@ export const WokwiStepByStepAcademy: React.FC<{
         fisika={fisika}
         setFisika={setFisika}
         kodeKetikanUser={kodeKetikanUser}
+      />
+
+      {/* PANEL INSTRUMEN LABORATORIUM: MULTIMETER, OSILOSKOP, SERIAL PLOTTER, BATERAI & KORSLETING */}
+      <WokwiInstrumentsAndPlotterPanel
+        kerusakanFisik={kerusakanFisik}
+        multimeter={bacaanMultimeter}
+        pinProbeMerah={pinProbeMerah}
+        setPinProbeMerah={setPinProbeMerah}
+        profilBaterai={profilBaterai}
+        fisika={fisika}
+        simulasiAktif={simulasiAktif}
+        onSisipkanDeepSleep={() =>
+          setKodeKetikanUser((prev) =>
+            bahasaPemrograman === "micropython"
+              ? `${prev.trimEnd()}\nimport machine\nmachine.deepsleep(10000)\n`
+              : `${prev.trimEnd()}\n// Mode Hemat Daya Deep Sleep:\nesp_deep_sleep_start();\n`
+          )
+        }
+        onPerbaikiKorsleting={() => {
+          setFisika((f) => ({ ...f, nilaiOhmResistor: 220 }));
+          jalankanBantuanRakitDanKode();
+        }}
+      />
+
+      {/* PANEL DEBUGGER BARIS DEMI BARIS, TESTBENCH 3 SKENARIO & UNDUH LAPORAN DOCX */}
+      <WokwiDebuggerAndTestbenchPanel
+        kodeKetikanUser={kodeKetikanUser}
+        simulasiAktif={simulasiAktif}
+        barisSedangDieksekusi={barisSedangDieksekusi}
+        setBarisSedangDieksekusi={setBarisSedangDieksekusi}
+        onUnduhLaporanDocx={handleUnduhDocx}
+        sedangMengunduhDocx={sedangMengunduhDocx}
+        onJalankanTestbench3Skenario={jalankanUjiOtomatis3Skenario}
+        hasilTestbench={hasilTestbench}
+      />
+
+      {/* PANEL FITUR LANJUTAN TAHAP 2: CHAOS MESH, SMARTPHONE WEBHOOK & TINYML EDGE AI */}
+      <WokwiStage2AdvancedLabSuite
+        levelAktif={materiAktif.level}
+        judulMateri={materiAktif.judulMateri}
+        fisika={fisika}
+        setFisika={setFisika}
+        simulasiAktif={simulasiAktif}
+        kodeKetikanUser={kodeKetikanUser}
+        onSisipkanKodeChaosAtauAi={(tambahan) =>
+          setKodeKetikanUser((prev) => `${prev.trimEnd()}\n${tambahan}`)
+        }
+      />
+
+      {/* PANEL INSTRUMEN LABORATORIUM: MULTIMETER, OSILOSKOP, SERIAL PLOTTER, BATERAI & KORSLETING */}
+      <WokwiInstrumentsAndPlotterPanel
+        kerusakanFisik={kerusakanFisik}
+        multimeter={bacaanMultimeter}
+        pinProbeMerah={pinProbeMerah}
+        setPinProbeMerah={setPinProbeMerah}
+        profilBaterai={profilBaterai}
+        fisika={fisika}
+        simulasiAktif={simulasiAktif}
+        onSisipkanDeepSleep={() =>
+          setKodeKetikanUser((prev) =>
+            bahasaPemrograman === "micropython"
+              ? `${prev.trimEnd()}\nimport machine\nmachine.deepsleep(10000)\n`
+              : `${prev.trimEnd()}\n// Mode Hemat Daya Deep Sleep:\nesp_deep_sleep_start();\n`
+          )
+        }
+        onPerbaikiKorsleting={() => {
+          setFisika((f) => ({ ...f, nilaiOhmResistor: 220 }));
+          jalankanBantuanRakitDanKode();
+        }}
+      />
+
+      {/* PANEL DEBUGGER BARIS DEMI BARIS, TESTBENCH 3 SKENARIO & UNDUH LAPORAN DOCX */}
+      <WokwiDebuggerAndTestbenchPanel
+        kodeKetikanUser={kodeKetikanUser}
+        simulasiAktif={simulasiAktif}
+        barisSedangDieksekusi={barisSedangDieksekusi}
+        setBarisSedangDieksekusi={setBarisSedangDieksekusi}
+        onUnduhLaporanDocx={handleUnduhDocx}
+        sedangMengunduhDocx={sedangMengunduhDocx}
+        onJalankanTestbench3Skenario={jalankanUjiOtomatis3Skenario}
+        hasilTestbench={hasilTestbench}
+      />
+
+      {/* PANEL FITUR LANJUTAN TAHAP 2: CHAOS MESH, SMARTPHONE WEBHOOK & TINYML EDGE AI */}
+      <WokwiStage2AdvancedLabSuite
+        levelAktif={materiAktif.level}
+        judulMateri={materiAktif.judulMateri}
+        fisika={fisika}
+        setFisika={setFisika}
+        simulasiAktif={simulasiAktif}
+        kodeKetikanUser={kodeKetikanUser}
+        onSisipkanKodeChaosAtauAi={(tambahan) =>
+          setKodeKetikanUser((prev) => `${prev.trimEnd()}\n${tambahan}`)
+        }
       />
 
       {/* PANEL BAWAH: ASISTEN KODE INTERAKTIF DI KIRI & EDITOR DI KANAN */}
