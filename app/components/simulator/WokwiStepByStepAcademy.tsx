@@ -15,6 +15,8 @@ import {
   Filter,
   Move,
   BookOpen,
+  Code2,
+  Terminal,
 } from "lucide-react";
 import { KURIKULUM_15_LEVEL_IOT } from "./wokwiCurriculumData";
 import {
@@ -42,6 +44,8 @@ import {
   WokwiCodeAssistantPanel,
   ekstrakChecklistBarisKode,
 } from "./WokwiCodeAssistantPanel";
+import { buatSkenarioLatihanMandiri } from "./wokwiPracticeChallenges";
+import { ambilMateriMicroPython } from "./wokwiMicroPythonData";
 
 const DAFTAR_BAB_SILABUS: {
   id: KategoriKesulitanAcademy;
@@ -106,6 +110,11 @@ export const WokwiStepByStepAcademy: React.FC<{
     new Set()
   );
 
+  // PILIHAN BAHASA PEMROGRAMAN: C++ ARDUINO (sketch.ino) ATAU MICROPYTHON (main.py)
+  const [bahasaPemrograman, setBahasaPemrograman] = useState<
+    "cpp" | "micropython"
+  >("cpp");
+
   const [tampilModalTeori, setTampilModalTeori] = useState<boolean>(true);
   const [modeBelajar, setModeBelajar] = useState<
     "tutorial_berkedip" | "latihan_mandiri"
@@ -120,13 +129,58 @@ export const WokwiStepByStepAcademy: React.FC<{
   const materiAktif: ExtendedLessonStepIoT =
     daftarKurikulumExtended[indeksLevel] || daftarKurikulumExtended[0];
 
-  const blueprintLevelIni = ambilBlueprintMultiPinRealistis(materiAktif);
+  const bersihkanKeHibahIlmu = (teks: string) =>
+    (teks || "").replace(/Wokwi-GUEST/g, "HibahIlmu-Guest");
+
+  // Blueprint Dasar (Mode Terpandu) & Skenario Latihan Mandiri (Pin Dirotasi!)
+  const blueprintTerpandu = ambilBlueprintMultiPinRealistis(materiAktif);
+  const skenarioLatihan = buatSkenarioLatihanMandiri(
+    materiAktif,
+    blueprintTerpandu
+  );
+
+  // Pilih blueprint yang aktif sesuai mode (Terpandu vs Latihan Mandiri)
+  const blueprintLevelIni =
+    modeBelajar === "latihan_mandiri"
+      ? skenarioLatihan.blueprintLatihan
+      : blueprintTerpandu;
+
   const daftarSlotPeriferal = blueprintLevelIni.slotPeriferalList;
   const semuaSambunganWajibLevelIni = blueprintLevelIni.sambunganWajibList;
   const totalKomponenWajib = 1 + daftarSlotPeriferal.length;
 
-  const bersihkanKeHibahIlmu = (teks: string) =>
-    (teks || "").replace(/Wokwi-GUEST/g, "HibahIlmu-Guest");
+  // Ambil paket materi MicroPython sesuai mode
+  const paketMicroPython = ambilMateriMicroPython(
+    materiAktif,
+    modeBelajar === "latihan_mandiri"
+  );
+
+  // Tentukan Kode Target & Template sesuai kombinasi (Bahasa x Mode Belajar)
+  const kodeTargetAktif =
+    bahasaPemrograman === "micropython"
+      ? paketMicroPython.kodeTargetPy
+      : modeBelajar === "latihan_mandiri"
+      ? skenarioLatihan.kodeTargetLatihanCpp
+      : materiAktif.kodeTargetBenar;
+
+  const dapatkanTemplateAwalSesuaiMode = (
+    targetMateri: ExtendedLessonStepIoT,
+    modeTarget: "tutorial_berkedip" | "latihan_mandiri",
+    bahasaTarget: "cpp" | "micropython"
+  ) => {
+    if (bahasaTarget === "micropython") {
+      return ambilMateriMicroPython(
+        targetMateri,
+        modeTarget === "latihan_mandiri"
+      ).kodeTemplatePy;
+    }
+    if (modeTarget === "latihan_mandiri") {
+      const bp = ambilBlueprintMultiPinRealistis(targetMateri);
+      return buatSkenarioLatihanMandiri(targetMateri, bp)
+        .kodeTemplateLatihanCpp;
+    }
+    return bersihkanKeHibahIlmu(targetMateri.kodeTemplateAwal);
+  };
 
   const [slot1Esp32Terpasang, setSlot1Esp32Terpasang] =
     useState<boolean>(false);
@@ -215,36 +269,54 @@ export const WokwiStepByStepAcademy: React.FC<{
     });
   };
 
+  // Fungsi transisi penuh saat ganti Level, ganti Mode (Terpandu <-> Latihan Mandiri), atau ganti Bahasa (C++ <-> MicroPython)
   const pindahKeLevel = (
     idxBaru: number,
     modeTarget: "tutorial_berkedip" | "latihan_mandiri" = modeBelajar,
-    bukaPopUpTeori: boolean = true
+    bukaPopUpTeori: boolean = true,
+    bahasaTarget: "cpp" | "micropython" = bahasaPemrograman
   ) => {
     const target = daftarKurikulumExtended[idxBaru];
     if (!target) return;
-    const bp = ambilBlueprintMultiPinRealistis(target);
 
     setIndeksLevel(idxBaru);
     setModeBelajar(modeTarget);
+    setBahasaPemrograman(bahasaTarget);
     setTampilModalTeori(bukaPopUpTeori);
     setSlot1Esp32Terpasang(false);
     setSlotPeriferalTerpasangMap({});
     setItemSedangDiDrag(null);
-    setPesanGudang("");
     setKabelTerpasangList([]);
     setPinAwalDiklik(null);
     setPinYangSalahAtauKurangIds([]);
     setBarisKodeSalahList([]);
-    setKodeKetikanUser(bersihkanKeHibahIlmu(target.kodeTemplateAwal));
+    setKodeKetikanUser(
+      dapatkanTemplateAwalSesuaiMode(target, modeTarget, bahasaTarget)
+    );
     setStatusVerifikasi("belum");
     setDaftarErrorDetail([]);
-    setOutputSerialSimulasi(
-      `// Level ${target.level}: Wajib menarik ${
-        1 + bp.slotPeriferalList.length
-      } komponen secara bertahap dan menyambungkan seluruh ${
-        bp.sambunganWajibList.length
-      } kaki pinnya!`
-    );
+
+    if (modeTarget === "latihan_mandiri") {
+      setPesanGudang(
+        `🎯 MODE LATIHAN MANDIRI AKTIF! Panduan berkedip dimatikan & Pin GPIO diubah! Baca Skenario Studi Kasus di panel kiri bawah, lalu rakit komponen dari awal!`
+      );
+      setOutputSerialSimulasi(
+        `// 🎯 UJIAN LATIHAN MANDIRI LEVEL ${target.level} (${
+          bahasaTarget === "micropython" ? "MicroPython main.py" : "C++ sketch.ino"
+        })\n// Perhatikan perubahan nomor Pin GPIO pada kotak merah muda di sebelah kiri!`
+      );
+    } else {
+      setPesanGudang(
+        `👁️ Mode Terpandu (${
+          bahasaTarget === "micropython" ? "MicroPython" : "C++ Arduino"
+        }) aktif. Ikuti sorotan berkedip kuning untuk merakit rangkaian.`
+      );
+      setOutputSerialSimulasi(
+        `// Level ${target.level} (${
+          bahasaTarget === "micropython" ? "MicroPython main.py" : "C++ sketch.ino"
+        }): Rakit komponen sesuai panduan berkedip!`
+      );
+    }
   };
 
   const jumlahPeriferalSudahTerpasang = daftarSlotPeriferal.filter(
@@ -345,7 +417,11 @@ export const WokwiStepByStepAcademy: React.FC<{
         );
       } else {
         setPesanGudang(
-          `🎉 Seluruh ${totalKomponenWajib} Komponen terpasang! Sekarang hubungkan SEMUA kaki pin (${semuaSambunganWajibLevelIni.length} kabel)!`
+          `🎉 Seluruh ${totalKomponenWajib} Komponen terpasang! Sekarang hubungkan SEMUA kaki pin (${semuaSambunganWajibLevelIni.length} kabel)${
+            modeBelajar === "latihan_mandiri"
+              ? " sesuai skenario Pin Baru Latihan Mandiri!"
+              : "!"
+          }`
         );
       }
     } else {
@@ -420,14 +496,19 @@ export const WokwiStepByStepAcademy: React.FC<{
       picuGetaranMerahRangkaian();
       setPinYangSalahAtauKurangIds([pinAwalDiklik.idPin, pinDiklik.idPin]);
       setPesanGudang(
-        `❌ Salah Sambung Kaki! Kabel dari [${pinAwalDiklik.labelPin}] ke [${pinDiklik.labelPin}] salah. Klik tanda ✕ pada kabel merah tersebut untuk menghapusnya!`
+        `❌ Salah Sambung Kaki! Kabel dari [${pinAwalDiklik.labelPin}] ke [${
+          pinDiklik.labelPin
+        }] tidak sesuai ${
+          modeBelajar === "latihan_mandiri"
+            ? "Pin Baru Skenario Latihan Mandiri"
+            : "skema modul"
+        }. Klik tanda ✕ pada kabel merah untuk menghapusnya!`
       );
     } else {
-      setPesanGudang(`✅ Tersambung: ${cocokWajib.keteranganJalur}!`);
+      setPesanGudang(`✅ Tersambung Tepat: ${cocokWajib.keteranganJalur}!`);
     }
   };
 
-  // Fungsi Bantuan Rakit Semua Kaki & Kode (Sekaligus Mereset Error Merah!)
   const jalankanBantuanRakitDanKode = () => {
     setSlot1Esp32Terpasang(true);
     const mapPenuh: Record<
@@ -449,22 +530,18 @@ export const WokwiStepByStepAcademy: React.FC<{
         warna: w.warnaKabel,
       }))
     );
-    setKodeKetikanUser(bersihkanKeHibahIlmu(materiAktif.kodeTargetBenar));
+    setKodeKetikanUser(bersihkanKeHibahIlmu(kodeTargetAktif));
     setBarisKodeSalahList([]);
     setPinYangSalahAtauKurangIds([]);
     setDaftarErrorDetail([]);
     setStatusVerifikasi("belum");
     setPesanGudang(
-      "✨ Seluruh komponen, kabel kaki pin, dan kode C++ yang tepat telah dipasang! Sekarang klik tombol hijau '1. Periksa Semua Kaki & Jalankan'!"
-    );
-    setOutputSerialSimulasi(
-      "// Rangkaian dan kode C++ sudah siap 100%! Klik tombol '1. Periksa Semua Kaki & Jalankan' di atas untuk menyalakan simulasi!"
+      `✨ Seluruh komponen, kabel kaki pin, dan kode ${
+        bahasaPemrograman === "micropython" ? "MicroPython" : "C++"
+      } telah dipasang! Klik tombol hijau '1. Periksa Semua Kaki & Jalankan'!`
     );
   };
 
-  // ==========================================================================
-  // VALIDATOR SINKRON 100% DENGAN CHECKLIST BARIS KODE DI KIRI!
-  // ==========================================================================
   const periksaRangkaianDanJalankanProgram = () => {
     const errors: string[] = [];
     const pinBermasalah: string[] = [];
@@ -518,20 +595,20 @@ export const WokwiStepByStepAcademy: React.FC<{
       return;
     }
 
-    // Periksa kelengkapan baris kode berdasarkan checklist di panel kiri (toleran spasi)
     const checklistBaris = ekstrakChecklistBarisKode(
-      materiAktif.kodeTargetBenar,
+      kodeTargetAktif,
       kodeKetikanUser,
-      bersihkanKeHibahIlmu
+      bersihkanKeHibahIlmu,
+      bahasaPemrograman
     );
     const barisBelumDiketik = checklistBaris.filter((b) => !b.sudahDiketik);
 
     if (barisBelumDiketik.length > 0) {
       barisBelumDiketik.forEach((b) => {
-        const msg = `Di dalam ${b.bagianFungsi}: kurang perintah '${b.kodePersis}' (Klik tombol '+ Sisipkan Baris Ini' di panel kiri!)`;
+        const msg = `Pada ${b.bagianFungsi}: kurang perintah '${b.kodePersis}'`;
         errors.push(msg);
         barisBermasalah.push({
-          nomorBaris: b.bagianFungsi === "void setup()" ? 3 : 8,
+          nomorBaris: 4,
           pesanBaris: msg,
         });
       });
@@ -541,11 +618,13 @@ export const WokwiStepByStepAcademy: React.FC<{
       setBarisKodeSalahList(barisBermasalah);
       picuGetaranMerahKodingan();
       setOutputSerialSimulasi(
-        `[COMPILER CHECK — MASIH ADA ${barisBelumDiketik.length} BARIS KODE YANG KURANG]\n--------------------------------------------------\n${errors
+        `[${
+          bahasaPemrograman === "micropython"
+            ? "MICROPYTHON REPL"
+            : "ESP32 GCC COMPILER"
+        } — MASIH ADA ${barisBelumDiketik.length} BARIS KODE YANG KURANG]\n--------------------------------------------------\n${errors
           .map((e, i) => `❌ ${i + 1}. ${e}`)
-          .join(
-            "\n"
-          )}\n--------------------------------------------------\n💡 Tips Mudah: Klik tombol '+ Sisipkan Baris Ini' pada kotak panduan di sebelah kiri!`
+          .join("\n")}`
       );
       return;
     }
@@ -555,12 +634,21 @@ export const WokwiStepByStepAcademy: React.FC<{
     setPinYangSalahAtauKurangIds([]);
     setBarisKodeSalahList([]);
     setOutputSerialSimulasi(
-      bersihkanKeHibahIlmu(materiAktif.simulasiOutputJikaBenar)
+      `${
+        bahasaPemrograman === "micropython"
+          ? "[MicroPython v1.24.0 on ESP32] Running main.py...\n"
+          : ""
+      }${bersihkanKeHibahIlmu(materiAktif.simulasiOutputJikaBenar)}`
     );
 
     if (!levelSelesaiSet.has(materiAktif.level)) {
       setLevelSelesaiSet((prev) => new Set(prev).add(materiAktif.level));
-      if (onTambahXp) onTambahXp(materiAktif.xpReward);
+      if (onTambahXp)
+        onTambahXp(
+          modeBelajar === "latihan_mandiri"
+            ? materiAktif.xpReward * 2
+            : materiAktif.xpReward
+        );
     }
   };
 
@@ -608,7 +696,7 @@ export const WokwiStepByStepAcademy: React.FC<{
           <div className="space-y-1.5">
             <div className="flex flex-wrap items-center gap-2">
               <span className="px-3 py-1 rounded-full bg-emerald-400 text-slate-950 font-bold text-xs">
-                🎓 Akademi IoT HibahIlmu (Multi-Pin Realistis)
+                🎓 Akademi IoT HibahIlmu (C++ &amp; MicroPython)
               </span>
               <span className="px-3 py-1 rounded-full bg-sky-500/20 border border-sky-400/50 text-sky-300 font-semibold text-xs">
                 Komponen: {jumlahKomponenTerpasangSaatIni}/{totalKomponenWajib}
@@ -624,38 +712,83 @@ export const WokwiStepByStepAcademy: React.FC<{
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setTampilModalTeori(true)}
-              className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md"
-            >
-              <BookOpen className="w-4 h-4" /> 📖 Buka Pop-Up Skema Gambar
-            </button>
+            {/* SWITCHER BAHASA PEMROGRAMAN: C++ vs MICROPYTHON */}
+            <div className="flex items-center gap-1 bg-slate-950 p-1.5 rounded-xl border border-indigo-500/40">
+              <button
+                type="button"
+                onClick={() =>
+                  pindahKeLevel(indeksLevel, modeBelajar, false, "cpp")
+                }
+                className={`px-3 py-2 rounded-lg font-extrabold text-xs flex items-center gap-1.5 cursor-pointer transition ${
+                  bahasaPemrograman === "cpp"
+                    ? "bg-sky-500 text-slate-950 shadow"
+                    : "text-slate-300 hover:text-white"
+                }`}
+              >
+                <Code2 className="w-3.5 h-3.5" /> ⚡ C++ Arduino (sketch.ino)
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  pindahKeLevel(indeksLevel, modeBelajar, false, "micropython")
+                }
+                className={`px-3 py-2 rounded-lg font-extrabold text-xs flex items-center gap-1.5 cursor-pointer transition ${
+                  bahasaPemrograman === "micropython"
+                    ? "bg-yellow-400 text-slate-950 shadow"
+                    : "text-slate-300 hover:text-white"
+                }`}
+              >
+                <Terminal className="w-3.5 h-3.5" /> 🐍 MicroPython (main.py)
+              </button>
+            </div>
 
+            {/* SWITCHER MODE BELAJAR: TERPANDU vs LATIHAN MANDIRI (MERESET & UBAH PIN!) */}
             <div className="flex items-center gap-1.5 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
               <button
                 type="button"
-                onClick={() => setModeBelajar("tutorial_berkedip")}
-                className={`px-3 py-2 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer ${
+                onClick={() =>
+                  pindahKeLevel(
+                    indeksLevel,
+                    "tutorial_berkedip",
+                    false,
+                    bahasaPemrograman
+                  )
+                }
+                className={`px-3 py-2 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer transition ${
                   modeBelajar === "tutorial_berkedip"
-                    ? "bg-amber-400 text-slate-950"
-                    : "text-slate-300"
+                    ? "bg-amber-400 text-slate-950 shadow"
+                    : "text-slate-300 hover:text-white"
                 }`}
               >
                 <Eye className="w-3.5 h-3.5" /> Mode Terpandu
               </button>
               <button
                 type="button"
-                onClick={() => setModeBelajar("latihan_mandiri")}
-                className={`px-3 py-2 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer ${
+                onClick={() =>
+                  pindahKeLevel(
+                    indeksLevel,
+                    "latihan_mandiri",
+                    false,
+                    bahasaPemrograman
+                  )
+                }
+                className={`px-3 py-2 rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer transition ${
                   modeBelajar === "latihan_mandiri"
-                    ? "bg-rose-600 text-white"
-                    : "text-slate-300"
+                    ? "bg-rose-600 text-white shadow-lg ring-2 ring-rose-400/50"
+                    : "text-slate-300 hover:text-white"
                 }`}
               >
-                <Target className="w-3.5 h-3.5" /> Latihan Mandiri
+                <Target className="w-3.5 h-3.5" /> Latihan Mandiri (Pin Baru!)
               </button>
             </div>
+
+            <button
+              type="button"
+              onClick={() => setTampilModalTeori(true)}
+              className="px-3.5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md"
+            >
+              <BookOpen className="w-4 h-4" /> 📖 Skema
+            </button>
           </div>
         </div>
 
@@ -695,7 +828,14 @@ export const WokwiStepByStepAcademy: React.FC<{
               <button
                 key={item.level}
                 type="button"
-                onClick={() => pindahKeLevel(originalIdx, modeBelajar, true)}
+                onClick={() =>
+                  pindahKeLevel(
+                    originalIdx,
+                    modeBelajar,
+                    true,
+                    bahasaPemrograman
+                  )
+                }
                 className={`px-3.5 py-2 rounded-xl text-xs cursor-pointer transition flex items-center gap-1.5 border ${
                   sedangDibuka
                     ? "bg-amber-400 text-slate-950 font-extrabold border-white shadow-md"
@@ -721,7 +861,9 @@ export const WokwiStepByStepAcademy: React.FC<{
           <div className="flex items-center gap-2">
             <Move className="w-4 h-4 text-amber-400" />
             <span className="text-sm font-bold text-amber-300">
-              Gudang Komponen (Tarik Komponen yang Berkedip ke Slot #1 s.d. Slot #{totalKomponenWajib}):
+              {modeBelajar === "latihan_mandiri"
+                ? `🎯 Gudang Komponen — Mode Latihan Mandiri (Pilih Sendiri ${totalKomponenWajib} Komponen Tanpa Sorotan Berkedip!):`
+                : `Gudang Komponen (Tarik Komponen yang Berkedip ke Slot #1 s.d. Slot #${totalKomponenWajib}):`}
             </span>
           </div>
 
@@ -738,7 +880,9 @@ export const WokwiStepByStepAcademy: React.FC<{
             </div>
             <button
               type="button"
-              onClick={() => pindahKeLevel(indeksLevel, modeBelajar, false)}
+              onClick={() =>
+                pindahKeLevel(indeksLevel, modeBelajar, false, bahasaPemrograman)
+              }
               className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs cursor-pointer"
             >
               Bersihkan Kanvas
@@ -850,12 +994,16 @@ export const WokwiStepByStepAcademy: React.FC<{
         kodeKetikanUser={kodeKetikanUser}
       />
 
-      {/* PANEL BAWAH: ASISTEN KODE INTERAKTIF DI KIRI & EDITOR C++ DI KANAN */}
+      {/* PANEL BAWAH: ASISTEN KODE INTERAKTIF DI KIRI & EDITOR DI KANAN */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <div className="lg:col-span-6">
           <WokwiCodeAssistantPanel
             materiAktif={materiAktif}
             blueprint={blueprintLevelIni}
+            modeBelajar={modeBelajar}
+            bahasaAktif={bahasaPemrograman}
+            skenarioLatihan={skenarioLatihan}
+            kodeTargetAktif={kodeTargetAktif}
             kodeKetikanUser={kodeKetikanUser}
             setKodeKetikanUser={(kodeBaru) => {
               setKodeKetikanUser(kodeBaru);
@@ -870,7 +1018,7 @@ export const WokwiStepByStepAcademy: React.FC<{
           />
         </div>
 
-        {/* EDITOR KODE C++ */}
+        {/* EDITOR KODE (MENDUKUNG C++ sketch.ino & MICROPYTHON main.py) */}
         <div ref={editorContainerRef} className="lg:col-span-6 space-y-4">
           <div
             className={`bg-slate-950 rounded-2xl border-2 overflow-hidden shadow-xl transition ${
@@ -885,20 +1033,31 @@ export const WokwiStepByStepAcademy: React.FC<{
           >
             <div className="bg-slate-900 px-4 py-3 border-b border-slate-800 flex flex-wrap justify-between items-center gap-2 text-xs">
               <span className="font-mono font-bold text-amber-300">
-                ✍️ Editor C++ — Level {materiAktif.level} (sketch.ino)
+                {bahasaPemrograman === "micropython"
+                  ? `🐍 Editor MicroPython — Level ${materiAktif.level} (main.py)`
+                  : `✍️ Editor C++ — Level ${materiAktif.level} (sketch.ino)`}
               </span>
 
               <div className="flex items-center gap-2">
+                {modeBelajar === "tutorial_berkedip" && (
+                  <button
+                    type="button"
+                    onClick={jalankanBantuanRakitDanKode}
+                    className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1 cursor-pointer"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" /> Bantuan Rakit &amp; Kode
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={jalankanBantuanRakitDanKode}
-                  className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1 cursor-pointer"
-                >
-                  <Sparkles className="w-3.5 h-3.5" /> Bantuan Rakit Semua Kaki &amp; Kode
-                </button>
-                <button
-                  type="button"
-                  onClick={() => pindahKeLevel(indeksLevel, modeBelajar, false)}
+                  onClick={() =>
+                    pindahKeLevel(
+                      indeksLevel,
+                      modeBelajar,
+                      false,
+                      bahasaPemrograman
+                    )
+                  }
                   className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs flex items-center gap-1 cursor-pointer"
                 >
                   <RotateCcw className="w-3 h-3" /> Reset
@@ -909,7 +1068,7 @@ export const WokwiStepByStepAcademy: React.FC<{
             {barisKodeSalahList.length > 0 && (
               <div className="bg-rose-950 border-b border-rose-500 px-4 py-3 text-xs space-y-1">
                 <div className="font-bold text-rose-300">
-                  🚨 Baris Program yang Masih Kurang (Klik &quot;+ Sisipkan Baris Ini&quot; di Panel Kiri):
+                  🚨 Perintah Program yang Masih Kurang:
                 </div>
                 {barisKodeSalahList.map((b, i) => (
                   <div key={i} className="text-white font-mono text-[11px]">
@@ -950,7 +1109,8 @@ export const WokwiStepByStepAcademy: React.FC<{
                 onClick={periksaRangkaianDanJalankanProgram}
                 className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg"
               >
-                <Play className="w-4 h-4 fill-slate-950" /> 1. Periksa Semua Kaki &amp; Jalankan
+                <Play className="w-4 h-4 fill-slate-950" /> 1. Periksa Semua Kaki &amp; Jalankan{" "}
+                {bahasaPemrograman === "micropython" ? "(main.py)" : "(sketch.ino)"}
               </button>
 
               {indeksLevel < daftarKurikulumExtended.length - 1 ? (
@@ -958,7 +1118,12 @@ export const WokwiStepByStepAcademy: React.FC<{
                   type="button"
                   disabled={!sudahLulusLevelIni}
                   onClick={() =>
-                    pindahKeLevel(indeksLevel + 1, modeBelajar, true)
+                    pindahKeLevel(
+                      indeksLevel + 1,
+                      modeBelajar,
+                      true,
+                      bahasaPemrograman
+                    )
                   }
                   className={`py-3 px-4 rounded-xl font-extrabold text-xs sm:text-sm flex items-center gap-1.5 ${
                     sudahLulusLevelIni
@@ -995,7 +1160,10 @@ export const WokwiStepByStepAcademy: React.FC<{
 
           <div className="p-4 rounded-2xl bg-black border border-slate-800 space-y-1.5 font-mono text-xs">
             <div className="text-amber-400 font-bold">
-              📟 Serial Monitor &amp; Compiler Output (115200 baud):
+              📟{" "}
+              {bahasaPemrograman === "micropython"
+                ? "MicroPython REPL & Shell Output (115200 baud):"
+                : "Serial Monitor & Compiler Output (115200 baud):"}
             </div>
             <pre className="text-slate-200 whitespace-pre-wrap leading-relaxed">
               {outputSerialSimulasi}
