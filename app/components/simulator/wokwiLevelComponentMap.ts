@@ -1,426 +1,613 @@
 // app/components/simulator/wokwiLevelComponentMap.ts
 import { ExtendedLessonStepIoT } from "./wokwiAcademyBlueprints";
 
-export interface SpesifikasiKomponenSlotEksplisit {
-  namaTampilSlot2: string;
-  fungsiSlot2: string;
-  idGambarSlot2: string; // ID murni untuk MiniaturSvgGudang48 (tanpa kata "esp32" kecuali memang board ESP32)
-  idGudangValidSlot2: string[];
-  kataKunciValidSlot2: string[];
-  pin1Slot2Label: string;
-  pin2Slot2Label: string;
-  pinEspKeSlot2Pin1: { id: string; label: string; warna: string };
-  pinEspKeSlot2Pin2: { id: string; label: string; warna: string };
-
-  namaTampilSlot3: string;
-  fungsiSlot3: string;
-  idGambarSlot3: string;
-  idGudangValidSlot3: string[];
-  kataKunciValidSlot3: string[];
-  pin1Slot3Label: string;
-  pin2Slot3Label: string;
-  pinEspKeSlot3Pin1: { id: string; label: string; warna: string };
-  pinEspKeSlot3Pin2: { id: string; label: string; warna: string };
-
-  analogiMudah: string;
+export interface ItemPeriferalDinamis {
+  namaTampil: string;
+  fungsiSingkat: string;
+  idGambar: string;
+  idGudangValid: string[];
+  kataKunciValid: string[];
+  pin1Label: string;
+  pin2Label: string;
+  pinEspKePin1: { id: string; label: string; warna: string };
+  pinEspKePin2: { id: string; label: string; warna: string };
 }
 
-// ============================================================================
-// DATABASE PEMETAAN KOMPONEN & GAMBAR ASLI SESUAI PERINTAH MODUL (100% AKURAT)
-// ============================================================================
-export function cariSpesifikasiKomponenSesuaiModul(
+export interface KonfigurasiMultiItemLevel {
+  analogiMudah: string;
+  daftarPeriferal: ItemPeriferalDinamis[]; // Bisa berisi 0, 2, 4, 6, atau 9 periferal (+1 ESP32 = 1, 3, 5, 7, 10 Item!)
+}
+
+export function cariSpesifikasiMultiItemSesuaiModul(
   materi: ExtendedLessonStepIoT
-): SpesifikasiKomponenSlotEksplisit {
+): KonfigurasiMultiItemLevel {
   const judul = (materi.judulMateri || "").toLowerCase();
-  const kode = (materi.kodeTargetBenar || "").toLowerCase();
 
-  // 1. MODUL LDR & LAMPU JALAN OTOMATIS (PROYEK 1 / LEVEL 3)
-  if (judul.includes("ldr") || judul.includes("lampu jalan")) {
+  // ==========================================================================
+  // VARIASI 10 ITEM KOMPONEN (1 ESP32 + 9 PERIFERAL LENGKAP!)
+  // Untuk Proyek Master 10-Node Multi-Hop Mesh / Stasiun Pertanian Presisi Lengkap
+  // ==========================================================================
+  if (
+    judul.includes("10-node") ||
+    judul.includes("multi-hop") ||
+    judul.includes("master") ||
+    materi.level === 20
+  ) {
     return {
-      namaTampilSlot2: "Sensor Cahaya LDR (Photoresistor)",
-      fungsiSlot2: "Membaca intensitas cahaya matahari (Lux) ke pin ADC GPIO 34.",
-      idGambarSlot2: "sensor_ldr",
-      idGudangValidSlot2: ["sensor_ldr", "sen_ldr"],
-      kataKunciValidSlot2: ["sensor cahaya", "ldr"],
-      pin1Slot2Label: "1. Pin AO LDR (Sinyal)",
-      pin2Slot2Label: "2. Pin VCC LDR (3.3V)",
-      pinEspKeSlot2Pin1: { id: "ESP_GPIO34", label: "GPIO 34", warna: "#22c55e" },
-      pinEspKeSlot2Pin2: { id: "ESP_3V3", label: "3V3", warna: "#ef4444" },
-
-      namaTampilSlot3: "Modul Relay 1-Channel 5V + Lampu",
-      fungsiSlot3: "Sakelar magnetik penyala lampu jalan otomatis di GPIO 26.",
-      idGambarSlot3: "relay_1ch",
-      idGudangValidSlot3: ["relay_1ch", "rel_1ch"],
-      kataKunciValidSlot3: ["relay 1", "relay_1ch"],
-      pin1Slot3Label: "1. Pin IN Relay (Kontrol)",
-      pin2Slot3Label: "2. Pin GND Relay",
-      pinEspKeSlot3Pin1: { id: "ESP_GPIO26", label: "GPIO 26", warna: "#eab308" },
-      pinEspKeSlot3Pin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
-
       analogiMudah:
-        "Sensor Cahaya LDR di Slot #2 bertugas mengukur terang/gelapnya langit melalui kaki GPIO 34. Saat malam tiba (nilai ADC < 1000), ESP32 mengirim perintah HIGH melalui kaki GPIO 26 ke Modul Relay 1-Ch di Slot #3 untuk menyalakan lampu jalan!",
+        "Inilah proyek puncak dengan 10 Item Komponen sekaligus! Satu papan ESP32 Utama (Slot #1) membaca 5 sensor perkebunan (NPK, GPS, DHT22, Soil, pH Air), dipasok oleh 2 sistem daya (Baterai 18650 & Sensor Tegangan), menampilkan status ke Layar OLED, lalu menembakkan paket estafet ke Node Gateway Internet!",
+      daftarPeriferal: [
+        {
+          namaTampil: "Sensor Pupuk NPK RS485",
+          fungsiSingkat: "Mengukur kadar Nitrogen, Fosfor, Kalium tanah.",
+          idGambar: "sensor_npk",
+          idGudangValid: ["sensor_npk", "sen_npk"],
+          kataKunciValid: ["npk", "pupuk"],
+          pin1Label: "1. NPK Pin RO",
+          pin2Label: "2. NPK Pin GND",
+          pinEspKePin1: { id: "ESP_GPIO16", label: "RX2 (16)", warna: "#10b981" },
+          pinEspKePin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
+        },
+        {
+          namaTampil: "Modul Satelit GPS NEO-6M",
+          fungsiSingkat: "Mengunci koordinat Latitude & Longitude blok kebun.",
+          idGambar: "gps_neo6m",
+          idGudangValid: ["gps_neo6m", "sen_gps"],
+          kataKunciValid: ["gps", "neo-6m"],
+          pin1Label: "1. GPS Pin TX",
+          pin2Label: "2. GPS VCC 3.3V",
+          pinEspKePin1: { id: "ESP_GPIO4", label: "GPIO 4", warna: "#38bdf8" },
+          pinEspKePin2: { id: "ESP_3V3", label: "3V3", warna: "#ef4444" },
+        },
+        {
+          namaTampil: "Sensor Suhu & Lembab DHT22",
+          fungsiSingkat: "Memantau suhu udara mikro perkebunan.",
+          idGambar: "sensor_suhu_dht",
+          idGudangValid: ["sensor_suhu_dht", "sen_dht22"],
+          kataKunciValid: ["dht22", "sensor suhu"],
+          pin1Label: "1. DHT22 Data",
+          pin2Label: "2. DHT22 VCC",
+          pinEspKePin1: { id: "ESP_GPIO15", label: "GPIO 15", warna: "#22c55e" },
+          pinEspKePin2: { id: "ESP_3V3", label: "3V3", warna: "#ef4444" },
+        },
+        {
+          namaTampil: "Kelembapan Tanah Soil Probe",
+          fungsiSingkat: "Mendeteksi persentase kadar air tanah.",
+          idGambar: "kelembapan_tanah",
+          idGudangValid: ["kelembapan_tanah", "sen_soil"],
+          kataKunciValid: ["kelembapan", "soil"],
+          pin1Label: "1. Soil Pin AO",
+          pin2Label: "2. Soil Pin GND",
+          pinEspKePin1: { id: "ESP_GPIO34", label: "GPIO 34", warna: "#eab308" },
+          pinEspKePin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
+        },
+        {
+          namaTampil: "Sensor pH Air (Asam/Basa)",
+          fungsiSingkat: "Memeriksa tingkat keasaman air irigasi (pH 0-14).",
+          idGambar: "sensor_ph",
+          idGudangValid: ["sensor_ph", "sen_ph", "sensor_tds", "sen_tds"],
+          kataKunciValid: ["ph air", "tds"],
+          pin1Label: "1. pH Probe AO",
+          pin2Label: "2. pH Probe GND",
+          pinEspKePin1: { id: "ESP_GPIO32", label: "GPIO 32", warna: "#06b6d4" },
+          pinEspKePin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
+        },
+        {
+          namaTampil: "Socket Baterai Li-Ion 18650",
+          fungsiSingkat: "Sumber energi DC mandiri untuk node lapangan.",
+          idGambar: "socket_baterai",
+          idGudangValid: ["socket_baterai", "pwr_batt18650"],
+          kataKunciValid: ["baterai", "18650"],
+          pin1Label: "1. Kutub (+) Batt",
+          pin2Label: "2. Kutub (-) Batt",
+          pinEspKePin1: { id: "ESP_3V3", label: "3V3", warna: "#ef4444" },
+          pinEspKePin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
+        },
+        {
+          namaTampil: "Sensor Tegangan 0-25V (INA219)",
+          fungsiSingkat: "Mengukur sisa voltase baterai di pin ADC 35.",
+          idGambar: "sensor_tegangan",
+          idGudangValid: ["sensor_tegangan", "pwr_ina219", "sensor_pzem"],
+          kataKunciValid: ["tegangan", "ina219"],
+          pin1Label: "1. Pin Volt Out",
+          pin2Label: "2. Pin GND Volt",
+          pinEspKePin1: { id: "ESP_GPIO35", label: "GPIO 35", warna: "#f59e0b" },
+          pinEspKePin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
+        },
+        {
+          namaTampil: "Layar OLED I2C 128x64",
+          fungsiSingkat: "Menampilkan ringkasan paket telemetri lokal.",
+          idGambar: "layar_oled",
+          idGudangValid: ["layar_oled", "dsp_oled", "lcd_16x2"],
+          kataKunciValid: ["oled", "lcd"],
+          pin1Label: "1. OLED Pin SDA",
+          pin2Label: "2. OLED Pin GND",
+          pinEspKePin1: { id: "ESP_GPIO2", label: "GPIO 2", warna: "#a855f7" },
+          pinEspKePin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
+        },
+        {
+          namaTampil: "NodeMCU / ESP32 Gateway #10",
+          fungsiSingkat: "Penerima estafet Multi-Hop & pengunggah ke Cloud Web.",
+          idGambar: "nodemcu_esp8266",
+          idGudangValid: ["nodemcu_esp8266", "esp32_devkit", "esp32_c6", "mcu_gateway10"],
+          kataKunciValid: ["nodemcu", "esp32", "gateway"],
+          pin1Label: "1. Next-Hop (N+1)",
+          pin2Label: "2. Gateway GND",
+          pinEspKePin1: { id: "ESP_GPIO17", label: "TX2 (17)", warna: "#f97316" },
+          pinEspKePin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
+        },
+      ],
     };
   }
 
-  // 2. MODUL SERVO & SOLENOID DOOR LOCK (PROYEK 2 / LEVEL 4)
-  if (judul.includes("servo") && judul.includes("solenoid")) {
+  // ==========================================================================
+  // VARIASI 7 ITEM KOMPONEN (1 ESP32 + 6 PERIFERAL!)
+  // A. Smart Greenhouse Lengkap (DHT22 + Soil + Hujan + Kipas + Pompa + OLED)
+  // ==========================================================================
+  if (judul.includes("greenhouse") || judul.includes("dht22")) {
     return {
-      namaTampilSlot2: "Motor Servo SG90 180° (Palang Pintu)",
-      fungsiSlot2: "Memutar palang pintu ke sudut 90° lewat sinyal PWM GPIO 13.",
-      idGambarSlot2: "servo_sg90",
-      idGudangValidSlot2: ["servo_sg90", "akt_servo180"],
-      kataKunciValidSlot2: ["servo sg90", "servo 180"],
-      pin1Slot2Label: "1. Kabel PWM Servo",
-      pin2Slot2Label: "2. Kabel VCC Servo",
-      pinEspKeSlot2Pin1: { id: "ESP_GPIO13", label: "GPIO 13", warna: "#a855f7" },
-      pinEspKeSlot2Pin2: { id: "ESP_3V3", label: "3V3", warna: "#ef4444" },
-
-      namaTampilSlot3: "Solenoid Door Lock 12V + Relay",
-      fungsiSlot3: "Menarik slot kunci besi pintu saat GPIO 27 bernilai HIGH.",
-      idGambarSlot3: "solenoid_lock",
-      idGudangValidSlot3: ["solenoid_lock", "akt_solenoid", "rfid_rc522"],
-      kataKunciValidSlot3: ["solenoid", "door lock"],
-      pin1Slot3Label: "1. Pin IN Solenoid",
-      pin2Slot3Label: "2. Pin GND Solenoid",
-      pinEspKeSlot3Pin1: { id: "ESP_GPIO27", label: "GPIO 27", warna: "#14b8a6" },
-      pinEspKeSlot3Pin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
-
       analogiMudah:
-        "Saat akses pintu dibuka, ESP32 melakukan 2 aksi mekanik sekaligus: (1) Mengirim sinyal ke GPIO 27 untuk menarik kunci besi Solenoid Door Lock di Slot #3, dan (2) Mengirim sudut putar pintu.write(90) ke GPIO 13 untuk memutar lengan Motor Servo SG90 di Slot #2!",
+        "Pada proyek Smart Greenhouse Lengkap ini kamu merakit 7 Item Komponen sekaligus! Ada 1 ESP32 sebagai otak, 3 sensor lingkungan (DHT22, Kelembapan Tanah, Sensor Hujan), 2 aktuator iklim (Kipas DC & Pompa Air), serta 1 Layar OLED pemantau!",
+      daftarPeriferal: [
+        {
+          namaTampil: "Sensor Suhu & Lembab DHT22",
+          fungsiSingkat: "Membaca suhu udara rumah kaca di GPIO 15.",
+          idGambar: "sensor_suhu_dht",
+          idGudangValid: ["sensor_suhu_dht", "sen_dht22"],
+          kataKunciValid: ["dht22", "sensor suhu"],
+          pin1Label: "1. DHT22 Data",
+          pin2Label: "2. DHT22 VCC",
+          pinEspKePin1: { id: "ESP_GPIO15", label: "GPIO 15", warna: "#10b981" },
+          pinEspKePin2: { id: "ESP_3V3", label: "3V3", warna: "#ef4444" },
+        },
+        {
+          namaTampil: "Kelembapan Tanah Soil Probe",
+          fungsiSingkat: "Mendeteksi kekeringan tanah di GPIO 34.",
+          idGambar: "kelembapan_tanah",
+          idGudangValid: ["kelembapan_tanah", "sen_soil"],
+          kataKunciValid: ["kelembapan", "soil"],
+          pin1Label: "1. Soil Pin AO",
+          pin2Label: "2. Soil Pin GND",
+          pinEspKePin1: { id: "ESP_GPIO34", label: "GPIO 34", warna: "#eab308" },
+          pinEspKePin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
+        },
+        {
+          namaTampil: "Sensor Hujan Raindrop",
+          fungsiSingkat: "Mendeteksi tetesan air hujan di atap greenhouse.",
+          idGambar: "sensor_hujan",
+          idGudangValid: ["sensor_hujan", "sen_rain"],
+          kataKunciValid: ["hujan", "rain"],
+          pin1Label: "1. Rain Pin DO",
+          pin2Label: "2. Rain Pin GND",
+          pinEspKePin1: { id: "ESP_GPIO35", label: "GPIO 35", warna: "#38bdf8" },
+          pinEspKePin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
+        },
+        {
+          namaTampil: "Kipas DC (PWM) Exhaust",
+          fungsiSingkat: "Membuang hawa panas saat suhu > 32°C (GPIO 33).",
+          idGambar: "kipas_dc",
+          idGudangValid: ["kipas_dc", "akt_kipas"],
+          kataKunciValid: ["kipas", "fan"],
+          pin1Label: "1. Pin Kipas (33)",
+          pin2Label: "2. GND Kipas",
+          pinEspKePin1: { id: "ESP_GPIO33", label: "GPIO 33", warna: "#8b5cf6" },
+          pinEspKePin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
+        },
+        {
+          namaTampil: "Pompa Air Mini 5V Irigasi",
+          fungsiSingkat: "Menyiram tanaman otomatis lewat GPIO 25.",
+          idGambar: "pompa_air",
+          idGudangValid: ["pompa_air", "akt_pompa", "relay_2ch", "rel_2ch"],
+          kataKunciValid: ["pompa", "relay 2"],
+          pin1Label: "1. Pin Pompa (25)",
+          pin2Label: "2. GND Pompa",
+          pinEspKePin1: { id: "ESP_GPIO25", label: "GPIO 25", warna: "#3b82f6" },
+          pinEspKePin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
+        },
+        {
+          namaTampil: "Layar OLED I2C Monitor",
+          fungsiSingkat: "Menampilkan angka suhu & status penyiraman.",
+          idGambar: "layar_oled",
+          idGudangValid: ["layar_oled", "dsp_oled", "lcd_16x2"],
+          kataKunciValid: ["oled", "lcd"],
+          pin1Label: "1. OLED Pin SDA",
+          pin2Label: "2. OLED Pin GND",
+          pinEspKePin1: { id: "ESP_GPIO2", label: "GPIO 2", warna: "#f97316" },
+          pinEspKePin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
+        },
+      ],
     };
   }
 
-  // 3. MODUL ULTRASONIK HC-SR04 + SERVO SG90
-  if (judul.includes("ultrasonik")) {
+  // B. Otomasi Pabrik PLC 7 Item (ESP32 + Uno Slave + Relay 4-Ch + Servo 360 + Sensor IR + Buzzer + OLED)
+  if (judul.includes("relay 4-ch") || judul.includes("plc") || judul.includes("pabrik")) {
     return {
-      namaTampilSlot2: "Sensor Jarak Ultrasonik HC-SR04",
-      fungsiSlot2: "Memantulkan gelombang sonar untuk mendeteksi jarak objek (cm).",
-      idGambarSlot2: "ultrasonik_hcsr04",
-      idGudangValidSlot2: ["ultrasonik_hcsr04", "sen_ultrasonik"],
-      kataKunciValidSlot2: ["ultrasonik", "sr04"],
-      pin1Slot2Label: "1. Pin Echo/Trig Sonar",
-      pin2Slot2Label: "2. Pin VCC Sonar",
-      pinEspKeSlot2Pin1: { id: "ESP_GPIO27", label: "GPIO 27", warna: "#38bdf8" },
-      pinEspKeSlot2Pin2: { id: "ESP_3V3", label: "3V3", warna: "#ef4444" },
-
-      namaTampilSlot3: "Motor Servo SG90 180° (Palang)",
-      fungsiSlot3: "Mengangkat palang parkir ke sudut 90° melalui GPIO 13.",
-      idGambarSlot3: "servo_sg90",
-      idGudangValidSlot3: ["servo_sg90", "akt_servo180"],
-      kataKunciValidSlot3: ["servo sg90"],
-      pin1Slot3Label: "1. Kabel PWM Servo",
-      pin2Slot3Label: "2. Kabel GND Servo",
-      pinEspKeSlot3Pin1: { id: "ESP_GPIO13", label: "GPIO 13", warna: "#facc15" },
-      pinEspKeSlot3Pin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
-
       analogiMudah:
-        "Sensor Ultrasonik HC-SR04 di Slot #2 memancarkan gelombang suara untuk mengukur jarak kendaraan. Jika jarak < 30 cm, ESP32 memerintahkan Motor Servo SG90 di Slot #3 untuk membuka palang 90 derajat!",
+        "Lini produksi pabrik modern ini terdiri dari 7 Item Komponen: ESP32 Master mengoordinasikan Arduino Uno Slave, Modul Relay 4-Channel, Motor Servo Konveyor 360°, Sensor Infrared pendeteksi barang, Buzzer sirine pabrik, dan Layar OLED!",
+      daftarPeriferal: [
+        {
+          namaTampil: "Arduino Uno R3 (Slave PLC)",
+          fungsiSingkat: "Koprosesor pengendali I/O mesin industri.",
+          idGambar: "arduino_uno",
+          idGudangValid: ["arduino_uno", "mcu_uno"],
+          kataKunciValid: ["arduino", "uno"],
+          pin1Label: "1. Uno RX Serial",
+          pin2Label: "2. Uno VCC 5V",
+          pinEspKePin1: { id: "ESP_GPIO16", label: "RX2 (16)", warna: "#38bdf8" },
+          pinEspKePin2: { id: "ESP_3V3", label: "3V3", warna: "#ef4444" },
+        },
+        {
+          namaTampil: "Modul Relay 4-Channel PLC",
+          fungsiSingkat: "Sakelar 4 kontaktor mesin tegangan tinggi.",
+          idGambar: "relay_4ch",
+          idGudangValid: ["relay_4ch", "rel_4ch"],
+          kataKunciValid: ["relay 4", "relay_4ch"],
+          pin1Label: "1. Relay IN1 (Pin 4)",
+          pin2Label: "2. Relay GND",
+          pinEspKePin1: { id: "ESP_GPIO4", label: "GPIO 4", warna: "#facc15" },
+          pinEspKePin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
+        },
+        {
+          namaTampil: "Servo MG996R 360° (Konveyor)",
+          fungsiSingkat: "Penggerak sabuk ban berjalan pabrik.",
+          idGambar: "servo_mg996r",
+          idGudangValid: ["servo_mg996r", "akt_servo360", "akt_motor_dc", "servo_sg90"],
+          kataKunciValid: ["servo", "motor"],
+          pin1Label: "1. PWM Konveyor",
+          pin2Label: "2. GND Konveyor",
+          pinEspKePin1: { id: "ESP_GPIO13", label: "GPIO 13", warna: "#a855f7" },
+          pinEspKePin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
+        },
+        {
+          namaTampil: "Sensor Infrared Obstacle",
+          fungsiSingkat: "Menghitung jumlah kotak barang yang lewat di konveyor.",
+          idGambar: "sensor_ir",
+          idGudangValid: ["sensor_ir", "ultrasonik_hcsr04", "sensor_pir"],
+          kataKunciValid: ["infrared", "obstacle", "ultrasonik"],
+          pin1Label: "1. IR Pin OUT",
+          pin2Label: "2. IR Pin GND",
+          pinEspKePin1: { id: "ESP_GPIO15", label: "GPIO 15", warna: "#10b981" },
+          pinEspKePin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
+        },
+        {
+          namaTampil: "Buzzer Piezo Alarm Pabrik",
+          fungsiSingkat: "Berbunyi saat target produksi tercapai.",
+          idGambar: "buzzer_piezo",
+          idGudangValid: ["buzzer_piezo", "akt_buzzer"],
+          kataKunciValid: ["buzzer"],
+          pin1Label: "1. Buzzer (+)",
+          pin2Label: "2. Buzzer (-)",
+          pinEspKePin1: { id: "ESP_GPIO19", label: "GPIO 19", warna: "#ec4899" },
+          pinEspKePin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
+        },
+        {
+          namaTampil: "LCD 16x2 / OLED Counter",
+          fungsiSingkat: "Menampilkan status ke-4 relay dan jumlah produksi.",
+          idGambar: "lcd_16x2",
+          idGudangValid: ["lcd_16x2", "dsp_lcd", "layar_oled", "dsp_oled"],
+          kataKunciValid: ["lcd", "oled"],
+          pin1Label: "1. Display SDA",
+          pin2Label: "2. Display GND",
+          pinEspKePin1: { id: "ESP_GPIO2", label: "GPIO 2", warna: "#06b6d4" },
+          pinEspKePin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
+        },
+      ],
     };
   }
 
-  // 4. MODUL RFID RC522 + SOLENOID LOCK 12V
-  if (judul.includes("rfid")) {
+  // ==========================================================================
+  // VARIASI 5 ITEM KOMPONEN (1 ESP32 + 4 PERIFERAL!)
+  // A. Lampu Lalu Lintas Lengkap (ESP32 + LED Merah + LED Hijau + LED Kuning + Resistor)
+  // ==========================================================================
+  if (judul.includes("lalu lintas")) {
     return {
-      namaTampilSlot2: "RFID Card Reader RC522 (13.56MHz)",
-      fungsiSlot2: "Memindai chip kartu E-KTP yang didekatkan ke antena reader.",
-      idGambarSlot2: "rfid_rc522",
-      idGudangValidSlot2: ["rfid_rc522", "sen_rfid"],
-      kataKunciValidSlot2: ["rfid", "rc522"],
-      pin1Slot2Label: "1. Pin SDA/Data RFID",
-      pin2Slot2Label: "2. Pin VCC 3.3V RFID",
-      pinEspKeSlot2Pin1: { id: "ESP_GPIO13", label: "GPIO 13", warna: "#38bdf8" },
-      pinEspKeSlot2Pin2: { id: "ESP_3V3", label: "3V3", warna: "#ef4444" },
-
-      namaTampilSlot3: "Solenoid Door Lock 12V",
-      fungsiSlot3: "Membuka kunci besi pintu laboratorium melalui GPIO 27.",
-      idGambarSlot3: "solenoid_lock",
-      idGudangValidSlot3: ["solenoid_lock", "akt_solenoid"],
-      kataKunciValidSlot3: ["solenoid"],
-      pin1Slot3Label: "1. Pin IN Solenoid",
-      pin2Slot3Label: "2. Pin GND Solenoid",
-      pinEspKeSlot3Pin1: { id: "ESP_GPIO27", label: "GPIO 27", warna: "#10b981" },
-      pinEspKeSlot3Pin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
-
       analogiMudah:
-        "Kartu akses dipindai oleh RFID Reader RC522 di Slot #2. Jika kartu valid, ESP32 memberi tegangan HIGH pada GPIO 27 untuk menarik kunci besi Solenoid Door Lock di Slot #3!",
+        "Tiang lampu lalu lintas jalan raya memiliki 5 Item Komponen: 1 ESP32 sebagai pengatur waktu, 3 Lampu LED terpisah (Merah untuk Berhenti, Kuning untuk Hati-hati, Hijau untuk Jalan), serta Resistor pembatas arus menuju Ground!",
+      daftarPeriferal: [
+        {
+          namaTampil: "LED Merah 5mm (Lampu STOP)",
+          fungsiSingkat: "Menyala pada fase berhenti (GPIO 2).",
+          idGambar: "led_merah",
+          idGudangValid: ["led_merah", "pas_led_merah"],
+          kataKunciValid: ["led merah"],
+          pin1Label: "1. Anoda Merah (+)",
+          pin2Label: "2. Katoda Merah (-)",
+          pinEspKePin1: { id: "ESP_GPIO2", label: "GPIO 2", warna: "#ef4444" },
+          pinEspKePin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
+        },
+        {
+          namaTampil: "LED Hijau 5mm (Lampu JALAN)",
+          fungsiSingkat: "Menyala pada fase jalan (GPIO 15).",
+          idGambar: "led_hijau",
+          idGudangValid: ["led_hijau", "pas_led_hijau"],
+          kataKunciValid: ["led hijau"],
+          pin1Label: "1. Anoda Hijau (+)",
+          pin2Label: "2. Katoda Hijau (-)",
+          pinEspKePin1: { id: "ESP_GPIO15", label: "GPIO 15", warna: "#22c55e" },
+          pinEspKePin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
+        },
+        {
+          namaTampil: "LED Indikator Kuning / Kedua",
+          fungsiSingkat: "Menyala pada fase transisi hati-hati (GPIO 4).",
+          idGambar: "led_merah",
+          idGudangValid: ["led_merah", "led_hijau", "pas_led_merah", "pas_led_hijau"],
+          kataKunciValid: ["led"],
+          pin1Label: "1. Anoda Transisi (+)",
+          pin2Label: "2. Katoda Transisi (-)",
+          pinEspKePin1: { id: "ESP_GPIO4", label: "GPIO 4", warna: "#facc15" },
+          pinEspKePin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
+        },
+        {
+          namaTampil: "Resistor Gelang 220Ω (Pengaman)",
+          fungsiSingkat: "Melindungi deretan LED dari arus berlebih.",
+          idGambar: "resistor_gelang",
+          idGudangValid: ["resistor_gelang", "pas_resistor"],
+          kataKunciValid: ["resistor"],
+          pin1Label: "1. Kaki 1 Resistor",
+          pin2Label: "2. Kaki 2 GND",
+          pinEspKePin1: { id: "ESP_3V3", label: "3V3", warna: "#f97316" },
+          pinEspKePin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
+        },
+      ],
     };
   }
 
-  // 5. MODUL SMART GREENHOUSE: SENSOR SUHU DHT22 + KIPAS & POMPA AIR (PROYEK 3 / LEVEL 5)
-  if (judul.includes("dht22") || judul.includes("greenhouse")) {
-    return {
-      namaTampilSlot2: "Sensor Suhu & Lembab DHT22",
-      fungsiSlot2: "Membaca suhu udara (°C) & kelembaban rumah kaca di GPIO 15.",
-      idGambarSlot2: "sensor_suhu_dht",
-      idGudangValidSlot2: ["sensor_suhu_dht", "sen_dht22", "kelembapan_tanah", "sen_soil"],
-      kataKunciValidSlot2: ["dht22", "sensor suhu"],
-      pin1Slot2Label: "1. Pin Data DHT22",
-      pin2Slot2Label: "2. Pin VCC DHT22 (3.3V)",
-      pinEspKeSlot2Pin1: { id: "ESP_GPIO15", label: "GPIO 15", warna: "#10b981" },
-      pinEspKeSlot2Pin2: { id: "ESP_3V3", label: "3V3", warna: "#ef4444" },
-
-      namaTampilSlot3: "Kipas DC Exhaust & Pompa Air Mini",
-      fungsiSlot3: "Mendinginkan ruangan (GPIO 33) & menyiram tanaman (GPIO 25).",
-      idGambarSlot3: "kipas_dc",
-      idGudangValidSlot3: ["kipas_dc", "akt_kipas", "pompa_air", "akt_pompa", "relay_2ch", "rel_2ch"],
-      kataKunciValidSlot3: ["kipas", "pompa", "relay 2"],
-      pin1Slot3Label: "1. Pin Kipas (GPIO 33)",
-      pin2Slot3Label: "2. Pin Pompa / GND (25)",
-      pinEspKeSlot3Pin1: { id: "ESP_GPIO33", label: "GPIO 33", warna: "#8b5cf6" },
-      pinEspKeSlot3Pin2: { id: "ESP_GPIO25", label: "GPIO 25", warna: "#3b82f6" },
-
-      analogiMudah:
-        "Sensor Suhu DHT22 di Slot #2 terus memantau suhu udara melalui kaki GPIO 15. Begitu suhu > 32°C, ESP32 langsung menyalakan Kipas DC (GPIO 33) dan Pompa Air Irigasi (GPIO 25) di Slot #3!",
-    };
-  }
-
-  // 6. MODUL DETEKTOR GAS LPG MQ-2 & SPRINKLER PEMADAM (PROYEK 4 / LEVEL 6)
+  // B. Proteksi Bahaya Kebakaran & Gas 5 Item (ESP32 + MQ-2 + Flame Api + Buzzer + Pompa Sprinkler)
   if (judul.includes("mq-2") || judul.includes("gas") || judul.includes("kebakaran") || judul.includes("sprinkler")) {
     return {
-      namaTampilSlot2: "Sensor Gas & Asap MQ-2 (LPG/Metana)",
-      fungsiSlot2: "Mendeteksi kepekatan asap & kebocoran gas (PPM) di pin ADC GPIO 32.",
-      idGambarSlot2: "sensor_mq2",
-      idGudangValidSlot2: ["sensor_mq2", "sen_mq2", "sensor_flame", "sen_flame", "sensor_mq135"],
-      kataKunciValidSlot2: ["mq-2", "sensor gas", "flame"],
-      pin1Slot2Label: "1. Pin AO Gas MQ-2",
-      pin2Slot2Label: "2. Pin VCC MQ-2 (3.3V)",
-      pinEspKeSlot2Pin1: { id: "ESP_GPIO32", label: "GPIO 32", warna: "#f43f5e" },
-      pinEspKeSlot2Pin2: { id: "ESP_3V3", label: "3V3", warna: "#ef4444" },
-
-      namaTampilSlot3: "Buzzer Sirine & Pompa Sprinkler",
-      fungsiSlot3: "Membunyikan alarm bahaya (GPIO 19) & menyemprotkan air (GPIO 25).",
-      idGambarSlot3: "buzzer_piezo",
-      idGudangValidSlot3: ["buzzer_piezo", "akt_buzzer", "pompa_air", "akt_pompa", "relay_1ch"],
-      kataKunciValidSlot3: ["buzzer", "pompa", "relay"],
-      pin1Slot3Label: "1. Pin Buzzer (GPIO 19)",
-      pin2Slot3Label: "2. Pin Pompa (GPIO 25)",
-      pinEspKeSlot3Pin1: { id: "ESP_GPIO19", label: "GPIO 19", warna: "#ec4899" },
-      pinEspKeSlot3Pin2: { id: "ESP_GPIO25", label: "GPIO 25", warna: "#3b82f6" },
-
       analogiMudah:
-        "Sensor Gas MQ-2 di Slot #2 mencium kepekatan gas bocor melalui kaki analog GPIO 32. Jika kadar gas >= 500 PPM, ESP32 langsung membunyikan Buzzer Sirine (GPIO 19) dan menyalakan Pompa Sprinkler Pemadam (GPIO 25) di Slot #3!",
+        "Sistem keselamatan gedung ini menggabungkan 5 Item Komponen: ESP32 membaca Sensor Gas MQ-2 (Slot #2) dan Sensor Api Flame (Slot #3). Saat terjadi bahaya, ESP32 langsung mengaktifkan Sirine Buzzer (Slot #4) dan Pompa Air Sprinkler (Slot #5)!",
+      daftarPeriferal: [
+        {
+          namaTampil: "Sensor Gas & Asap MQ-2",
+          fungsiSingkat: "Mendeteksi kebocoran gas LPG (PPM) di GPIO 32.",
+          idGambar: "sensor_mq2",
+          idGudangValid: ["sensor_mq2", "sen_mq2", "sensor_mq135"],
+          kataKunciValid: ["mq-2", "sensor gas"],
+          pin1Label: "1. MQ-2 Pin AO",
+          pin2Label: "2. MQ-2 Pin VCC",
+          pinEspKePin1: { id: "ESP_GPIO32", label: "GPIO 32", warna: "#f43f5e" },
+          pinEspKePin2: { id: "ESP_3V3", label: "3V3", warna: "#ef4444" },
+        },
+        {
+          namaTampil: "Sensor Api Flame Detector",
+          fungsiSingkat: "Mendeteksi radiasi inframerah titik api di GPIO 34.",
+          idGambar: "sensor_flame",
+          idGudangValid: ["sensor_flame", "sen_flame"],
+          kataKunciValid: ["flame", "api"],
+          pin1Label: "1. Flame Pin DO",
+          pin2Label: "2. Flame Pin GND",
+          pinEspKePin1: { id: "ESP_GPIO34", label: "GPIO 34", warna: "#f97316" },
+          pinEspKePin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
+        },
+        {
+          namaTampil: "Buzzer Piezo Sirine Darurat",
+          fungsiSingkat: "Membunyikan alarm evakuasi gedung di GPIO 19.",
+          idGambar: "buzzer_piezo",
+          idGudangValid: ["buzzer_piezo", "akt_buzzer"],
+          kataKunciValid: ["buzzer"],
+          pin1Label: "1. Buzzer Positif (+)",
+          pin2Label: "2. Buzzer GND (-)",
+          pinEspKePin1: { id: "ESP_GPIO19", label: "GPIO 19", warna: "#ec4899" },
+          pinEspKePin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
+        },
+        {
+          namaTampil: "Pompa Air Mini Sprinkler",
+          fungsiSingkat: "Menyemprotkan air pemadam otomatis di GPIO 25.",
+          idGambar: "pompa_air",
+          idGudangValid: ["pompa_air", "akt_pompa", "relay_1ch", "rel_1ch"],
+          kataKunciValid: ["pompa", "relay"],
+          pin1Label: "1. Pin Pompa (25)",
+          pin2Label: "2. GND Pompa",
+          pinEspKePin1: { id: "ESP_GPIO25", label: "GPIO 25", warna: "#3b82f6" },
+          pinEspKePin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
+        },
+      ],
     };
   }
 
-  // 7. MODUL DUAL-ESP32 TELEMETRY BRIDGE UART (PROYEK 5 / LEVEL 7)
-  if (judul.includes("uart") || judul.includes("dual-esp32") || judul.includes("telemetry bridge")) {
+  // C. Smart Door Lock & Palang Pintu 5 Item (ESP32 + RFID RC522 + Servo SG90 + Solenoid 12V + Buzzer)
+  if (judul.includes("servo") || judul.includes("solenoid") || judul.includes("rfid") || judul.includes("ultrasonik")) {
     return {
-      namaTampilSlot2: "Board ESP32 #2 / NodeMCU (Gateway RX/TX)",
-      fungsiSlot2: "Menerima paket data serial melalui jalur kabel silang UART2 (Pin 16 & 17).",
-      idGambarSlot2: "nodemcu_esp8266",
-      idGudangValidSlot2: ["esp32_devkit", "nodemcu_esp8266", "esp32_c6", "mcu_esp32_node2", "mcu_esp32"],
-      kataKunciValidSlot2: ["esp32", "nodemcu"],
-      pin1Slot2Label: "1. Pin RX2 Penerima (16)",
-      pin2Slot2Label: "2. Pin TX2 Pengirim (17)",
-      pinEspKeSlot2Pin1: { id: "ESP_GPIO17", label: "TX2 (17)", warna: "#f97316" },
-      pinEspKeSlot2Pin2: { id: "ESP_GPIO16", label: "RX2 (16)", warna: "#06b6d4" },
-
-      namaTampilSlot3: "Layar OLED I2C 128x64 (Monitor Data)",
-      fungsiSlot3: "Menampilkan teks paket telemetri yang diterima oleh Gateway.",
-      idGambarSlot3: "layar_oled",
-      idGudangValidSlot3: ["layar_oled", "dsp_oled", "lcd_16x2", "dsp_lcd"],
-      kataKunciValidSlot3: ["oled", "lcd"],
-      pin1Slot3Label: "1. Pin VCC OLED (3.3V)",
-      pin2Slot3Label: "2. Pin GND OLED",
-      pinEspKeSlot3Pin1: { id: "ESP_3V3", label: "3V3", warna: "#ef4444" },
-      pinEspKeSlot3Pin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
-
       analogiMudah:
-        "Dua mikrokontroler saling mengobrol lewat kabel Serial2 secara menyilang: kaki TX2 (17) milik ESP32 #1 di kiri masuk ke kaki RX2 (16) milik ESP32 #2 di Slot #2, lalu pesan yang diterima ditampilkan ke Layar OLED I2C di Slot #3!",
+        "Gerbang keamanan pintar ini menggunakan 5 Item Komponen: ESP32 membaca kartu RFID RC522 / Ultrasonik (Slot #2), memutar Palang Motor Servo SG90 (Slot #3), menarik Kunci Besi Solenoid 12V (Slot #4), dan membunyikan Buzzer konfirmasi (Slot #5)!",
+      daftarPeriferal: [
+        {
+          namaTampil: judul.includes("ultrasonik")
+            ? "Sensor Ultrasonik HC-SR04"
+            : "RFID Card Reader RC522",
+          fungsiSingkat: "Mendeteksi kartu akses / jarak kendaraan masuk.",
+          idGambar: judul.includes("ultrasonik") ? "ultrasonik_hcsr04" : "rfid_rc522",
+          idGudangValid: ["rfid_rc522", "sen_rfid", "ultrasonik_hcsr04", "sen_ultrasonik"],
+          kataKunciValid: ["rfid", "ultrasonik"],
+          pin1Label: "1. Pin Sinyal Reader",
+          pin2Label: "2. Pin VCC 3.3V",
+          pinEspKePin1: { id: "ESP_GPIO15", label: "GPIO 15", warna: "#38bdf8" },
+          pinEspKePin2: { id: "ESP_3V3", label: "3V3", warna: "#ef4444" },
+        },
+        {
+          namaTampil: "Motor Servo SG90 180° (Palang)",
+          fungsiSingkat: "Memutar lengan palang pintu 90° lewat GPIO 13.",
+          idGambar: "servo_sg90",
+          idGudangValid: ["servo_sg90", "akt_servo180"],
+          kataKunciValid: ["servo"],
+          pin1Label: "1. Kabel PWM Servo",
+          pin2Label: "2. Kabel GND Servo",
+          pinEspKePin1: { id: "ESP_GPIO13", label: "GPIO 13", warna: "#a855f7" },
+          pinEspKePin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
+        },
+        {
+          namaTampil: "Solenoid Door Lock 12V",
+          fungsiSingkat: "Membuka slot kunci besi pintu di GPIO 27.",
+          idGambar: "solenoid_lock",
+          idGudangValid: ["solenoid_lock", "akt_solenoid", "relay_1ch"],
+          kataKunciValid: ["solenoid", "relay"],
+          pin1Label: "1. Pin IN Solenoid",
+          pin2Label: "2. Pin GND Solenoid",
+          pinEspKePin1: { id: "ESP_GPIO27", label: "GPIO 27", warna: "#14b8a6" },
+          pinEspKePin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
+        },
+        {
+          namaTampil: "Buzzer Piezo Beep Akses",
+          fungsiSingkat: "Memberi bunyi beep saat pintu terbuka.",
+          idGambar: "buzzer_piezo",
+          idGudangValid: ["buzzer_piezo", "akt_buzzer", "led_hijau"],
+          kataKunciValid: ["buzzer", "led hijau"],
+          pin1Label: "1. Buzzer (+)",
+          pin2Label: "2. Buzzer (-)",
+          pinEspKePin1: { id: "ESP_GPIO2", label: "GPIO 2", warna: "#facc15" },
+          pinEspKePin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
+        },
+      ],
     };
   }
 
-  // 8. MODUL PLC OTOMASI PABRIK: ARDUINO UNO SLAVE + RELAY 4-CH (PROYEK 6 / LEVEL 8)
-  if (judul.includes("relay 4-ch") || judul.includes("plc") || judul.includes("pabrik") || judul.includes("uno slave")) {
+  // D. Pertukaran Data Multi-MCU / NPK + GPS + Baterai 5 Item
+  if (judul.includes("npk") || judul.includes("gps") || judul.includes("baterai") || judul.includes("tegangan") || judul.includes("triple") || judul.includes("struct")) {
     return {
-      namaTampilSlot2: "Arduino Uno R3 (Slave Controller)",
-      fungsiSlot2: "Menerima instruksi dari ESP32 Master untuk menggerakkan mesin pabrik.",
-      idGambarSlot2: "arduino_uno",
-      idGudangValidSlot2: ["arduino_uno", "mcu_uno", "stm32_bluepill"],
-      kataKunciValidSlot2: ["arduino uno", "uno"],
-      pin1Slot2Label: "1. Pin Bus Serial Uno",
-      pin2Slot2Label: "2. Pin VCC 5V Uno",
-      pinEspKeSlot2Pin1: { id: "ESP_GPIO16", label: "RX2 (16)", warna: "#38bdf8" },
-      pinEspKeSlot2Pin2: { id: "ESP_3V3", label: "3V3", warna: "#ef4444" },
-
-      namaTampilSlot3: "Modul Relay 4-Channel Industri PLC",
-      fungsiSlot3: "Sakelar 4 jalur mesin konveyor pabrik (Pin 4, 5, 6, 7).",
-      idGambarSlot3: "relay_4ch",
-      idGudangValidSlot3: ["relay_4ch", "rel_4ch", "servo_mg996r"],
-      kataKunciValidSlot3: ["relay 4", "relay_4ch"],
-      pin1Slot3Label: "1. Pin IN1..IN4 Relay",
-      pin2Slot3Label: "2. Pin GND Bus Relay",
-      pinEspKeSlot3Pin1: { id: "ESP_GPIO4", label: "GPIO 4", warna: "#facc15" },
-      pinEspKeSlot3Pin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
-
       analogiMudah:
-        "Dalam lini pabrik industri, ESP32 Master bekerja sama dengan Arduino Uno R3 (Slot #2) untuk menyalakan 4 sakelar kontaktor pada Modul Relay 4-Channel (Slot #3) secara berurutan menggunakan perulangan for!",
+        "Node pertanian presisi ini merakit 5 Item Komponen sekaligus: ESP32 membaca Sensor Pupuk NPK RS485 (Slot #2), mengunci lokasi Satelit GPS NEO-6M (Slot #3), memantau Socket Baterai 18650 (Slot #4), dan mengukur voltase lewat Sensor Tegangan (Slot #5)!",
+      daftarPeriferal: [
+        {
+          namaTampil: "Sensor Pupuk NPK RS485",
+          fungsiSingkat: "Membaca unsur hara N-P-K tanah (mg/kg).",
+          idGambar: "sensor_npk",
+          idGudangValid: ["sensor_npk", "sen_npk"],
+          kataKunciValid: ["npk", "pupuk"],
+          pin1Label: "1. NPK Pin RO (16)",
+          pin2Label: "2. NPK Pin DI (17)",
+          pinEspKePin1: { id: "ESP_GPIO16", label: "RX2 (16)", warna: "#10b981" },
+          pinEspKePin2: { id: "ESP_GPIO17", label: "TX2 (17)", warna: "#f97316" },
+        },
+        {
+          namaTampil: "Modul Satelit GPS NEO-6M",
+          fungsiSingkat: "Melacak posisi Latitude & Longitude kebun.",
+          idGambar: "gps_neo6m",
+          idGudangValid: ["gps_neo6m", "sen_gps"],
+          kataKunciValid: ["gps", "neo"],
+          pin1Label: "1. GPS Pin TX (4)",
+          pin2Label: "2. GPS Pin VCC",
+          pinEspKePin1: { id: "ESP_GPIO4", label: "GPIO 4", warna: "#38bdf8" },
+          pinEspKePin2: { id: "ESP_3V3", label: "3V3", warna: "#ef4444" },
+        },
+        {
+          namaTampil: "Socket Baterai Li-Ion 18650",
+          fungsiSingkat: "Menyuplai daya DC node di lapangan.",
+          idGambar: "socket_baterai",
+          idGudangValid: ["socket_baterai", "pwr_batt18650"],
+          kataKunciValid: ["baterai", "18650"],
+          pin1Label: "1. Baterai Positif (+)",
+          pin2Label: "2. Baterai Negatif (-)",
+          pinEspKePin1: { id: "ESP_3V3", label: "3V3", warna: "#ef4444" },
+          pinEspKePin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
+        },
+        {
+          namaTampil: "Sensor Tegangan 0-25V (INA219)",
+          fungsiSingkat: "Mengukur tegangan baterai di pin ADC GPIO 35.",
+          idGambar: "sensor_tegangan",
+          idGudangValid: ["sensor_tegangan", "pwr_ina219", "sensor_pzem", "layar_oled"],
+          kataKunciValid: ["tegangan", "ina219", "pzem", "oled"],
+          pin1Label: "1. Pin Volt Out (35)",
+          pin2Label: "2. Pin GND Sensor",
+          pinEspKePin1: { id: "ESP_GPIO35", label: "GPIO 35", warna: "#f59e0b" },
+          pinEspKePin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
+        },
+      ],
     };
   }
 
-  // 9. MODUL TRIPLE MCU SYSTEM (PROYEK 7 / LEVEL 9)
-  if (judul.includes("triple") || judul.includes("3 chip") || judul.includes("3 mikrokontroler")) {
+  // ==========================================================================
+  // VARIASI 3 ITEM KOMPONEN (1 ESP32 + 2 PERIFERAL)
+  // Untuk LDR + Relay, Dual-ESP32 UART + OLED, Potensio + LED
+  // ==========================================================================
+  if (judul.includes("ldr") || judul.includes("cahaya")) {
     return {
-      namaTampilSlot2: "STM32 BluePill / ESP32 Sub-Node #2",
-      fungsiSlot2: "Node pemroses tengah dalam klaster 3 mikrokontroler.",
-      idGambarSlot2: "stm32_bluepill",
-      idGudangValidSlot2: ["stm32_bluepill", "rpi_pico", "nodemcu_esp8266", "esp32_devkit"],
-      kataKunciValidSlot2: ["stm32", "pico", "nodemcu", "esp32"],
-      pin1Slot2Label: "1. Pin Sync Klaster",
-      pin2Slot2Label: "2. Pin VCC 3.3V",
-      pinEspKeSlot2Pin1: { id: "ESP_GPIO15", label: "GPIO 15", warna: "#10b981" },
-      pinEspKeSlot2Pin2: { id: "ESP_3V3", label: "3V3", warna: "#ef4444" },
-
-      namaTampilSlot3: "Arduino Uno R3 #3 (Actuator Slave)",
-      fungsiSlot3: "Mikrokontroler ke-3 eksekutor beban aktuator klaster.",
-      idGambarSlot3: "arduino_uno",
-      idGudangValidSlot3: ["arduino_uno", "mcu_uno", "relay_4ch"],
-      kataKunciValidSlot3: ["arduino", "uno", "relay"],
-      pin1Slot3Label: "1. Pin Bus Klaster #3",
-      pin2Slot3Label: "2. Pin Ground Bersama",
-      pinEspKeSlot3Pin1: { id: "ESP_GPIO17", label: "TX2 (17)", warna: "#f97316" },
-      pinEspKeSlot3Pin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
-
       analogiMudah:
-        "Arsitektur Triple-MCU menghubungkan 3 otak mikrokontroler sekaligus (ESP32 #1 + STM32/ESP32 #2 di Slot #2 + Arduino Uno #3 di Slot #3) dalam satu ID Klaster yang sinkron!",
+        "Rangkaian 3 Item Komponen: Sensor Cahaya LDR (Slot #2) mengukur gelapnya malam di GPIO 34, lalu ESP32 menyalakan Modul Relay 1-Ch (Slot #3) di GPIO 26!",
+      daftarPeriferal: [
+        {
+          namaTampil: "Sensor Cahaya LDR (Photoresistor)",
+          fungsiSingkat: "Membaca intensitas cahaya ke GPIO 34.",
+          idGambar: "sensor_ldr",
+          idGudangValid: ["sensor_ldr", "sen_ldr"],
+          kataKunciValid: ["ldr", "cahaya"],
+          pin1Label: "1. Pin AO LDR",
+          pin2Label: "2. Pin VCC LDR",
+          pinEspKePin1: { id: "ESP_GPIO34", label: "GPIO 34", warna: "#22c55e" },
+          pinEspKePin2: { id: "ESP_3V3", label: "3V3", warna: "#ef4444" },
+        },
+        {
+          namaTampil: "Modul Relay 1-Channel 5V",
+          fungsiSingkat: "Sakelar otomatis lampu jalan di GPIO 26.",
+          idGambar: "relay_1ch",
+          idGudangValid: ["relay_1ch", "rel_1ch"],
+          kataKunciValid: ["relay 1", "relay_1ch"],
+          pin1Label: "1. Pin IN Relay",
+          pin2Label: "2. Pin GND Relay",
+          pinEspKePin1: { id: "ESP_GPIO26", label: "GPIO 26", warna: "#eab308" },
+          pinEspKePin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
+        },
+      ],
     };
   }
 
-  // 10. MODUL SENSOR PUPUK NPK TANAH RS485 (LEVEL 10 / 18)
-  if (judul.includes("npk") && !judul.includes("10-node")) {
+  if (judul.includes("uart") || judul.includes("dual-esp32") || judul.includes("esp-now")) {
     return {
-      namaTampilSlot2: "Sensor Pupuk NPK Tanah 3-Garpu (RS485)",
-      fungsiSlot2: "Mengukur unsur hara Nitrogen (N), Fosfor (P), dan Kalium (K) dalam mg/kg.",
-      idGambarSlot2: "sensor_npk",
-      idGudangValidSlot2: ["sensor_npk", "sen_npk", "kelembapan_tanah"],
-      kataKunciValidSlot2: ["npk", "pupuk"],
-      pin1Slot2Label: "1. Pin RO Modbus NPK",
-      pin2Slot2Label: "2. Pin DI Modbus NPK",
-      pinEspKeSlot2Pin1: { id: "ESP_GPIO16", label: "RX2 (16)", warna: "#06b6d4" },
-      pinEspKeSlot2Pin2: { id: "ESP_GPIO17", label: "TX2 (17)", warna: "#f97316" },
-
-      namaTampilSlot3: "Layar OLED I2C / Modul GPS Kebun",
-      fungsiSlot3: "Menampilkan kadar N-P-K tanah dan status kesuburan lahan.",
-      idGambarSlot3: judul.includes("gps") ? "gps_neo6m" : "layar_oled",
-      idGudangValidSlot3: ["layar_oled", "dsp_oled", "gps_neo6m", "sen_gps", "lcd_16x2"],
-      kataKunciValidSlot3: ["oled", "gps", "lcd"],
-      pin1Slot3Label: "1. Pin Data Display/GPS",
-      pin2Slot3Label: "2. Pin GND Display/GPS",
-      pinEspKeSlot3Pin1: { id: "ESP_GPIO4", label: "GPIO 4", warna: "#38bdf8" },
-      pinEspKeSlot3Pin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
-
       analogiMudah:
-        "Tiga garpu besi pada Sensor Pupuk NPK di Slot #2 ditancapkan ke tanah untuk membaca kadar Nitrogen, Fosfor, dan Kalium via jalur RS485 (Pin 16 & 17), lalu hasilnya ditampilkan ke modul di Slot #3!",
+        "Komunikasi 3 Item Komponen: ESP32 #1 mengirim paket data ke ESP32 #2 / NodeMCU (Slot #2) lalu menampilkannya ke Layar OLED I2C (Slot #3)!",
+      daftarPeriferal: [
+        {
+          namaTampil: "Board ESP32 #2 / NodeMCU Receiver",
+          fungsiSingkat: "Menerima paket komunikasi dari ESP32 #1.",
+          idGambar: "nodemcu_esp8266",
+          idGudangValid: ["nodemcu_esp8266", "esp32_devkit", "esp32_c6", "mcu_esp32_node2"],
+          kataKunciValid: ["nodemcu", "esp32"],
+          pin1Label: "1. Pin RX2 Penerima",
+          pin2Label: "2. Pin TX2 Pengirim",
+          pinEspKePin1: { id: "ESP_GPIO17", label: "TX2 (17)", warna: "#f97316" },
+          pinEspKePin2: { id: "ESP_GPIO16", label: "RX2 (16)", warna: "#06b6d4" },
+        },
+        {
+          namaTampil: "Layar OLED I2C 128x64",
+          fungsiSingkat: "Menampilkan pesan yang diterima.",
+          idGambar: "layar_oled",
+          idGudangValid: ["layar_oled", "dsp_oled", "lcd_16x2"],
+          kataKunciValid: ["oled", "lcd"],
+          pin1Label: "1. Pin VCC OLED",
+          pin2Label: "2. Pin GND OLED",
+          pinEspKePin1: { id: "ESP_3V3", label: "3V3", warna: "#ef4444" },
+          pinEspKePin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
+        },
+      ],
     };
   }
 
-  // 11. MODUL GPS KOORDINAT KEBUN NEO-6M (LEVEL 11)
-  if (judul.includes("gps")) {
-    return {
-      namaTampilSlot2: "Modul Satelit GPS u-blox NEO-6M",
-      fungsiSlot2: "Mengunci titik koordinat Latitude & Longitude dari satelit.",
-      idGambarSlot2: "gps_neo6m",
-      idGudangValidSlot2: ["gps_neo6m", "sen_gps"],
-      kataKunciValidSlot2: ["gps", "neo-6m"],
-      pin1Slot2Label: "1. Pin TX GPS NEO-6M",
-      pin2Slot2Label: "2. Pin VCC GPS (3.3V)",
-      pinEspKeSlot2Pin1: { id: "ESP_GPIO4", label: "GPIO 4", warna: "#38bdf8" },
-      pinEspKeSlot2Pin2: { id: "ESP_3V3", label: "3V3", warna: "#ef4444" },
-
-      namaTampilSlot3: "Layar OLED I2C (Peta Koordinat)",
-      fungsiSlot3: "Menampilkan angka lintang (Lat) & bujur (Lng) kebun.",
-      idGambarSlot3: "layar_oled",
-      idGudangValidSlot3: ["layar_oled", "dsp_oled", "lcd_16x2", "sensor_npk"],
-      kataKunciValidSlot3: ["oled", "lcd", "npk"],
-      pin1Slot3Label: "1. Pin SDA OLED",
-      pin2Slot3Label: "2. Pin GND OLED",
-      pinEspKeSlot3Pin1: { id: "ESP_GPIO15", label: "GPIO 15", warna: "#10b981" },
-      pinEspKeSlot3Pin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
-
-      analogiMudah:
-        "Antena keramik emas pada Modul GPS NEO-6M di Slot #2 menangkap sinyal satelit dan mengirimkan koordinat Latitude & Longitude ke GPIO 4 ESP32!",
-    };
-  }
-
-  // 12. MODUL MONITORING BATERAI 18650 & SENSOR TEGANGAN (LEVEL 12 / 19)
-  if (judul.includes("baterai") || judul.includes("tegangan")) {
-    return {
-      namaTampilSlot2: "Socket Baterai Li-Ion 18650 (3.7V–4.2V)",
-      fungsiSlot2: "Menyuplai daya mandiri untuk node sensor di perkebunan.",
-      idGambarSlot2: "socket_baterai",
-      idGudangValidSlot2: ["socket_baterai", "pwr_batt18650"],
-      kataKunciValidSlot2: ["baterai", "18650"],
-      pin1Slot2Label: "1. Kutub Positif (+) Batt",
-      pin2Slot2Label: "2. Kutub Negatif (-) Batt",
-      pinEspKeSlot2Pin1: { id: "ESP_3V3", label: "3V3", warna: "#ef4444" },
-      pinEspKeSlot2Pin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
-
-      namaTampilSlot3: "Sensor Tegangan 0–25V / INA219",
-      fungsiSlot3: "Mengukur voltase baterai melalui pin ADC GPIO 35.",
-      idGambarSlot3: "sensor_tegangan",
-      idGudangValidSlot3: ["sensor_tegangan", "pwr_ina219", "sensor_pzem"],
-      kataKunciValidSlot3: ["tegangan", "ina219", "pzem"],
-      pin1Slot3Label: "1. Pin Sinyal V_OUT",
-      pin2Slot3Label: "2. Pin GND Sensor",
-      pinEspKeSlot3Pin1: { id: "ESP_GPIO35", label: "GPIO 35", warna: "#f59e0b" },
-      pinEspKeSlot3Pin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
-
-      analogiMudah:
-        "Baterai Li-Ion 18650 di Slot #2 diukur tegangannya oleh Sensor Tegangan 0-25V di Slot #3 melalui kaki ADC GPIO 35 sehingga kita tahu sisa kapasitas baterai dalam Volt dan Persen (%)!",
-    };
-  }
-
-  // 13. MODUL POTENSIOMETER 10K + PWM LED DIMMER
-  if (judul.includes("potensiometer")) {
-    return {
-      namaTampilSlot2: "Potensiometer Putar 10kΩ (Input ADC)",
-      fungsiSlot2: "Mengirim tegangan variabel (0–4095) ke kaki ADC GPIO 34.",
-      idGambarSlot2: "potensiometer",
-      idGudangValidSlot2: ["potensiometer", "pas_potensio"],
-      kataKunciValidSlot2: ["potensiometer"],
-      pin1Slot2Label: "1. Pin Tengah (SIG)",
-      pin2Slot2Label: "2. Pin VCC Potensio",
-      pinEspKeSlot2Pin1: { id: "ESP_GPIO34", label: "GPIO 34", warna: "#22c55e" },
-      pinEspKeSlot2Pin2: { id: "ESP_3V3", label: "3V3", warna: "#ef4444" },
-
-      namaTampilSlot3: "LED Merah 5mm (Output PWM Dimmer)",
-      fungsiSlot3: "Menyala meredup & menerang halus sesuai nilai PWM (0–255) di GPIO 2.",
-      idGambarSlot3: "led_merah",
-      idGudangValidSlot3: ["led_merah", "led_hijau", "pas_led_merah", "pas_led_hijau"],
-      kataKunciValidSlot3: ["led merah", "led hijau"],
-      pin1Slot3Label: "1. Anoda LED (+)",
-      pin2Slot3Label: "2. Katoda LED (GND)",
-      pinEspKeSlot3Pin1: { id: "ESP_GPIO2", label: "GPIO 2", warna: "#facc15" },
-      pinEspKeSlot3Pin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
-
-      analogiMudah:
-        "Putaran knop Potensiometer 10kΩ di Slot #2 dibaca oleh kaki analog GPIO 34 (0-4095), lalu diubah menjadi sinyal PWM (0-255) ke GPIO 2 untuk mengatur redup-terangnya Lampu LED di Slot #3!",
-    };
-  }
-
-  // 14. MODUL STRUCT / ESP-NOW / MASTER 10-NODE MULTI-HOP MESH (PROYEK 8 / LEVEL 13, 14, 15, 20)
   return {
-    namaTampilSlot2: "Sensor Pupuk NPK & Suhu Kebun",
-    fungsiSlot2: "Menghasilkan paket struct data (Suhu, NPK, Baterai, GPS).",
-    idGambarSlot2: "sensor_npk",
-    idGudangValidSlot2: ["sensor_npk", "sen_npk", "sensor_suhu_dht", "gps_neo6m"],
-    kataKunciValidSlot2: ["npk", "dht", "gps"],
-    pin1Slot2Label: "1. Pin Data Sensor",
-    pin2Slot2Label: "2. Pin VCC Sensor",
-    pinEspKeSlot2Pin1: { id: "ESP_GPIO15", label: "GPIO 15", warna: "#10b981" },
-    pinEspKeSlot2Pin2: { id: "ESP_3V3", label: "3V3", warna: "#ef4444" },
-
-    namaTampilSlot3: "NodeMCU / ESP32 Gateway Node #10",
-    fungsiSlot3: "Menerima estafet paket ESP-NOW (Hop N+1) & upload ke Cloud Web.",
-    idGambarSlot3: "nodemcu_esp8266",
-    idGudangValidSlot3: ["nodemcu_esp8266", "esp32_devkit", "esp32_c6", "mcu_gateway10", "layar_oled"],
-    kataKunciValidSlot3: ["nodemcu", "esp32", "gateway", "oled"],
-    pin1Slot3Label: "1. Jalur Next-Hop (N+1)",
-    pin2Slot3Label: "2. Jalur GND Gateway",
-    pinEspKeSlot3Pin1: { id: "ESP_GPIO17", label: "TX2 (17)", warna: "#facc15" },
-    pinEspKeSlot3Pin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
-
     analogiMudah:
-      "Data dari Sensor Kebun (Suhu, Pupuk NPK, Baterai, & GPS) di Slot #2 dikemas ke dalam struct C++, lalu dikirimkan secara estafet berantai (Multi-Hop Node 1 ➔ ... ➔ Node 10) menuju Gateway Internet di Slot #3!",
+      "Putaran knop Potensiometer 10kΩ di Slot #2 dibaca oleh pin ADC GPIO 34, lalu mengatur kecerahan PWM Lampu LED di Slot #3!",
+    daftarPeriferal: [
+      {
+        namaTampil: "Potensiometer Putar 10kΩ",
+        fungsiSingkat: "Mengirim nilai tegangan analog (0-4095) ke GPIO 34.",
+        idGambar: "potensiometer",
+        idGudangValid: ["potensiometer", "pas_potensio"],
+        kataKunciValid: ["potensiometer"],
+        pin1Label: "1. Pin Tengah (SIG)",
+        pin2Label: "2. Pin VCC Potensio",
+        pinEspKePin1: { id: "ESP_GPIO34", label: "GPIO 34", warna: "#22c55e" },
+        pinEspKePin2: { id: "ESP_3V3", label: "3V3", warna: "#ef4444" },
+      },
+      {
+        namaTampil: "LED Merah 5mm (Output PWM)",
+        fungsiSingkat: "Menyala redup-terang sesuai nilai PWM di GPIO 2.",
+        idGambar: "led_merah",
+        idGudangValid: ["led_merah", "led_hijau", "pas_led_merah"],
+        kataKunciValid: ["led merah", "led hijau"],
+        pin1Label: "1. Anoda LED (+)",
+        pin2Label: "2. Katoda LED (-)",
+        pinEspKePin1: { id: "ESP_GPIO2", label: "GPIO 2", warna: "#facc15" },
+        pinEspKePin2: { id: "ESP_GND", label: "GND", warna: "#64748b" },
+      },
+    ],
   };
 }

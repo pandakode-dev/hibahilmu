@@ -120,8 +120,8 @@ export const WokwiMultiSlotCanvas: React.FC<{
   const handleMouseMoveSvg = (e: React.MouseEvent<SVGSVGElement>) => {
     if (!pinAwalDiklik || !svgRef.current) return;
     const rect = svgRef.current.getBoundingClientRect();
-    const scaleX = 580 / rect.width;
-    const scaleY = 250 / rect.height;
+    const maxH = Math.max(250, daftarSlotPeriferal.reduce((m, s) => Math.max(m, s.boxY + s.boxH + 24), 250)); const scaleX = 600 / rect.width;
+    const scaleY = maxH / rect.height;
     setPosisiKursorSvg({
       x: (e.clientX - rect.left) * scaleX,
       y: (e.clientY - rect.top) * scaleY,
@@ -207,12 +207,12 @@ export const WokwiMultiSlotCanvas: React.FC<{
 
       <svg
         ref={svgRef}
-        viewBox="0 0 580 250"
+        viewBox={`0 0 600 ${Math.max(250, daftarSlotPeriferal.reduce((m, s) => Math.max(m, s.boxY + s.boxH + 24), 250))}`}
         onMouseMove={handleMouseMoveSvg}
         onClick={() => {
           if (pinAwalDiklik) setPinAwalDiklik(null);
         }}
-        className="w-full h-64 sm:h-76 select-none"
+        className="w-full h-72 sm:h-96 select-none"
       >
         {Array.from({ length: 21 }).map((_, gx) =>
           Array.from({ length: 9 }).map((__, gy) => (
@@ -543,7 +543,7 @@ export const WokwiMultiSlotCanvas: React.FC<{
               >
                 <MiniaturSvgGudang48
                   idItem={infoTerpasang.idKartu || slot.idGambarMiniatur}
-                  namaItem={infoTerpasang.namaKartu || slot.namaTarget}
+                  namaItem=""
                   nilaiOhmResistor={fisika.nilaiOhmResistor}
                 />
               </svg>
