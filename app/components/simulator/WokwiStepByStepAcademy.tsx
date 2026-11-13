@@ -31,6 +31,7 @@ import {
   KategoriKesulitanAcademy,
   ExtendedLessonStepIoT,
   ambilBlueprintMultiPinRealistis,
+  apakahKartuGudangValidUntukSlot,
   dapatkanBabDariLevel,
   hitungGelangResistorModular,
 } from "./wokwiAcademyBlueprints";
@@ -287,6 +288,7 @@ export const WokwiStepByStepAcademy: React.FC<{
     return cocokKategori && cocokKata;
   });
 
+  // VALIDASI KETAT SAAT DROP KOMPONEN (OLED TIDAK AKAN BISA MASUK KE SLOT LED!)
   const handleDropKeSlotTertentu = (nomorSlotTarget: number) => {
     if (!itemSedangDiDrag) return;
 
@@ -303,7 +305,7 @@ export const WokwiStepByStepAcademy: React.FC<{
       } else {
         picuGetaranMerahRangkaian();
         setPesanGudang(
-          `❌ Salah Komponen! Slot #1 khusus untuk 'ESP32 DevKit V1', bukan '${itemSedangDiDrag.nama}'.`
+          `❌ Ditolak! Slot #1 khusus untuk 'ESP32 DevKit V1', bukan '${itemSedangDiDrag.nama}'.`
         );
       }
       setItemSedangDiDrag(null);
@@ -315,11 +317,10 @@ export const WokwiStepByStepAcademy: React.FC<{
     );
     if (!defSlot) return;
 
-    const teksKartu = `${itemSedangDiDrag.id} ${itemSedangDiDrag.nama} ${itemSedangDiDrag.badgeAtas}`.toLowerCase();
-    const apakahCocok =
-      itemSedangDiDrag.cocokUntukDropZone !== "esp32_board" &&
-      (defSlot.kataKunciCocokGudang.some((kw) => teksKartu.includes(kw)) ||
-        itemSedangDiDrag.levelTerkait.includes(materiAktif.level));
+    const apakahCocok = apakahKartuGudangValidUntukSlot(
+      itemSedangDiDrag,
+      defSlot
+    );
 
     if (apakahCocok) {
       setSlotPeriferalTerpasangMap((prev) => ({
@@ -349,13 +350,12 @@ export const WokwiStepByStepAcademy: React.FC<{
     } else {
       picuGetaranMerahRangkaian();
       setPesanGudang(
-        `❌ Slot #${nomorSlotTarget} membutuhkan '${defSlot.namaTarget}', bukan '${itemSedangDiDrag.nama}'.`
+        `❌ Komponen Ditolak! Slot #${nomorSlotTarget} hanya menerima '${defSlot.namaTarget}', tidak bisa diisi dengan '${itemSedangDiDrag.nama}'!`
       );
     }
     setItemSedangDiDrag(null);
   };
 
-  // Mendukung penyambungan bebas: ESP32 <-> Periferal MAUPUN Periferal <-> Periferal (Katoda LED ke Kaki 1 Resistor!)
   const handleKlikTitikPinFisik = (
     e: React.MouseEvent,
     pinDiklik: TitikPinFisik
@@ -419,7 +419,7 @@ export const WokwiStepByStepAcademy: React.FC<{
       picuGetaranMerahRangkaian();
       setPinYangSalahAtauKurangIds([pinAwalDiklik.idPin, pinDiklik.idPin]);
       setPesanGudang(
-        `❌ Salah Sambung Kaki! Kabel dari [${pinAwalDiklik.labelPin}] ke [${pinDiklik.labelPin}] tidak sesuai skema.`
+        `❌ Salah Sambung Kaki! Kabel dari [${pinAwalDiklik.labelPin}] ke [${pinDiklik.labelPin}] salah. Klik tanda ✕ pada kabel merah tersebut untuk menghapusnya!`
       );
     } else {
       setPesanGudang(`✅ Tersambung: ${cocokWajib.keteranganJalur}!`);
@@ -449,6 +449,23 @@ export const WokwiStepByStepAcademy: React.FC<{
       }
     }
 
+    // Cek jika ada kabel merah (salah pasang) yang belum dihapus
+    for (const terpasang of kabelTerpasangList) {
+      const valid = semuaSambunganWajibLevelIni.some(
+        (w) =>
+          (w.pinAsalId === terpasang.pinAsalId &&
+            w.pinTujuanId === terpasang.pinTujuanId) ||
+          (w.pinAsalId === terpasang.pinTujuanId &&
+            w.pinTujuanId === terpasang.pinAsalId)
+      );
+      if (!valid) {
+        errors.push(
+          `[ADA KABEL SALAH] Hapus dulu kabel yang salah (garis merah putus-putus) dengan mengklik tombol ✕ pada kabel tersebut!`
+        );
+        pinBermasalah.push(terpasang.pinAsalId, terpasang.pinTujuanId);
+      }
+    }
+
     if (errors.length > 0) {
       setStatusVerifikasi("gagal_rangkaian");
       setDaftarErrorDetail(errors);
@@ -458,14 +475,11 @@ export const WokwiStepByStepAcademy: React.FC<{
       setOutputSerialSimulasi(
         `[HARDWARE MULTI-PIN WIRING ERROR]\n--------------------------------------------------\n${errors
           .map((e, i) => `❌ ${i + 1}. ${e}`)
-          .join(
-            "\n"
-          )}\n👉 Semua kaki komponen (termasuk kaki ke-2 / Katoda / Resistor) wajib dihubungkan!`
+          .join("\n")}`
       );
       return;
     }
 
-    const barisArray = kodeKetikanUser.split("\n");
     const kodeBersih = kodeKetikanUser
       .replace(/\/\/.*$/gm, "")
       .replace(/\/\*[\s\S]*?\*\//g, "")
@@ -533,7 +547,6 @@ export const WokwiStepByStepAcademy: React.FC<{
         }
       `}</style>
 
-      {/* POP-UP MODAL DASAR TEORI BERANIMASI (FILE TERPISAH) */}
       <WokwiTheoryModal
         tampil={tampilModalTeori}
         onTutup={() => setTampilModalTeori(false)}
@@ -570,7 +583,7 @@ export const WokwiStepByStepAcademy: React.FC<{
               onClick={() => setTampilModalTeori(true)}
               className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md"
             >
-              <BookOpen className="w-4 h-4" /> 📖 Buka Pop-Up Teori
+              <BookOpen className="w-4 h-4" /> 📖 Buka Pop-Up Skema Gambar
             </button>
 
             <div className="flex items-center gap-1.5 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
@@ -656,13 +669,13 @@ export const WokwiStepByStepAcademy: React.FC<{
         </div>
       </div>
 
-      {/* LACI GUDANG 48 KOMPONEN */}
+      {/* LACI GUDANG 48 KOMPONEN (SOROT HANYA KOMPONEN YANG VALID!) */}
       <div className="bg-[#0b101e] p-5 rounded-3xl border border-slate-800 space-y-4 shadow-xl">
         <div className="flex flex-wrap justify-between items-center gap-3">
           <div className="flex items-center gap-2">
             <Move className="w-4 h-4 text-amber-400" />
             <span className="text-sm font-bold text-amber-300">
-              Gudang Komponen (Tarik Satu per Satu ke Slot #1 s.d. Slot #{totalKomponenWajib}):
+              Gudang Komponen (Tarik Komponen yang Berkedip ke Slot #1 s.d. Slot #{totalKomponenWajib}):
             </span>
           </div>
 
@@ -707,15 +720,15 @@ export const WokwiStepByStepAcademy: React.FC<{
 
         <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-8 lg:grid-cols-10 gap-2.5 max-h-52 overflow-y-auto pr-1 pt-1">
           {daftarGudangTerfilter.map((item) => {
-            const teksItem = `${item.id} ${item.nama}`.toLowerCase();
             const sorotSlot1 =
               !slot1Esp32Terpasang &&
               item.cocokUntukDropZone === "esp32_board";
             const sorotSlotLain =
               slot1Esp32Terpasang &&
-              slotPeriferalKosongBerikutnya &&
-              slotPeriferalKosongBerikutnya.kataKunciCocokGudang.some((kw) =>
-                teksItem.includes(kw)
+              slotPeriferalKosongBerikutnya !== null &&
+              apakahKartuGudangValidUntukSlot(
+                item,
+                slotPeriferalKosongBerikutnya
               );
 
             const berkedip =
@@ -757,7 +770,7 @@ export const WokwiStepByStepAcademy: React.FC<{
         </div>
       </div>
 
-      {/* KANVAS MULTI-SLOT & MULTI-PIN (FILE TERPISAH) */}
+      {/* KANVAS MULTI-SLOT & MULTI-PIN */}
       <WokwiMultiSlotCanvas
         kanvasContainerRef={kanvasContainerRef}
         getarMerahRangkaian={getarMerahRangkaian}
@@ -808,7 +821,7 @@ export const WokwiStepByStepAcademy: React.FC<{
                 2. Checklist Semua Kaki Pin yang Wajib Disambung ({kabelTerpasangList.length}/
                 {semuaSambunganWajibLevelIni.length} Kabel):
               </div>
-              {semuaSambunganWajibLevelIni.map((w, i) => {
+              {semuaSambunganWajibLevelIni.map((w) => {
                 const sudah = apakahKabelSudahAda(w.pinAsalId, w.pinTujuanId);
                 return (
                   <div

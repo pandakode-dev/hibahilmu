@@ -15,8 +15,6 @@ export type ExtendedLessonStepIoT = LessonStepIoT & {
   kategoriKesulitan?: string;
 };
 
-// Sambungan kabel kini mendukung koneksi bebas antar-pin mana saja:
-// (ESP32 <-> Periferal) MAUPUN (Periferal <-> Periferal, misal Katoda LED ke Kaki 1 Resistor!)
 export interface AturanSambunganKabelReal {
   idSambungan: string;
   pinAsalId: string;
@@ -28,16 +26,17 @@ export interface AturanSambunganKabelReal {
 }
 
 export interface DefinisiSlotPeriferalMultiPin {
-  nomorSlot: number; // 2, 3, atau 4
+  nomorSlot: number;
   namaTarget: string;
   fungsiSingkat: string;
+  // ID Eksak dari Gudang 48 Komponen yang diizinkan masuk ke slot ini (Mencegah OLED masuk ke LED!)
+  daftarIdGudangValid: string[];
   kataKunciCocokGudang: string[];
   idGambarMiniatur: string;
   boxX: number;
   boxY: number;
   boxW: number;
   boxH: number;
-  // Setiap komponen kini memiliki 2 atau 3 kaki pin nyata!
   daftarPinKomponenIni: TitikPinFisik[];
 }
 
@@ -105,8 +104,43 @@ export function dapatkanBabDariLevel(item: ExtendedLessonStepIoT): string {
   return "Bab 5: Multi-MCU, NPK, GPS & 10-Node Mesh";
 }
 
+// Fungsi pencocokan ketat agar komponen seperti OLED ("o-led") TIDAK BISA masuk ke slot LED!
+export function apakahKartuGudangValidUntukSlot(
+  item: { id: string; nama: string; cocokUntukDropZone?: string },
+  slot: DefinisiSlotPeriferalMultiPin
+): boolean {
+  if (item.cocokUntukDropZone === "esp32_board") return false;
+  const idLower = item.id.toLowerCase();
+  const namaLower = item.nama.toLowerCase();
+
+  // 1. Cek daftar ID eksak terlebih dahulu
+  if (slot.daftarIdGudangValid.includes(idLower)) {
+    return true;
+  }
+
+  // 2. Proteksi khusus: jika slot meminta LED, tolak keras OLED / LCD!
+  const slotMintaLed = slot.daftarIdGudangValid.some((id) =>
+    id.startsWith("led_")
+  );
+  if (
+    slotMintaLed &&
+    (idLower.includes("oled") ||
+      namaLower.includes("oled") ||
+      idLower.includes("lcd") ||
+      namaLower.includes("lcd"))
+  ) {
+    return false;
+  }
+
+  // 3. Cek kata kunci dengan batas kata (word boundary)
+  return slot.kataKunciCocokGudang.some((kw) => {
+    const regex = new RegExp(`(^|\\s|_|-)${kw.toLowerCase()}($|\\s|_|-|5mm)`, "i");
+    return regex.test(idLower) || regex.test(namaLower);
+  });
+}
+
 // ============================================================================
-// GENERATOR BLUEPRINT MULTI-PIN REALISTIS (2 KAKI & 3 KAKI WAJIB DISAMBUNG SEMUA!)
+// GENERATOR BLUEPRINT MULTI-PIN REALISTIS (VALIDASI KOMPONEN KETAT & 2 KAKI)
 // ============================================================================
 export function ambilBlueprintMultiPinRealistis(
   materi: ExtendedLessonStepIoT
@@ -125,7 +159,7 @@ export function ambilBlueprintMultiPinRealistis(
   ) {
     return {
       analogiMudahPaham:
-        "Di level ini kita memprogram komponen yang sudah tertanam di dalam papan ESP32 itu sendiri (LED Biru On-Board di GPIO 2, Timer Kristal 80MHz, dan Radio Wi-Fi HibahIlmu-Guest). Jadi kamu cukup menaruh 1 papan ESP32 tanpa kabel luar!",
+        "Di level ini kita memprogram fitur yang sudah tertanam di dalam papan ESP32 itu sendiri (LED Biru On-Board di GPIO 2, Timer Kristal 80MHz, dan Radio Wi-Fi HibahIlmu-Guest). Jadi kamu cukup menaruh 1 papan ESP32 tanpa kabel luar!",
       ringkasanCaraKerja:
         "Tarik 1 papan ESP32 DevKit V1 ke Slot #1 di kanvas, lalu ketik kode C++ di sebelah kanan.",
       slotPeriferalList: [],
@@ -134,7 +168,6 @@ export function ambilBlueprintMultiPinRealistis(
   }
 
   // 2. RANGKAIAN SERI REALISTIS: LED 5MM (2 KAKI) + RESISTOR 220Ω (2 KAKI)
-  // Kedua kaki LED (Anoda & Katoda) dan kedua kaki Resistor (Kaki 1 & Kaki 2) WAJIB DISAMBUNG!
   if (
     judul.includes("1 komponen output") ||
     judul.includes("1 led") ||
@@ -147,15 +180,16 @@ export function ambilBlueprintMultiPinRealistis(
   ) {
     return {
       analogiMudahPaham:
-        "Agar rangkaian listrik benar-benar hidup seperti aslinya, semua kaki komponen wajib tersambung membentuk lingkaran tertutup (Loop)! Arus 3.3V keluar dari [GPIO 2 ESP32] ➔ masuk ke [Kaki 1: Anoda (+) LED] ➔ keluar dari [Kaki 2: Katoda (-) LED] ➔ masuk ke [Kaki 1: Input Resistor 220Ω] ➔ lalu keluar dari [Kaki 2: Output Resistor] kembali ke [GND ESP32]!",
+        "Agar rangkaian listrik benar-benar hidup seperti aslinya, semua kaki komponen wajib tersambung membentuk lingkaran tertutup (Loop)! Arus 3.3V keluar dari [GPIO 2 ESP32] ➔ masuk ke [1. Anoda LED (+)] ➔ keluar dari [2. Katoda LED (-)] ➔ masuk ke [1. Kaki 1 Resistor] ➔ lalu keluar dari [2. Kaki 2 Resistor] kembali ke [GND ESP32]!",
       ringkasanCaraKerja:
-        "LED memiliki 2 kaki (Anoda & Katoda) dan Resistor memiliki 2 kaki (Kaki 1 & Kaki 2). Kamu wajib menyambungkan ke-3 utas kabel serinya agar semua 4 kaki komponen terhubung sempurna!",
+        "Hanya komponen LED 5mm yang boleh masuk ke Slot #2, dan hanya Resistor 220Ω yang boleh masuk ke Slot #3. Sambungkan ketiga kabel serinya!",
       slotPeriferalList: [
         {
           nomorSlot: 2,
           namaTarget: "LED Merah 5mm (2 Kaki: Anoda & Katoda)",
           fungsiSingkat: "Memiliki 2 kaki: Anoda (+) untuk arus masuk dan Katoda (-) menuju Resistor.",
-          kataKunciCocokGudang: ["led", "merah", "hijau"],
+          daftarIdGudangValid: ["led_merah", "led_hijau", "pas_led_merah", "pas_led_hijau"],
+          kataKunciCocokGudang: ["led merah", "led hijau", "led_merah", "led_hijau"],
           idGambarMiniatur: "led_merah",
           boxX: 335,
           boxY: 22,
@@ -184,7 +218,8 @@ export function ambilBlueprintMultiPinRealistis(
           nomorSlot: 3,
           namaTarget: "Resistor Gelang 220Ω (2 Kaki: In & Out)",
           fungsiSingkat: "Memiliki 2 kaki: Kaki 1 menerima dari Katoda LED, Kaki 2 kembali ke GND ESP32.",
-          kataKunciCocokGudang: ["resistor", "220"],
+          daftarIdGudangValid: ["resistor_gelang", "pas_resistor", "resistor_220"],
+          kataKunciCocokGudang: ["resistor"],
           idGambarMiniatur: "resistor_gelang",
           boxX: 335,
           boxY: 132,
@@ -214,7 +249,7 @@ export function ambilBlueprintMultiPinRealistis(
         {
           idSambungan: "WIRE_1_GPIO2_ANODA",
           pinAsalId: "ESP_GPIO2",
-          labelPinAsal: "GPIO 2 (ESP32)",
+          labelPinAsal: "GPIO 2",
           pinTujuanId: "LED_ANODA",
           labelPinTujuan: "1. Anoda LED (+)",
           warnaKabel: "#ef4444",
@@ -232,7 +267,7 @@ export function ambilBlueprintMultiPinRealistis(
         {
           idSambungan: "WIRE_3_RES2_GND",
           pinAsalId: "ESP_GND",
-          labelPinAsal: "GND (ESP32)",
+          labelPinAsal: "GND",
           pinTujuanId: "RES_KAKI_2",
           labelPinTujuan: "2. Kaki 2 Resistor (GND)",
           warnaKabel: "#64748b",
@@ -242,19 +277,20 @@ export function ambilBlueprintMultiPinRealistis(
     };
   }
 
-  // 3. LAMPU LALU LINTAS MULTI-LED (LED MERAH 2 KAKI + LED HIJAU 2 KAKI — SEMUA 4 KAKI WAJIB DISAMBUNG!)
+  // 3. LAMPU LALU LINTAS MULTI-LED (LED MERAH 2 KAKI + LED HIJAU 2 KAKI)
   if (judul.includes("lalu lintas") || (judul.includes("merah") && judul.includes("hijau"))) {
     return {
       analogiMudahPaham:
-        "Pada Lampu Lalu Lintas ini terdapat 2 lampu LED (Merah & Hijau), dan masing-masing LED memiliki 2 kaki (Anoda + dan Katoda -). Artinya ada 4 kaki komponen yang wajib kamu pasang kabelnya: kedua kaki Anoda ke pin GPIO 2 & GPIO 15, serta kedua kaki Katoda kembali ke pin GND!",
+        "Pada Lampu Lalu Lintas ini terdapat 2 lampu LED (Merah di Slot #2 & Hijau di Slot #3), dan masing-masing LED memiliki 2 kaki (Anoda + dan Katoda -). Keempat kakinya wajib dihubungkan ke GPIO 2, GPIO 15, dan GND!",
       ringkasanCaraKerja:
-        "Tarik ESP32 ke Slot #1, LED Merah (2 Kaki) ke Slot #2, dan LED Hijau (2 Kaki) ke Slot #3, lalu pasang ke-4 kabelnya!",
+        "Tarik ESP32 ke Slot #1, LED Merah 5mm ke Slot #2, dan LED Hijau 5mm ke Slot #3, lalu pasang ke-4 kabelnya!",
       slotPeriferalList: [
         {
           nomorSlot: 2,
           namaTarget: "LED Merah 5mm (2 Kaki: Anoda & Katoda)",
           fungsiSingkat: "Kaki Anoda (+) ke GPIO 2, Kaki Katoda (-) ke GND.",
-          kataKunciCocokGudang: ["led merah", "led_merah", "led"],
+          daftarIdGudangValid: ["led_merah", "pas_led_merah"],
+          kataKunciCocokGudang: ["led merah", "led_merah"],
           idGambarMiniatur: "led_merah",
           boxX: 335,
           boxY: 22,
@@ -269,7 +305,8 @@ export function ambilBlueprintMultiPinRealistis(
           nomorSlot: 3,
           namaTarget: "LED Hijau 5mm (2 Kaki: Anoda & Katoda)",
           fungsiSingkat: "Kaki Anoda (+) ke GPIO 15, Kaki Katoda (-) ke GND.",
-          kataKunciCocokGudang: ["led hijau", "led_hijau", "led"],
+          daftarIdGudangValid: ["led_hijau", "pas_led_hijau"],
+          kataKunciCocokGudang: ["led hijau", "led_hijau"],
           idGambarMiniatur: "led_hijau",
           boxX: 335,
           boxY: 132,
@@ -322,19 +359,20 @@ export function ambilBlueprintMultiPinRealistis(
     };
   }
 
-  // 4. PUSH BUTTON (2 KAKI) + LED/ALARM (2 KAKI) — SEMUA 4 KAKI WAJIB DISAMBUNG!
+  // 4. PUSH BUTTON (2 KAKI) + LED/BUZZER (2 KAKI)
   if (judul.includes("button") || judul.includes("tombol") || judul.includes("interrupt")) {
     return {
       analogiMudahPaham:
-        "Tombol Push Button memiliki 2 kaki yang harus disambung: Kaki 1 (Sinyal SIG) ke GPIO 4 dan Kaki 2 ke GND agar saat ditekan arusnya mengalir ke Ground. Begitu juga Lampu LED/Buzzer di Slot #3 memiliki 2 kaki: Anoda (+) ke GPIO 2 dan Katoda (-) ke GND!",
+        "Tombol Push Button di Slot #2 memiliki 2 kaki: Kaki 1 (SIG) ke GPIO 4 dan Kaki 2 ke GND. Sedangkan Lampu LED / Buzzer di Slot #3 memiliki 2 kaki: Kaki Positif (+) ke GPIO 2 dan Kaki Negatif (-) ke GND!",
       ringkasanCaraKerja:
-        "Tarik 3 perangkat (ESP32, Push Button 2-Kaki, dan LED/Buzzer 2-Kaki), lalu sambungkan keempat kakinya!",
+        "Tarik ESP32 ke Slot #1, Push Button Switch ke Slot #2, dan LED Merah / Buzzer ke Slot #3, lalu sambungkan keempat kakinya!",
       slotPeriferalList: [
         {
           nomorSlot: 2,
           namaTarget: "Push Button Switch (2 Kaki: SIG & GND)",
           fungsiSingkat: "Kedua kakinya wajib terhubung ke GPIO 4 dan GND.",
-          kataKunciCocokGudang: ["button", "tombol", "keypad"],
+          daftarIdGudangValid: ["push_button_sw", "pas_button", "keypad_4x4", "pas_keypad"],
+          kataKunciCocokGudang: ["push button", "tombol", "keypad"],
           idGambarMiniatur: "push_button_sw",
           boxX: 335,
           boxY: 22,
@@ -347,9 +385,10 @@ export function ambilBlueprintMultiPinRealistis(
         },
         {
           nomorSlot: 3,
-          namaTarget: "LED Merah / Buzzer (2 Kaki: + dan -)",
+          namaTarget: "LED Merah 5mm / Buzzer (2 Kaki: + dan -)",
           fungsiSingkat: "Kaki Positif (+) ke GPIO 2 dan Kaki Negatif (-) ke GND.",
-          kataKunciCocokGudang: ["led", "buzzer", "resistor"],
+          daftarIdGudangValid: ["led_merah", "led_hijau", "pas_led_merah", "pas_led_hijau", "buzzer_piezo", "akt_buzzer"],
+          kataKunciCocokGudang: ["led merah", "led hijau", "buzzer"],
           idGambarMiniatur: "led_merah",
           boxX: 335,
           boxY: 132,
@@ -402,7 +441,7 @@ export function ambilBlueprintMultiPinRealistis(
     };
   }
 
-  // 5. SENSOR & AKTUATOR REALISTIS (MASING-MASING KOMPONEN PUNYA 2 ATAU 3 KAKI: VCC/SIG & GND!)
+  // 5. SENSOR & AKTUATOR SPESIFIK LEVEL (VALIDASI ID KETAT SESUAI TUTORIAL!)
   const pinSensorGpio = kode.includes("34")
     ? { id: "ESP_GPIO34", label: "GPIO 34" }
     : kode.includes("32")
@@ -436,32 +475,56 @@ export function ambilBlueprintMultiPinRealistis(
     materi.komponenDimasukkan[2]?.namaKomponen.replace(/^Slot \d+:\s*/i, "") ||
     "Aktuator Modul (Slot #3)";
 
+  // Tentukan ID Gudang yang valid secara spesifik berdasarkan topik modul
+  const idValidSlot2 = judul.includes("potensiometer")
+    ? ["potensiometer", "pas_potensio"]
+    : judul.includes("ldr") || judul.includes("cahaya")
+    ? ["sensor_ldr", "sen_ldr", "sensor_pir", "sen_pir"]
+    : judul.includes("ultrasonik")
+    ? ["ultrasonik_hcsr04", "sen_ultrasonik"]
+    : judul.includes("rfid")
+    ? ["rfid_rc522", "sen_rfid"]
+    : judul.includes("dht") || judul.includes("greenhouse")
+    ? ["sensor_suhu_dht", "sen_dht22", "kelembapan_tanah", "sen_soil"]
+    : judul.includes("mq") || judul.includes("gas") || judul.includes("kebakaran")
+    ? ["sensor_mq2", "sen_mq2", "sensor_flame", "sen_flame", "sensor_mq135", "sen_mq135"]
+    : judul.includes("npk")
+    ? ["sensor_npk", "sen_npk"]
+    : judul.includes("baterai")
+    ? ["socket_baterai", "pwr_batt18650"]
+    : ["nodemcu_esp8266", "mcu_esp32_node2", "sensor_npk", "gps_neo6m"];
+
+  const idValidSlot3 = judul.includes("potensiometer")
+    ? ["led_merah", "led_hijau", "pas_led_merah", "pas_led_hijau"]
+    : judul.includes("ldr")
+    ? ["relay_1ch", "rel_1ch", "relay_2ch"]
+    : judul.includes("ultrasonik") || judul.includes("servo")
+    ? ["servo_sg90", "akt_servo180", "solenoid_lock", "akt_solenoid"]
+    : judul.includes("rfid") || judul.includes("solenoid")
+    ? ["solenoid_lock", "akt_solenoid", "servo_sg90", "akt_servo180"]
+    : judul.includes("dht") || judul.includes("greenhouse")
+    ? ["kipas_dc", "akt_kipas", "pompa_air", "akt_pompa", "relay_2ch", "rel_2ch"]
+    : judul.includes("mq") || judul.includes("gas") || judul.includes("kebakaran")
+    ? ["buzzer_piezo", "akt_buzzer", "pompa_air", "akt_pompa", "relay_1ch"]
+    : judul.includes("npk") || judul.includes("gps")
+    ? ["gps_neo6m", "sen_gps"]
+    : judul.includes("baterai") || judul.includes("tegangan")
+    ? ["sensor_tegangan", "pwr_ina219", "sensor_pzem"]
+    : ["layar_oled", "dsp_oled", "lcd_16x2", "relay_4ch", "nodemcu_esp8266", "mcu_gateway10"];
+
   return {
     analogiMudahPaham:
-      "Pada perangkat sensor dan aktuator dunia nyata, setiap komponen tidak pernah bisa bekerja jika hanya disambung 1 kabel sinyal saja! Setiap modul wajib memiliki sambungan Kaki Sinyal/Data ke GPIO DAN Kaki Daya/Ground (VCC/GND) agar arusnya mengalir penuh.",
+      "Pada perangkat sensor dan aktuator dunia nyata, setiap komponen wajib memiliki sambungan Kaki Sinyal/Data ke GPIO DAN Kaki Daya/Ground (3V3/GND) agar arusnya mengalir membentuk rangkaian tertutup!",
     ringkasanCaraKerja:
-      "Tarik masing-masing komponen ke Slot #1, Slot #2, dan Slot #3, lalu hubungkan ke-2 kaki pada setiap komponen (total 4 kabel) sesuai panduan berkedip!",
+      "Tarik komponen yang diminta modul ke Slot #1, Slot #2, dan Slot #3, lalu hubungkan ke-2 kaki pada setiap komponen (total 4 kabel)!",
     slotPeriferalList: [
       {
         nomorSlot: 2,
         namaTarget: `${namaKomp2} (2 Kaki)`,
-        fungsiSingkat: `Kaki 1 (Sinyal) ke ${pinSensorGpio.label} & Kaki 2 (Daya) ke 3V3/GND.`,
-        kataKunciCocokGudang: ["sensor", "ldr", "dht", "mq", "npk", "gps", "ultrasonik", "rfid", "potensiometer", "baterai", "nodemcu", "esp32"],
-        idGambarMiniatur: judul.includes("dht")
-          ? "sensor_suhu_dht"
-          : judul.includes("ldr")
-          ? "sensor_ldr"
-          : judul.includes("mq")
-          ? "sensor_mq2"
-          : judul.includes("npk")
-          ? "sensor_npk"
-          : judul.includes("gps")
-          ? "gps_neo6m"
-          : judul.includes("ultrasonik")
-          ? "ultrasonik_hcsr04"
-          : judul.includes("rfid")
-          ? "rfid_rc522"
-          : "potensiometer",
+        fungsiSingkat: `Kaki 1 (Sinyal) ke ${pinSensorGpio.label} & Kaki 2 (Daya) ke 3V3.`,
+        daftarIdGudangValid: idValidSlot2,
+        kataKunciCocokGudang: idValidSlot2,
+        idGambarMiniatur: idValidSlot2[0] || "sensor_ldr",
         boxX: 335,
         boxY: 22,
         boxW: 225,
@@ -489,20 +552,9 @@ export function ambilBlueprintMultiPinRealistis(
         nomorSlot: 3,
         namaTarget: `${namaKomp3} (2 Kaki)`,
         fungsiSingkat: `Kaki 1 (Kontrol) ke ${pinAktuatorGpio.label} & Kaki 2 ke GND.`,
-        kataKunciCocokGudang: ["relay", "servo", "solenoid", "pompa", "kipas", "buzzer", "led", "oled", "lcd", "tegangan", "gps", "esp32"],
-        idGambarMiniatur: judul.includes("relay")
-          ? "relay_1ch"
-          : judul.includes("servo")
-          ? "servo_sg90"
-          : judul.includes("solenoid")
-          ? "solenoid_lock"
-          : judul.includes("greenhouse")
-          ? "pompa_air"
-          : judul.includes("buzzer") || judul.includes("kebakaran")
-          ? "buzzer_piezo"
-          : judul.includes("oled") || judul.includes("uart")
-          ? "layar_oled"
-          : "led_merah",
+        daftarIdGudangValid: idValidSlot3,
+        kataKunciCocokGudang: idValidSlot3,
+        idGambarMiniatur: idValidSlot3[0] || "relay_1ch",
         boxX: 335,
         boxY: 132,
         boxW: 225,

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef } from "react";
-import { Sliders, Trash2 } from "lucide-react";
+import { Sliders, Trash2, Cable } from "lucide-react";
 import {
   PIN_FISIK_ESP32_STANDAR,
   MiniaturSvgGudang48,
@@ -91,7 +91,6 @@ export const WokwiMultiSlotCanvas: React.FC<{
   const svgRef = useRef<SVGSVGElement | null>(null);
   const infoResistor = hitungGelangResistorModular(fisika.nilaiOhmResistor);
 
-  // Gabungkan semua titik pin (ESP32 + Seluruh Pin Komponen Periferal) untuk menggambar garis kabel
   const semuaTitikPinPeta: Record<string, TitikPinFisik> = {};
   PIN_FISIK_ESP32_STANDAR.forEach((p) => {
     semuaTitikPinPeta[p.idPin] = p;
@@ -101,6 +100,22 @@ export const WokwiMultiSlotCanvas: React.FC<{
       semuaTitikPinPeta[p.idPin] = p;
     });
   });
+
+  // Fungsi untuk menghapus HANYA 1 KABEL tertentu berdasarkan index-nya!
+  const hapusSatuKabelTertentu = (indexKabel: number) => {
+    const kabelDihapus = kabelTerpasangList[indexKabel];
+    const l1 =
+      semuaTitikPinPeta[kabelDihapus?.pinAsalId]?.labelPin ||
+      kabelDihapus?.pinAsalId;
+    const l2 =
+      semuaTitikPinPeta[kabelDihapus?.pinTujuanId]?.labelPin ||
+      kabelDihapus?.pinTujuanId;
+
+    setKabelTerpasangList((prev) =>
+      prev.filter((_, idx) => idx !== indexKabel)
+    );
+    setPesanGudang(`🗑️ 1 Kabel (${l1} ↔ ${l2}) berhasil dilepas!`);
+  };
 
   const handleMouseMoveSvg = (e: React.MouseEvent<SVGSVGElement>) => {
     if (!pinAwalDiklik || !svgRef.current) return;
@@ -188,15 +203,6 @@ export const WokwiMultiSlotCanvas: React.FC<{
               ? `🔌 Hubungkan Semua Kaki Pin (${kabelTerpasangList.length}/${semuaSambunganWajibLevelIni.length}): ${sambunganBerkedipTarget.keteranganJalur}`
               : `✅ Seluruh ${totalKomponenWajib} Komponen & Semua ${semuaSambunganWajibLevelIni.length} Kaki Pin Sudah Terhubung! Silakan jalankan program di bawah.`)}
         </span>
-        {kabelTerpasangList.length > 0 && (
-          <button
-            type="button"
-            onClick={() => setKabelTerpasangList([])}
-            className="px-2.5 py-1 rounded bg-rose-950 text-rose-300 text-[11px] flex items-center gap-1 cursor-pointer shrink-0"
-          >
-            <Trash2 className="w-3 h-3" /> Lepas Kabel ({kabelTerpasangList.length})
-          </button>
-        )}
       </div>
 
       <svg
@@ -487,7 +493,7 @@ export const WokwiMultiSlotCanvas: React.FC<{
                   fontSize="9.5"
                   fontWeight="bold"
                 >
-                  📦 SLOT #{slot.nomorSlot} (BELUM DITARIK):
+                  📦 SLOT #{slot.nomorSlot} (HANYA KOMPONEN INI):
                 </text>
                 <text
                   x={slot.boxX + slot.boxW / 2}
@@ -516,7 +522,6 @@ export const WokwiMultiSlotCanvas: React.FC<{
                 strokeWidth={2}
               />
 
-              {/* Garis Kaki Logam dari Komponen menuju ke Kedua Titik Pin Kiri */}
               {slot.daftarPinKomponenIni.map((pin) => (
                 <line
                   key={`lead-${pin.idPin}`}
@@ -564,7 +569,6 @@ export const WokwiMultiSlotCanvas: React.FC<{
                   : `✓ Sambungkan ${slot.daftarPinKomponenIni.length} Kakinya`}
               </text>
 
-              {/* Render SEMUA Titik Kaki Pin pada Komponen Ini (Kaki 1 & Kaki 2) */}
               {slot.daftarPinKomponenIni.map((pin) => {
                 const sedangDipegang = pinAwalDiklik?.idPin === pin.idPin;
                 const harusBerkedip =
@@ -671,7 +675,7 @@ export const WokwiMultiSlotCanvas: React.FC<{
           );
         })}
 
-        {/* GARIS BAYANGAN PANDUAN ANTAR-KAKI (TERMASUK KATODA LED KE KAKI 1 RESISTOR!) */}
+        {/* GARIS BAYANGAN PANDUAN ANTAR-KAKI */}
         {semuaKomponenSudahDitaruh &&
           tampilkanBayanganPanduan &&
           pinAsalBerkedipObj &&
@@ -727,7 +731,7 @@ export const WokwiMultiSlotCanvas: React.FC<{
           />
         )}
 
-        {/* KABEL YANG SUDAH TERSAMBUNG */}
+        {/* KABEL YANG SUDAH TERSAMBUNG (KLIK KABEL ATAU TOMBOL X UNTUK HAPUS 1 KABEL SAJA!) */}
         {kabelTerpasangList.map((k, idx) => {
           const p1 = semuaTitikPinPeta[k.pinAsalId];
           const p2 = semuaTitikPinPeta[k.pinTujuanId];
@@ -741,18 +745,34 @@ export const WokwiMultiSlotCanvas: React.FC<{
                 w.pinTujuanId === k.pinAsalId)
           );
 
-          // Jika menyambung vertikal dari Slot #2 ke Slot #3 (misal Katoda LED ke Kaki 1 Resistor), buat lengkungan cantik ke kiri
-          const pathData =
-            p1.x === p2.x
-              ? `M ${p1.x} ${p1.y} C ${p1.x - 42} ${p1.y}, ${p2.x - 42} ${
-                  p2.y
-                }, ${p2.x} ${p2.y}`
-              : `M ${p1.x} ${p1.y} C ${(p1.x + p2.x) / 2} ${p1.y}, ${
-                  (p1.x + p2.x) / 2
-                } ${p2.y}, ${p2.x} ${p2.y}`;
+          const isVertikal = p1.x === p2.x;
+          const midX = isVertikal ? p1.x - 32 : (p1.x + p2.x) / 2;
+          const midY = (p1.y + p2.y) / 2;
+
+          const pathData = isVertikal
+            ? `M ${p1.x} ${p1.y} C ${p1.x - 42} ${p1.y}, ${p2.x - 42} ${
+                p2.y
+              }, ${p2.x} ${p2.y}`
+            : `M ${p1.x} ${p1.y} C ${(p1.x + p2.x) / 2} ${p1.y}, ${
+                (p1.x + p2.x) / 2
+              } ${p2.y}, ${p2.x} ${p2.y}`;
 
           return (
-            <g key={idx} pointerEvents="none">
+            <g
+              key={idx}
+              onClick={(e) => {
+                e.stopPropagation();
+                hapusSatuKabelTertentu(idx);
+              }}
+              className="cursor-pointer group"
+            >
+              {/* Area klik transparan agak tebal agar mudah diklik untuk hapus 1 kabel */}
+              <path
+                d={pathData}
+                fill="none"
+                stroke="transparent"
+                strokeWidth={14}
+              />
               <path
                 d={pathData}
                 fill="none"
@@ -761,10 +781,91 @@ export const WokwiMultiSlotCanvas: React.FC<{
                 strokeDasharray={adalahValid ? "none" : "6 4"}
                 strokeLinecap="round"
               />
+              {/* Tombol bulat '✕' di tengah kabel untuk menghapus 1 kabel tersebut */}
+              <circle
+                cx={midX}
+                cy={midY}
+                r={7.5}
+                fill={adalahValid ? "#0f172a" : "#e11d48"}
+                stroke={adalahValid ? k.warna : "#ffffff"}
+                strokeWidth={1.5}
+              />
+              <text
+                x={midX}
+                y={midY + 2.8}
+                textAnchor="middle"
+                fill="#ffffff"
+                fontSize="8"
+                fontWeight="bold"
+              >
+                ✕
+              </text>
             </g>
           );
         })}
       </svg>
+
+      {/* BARIS CHIP DAFTAR KABEL INDIVIDUAL (HAPUS 1 KABEL SAJA TANPA HAPUS SEMUA!) */}
+      <div className="mt-2.5 px-3.5 py-2.5 rounded-2xl bg-slate-900 border border-slate-800 flex flex-wrap justify-between items-center gap-2 text-xs">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-bold text-sky-400 flex items-center gap-1">
+            <Cable className="w-4 h-4" /> Kabel Terpasang (Klik ✕ pada kabel untuk hapus 1 kabel saja):
+          </span>
+
+          {kabelTerpasangList.length === 0 ? (
+            <span className="text-slate-400 italic">
+              Belum ada kabel. Klik titik kaki ke-1 lalu klik titik kaki ke-2 di kanvas!
+            </span>
+          ) : (
+            kabelTerpasangList.map((k, idx) => {
+              const label1 =
+                semuaTitikPinPeta[k.pinAsalId]?.labelPin || k.pinAsalId;
+              const label2 =
+                semuaTitikPinPeta[k.pinTujuanId]?.labelPin || k.pinTujuanId;
+              const adalahValid = semuaSambunganWajibLevelIni.some(
+                (w) =>
+                  (w.pinAsalId === k.pinAsalId &&
+                    w.pinTujuanId === k.pinTujuanId) ||
+                  (w.pinAsalId === k.pinTujuanId &&
+                    w.pinTujuanId === k.pinAsalId)
+              );
+
+              return (
+                <span
+                  key={idx}
+                  className={`px-2.5 py-1 rounded-lg border font-mono text-[11px] flex items-center gap-1.5 ${
+                    adalahValid
+                      ? "bg-slate-950 border-emerald-500/50 text-emerald-300"
+                      : "bg-rose-950 border-rose-500 text-rose-200 animate-pulse"
+                  }`}
+                >
+                  <span>
+                    {adalahValid ? "✓" : "❌ SALAH:"} {label1} ↔ {label2}
+                  </span>
+                  <button
+                    type="button"
+                    title="Hapus 1 kabel ini saja"
+                    onClick={() => hapusSatuKabelTertentu(idx)}
+                    className="px-1.5 py-0.5 rounded bg-rose-600/80 hover:bg-rose-500 text-white font-black cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </span>
+              );
+            })
+          )}
+        </div>
+
+        {kabelTerpasangList.length > 1 && (
+          <button
+            type="button"
+            onClick={() => setKabelTerpasangList([])}
+            className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-rose-950 text-slate-300 hover:text-rose-200 text-[11px] flex items-center gap-1 cursor-pointer shrink-0"
+          >
+            <Trash2 className="w-3 h-3" /> Hapus Semua
+          </button>
+        )}
+      </div>
 
       {/* PANEL SIMULATOR FISIKA */}
       <div className="mt-3 bg-slate-900/95 p-4 rounded-2xl border border-emerald-500/40 space-y-3 text-xs">
