@@ -1,3 +1,4 @@
+import { HibahIlmuIotGuideBannerAndModal } from "./HibahIlmuIotGuideAndTourModal";
 "use client";
 
 import React, { useState } from "react";
@@ -167,10 +168,10 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
             <Terminal className="w-4 h-4" /> Multi-Engine Coding, IoT &amp; Electronics Lab
           </span>
           <h1 className="text-xl sm:text-3xl font-black leading-tight">
-            Laboratorium Simulator Wokwi IoT, EWB Elektronika, MATLAB, Python, C &amp; Next.js
+            Laboratorium HibahIlmu IoT Simulator, EWB Elektronika, MATLAB, Python, C &amp; Next.js
           </h1>
           <p className="text-xs text-indigo-200 leading-relaxed">
-            Pilih engine di bawah. Khusus Wokwi IoT, kini telah dipisah menjadi Sub-Kategori
+            Pilih engine di bawah. Khusus HibahIlmu IoT Simulator, kini telah dipisah menjadi Sub-Kategori
             (Studio Kanvas, Akademi Belajar Ketik Program dari Dasar, &amp; Simulator 10-Node Multi-Hop) agar tampilan ringkas dan fokus.
           </p>
         </div>

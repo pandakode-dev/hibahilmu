@@ -1,3 +1,4 @@
+import { HibahIlmuIotGuideBannerAndModal } from "./HibahIlmuIotGuideAndTourModal";
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
@@ -1285,6 +1286,7 @@ void loop() {
 
   return (
     <div className="space-y-6">
+      <div className="mb-4"><HibahIlmuIotGuideBannerAndModal /></div>
       <ProjectSavedPopupModal
         info={infoPopupNotifProject}
         onClose={() => setInfoPopupNotifProject(null)}
@@ -1662,7 +1664,8 @@ void loop() {
                 <div
                   key={`${item.tipe}-${idx}`}
                   draggable
-                  onDragStart={(e) => {
+                  onDragStart={(e) =>
+      <div className="mb-4"><HibahIlmuIotGuideBannerAndModal /></div> {
                     e.dataTransfer.setData(
                       "application/hibahilmu-component",
                       JSON.stringify(item)
@@ -2125,7 +2128,8 @@ void loop() {
                       top: `${node.y}px`,
                       width: `${layout.lebar}px`,
                     }}
-                    onMouseDown={(e) => {
+                    onMouseDown={(e) =>
+      <div className="mb-4"><HibahIlmuIotGuideBannerAndModal /></div> {
                       e.stopPropagation();
                       setIdKomponenTerpilih(node.id);
                       if (adalahMcu) setIdTabMcuAktif(node.id);
