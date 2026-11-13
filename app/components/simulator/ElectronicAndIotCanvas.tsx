@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
+import { analisisKodeStudioLengkap, StudioCodeDrivenStatusBar } from "./wokwiStudioCodeDrivenEngine";
 import {
   Cpu,
   Zap,

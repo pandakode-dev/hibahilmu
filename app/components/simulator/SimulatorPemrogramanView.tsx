@@ -26,6 +26,7 @@ import {
   LibrarySimulatorItem,
 } from "./simulatorData";
 import { ElectronicAndIotCanvas } from "./ElectronicAndIotCanvas";
+import { analisisKodeStudioLengkap, StudioCodeDrivenStatusBar } from "./wokwiStudioCodeDrivenEngine";
 import { WokwiStepByStepAcademy } from "./WokwiStepByStepAcademy";
 import { WokwiMultihop10NodeSimulator } from "./WokwiMultihop10NodeSimulator";
 import { WokwiMultihop10NodeAndGuides } from "./WokwiMultihop10NodeAndGuides";
