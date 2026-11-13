@@ -1308,7 +1308,7 @@ void loop() {
               </span>
               <h3 className="font-black text-base sm:text-lg text-white mt-0.5">
                 {mode === "wokwi"
-                  ? `Wokwi IoT & Physical Room Studio — Akun: ${namaPemilikAktif}`
+                  ? `HibahIlmu IoT Simulator & Physical Room Studio — Akun: ${namaPemilikAktif}`
                   : mode === "ewb"
                   ? "EWB (Electronics Workbench) — Rangkaian RLC & Resistor 4-Gelang"
                   : "MATLAB Simulink — Diagram Blok Sistem Kendali PID"}

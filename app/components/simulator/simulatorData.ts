@@ -192,7 +192,7 @@ export const DAFTAR_ENGINE_SIMULATOR: SpesifikasiEngineSimulator[] = [
   },
   {
     id: "wokwi",
-    nama: "Wokwi IoT & Microcontroller",
+    nama: "HibahIlmu IoT & Microcontroller Simulator",
     tagline: "Simulator ESP32, Arduino Uno, Sensor DHT22, Servo & WiFi",
     versiEngine: "Wokwi AVR/Xtensa ESP32 Virtual Board",
     warnaGradien: "from-emerald-600 to-teal-800",

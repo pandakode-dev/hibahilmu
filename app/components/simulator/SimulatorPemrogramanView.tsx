@@ -308,7 +308,7 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
               {
                 id: "kanvas_studio",
                 ikon: <Cpu className="w-4 h-4 text-emerald-400" />,
-                judul: "1. Studio Kanvas Rangkaian Wokwi",
+                judul: "1. Studio Kanvas HibahIlmu IoT Simulator",
                 sub: "Fokus Simulasi Rangkaian & Denah Ruangan",
               },
               {

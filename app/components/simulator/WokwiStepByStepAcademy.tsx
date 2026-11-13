@@ -36,6 +36,7 @@ import {
   hitungGelangResistorModular,
 } from "./wokwiAcademyBlueprints";
 import { WokwiTheoryModal } from "./WokwiTheoryModal";
+import { HibahIlmuIotGuideBannerAndModal } from "./HibahIlmuIotGuideAndTourModal";
 import {
   WokwiMultiSlotCanvas,
   KabelMultiPinTersambung,
@@ -763,6 +764,7 @@ export const WokwiStepByStepAcademy: React.FC<{
         }
       `}</style>
 
+      <HibahIlmuIotGuideBannerAndModal />
       <WokwiTheoryModal
         tampil={tampilModalTeori}
         onTutup={() => setTampilModalTeori(false)}
