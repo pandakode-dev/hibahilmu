@@ -1,39 +1,35 @@
 // app/components/simulator/wokwiStudioCodeDrivenEngine.ts
+import React from "react";
+import { Wifi, Radio, Cloud, Cpu, AlertTriangle } from "lucide-react";
 
 export interface StatusEksekusiKodeStudio {
-  // Status Kompilasi Dasar
   validSintaksDasar: boolean;
   daftarErrorKompilasi: string[];
   delayMs: number;
   baudRateSerial: number;
 
-  // Pemetaan Pin Fisik yang Diprogram di Kodingan C++
-  pinOutputTerprogram: number[]; // dari pinMode(pin, OUTPUT)
-  pinInputTerprogram: number[]; // dari pinMode(pin, INPUT / INPUT_PULLUP)
-  pinSedangHigh: number[]; // dari digitalWrite(pin, HIGH)
-  pinSedangLow: number[]; // dari digitalWrite(pin, LOW)
-  pinPwmNilai: Record<number, number>; // dari analogWrite(pin, val)
-  pinAnalogDibaca: number[]; // dari analogRead(pin)
-  pinServoTerprogram: Record<number, number>; // dari servo.attach(pin) & servo.write(sudut)
-  pinInterruptTerprogram: number[]; // dari attachInterrupt
+  pinOutputTerprogram: number[];
+  pinInputTerprogram: number[];
+  pinSedangHigh: number[];
+  pinSedangLow: number[];
+  pinPwmNilai: Record<number, number>;
+  pinAnalogDibaca: number[];
+  pinServoTerprogram: Record<number, number>;
+  pinInterruptTerprogram: number[];
 
-  // Status Jaringan Wi-Fi (Wajib ada di kodingan agar Dashboard/MQTT/Blynk hidup!)
   wifiTerprogram: boolean;
   ssidTertulis: string;
 
-  // Status MQTT Broker (Wajib ada PubSubClient / client.publish di kodingan!)
   mqttTerprogram: boolean;
   mqttBrokerHost: string;
   mqttTopicsPublished: { topic: string; payloadExpr: string }[];
   mqttTopicsSubscribed: string[];
 
-  // Status Blynk IoT Cloud (Wajib ada Blynk.begin & Blynk.run di kodingan!)
   blynkTerprogram: boolean;
   blynkAuthToken: string;
   blynkVirtualWrites: { vPin: string; nilaiExpr: string }[];
   blynkVirtualReads: string[];
 
-  // Status HTTP WebServer / Telegram Bot
   webServerTerprogram: boolean;
   telegramBotTerprogram: boolean;
 }
@@ -43,12 +39,10 @@ export function analisisKodeStudioLengkap(
 ): StatusEksekusiKodeStudio {
   const daftarErrorKompilasi: string[] = [];
 
-  // Bersihkan komentar C++ agar komentar tidak dianggap sebagai kode aktif
   const kode = (kodeMentah || "")
     .replace(/\/\/.*$/gm, "")
     .replace(/\/\*[\s\S]*?\*\//g, "");
 
-  // 1. Cek fungsi wajib setup() dan loop()
   const adaSetup = /void\s+setup\s*\(\s*\)/.test(kode);
   const adaLoop = /void\s+loop\s*\(\s*\)/.test(kode);
   if (!adaSetup) {
@@ -62,7 +56,6 @@ export function analisisKodeStudioLengkap(
     );
   }
 
-  // Cek keseimbangan kurung kurawal
   const kurungBuka = (kode.match(/\{/g) || []).length;
   const kurungTutup = (kode.match(/\}/g) || []).length;
   if (kurungBuka === 0 || kurungBuka !== kurungTutup) {
@@ -71,14 +64,12 @@ export function analisisKodeStudioLengkap(
     );
   }
 
-  // 2. Ekstrak Serial.begin(baud) dan delay(ms)
   const matchBaud = kode.match(/Serial\.begin\s*\(\s*(\d+)\s*\)/);
   const baudRateSerial = matchBaud ? parseInt(matchBaud[1], 10) : 0;
 
   const matchDelay = kode.match(/delay\s*\(\s*(\d+)\s*\)/);
   const delayMs = matchDelay ? Math.max(80, parseInt(matchDelay[1], 10)) : 800;
 
-  // 3. Resolusi makro #define dan konstanta int (misal #define LED_PIN 2 atau const int RELAY = 26;)
   const petaVariabelPin: Record<string, number> = {};
   const regexDefine = /#define\s+([A-Za-z_][A-Za-z0-9_]*)\s+(\d+)/g;
   let mDef: RegExpExecArray | null;
@@ -100,7 +91,6 @@ export function analisisKodeStudioLengkap(
     return null;
   };
 
-  // 4. Ekstrak pinMode(pin, MODE)
   const pinOutputTerprogram: number[] = [];
   const pinInputTerprogram: number[] = [];
   const regexPinMode =
@@ -118,7 +108,6 @@ export function analisisKodeStudioLengkap(
     }
   }
 
-  // 5. Ekstrak digitalWrite(pin, HIGH/LOW)
   const pinSedangHigh: number[] = [];
   const pinSedangLow: number[] = [];
   const regexDw =
@@ -136,7 +125,6 @@ export function analisisKodeStudioLengkap(
     }
   }
 
-  // 6. Ekstrak analogWrite(pin, nilai)
   const pinPwmNilai: Record<number, number> = {};
   const regexAw =
     /analogWrite\s*\(\s*([A-Za-z0-9_]+)\s*,\s*([A-Za-z0-9_]+)\s*\)/g;
@@ -151,7 +139,6 @@ export function analisisKodeStudioLengkap(
     }
   }
 
-  // 7. Ekstrak analogRead(pin) & digitalRead(pin)
   const pinAnalogDibaca: number[] = [];
   const regexAr = /(?:analogRead|digitalRead)\s*\(\s*([A-Za-z0-9_]+)\s*\)/g;
   let mAr: RegExpExecArray | null;
@@ -162,7 +149,6 @@ export function analisisKodeStudioLengkap(
     }
   }
 
-  // 8. Ekstrak Servo (.attach(pin) & .write(sudut))
   const pinServoTerprogram: Record<number, number> = {};
   const regexServoAttach = /\.attach\s*\(\s*([A-Za-z0-9_]+)\s*\)/g;
   let mSa: RegExpExecArray | null;
@@ -175,7 +161,6 @@ export function analisisKodeStudioLengkap(
     }
   }
 
-  // 9. Ekstrak External Interrupt
   const pinInterruptTerprogram: number[] = [];
   const regexInt =
     /attachInterrupt\s*\(\s*(?:digitalPinToInterrupt\s*\(\s*([A-Za-z0-9_]+)\s*\)|([A-Za-z0-9_]+))/g;
@@ -187,7 +172,6 @@ export function analisisKodeStudioLengkap(
     }
   }
 
-  // 10. CEK KONEKSI WI-FI DI KODINGAN (WAJIB UNTUK DASHBOARD, MQTT, & BLYNK!)
   const matchWifiBegin = kode.match(
     /WiFi\.begin\s*\(\s*"([^"]+)"|(?:Blynk\.begin\s*\([^,]+,\s*"([^"]+)")/
   );
@@ -200,15 +184,13 @@ export function analisisKodeStudioLengkap(
     ? "ESP-NOW Mesh 2.4GHz"
     : "";
 
-  // 11. CEK PROTOKOL MQTT DI KODINGAN (PubSubClient, client.publish, client.subscribe)
   const adaHeaderMqtt =
     /#include\s*[<"]PubSubClient\.h[>"]/.test(kode) ||
     /#include\s*[<"]MQTT\.h[>"]/.test(kode) ||
     /mqttClient|PubSubClient/i.test(kode);
 
   const mqttTopicsPublished: { topic: string; payloadExpr: string }[] = [];
-  const regexMqttPub =
-    /\.\s*publish\s*\(\s*"([^"]+)"\s*,\s*([^)]+)\)/g;
+  const regexMqttPub = /\.\s*publish\s*\(\s*"([^"]+)"\s*,\s*([^)]+)\)/g;
   let mPub: RegExpExecArray | null;
   while ((mPub = regexMqttPub.exec(kode)) !== null) {
     mqttTopicsPublished.push({
@@ -234,15 +216,13 @@ export function analisisKodeStudioLengkap(
   const mqttTerprogram =
     wifiTerprogram && (adaHeaderMqtt || mqttTopicsPublished.length > 0);
 
-  // 12. CEK PROTOKOL BLYNK IOT CLOUD DI KODINGAN (Blynk.begin, Blynk.virtualWrite, BLYNK_WRITE)
   const adaBlynkRun =
     /Blynk\.begin/.test(kode) ||
     /Blynk\.run\s*\(\s*\)/.test(kode) ||
     /BlynkSimpleEsp32/.test(kode);
 
   const blynkVirtualWrites: { vPin: string; nilaiExpr: string }[] = [];
-  const regexBlynkVw =
-    /Blynk\.virtualWrite\s*\(\s*(V\d+)\s*,\s*([^)]+)\)/g;
+  const regexBlynkVw = /Blynk\.virtualWrite\s*\(\s*(V\d+)\s*,\s*([^)]+)\)/g;
   let mVw: RegExpExecArray | null;
   while ((mVw = regexBlynkVw.exec(kode)) !== null) {
     blynkVirtualWrites.push({
@@ -258,16 +238,13 @@ export function analisisKodeStudioLengkap(
     if (!blynkVirtualReads.includes(mWr[1])) blynkVirtualReads.push(mWr[1]);
   }
 
-  const matchToken = kode.match(
-    /#define\s+BLYNK_AUTH_TOKEN\s+"([^"]+)"/
-  );
+  const matchToken = kode.match(/#define\s+BLYNK_AUTH_TOKEN\s+"([^"]+)"/);
   const blynkAuthToken = matchToken ? matchToken[1] : "";
   const blynkTerprogram =
     adaBlynkRun ||
     blynkVirtualWrites.length > 0 ||
     blynkVirtualReads.length > 0;
 
-  // 13. Cek HTTP WebServer & Telegram Bot
   const webServerTerprogram =
     /WebServer\s+/.test(kode) || /server\.on\s*\(/.test(kode);
   const telegramBotTerprogram =
@@ -302,138 +279,194 @@ export function analisisKodeStudioLengkap(
 }
 
 // ============================================================================
-// KOMPONEN MONITOR STATUS KODE -> RANGKAIAN -> MQTT -> BLYNK DI STUDIO KANVAS
+// KOMPONEN MONITOR STATUS KODE -> RANGKAIAN -> MQTT -> BLYNK (PURE CREATEELEMENT)
+// Bebas sintaks JSX <...> agar 100% kompatibel di dalam file berekstensi .ts!
 // ============================================================================
-import React from "react";
-import { Wifi, Radio, Cloud, Cpu, AlertTriangle, CheckCircle2 } from "lucide-react";
-
 export const StudioCodeDrivenStatusBar: React.FC<{
   statusKode: StatusEksekusiKodeStudio;
   sedangRunning: boolean;
 }> = ({ statusKode, sedangRunning }) => {
-  return (
-    <div className="bg-slate-950 border-2 border-slate-800 rounded-2xl p-3.5 text-xs space-y-2.5 shadow-lg">
-      <div className="flex flex-wrap justify-between items-center gap-2 border-b border-slate-800 pb-2">
-        <div className="flex items-center gap-2 font-black text-amber-300">
-          <Cpu className="w-4 h-4 text-emerald-400" />
-          <span>
-            MESIN SINKRONISASI KODINGAN C++ ➔ RANGKAIAN ➔ DASHBOARD MQTT &amp; BLYNK:
-          </span>
-        </div>
-        <span
-          className={`px-2.5 py-0.5 rounded-full font-black text-[10px] ${
+  const h = React.createElement;
+
+  const adaPinAktif =
+    statusKode.pinOutputTerprogram.length > 0 ||
+    statusKode.pinAnalogDibaca.length > 0 ||
+    Object.keys(statusKode.pinServoTerprogram).length > 0;
+
+  return h(
+    "div",
+    {
+      className:
+        "bg-slate-950 border-2 border-slate-800 rounded-2xl p-3.5 text-xs space-y-2.5 shadow-lg",
+    },
+    // Baris Header
+    h(
+      "div",
+      {
+        className:
+          "flex flex-wrap justify-between items-center gap-2 border-b border-slate-800 pb-2",
+      },
+      h(
+        "div",
+        { className: "flex items-center gap-2 font-black text-amber-300" },
+        h(Cpu, { className: "w-4 h-4 text-emerald-400" }),
+        h(
+          "span",
+          null,
+          "MESIN SINKRONISASI KODINGAN C++ ➔ RANGKAIAN ➔ DASHBOARD MQTT & BLYNK:"
+        )
+      ),
+      h(
+        "span",
+        {
+          className: `px-2.5 py-0.5 rounded-full font-black text-[10px] ${
             !sedangRunning
               ? "bg-slate-800 text-slate-400"
               : statusKode.validSintaksDasar
               ? "bg-emerald-400 text-slate-950"
               : "bg-rose-600 text-white animate-pulse"
-          }`}
-        >
-          {!sedangRunning
-            ? "⏹ STUDIO STANDBY (KLIK RUN UNTUK EKSEKUSI KODE)"
-            : statusKode.validSintaksDasar
-            ? "⚡ CODE-DRIVEN ENGINE ACTIVE"
-            : "❌ COMPILER ERROR (SIMULASI DIHENTIKAN)"}
-        </span>
-      </div>
+          }`,
+        },
+        !sedangRunning
+          ? "⏹ STUDIO STANDBY (KLIK RUN UNTUK EKSEKUSI KODE)"
+          : statusKode.validSintaksDasar
+          ? "⚡ CODE-DRIVEN ENGINE ACTIVE"
+          : "❌ COMPILER ERROR (SIMULASI DIHENTIKAN)"
+      )
+    ),
 
-      {/* 4 Indikator Gerbang Kodingan: GPIO Pin, Wi-Fi, MQTT Broker, dan Blynk Cloud */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-        {/* 1. Status Pin GPIO yang Diprogram di Kode */}
-        <div
-          className={`p-2.5 rounded-xl border ${
-            statusKode.pinOutputTerprogram.length > 0 ||
-            statusKode.pinAnalogDibaca.length > 0 ||
-            Object.keys(statusKode.pinServoTerprogram).length > 0
+    // Grid 4 Indikator Gerbang Kodingan
+    h(
+      "div",
+      { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5" },
+      // 1. Pin GPIO
+      h(
+        "div",
+        {
+          className: `p-2.5 rounded-xl border ${
+            adaPinAktif
               ? "bg-emerald-950/30 border-emerald-500/50 text-emerald-200"
               : "bg-rose-950/30 border-rose-500/40 text-rose-300"
-          }`}
-        >
-          <div className="font-black text-[11px] flex items-center gap-1.5">
-            <Cpu className="w-3.5 h-3.5" /> 1. Pin GPIO di Kodingan:
-          </div>
-          <div className="text-[10px] mt-1 font-mono">
-            OUT:{" "}
-            {statusKode.pinOutputTerprogram.length > 0
-              ? statusKode.pinOutputTerprogram.map((p) => `GPIO${p}`).join(", ")
-              : "Belum ada pinMode OUTPUT"}
-          </div>
-          <div className="text-[10px] font-mono text-sky-300">
-            IN/ADC:{" "}
-            {statusKode.pinAnalogDibaca.length > 0
-              ? statusKode.pinAnalogDibaca.map((p) => `GPIO${p}`).join(", ")
-              : "Belum ada analogRead/digitalRead"}
-          </div>
-        </div>
+          }`,
+        },
+        h(
+          "div",
+          { className: "font-black text-[11px] flex items-center gap-1.5" },
+          h(Cpu, { className: "w-3.5 h-3.5" }),
+          " 1. Pin GPIO di Kodingan:"
+        ),
+        h(
+          "div",
+          { className: "text-[10px] mt-1 font-mono" },
+          "OUT: ",
+          statusKode.pinOutputTerprogram.length > 0
+            ? statusKode.pinOutputTerprogram.map((p) => `GPIO${p}`).join(", ")
+            : "Belum ada pinMode OUTPUT"
+        ),
+        h(
+          "div",
+          { className: "text-[10px] font-mono text-sky-300" },
+          "IN/ADC: ",
+          statusKode.pinAnalogDibaca.length > 0
+            ? statusKode.pinAnalogDibaca.map((p) => `GPIO${p}`).join(", ")
+            : "Belum ada analogRead/digitalRead"
+        )
+      ),
 
-        {/* 2. Status Wi-Fi di Kodingan */}
-        <div
-          className={`p-2.5 rounded-xl border ${
+      // 2. Stack Wi-Fi
+      h(
+        "div",
+        {
+          className: `p-2.5 rounded-xl border ${
             statusKode.wifiTerprogram
               ? "bg-sky-950/30 border-sky-500/50 text-sky-200"
               : "bg-slate-900 border-slate-800 text-slate-400"
-          }`}
-        >
-          <div className="font-black text-[11px] flex items-center gap-1.5">
-            <Wifi className="w-3.5 h-3.5" /> 2. Stack Wi-Fi di Kodingan:
-          </div>
-          <div className="text-[10px] mt-1 font-mono">
-            {statusKode.wifiTerprogram
-              ? `✅ Terhubung ke "${statusKode.ssidTertulis}"`
-              : "⚠️ Offline (Belum ada WiFi.begin di kode)"}
-          </div>
-        </div>
+          }`,
+        },
+        h(
+          "div",
+          { className: "font-black text-[11px] flex items-center gap-1.5" },
+          h(Wifi, { className: "w-3.5 h-3.5" }),
+          " 2. Stack Wi-Fi di Kodingan:"
+        ),
+        h(
+          "div",
+          { className: "text-[10px] mt-1 font-mono" },
+          statusKode.wifiTerprogram
+            ? `✅ Terhubung ke "${statusKode.ssidTertulis}"`
+            : "⚠️ Offline (Belum ada WiFi.begin di kode)"
+        )
+      ),
 
-        {/* 3. Status Broker MQTT di Kodingan */}
-        <div
-          className={`p-2.5 rounded-xl border ${
+      // 3. Broker MQTT
+      h(
+        "div",
+        {
+          className: `p-2.5 rounded-xl border ${
             statusKode.mqttTerprogram
               ? "bg-purple-950/30 border-purple-500/50 text-purple-200"
               : "bg-slate-900 border-slate-800 text-slate-400"
-          }`}
-        >
-          <div className="font-black text-[11px] flex items-center gap-1.5">
-            <Radio className="w-3.5 h-3.5" /> 3. Broker MQTT di Kodingan:
-          </div>
-          <div className="text-[10px] mt-1 font-mono truncate">
-            {statusKode.mqttTerprogram
-              ? `✅ Publish (${statusKode.mqttTopicsPublished.length} Topik) -> ${
-                  statusKode.mqttTopicsPublished[0]?.topic || "hibahilmu/iot"
-                }`
-              : "⚠️ MQTT Mati (Ketik client.publish di kode)"}
-          </div>
-        </div>
+          }`,
+        },
+        h(
+          "div",
+          { className: "font-black text-[11px] flex items-center gap-1.5" },
+          h(Radio, { className: "w-3.5 h-3.5" }),
+          " 3. Broker MQTT di Kodingan:"
+        ),
+        h(
+          "div",
+          { className: "text-[10px] mt-1 font-mono truncate" },
+          statusKode.mqttTerprogram
+            ? `✅ Publish (${statusKode.mqttTopicsPublished.length} Topik) -> ${
+                statusKode.mqttTopicsPublished[0]?.topic || "hibahilmu/iot"
+              }`
+            : "⚠️ MQTT Mati (Ketik client.publish di kode)"
+        )
+      ),
 
-        {/* 4. Status Dashboard Blynk Cloud di Kodingan */}
-        <div
-          className={`p-2.5 rounded-xl border ${
+      // 4. Dashboard Blynk
+      h(
+        "div",
+        {
+          className: `p-2.5 rounded-xl border ${
             statusKode.blynkTerprogram
               ? "bg-teal-950/30 border-teal-500/50 text-teal-200"
               : "bg-slate-900 border-slate-800 text-slate-400"
-          }`}
-        >
-          <div className="font-black text-[11px] flex items-center gap-1.5">
-            <Cloud className="w-3.5 h-3.5" /> 4. Dashboard Blynk di Kodingan:
-          </div>
-          <div className="text-[10px] mt-1 font-mono truncate">
-            {statusKode.blynkTerprogram
-              ? `✅ Aktif (Virtual Pin: ${
-                  [
-                    ...statusKode.blynkVirtualWrites.map((v) => v.vPin),
-                    ...statusKode.blynkVirtualReads,
-                  ].join(", ") || "Blynk.run()"
-                })`
-              : "⚠️ Blynk Mati (Ketik Blynk.begin & Blynk.run)"}
-          </div>
-        </div>
-      </div>
+          }`,
+        },
+        h(
+          "div",
+          { className: "font-black text-[11px] flex items-center gap-1.5" },
+          h(Cloud, { className: "w-3.5 h-3.5" }),
+          " 4. Dashboard Blynk di Kodingan:"
+        ),
+        h(
+          "div",
+          { className: "text-[10px] mt-1 font-mono truncate" },
+          statusKode.blynkTerprogram
+            ? `✅ Aktif (Virtual Pin: ${
+                [
+                  ...statusKode.blynkVirtualWrites.map((v) => v.vPin),
+                  ...statusKode.blynkVirtualReads,
+                ].join(", ") || "Blynk.run()"
+              })`
+            : "⚠️ Blynk Mati (Ketik Blynk.begin & Blynk.run)"
+        )
+      )
+    ),
 
-      {statusKode.daftarErrorKompilasi.length > 0 && (
-        <div className="p-2.5 rounded-xl bg-rose-950/80 border border-rose-500 text-rose-200 font-mono text-[11px] flex items-center gap-2">
-          <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
-          <span>{statusKode.daftarErrorKompilasi[0]}</span>
-        </div>
-      )}
-    </div>
+    // Kotak Peringatan Error Kompilasi jika ada
+    statusKode.daftarErrorKompilasi.length > 0
+      ? h(
+          "div",
+          {
+            className:
+              "p-2.5 rounded-xl bg-rose-950/80 border border-rose-500 text-rose-200 font-mono text-[11px] flex items-center gap-2",
+          },
+          h(AlertTriangle, { className: "w-4 h-4 text-rose-400 shrink-0" }),
+          h("span", null, statusKode.daftarErrorKompilasi[0])
+        )
+      : null
   );
 };
