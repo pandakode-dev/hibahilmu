@@ -1,7 +1,20 @@
 "use client";
 
 import React, { useRef, useEffect, useState } from "react";
-import { Sliders, Trash2, Cable, Volume2, VolumeX, Zap } from "lucide-react";
+import {
+  Sliders,
+  Trash2,
+  Cable,
+  Volume2,
+  VolumeX,
+  Zap,
+  Hand,
+  Gauge,
+  Sun,
+  Flame,
+  CreditCard,
+  Radio,
+} from "lucide-react";
 import {
   PIN_FISIK_ESP32_STANDAR,
   MiniaturSvgGudang48,
@@ -20,14 +33,15 @@ export interface KabelMultiPinTersambung {
   warna: string;
 }
 
-// Hasil pembacaan isi kodingan C++ siswa secara real-time!
 export interface HasilAnalisisKodeRuntime {
   delayMs: number;
   adaKedipHighLow: boolean;
   adaHighSaja: boolean;
-  nilaiPwmKode: number | null; // Jika ada analogWrite(pin, val)
-  frekuensiBuzzerHz: number; // Dari tone() atau nilai PPM/ADC
-  ambangBatasSensor: number | null; // Dari if (adc < ...) atau if (ppm >= ...)
+  nilaiPwmKode: number | null;
+  frekuensiBuzzerHz: number;
+  ambangBatasSensor: number | null;
+  operatorPerbandingan: "<" | "<=" | ">" | ">=" | "==" | null;
+  adaInterruptKode: boolean;
 }
 
 export function analisisPerilakuKodeCpp(kode: string): HasilAnalisisKodeRuntime {
@@ -35,31 +49,36 @@ export function analisisPerilakuKodeCpp(kode: string): HasilAnalisisKodeRuntime 
     .replace(/\/\/.*$/gm, "")
     .replace(/\/\*[\s\S]*?\*\//g, "");
 
-  // 1. Baca nilai delay(...) di dalam kode siswa
-  const matchDelay = bersih.match(/delay\s*\(\s*(\d+)\s*\)/);
+  const matchDelay = bersih.match(/(?:delay|sleep_ms)\s*\(\s*(\d+)\s*\)/);
   const delayMs = matchDelay ? Math.max(80, parseInt(matchDelay[1], 10)) : 800;
 
-  // 2. Cek apakah kode menyalakan HIGH dan mematikan LOW (berkedip) atau hanya HIGH terus
-  const adaHigh = /HIGH/.test(bersih) || /analogWrite/.test(bersih) || /write\s*\(/.test(bersih);
-  const adaLow = /LOW/.test(bersih);
-  const adaKedipHighLow = adaHigh && adaLow && /delay\s*\(/.test(bersih);
+  const adaHigh =
+    /HIGH|\.value\(\s*1\s*\)/.test(bersih) ||
+    /analogWrite|\.duty\s*\(/.test(bersih) ||
+    /\.write\s*\(/.test(bersih);
+  const adaLow = /LOW|\.value\(\s*0\s*\)/.test(bersih);
+  const adaKedipHighLow =
+    adaHigh && adaLow && /(?:delay|sleep_ms)\s*\(/.test(bersih);
   const adaHighSaja = adaHigh && !adaKedipHighLow;
 
-  // 3. Cek nilai analogWrite(pin, nilai) di kode
-  const matchPwm = bersih.match(/analogWrite\s*\(\s*\d+\s*,\s*(\d+)\s*\)/);
+  const matchPwm = bersih.match(
+    /(?:analogWrite\s*\(\s*\d+\s*,\s*(\d+)\s*\)|\.duty\s*\(\s*(\d+)\s*\))/
+  );
   const nilaiPwmKode = matchPwm
-    ? Math.min(255, Math.max(0, parseInt(matchPwm[1], 10)))
+    ? Math.min(255, Math.max(0, parseInt(matchPwm[1] || matchPwm[2], 10)))
     : null;
 
-  // 4. Cek frekuensi tone(pin, freq) jika ada
   const matchTone = bersih.match(/tone\s*\(\s*\d+\s*,\s*(\d+)/);
   const frekuensiBuzzerHz = matchTone ? parseInt(matchTone[1], 10) : 880;
 
-  // 5. Cek ambang batas if (misal if (ppm >= 500) atau if (adc < 1000))
-  const matchThreshold = bersih.match(/if\s*\([^)]*?[<>]=?\s*(\d+)/);
-  const ambangBatasSensor = matchThreshold
-    ? parseInt(matchThreshold[1], 10)
-    : null;
+  const matchCond = bersih.match(
+    /if\s*\(?[^{:\n]*?(<=|>=|<|>|==)\s*(\d+(?:\.\d+)?)/
+  );
+  const operatorPerbandingan = matchCond ? (matchCond[1] as any) : null;
+  const ambangBatasSensor = matchCond ? parseFloat(matchCond[2]) : null;
+
+  const adaInterruptKode =
+    /attachInterrupt|IRAM_ATTR|irq\s*\(/.test(bersih);
 
   return {
     delayMs,
@@ -68,6 +87,8 @@ export function analisisPerilakuKodeCpp(kode: string): HasilAnalisisKodeRuntime 
     nilaiPwmKode,
     frekuensiBuzzerHz,
     ambangBatasSensor,
+    operatorPerbandingan,
+    adaInterruptKode,
   };
 }
 
@@ -194,7 +215,6 @@ export const WokwiMultiSlotCanvas: React.FC<{
   getarMerahRangkaian,
   statusVerifikasi,
   simulasiAktif,
-  detakSimulasi,
   slot1Esp32Terpasang,
   setSlot1Esp32Terpasang,
   daftarSlotPeriferal,
@@ -225,20 +245,158 @@ export const WokwiMultiSlotCanvas: React.FC<{
   const [suaraBuzzerAktif, setSuaraBuzzerAktif] = useState<boolean>(true);
   const [detakKodeDinamis, setDetakKodeDinamis] = useState<number>(0);
 
+  // ==========================================================================
+  // STATE INTERAKSI FISIK PENGGUNA (WAJIB DIINTERAKSI DULU BARU AKTUATOR HIDUP!)
+  // ==========================================================================
+  // 1. Push Button: default false (BELUM DITEKAN -> Aktuator MATI!)
+  const [tombolFisikDitekan, setTombolFisikDitekan] = useState<boolean>(false);
+  // 2. Potensiometer ADC (0 - 4095): default 0 (BELUM DIPUTAR -> Aktuator MATI!)
+  const [adcPotensioPutar, setAdcPotensioPutar] = useState<number>(0);
+  // 3. Kelembapan Tanah Soil (0 - 100%): default 75% (Tanah Lembab -> Pompa MATI!)
+  const [soilMoisturePersen, setSoilMoisturePersen] = useState<number>(75);
+
   const infoResistor = hitungGelangResistorModular(fisika.nilaiOhmResistor);
   const perilakuKode = analisisPerilakuKodeCpp(kodeKetikanUser);
 
-  // Hitung besarnya sinyal/intensitas (0.15 s.d. 1.0) dari kodingan PWM + Resistor + Slider Fisika
-  const pwmAktif = perilakuKode.nilaiPwmKode ?? fisika.pwmLedBrightness;
+  // Deteksi jenis komponen Input/Sensor apa saja yang ada di modul ini
+  const teksSemuaSlot = daftarSlotPeriferal
+    .map((s) => `${s.idGambarMiniatur} ${s.namaTarget}`.toLowerCase())
+    .join(" ");
+
+  const modulPunyaPushButton =
+    teksSemuaSlot.includes("button") ||
+    teksSemuaSlot.includes("tombol") ||
+    teksSemuaSlot.includes("keypad");
+  const modulPunyaPotensio =
+    teksSemuaSlot.includes("potensiometer") ||
+    teksSemuaSlot.includes("potensio");
+  const modulPunyaLdr =
+    teksSemuaSlot.includes("ldr") || teksSemuaSlot.includes("cahaya");
+  const modulPunyaUltrasonik =
+    teksSemuaSlot.includes("ultrasonik") || teksSemuaSlot.includes("sr04");
+  const modulPunyaRfid =
+    teksSemuaSlot.includes("rfid") || teksSemuaSlot.includes("rc522");
+  const modulPunyaDhtAtauSoil =
+    teksSemuaSlot.includes("dht") ||
+    teksSemuaSlot.includes("suhu") ||
+    teksSemuaSlot.includes("soil") ||
+    teksSemuaSlot.includes("kelembapan");
+  const modulPunyaMq2AtauFlame =
+    teksSemuaSlot.includes("mq") ||
+    teksSemuaSlot.includes("gas") ||
+    teksSemuaSlot.includes("flame") ||
+    teksSemuaSlot.includes("api");
+
+  const adaKomponenInputInteraktif =
+    modulPunyaPushButton ||
+    modulPunyaPotensio ||
+    modulPunyaLdr ||
+    modulPunyaUltrasonik ||
+    modulPunyaRfid ||
+    modulPunyaDhtAtauSoil ||
+    modulPunyaMq2AtauFlame;
+
+  // SAAT SIMULASI BARU SAJA DIMULAI (simulasiAktif berubah jadi true),
+  // SET SELURUH SENSOR KE KONDISI NORMAL/IDLE AGAR AKTUATOR TIDAK LANGSUNG MENYALA SENDIRI!
+  useEffect(() => {
+    if (simulasiAktif) {
+      setTombolFisikDitekan(false); // Tombol belum ditekan
+      setAdcPotensioPutar(0); // Potensiometer masih di 0
+      setSoilMoisturePersen(70); // Tanah masih lembab
+      setFisika((prev) => ({
+        ...prev,
+        luxCahaya: modulPunyaLdr ? 850 : prev.luxCahaya, // Siang terang (850 Lux) -> Lampu jalan OFF
+        jarakUltrasonikCm: modulPunyaUltrasonik ? 85 : prev.jarakUltrasonikCm, // Mobil masih jauh (85 cm) -> Palang Servo OFF
+        rfidKartuDekat: modulPunyaRfid ? false : prev.rfidKartuDekat, // Kartu belum di-tap -> Solenoid OFF
+        suhuCelcius: modulPunyaDhtAtauSoil ? 27.5 : prev.suhuCelcius, // Suhu sejuk (27.5°C) -> Kipas & Pompa OFF
+        kadarGasPpm: modulPunyaMq2AtauFlame ? 210 : prev.kadarGasPpm, // Udara bersih (210 PPM) -> Sirine Buzzer OFF
+        apiTerdeteksi: modulPunyaMq2AtauFlame ? false : prev.apiTerdeteksi, // Tidak ada api
+      }));
+    }
+  }, [
+    simulasiAktif,
+    modulPunyaLdr,
+    modulPunyaUltrasonik,
+    modulPunyaRfid,
+    modulPunyaDhtAtauSoil,
+    modulPunyaMq2AtauFlame,
+    setFisika,
+  ]);
+
+  // ==========================================================================
+  // EVALUASI APAKAH SYARAT INTERAKSI FISIK SUDAH TERPENUHI OLEH PENGGUNA?
+  // ==========================================================================
+  let syaratInteraksiTerpenuhi = true;
+  let instruksiInteraksiSaatIni = "";
+
+  if (modulPunyaPushButton) {
+    syaratInteraksiTerpenuhi = tombolFisikDitekan;
+    instruksiInteraksiSaatIni = tombolFisikDitekan
+      ? "✅ Tombol Ditekan (LOW) ➔ Aktuator Menyala!"
+      : "👆 Klik tombol [TEKAN TOMBOL] pada komponen Push Button di kanvas untuk menyalakan aktuator!";
+  } else if (modulPunyaPotensio) {
+    // Target putaran potensio: minimal >= 2048 (50% / 1.65V) atau sesuai ambang batas di kode
+    const targetAdc = perilakuKode.ambangBatasSensor ?? 1000;
+    syaratInteraksiTerpenuhi = adcPotensioPutar >= targetAdc;
+    instruksiInteraksiSaatIni = syaratInteraksiTerpenuhi
+      ? `✅ Potensiometer di ${adcPotensioPutar} ADC (Melampaui target >= ${targetAdc}) ➔ Sistem & PWM LED Aktif!`
+      : `🎛️ Putar slider Potensiometer di kanvas hingga melewati >= ${targetAdc} ADC (Saat ini: ${adcPotensioPutar} ADC) agar sistem bekerja!`;
+  } else if (modulPunyaLdr) {
+    const batasGelap = 400;
+    syaratInteraksiTerpenuhi = fisika.luxCahaya < batasGelap;
+    instruksiInteraksiSaatIni = syaratInteraksiTerpenuhi
+      ? `✅ Kondisi Gelap Malam (${fisika.luxCahaya} Lux) ➔ Relay & Lampu Jalan Menyala!`
+      : `☀️ Saat ini Siang Terang (${fisika.luxCahaya} Lux -> Relay OFF). Geser slider Cahaya LDR ke < ${batasGelap} Lux (Malam) agar Relay menyala!`;
+  } else if (modulPunyaUltrasonik && modulPunyaRfid) {
+    const batasJarak = perilakuKode.ambangBatasSensor ?? 30;
+    syaratInteraksiTerpenuhi =
+      fisika.jarakUltrasonikCm < batasJarak || fisika.rfidKartuDekat;
+    instruksiInteraksiSaatIni = syaratInteraksiTerpenuhi
+      ? `✅ Akses Terdeteksi (Jarak ${fisika.jarakUltrasonikCm}cm / RFID Valid) ➔ Palang Servo & Solenoid Terbuka!`
+      : `🚗 Objek masih jauh (${fisika.jarakUltrasonikCm} cm) & Kartu RFID belum di-tap. Dekatkan jarak ke < ${batasJarak} cm atau Klik [TAP KARTU RFID] agar pintu terbuka!`;
+  } else if (modulPunyaUltrasonik) {
+    const batasJarak = perilakuKode.ambangBatasSensor ?? 30;
+    syaratInteraksiTerpenuhi = fisika.jarakUltrasonikCm < batasJarak;
+    instruksiInteraksiSaatIni = syaratInteraksiTerpenuhi
+      ? `✅ Kendaraan Dekat (${fisika.jarakUltrasonikCm} cm < ${batasJarak} cm) ➔ Palang Servo Terbuka 90°!`
+      : `🚗 Kendaraan masih jauh (${fisika.jarakUltrasonikCm} cm -> Servo 0°). Geser slider Jarak Ultrasonik ke < ${batasJarak} cm agar palang terbuka!`;
+  } else if (modulPunyaRfid) {
+    syaratInteraksiTerpenuhi = fisika.rfidKartuDekat;
+    instruksiInteraksiSaatIni = syaratInteraksiTerpenuhi
+      ? "✅ Kartu RFID E-KTP Ditempelkan ➔ Solenoid Lock & Servo Terbuka!"
+      : "🪪 Klik tombol [TEMPELKAN KARTU RFID] pada komponen RFID di kanvas untuk membuka kunci Solenoid!";
+  } else if (modulPunyaMq2AtauFlame) {
+    const batasPpm = perilakuKode.ambangBatasSensor ?? 500;
+    syaratInteraksiTerpenuhi =
+      fisika.kadarGasPpm >= batasPpm || fisika.apiTerdeteksi;
+    instruksiInteraksiSaatIni = syaratInteraksiTerpenuhi
+      ? `🚨 BAHAYA TERDETEKSI (Gas ${fisika.kadarGasPpm} PPM / Api Menyala) ➔ Sirine Buzzer & Pompa Sprinkler Aktif!`
+      : `🛡️ Kondisi Aman (${fisika.kadarGasPpm} PPM -> Alarm OFF). Naikkan slider Gas MQ-2 ke >= ${batasPpm} PPM atau nyalakan Api untuk memicu Sirine & Pompa!`;
+  } else if (modulPunyaDhtAtauSoil && !teksSemuaSlot.includes("npk")) {
+    const batasSuhu = perilakuKode.ambangBatasSensor ?? 32;
+    syaratInteraksiTerpenuhi =
+      fisika.suhuCelcius > batasSuhu || soilMoisturePersen < 40;
+    instruksiInteraksiSaatIni = syaratInteraksiTerpenuhi
+      ? `🔥 Suhu Panas (${fisika.suhuCelcius}°C > ${batasSuhu}°C) / Tanah Kering ➔ Kipas Exhaust & Pompa Air Menyala!`
+      : `🌱 Suhu Rumah Kaca Normal (${fisika.suhuCelcius}°C -> Kipas & Pompa OFF). Naikkan slider Suhu DHT22 ke > ${batasSuhu}°C agar Kipas & Pompa bekerja!`;
+  }
+
+  // Hitung besarnya sinyal/intensitas (0.0 s.d. 1.0)
+  const pwmDariPotensio = Math.round((adcPotensioPutar / 4095) * 255);
+  const pwmAktif = modulPunyaPotensio
+    ? pwmDariPotensio
+    : perilakuKode.nilaiPwmKode ?? fisika.pwmLedBrightness;
+
   const faktorHambatan =
     fisika.nilaiOhmResistor <= 220
       ? 1.0
       : fisika.nilaiOhmResistor <= 1000
       ? 0.72
       : 0.42;
-  const kekuatanSinyal = Math.max(0.18, (pwmAktif / 255) * faktorHambatan);
+  const kekuatanSinyal = syaratInteraksiTerpenuhi
+    ? Math.max(0.2, (pwmAktif / 255) * faktorHambatan)
+    : 0;
 
-  // Cek apakah ada komponen Buzzer di rangkaian yang sedang aktif
   const adaBuzzerTerpasang = daftarSlotPeriferal.some(
     (s) =>
       slotPeriferalTerpasangMap[s.nomorSlot]?.terpasang &&
@@ -246,9 +404,9 @@ export const WokwiMultiSlotCanvas: React.FC<{
         s.namaTarget.toLowerCase().includes("buzzer"))
   );
 
-  // Timer detak yang kecepatannya mengikuti nilai delay(...) di dalam kodingan C++ siswa!
+  // Timer detak hanya berdetak saat simulasiAktif DAN syaratInteraksiTerpenuhi!
   useEffect(() => {
-    if (!simulasiAktif) {
+    if (!simulasiAktif || !syaratInteraksiTerpenuhi) {
       setDetakKodeDinamis(0);
       return;
     }
@@ -256,15 +414,26 @@ export const WokwiMultiSlotCanvas: React.FC<{
       setDetakKodeDinamis((d) => d + 1);
     }, perilakuKode.delayMs);
     return () => clearInterval(timer);
-  }, [simulasiAktif, perilakuKode.delayMs]);
+  }, [simulasiAktif, syaratInteraksiTerpenuhi, perilakuKode.delayMs]);
 
-  // Synthesizer Suara Buzzer Piezo Nyata (Web Audio API) saat Running & Buzzer Menyala!
-  useEffect(() => {
-    if (!simulasiAktif || !suaraBuzzerAktif || !adaBuzzerTerpasang) return;
-    const faseHidup = perilakuKode.adaKedipHighLow
+  // Apakah pada detak ini aktuator sedang menyala (HIGH)?
+  const sedangFaseHighKode =
+    simulasiAktif &&
+    syaratInteraksiTerpenuhi &&
+    (perilakuKode.adaKedipHighLow && !adaKomponenInputInteraktif
       ? detakKodeDinamis % 2 === 0
-      : true;
-    if (!faseHidup) return;
+      : true);
+
+  // Synthesizer Suara Buzzer Piezo Nyata (HANYA berbunyi jika syaratInteraksiTerpenuhi === true!)
+  useEffect(() => {
+    if (
+      !simulasiAktif ||
+      !syaratInteraksiTerpenuhi ||
+      !suaraBuzzerAktif ||
+      !adaBuzzerTerpasang ||
+      !sedangFaseHighKode
+    )
+      return;
 
     try {
       const AudioCtx =
@@ -274,14 +443,19 @@ export const WokwiMultiSlotCanvas: React.FC<{
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
 
-      // Frekuensi nada buzzer tergantung besarnya sinyal PPM Gas / PWM
       const freq =
         perilakuKode.frekuensiBuzzerHz +
-        Math.round((fisika.kadarGasPpm - 300) * 0.6);
+        Math.round((fisika.kadarGasPpm - 200) * 0.7);
       osc.type = "square";
-      osc.frequency.setValueAtTime(Math.max(440, Math.min(2200, freq)), ctx.currentTime);
+      osc.frequency.setValueAtTime(
+        Math.max(440, Math.min(2400, freq)),
+        ctx.currentTime
+      );
 
-      gain.gain.setValueAtTime(0.04 * kekuatanSinyal, ctx.currentTime);
+      gain.gain.setValueAtTime(
+        Math.max(0.02, 0.05 * kekuatanSinyal),
+        ctx.currentTime
+      );
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.16);
 
       osc.connect(gain);
@@ -290,16 +464,17 @@ export const WokwiMultiSlotCanvas: React.FC<{
       osc.stop(ctx.currentTime + 0.17);
       setTimeout(() => ctx.close().catch(() => {}), 220);
     } catch {
-      // Abaikan jika browser memblokir autoplay audio sebelum klik
+      // Abaikan jika audio diblokir browser
     }
   }, [
     simulasiAktif,
+    syaratInteraksiTerpenuhi,
     detakKodeDinamis,
     suaraBuzzerAktif,
     adaBuzzerTerpasang,
     fisika.kadarGasPpm,
     kekuatanSinyal,
-    perilakuKode.adaKedipHighLow,
+    sedangFaseHighKode,
     perilakuKode.frekuensiBuzzerHz,
   ]);
 
@@ -361,12 +536,6 @@ export const WokwiMultiSlotCanvas: React.FC<{
         )
       : null;
 
-  // Apakah pada detak ini komponen output sedang dalam siklus HIGH (Menyala)?
-  // HANYA menyala jika simulasiAktif === true (Tombol Periksa & Jalankan sudah diklik dan lulus)!
-  const sedangFaseHighKode =
-    simulasiAktif &&
-    (perilakuKode.adaKedipHighLow ? detakKodeDinamis % 2 === 0 : true);
-
   return (
     <div
       ref={kanvasContainerRef}
@@ -376,26 +545,32 @@ export const WokwiMultiSlotCanvas: React.FC<{
           : statusVerifikasi === "gagal_rangkaian"
           ? "border-rose-500"
           : simulasiAktif
-          ? "border-emerald-400 shadow-emerald-950/50"
+          ? syaratInteraksiTerpenuhi
+            ? "border-emerald-400 shadow-emerald-950/50"
+            : "border-amber-400 shadow-amber-950/40"
           : "border-slate-800"
       }`}
     >
-      {/* Baris Status Eksekusi Runtime & Tombol Mute Suara Buzzer */}
+      {/* BARIS STATUS RUNTIME & PANDUAN INTERAKSI FISIK */}
       <div className="mb-3 flex flex-wrap justify-between items-center gap-2 border-b border-slate-800/80 pb-2.5 text-xs">
         <div className="flex flex-wrap items-center gap-2">
           <span
             className={`px-3 py-1 rounded-full font-extrabold text-[11px] flex items-center gap-1.5 ${
-              simulasiAktif
+              !simulasiAktif
+                ? "bg-slate-800 text-slate-400"
+                : syaratInteraksiTerpenuhi
                 ? "bg-emerald-400 text-slate-950 animate-pulse"
-                : "bg-slate-800 text-slate-400"
+                : "bg-amber-400 text-slate-950 animate-bounce"
             }`}
           >
             <Zap className="w-3.5 h-3.5" />
-            {simulasiAktif
-              ? `⚡ RUNNING LIVE (Delay Kode: ${perilakuKode.delayMs} ms | Sinyal: ${Math.round(
+            {!simulasiAktif
+              ? "⏹ STANDBY (Komponen Mati — Klik 'Periksa & Jalankan' untuk Memulai)"
+              : syaratInteraksiTerpenuhi
+              ? `⚡ RUNNING & TRIGGERED (Aktuator Bekerja | Sinyal: ${Math.round(
                   kekuatanSinyal * 100
                 )}%)`
-              : "⏹ STANDBY (Komponen Mati — Klik 'Periksa & Jalankan' untuk Menyalakan)"}
+              : "⏳ RUNNING — MENUNGGU INTERAKSI SENSOR / TOMBOL DI BAWAH!"}
           </span>
         </div>
 
@@ -421,6 +596,315 @@ export const WokwiMultiSlotCanvas: React.FC<{
           </button>
         )}
       </div>
+
+      {/* =================================================================== */}
+      {/* PANEL INTERAKSI FISIK REAL-TIME (MUNCUL SAAT MODUL BUTUH INTERAKSI) */}
+      {/* Pengguna WAJIB menekan tombol / memutar potensio dulu baru hidup!   */}
+      {/* =================================================================== */}
+      {simulasiAktif && adaKomponenInputInteraktif && (
+        <div
+          className={`mb-3 p-3.5 rounded-2xl border-2 transition space-y-2.5 ${
+            syaratInteraksiTerpenuhi
+              ? "bg-emerald-950/40 border-emerald-500/80"
+              : "bg-amber-950/40 border-amber-400"
+          }`}
+        >
+          <div className="flex flex-wrap justify-between items-center gap-2 text-xs">
+            <span className="font-extrabold text-white flex items-center gap-1.5">
+              <Hand className="w-4 h-4 text-amber-400" />
+              PANEL UJI INTERAKSI FISIK PERANGKAT KERAS (SEPERTI ALAT ASLI):
+            </span>
+            <span
+              className={`px-2.5 py-0.5 rounded-md font-bold text-[11px] ${
+                syaratInteraksiTerpenuhi
+                  ? "bg-emerald-400 text-slate-950"
+                  : "bg-amber-400 text-slate-950"
+              }`}
+            >
+              {syaratInteraksiTerpenuhi
+                ? "✓ SYARAT TERPENUHI (AKTUATOR HIDUP)"
+                : "⚠️ BELUM DIINTERAKSI (AKTUATOR MATI)"}
+            </span>
+          </div>
+
+          <p className="text-xs text-amber-200 font-semibold">
+            {instruksiInteraksiSaatIni}
+          </p>
+
+          {/* Kontrol Interaksi Spesifik sesuai Komponen Modul */}
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            {modulPunyaPushButton && (
+              <>
+                <button
+                  type="button"
+                  onMouseDown={() => setTombolFisikDitekan(true)}
+                  onMouseUp={() => {
+                    if (!perilakuKode.adaInterruptKode)
+                      setTombolFisikDitekan(false);
+                  }}
+                  onClick={() => setTombolFisikDitekan((v) => !v)}
+                  className={`px-5 py-2.5 rounded-xl font-extrabold text-xs flex items-center gap-2 cursor-pointer shadow-lg transition transform active:scale-95 ${
+                    tombolFisikDitekan
+                      ? "bg-emerald-500 text-slate-950 ring-4 ring-emerald-400/50"
+                      : "bg-rose-600 hover:bg-rose-500 text-white animate-pulse"
+                  }`}
+                >
+                  <Hand className="w-4 h-4" />
+                  {tombolFisikDitekan
+                    ? "👇 TOMBOL SEDANG DITEKAN (GPIO LOW) — Klik untuk Lepas"
+                    : "👆 KLIK / TEKAN PUSH BUTTON SEKARANG!"}
+                </button>
+              </>
+            )}
+
+            {modulPunyaPotensio && (
+              <div className="flex-1 min-w-[260px] bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5">
+                <div className="flex justify-between text-xs font-bold">
+                  <span className="text-sky-300 flex items-center gap-1">
+                    <Gauge className="w-4 h-4" /> Putar Knop Potensiometer 10kΩ:
+                  </span>
+                  <span className="text-amber-300 font-mono">
+                    ADC: {adcPotensioPutar} / 4095 (
+                    {((adcPotensioPutar / 4095) * 3.3).toFixed(2)}V | PWM:{" "}
+                    {pwmDariPotensio})
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={4095}
+                  step={15}
+                  value={adcPotensioPutar}
+                  onChange={(e) => setAdcPotensioPutar(Number(e.target.value))}
+                  className="w-full accent-amber-400 cursor-pointer"
+                />
+                <div className="flex justify-between text-[10px] text-slate-400 font-mono">
+                  <span>0 ADC (0V - Mati)</span>
+                  <span className="text-emerald-400 font-bold">
+                    Target Aktif: &gt;= {perilakuKode.ambangBatasSensor ?? 1000} ADC
+                  </span>
+                  <span>4095 ADC (3.3V - Penuh)</span>
+                </div>
+              </div>
+            )}
+
+            {modulPunyaLdr && (
+              <div className="flex-1 min-w-[260px] bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5">
+                <div className="flex justify-between text-xs font-bold">
+                  <span className="text-amber-300 flex items-center gap-1">
+                    <Sun className="w-4 h-4" /> Intensitas Cahaya Langit (Sensor LDR):
+                  </span>
+                  <span className="text-emerald-300 font-mono">
+                    {fisika.luxCahaya} Lux (
+                    {fisika.luxCahaya < 400 ? "🌙 Malam Gelap" : "☀️ Siang Terang"})
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={20}
+                  max={1000}
+                  value={fisika.luxCahaya}
+                  onChange={(e) =>
+                    setFisika((f) => ({
+                      ...f,
+                      luxCahaya: Number(e.target.value),
+                    }))
+                  }
+                  className="w-full accent-amber-400 cursor-pointer"
+                />
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setFisika((f) => ({ ...f, luxCahaya: 120 }))}
+                    className="px-3 py-1 rounded-lg bg-indigo-600 text-white font-bold text-[11px] cursor-pointer"
+                  >
+                    🌙 Buat Malam Gelap (120 Lux ➔ Lampu ON)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFisika((f) => ({ ...f, luxCahaya: 850 }))}
+                    className="px-3 py-1 rounded-lg bg-slate-800 text-slate-300 font-bold text-[11px] cursor-pointer"
+                  >
+                    ☀️ Buat Siang Terang (850 Lux ➔ Lampu OFF)
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {modulPunyaUltrasonik && (
+              <div className="flex-1 min-w-[260px] bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5">
+                <div className="flex justify-between text-xs font-bold">
+                  <span className="text-sky-300 flex items-center gap-1">
+                    <Radio className="w-4 h-4" /> Jarak Kendaraan ke Sensor Ultrasonik:
+                  </span>
+                  <span className="text-amber-300 font-mono">
+                    {fisika.jarakUltrasonikCm} cm (Target Buka: &lt;{" "}
+                    {perilakuKode.ambangBatasSensor ?? 30} cm)
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={5}
+                  max={120}
+                  value={fisika.jarakUltrasonikCm}
+                  onChange={(e) =>
+                    setFisika((f) => ({
+                      ...f,
+                      jarakUltrasonikCm: Number(e.target.value),
+                    }))
+                  }
+                  className="w-full accent-sky-400 cursor-pointer"
+                />
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFisika((f) => ({ ...f, jarakUltrasonikCm: 15 }))
+                    }
+                    className="px-3 py-1 rounded-lg bg-emerald-600 text-white font-bold text-[11px] cursor-pointer"
+                  >
+                    🚗 Dekatkan Mobil (15 cm ➔ Palang Buka)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFisika((f) => ({ ...f, jarakUltrasonikCm: 85 }))
+                    }
+                    className="px-3 py-1 rounded-lg bg-slate-800 text-slate-300 font-bold text-[11px] cursor-pointer"
+                  >
+                    🚙 Jauhkan Mobil (85 cm ➔ Palang Tutup)
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {modulPunyaRfid && (
+              <button
+                type="button"
+                onClick={() =>
+                  setFisika((f) => ({
+                    ...f,
+                    rfidKartuDekat: !f.rfidKartuDekat,
+                  }))
+                }
+                className={`px-5 py-2.5 rounded-xl font-extrabold text-xs flex items-center gap-2 cursor-pointer shadow-lg transition ${
+                  fisika.rfidKartuDekat
+                    ? "bg-emerald-500 text-slate-950"
+                    : "bg-sky-600 hover:bg-sky-500 text-white animate-pulse"
+                }`}
+              >
+                <CreditCard className="w-4 h-4" />
+                {fisika.rfidKartuDekat
+                  ? "🪪 KARTU E-KTP DITEMPEL (AKSES VALID) — Klik untuk Jauhkan"
+                  : "🪪 KLIK UNTUK TEMPELKAN KARTU RFID KE READER!"}
+              </button>
+            )}
+
+            {modulPunyaMq2AtauFlame && (
+              <div className="flex-1 min-w-[260px] bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5">
+                <div className="flex justify-between text-xs font-bold">
+                  <span className="text-rose-400 flex items-center gap-1">
+                    <Flame className="w-4 h-4" /> Kepekatan Gas LPG MQ-2 &amp; Sensor Api:
+                  </span>
+                  <span className="text-amber-300 font-mono">
+                    {fisika.kadarGasPpm} PPM (Ambang Bahaya: &gt;={" "}
+                    {perilakuKode.ambangBatasSensor ?? 500} PPM)
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={100}
+                  max={950}
+                  value={fisika.kadarGasPpm}
+                  onChange={(e) =>
+                    setFisika((f) => ({
+                      ...f,
+                      kadarGasPpm: Number(e.target.value),
+                    }))
+                  }
+                  className="w-full accent-rose-500 cursor-pointer"
+                />
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFisika((f) => ({
+                        ...f,
+                        kadarGasPpm: 720,
+                        apiTerdeteksi: true,
+                      }))
+                    }
+                    className="px-3 py-1 rounded-lg bg-rose-600 text-white font-bold text-[11px] cursor-pointer"
+                  >
+                    🔥 Simulasikan Gas Bocor &amp; Api (720 PPM ➔ Sirine ON!)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFisika((f) => ({
+                        ...f,
+                        kadarGasPpm: 200,
+                        apiTerdeteksi: false,
+                      }))
+                    }
+                    className="px-3 py-1 rounded-lg bg-slate-800 text-slate-300 font-bold text-[11px] cursor-pointer"
+                  >
+                    🌬️ Normalisasi Udara Bersih (200 PPM ➔ Sirine OFF)
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {modulPunyaDhtAtauSoil && !teksSemuaSlot.includes("npk") && (
+              <div className="flex-1 min-w-[260px] bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5">
+                <div className="flex justify-between text-xs font-bold">
+                  <span className="text-emerald-400">
+                    🌡️ Suhu Udara DHT22 &amp; Kelembapan Tanah:
+                  </span>
+                  <span className="text-amber-300 font-mono">
+                    Suhu: {fisika.suhuCelcius}°C (Target Kipas/Pompa: &gt;{" "}
+                    {perilakuKode.ambangBatasSensor ?? 32}°C)
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={20}
+                  max={50}
+                  step={0.5}
+                  value={fisika.suhuCelcius}
+                  onChange={(e) =>
+                    setFisika((f) => ({
+                      ...f,
+                      suhuCelcius: Number(e.target.value),
+                    }))
+                  }
+                  className="w-full accent-emerald-400 cursor-pointer"
+                />
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFisika((f) => ({ ...f, suhuCelcius: 37.5 }))
+                    }
+                    className="px-3 py-1 rounded-lg bg-rose-600 text-white font-bold text-[11px] cursor-pointer"
+                  >
+                    🔥 Panaskan Rumah Kaca (37.5°C ➔ Kipas &amp; Pompa ON)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFisika((f) => ({ ...f, suhuCelcius: 26.5 }))
+                    }
+                    className="px-3 py-1 rounded-lg bg-slate-800 text-slate-300 font-bold text-[11px] cursor-pointer"
+                  >
+                    ❄️ Dinginkan Ruangan (26.5°C ➔ Kipas &amp; Pompa OFF)
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Baris Indikator Slot */}
       <div className="mb-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
@@ -465,23 +949,7 @@ export const WokwiMultiSlotCanvas: React.FC<{
         })}
       </div>
 
-      {/* Banner Panduan Langkah */}
-      <div className="mb-3 px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-xs font-semibold text-amber-300 flex flex-wrap justify-between items-center gap-2">
-        <span>
-          {pesanGudang ||
-            (!slot1Esp32Terpasang
-              ? `👉 Langkah 1/${totalKomponenWajib}: Tarik 'ESP32 DevKit V1' dari Gudang ke kotak [Slot #1] di sebelah kiri!`
-              : slotPeriferalKosongBerikutnya
-              ? `👉 Langkah Berikutnya: Tarik '${slotPeriferalKosongBerikutnya.namaTarget}' dari Gudang ke kotak [Slot #${slotPeriferalKosongBerikutnya.nomorSlot}] di sebelah kanan!`
-              : sambunganBerkedipTarget
-              ? `🔌 Hubungkan Semua Kaki Pin (${kabelTerpasangList.length}/${semuaSambunganWajibLevelIni.length}): ${sambunganBerkedipTarget.keteranganJalur}`
-              : simulasiAktif
-              ? `🎉 SIMULASI RUNNING! Komponen menyala & bergerak mengikuti kodingan C++ kamu!`
-              : `✅ Seluruh Komponen & Kaki Pin Terhubung! Sekarang klik tombol hijau '1. Periksa Semua Kaki & Jalankan' di bawah agar komponen menyala!`)}
-        </span>
-      </div>
-
-      {/* KANVAS UTAMA DENGAN JALUR KABEL SIKU-SIKU & EFEK VISUAL BERBASIS KODE */}
+      {/* KANVAS UTAMA */}
       <svg
         ref={svgRef}
         viewBox={`0 0 ${lebarKanvas} ${tinggiKanvas}`}
@@ -491,7 +959,6 @@ export const WokwiMultiSlotCanvas: React.FC<{
         }}
         className="w-full min-h-[340px] sm:min-h-[430px] select-none"
       >
-        {/* Grid Titik Breadboard */}
         {Array.from({ length: 33 }).map((_, gx) =>
           Array.from({ length: Math.ceil(tinggiKanvas / 28) }).map((__, gy) => (
             <circle
@@ -589,7 +1056,6 @@ export const WokwiMultiSlotCanvas: React.FC<{
               ESP-WROOM-32
             </text>
 
-            {/* LED Power & LED Biru GPIO 2 (HANYA menyala saat simulasiAktif === true!) */}
             <circle
               cx={108}
               cy={234}
@@ -726,9 +1192,7 @@ export const WokwiMultiSlotCanvas: React.FC<{
           </g>
         )}
 
-        {/* =============================================================== */}
-        {/* SLOT KOMPONEN PERIFERAL (DIAM SAAT STANDBY, AKTIF SAAT RUNNING) */}
-        {/* =============================================================== */}
+        {/* SLOT KOMPONEN PERIFERAL DENGAN KONTROL KLIK LANGSUNG DI ATAS KOMPONEN! */}
         {daftarSlotPeriferal.map((slot, idxSlot) => {
           const infoTerpasang = slotPeriferalTerpasangMap[slot.nomorSlot];
           const sudahTerpasang = Boolean(infoTerpasang?.terpasang);
@@ -805,19 +1269,30 @@ export const WokwiMultiSlotCanvas: React.FC<{
             infoTerpasang.namaKartu || slot.namaTarget
           ).toLowerCase();
 
+          const adalahPushButtonIni =
+            idKomp.includes("button") || namaKomp.includes("button");
+          const adalahPotensioIni =
+            idKomp.includes("potensiometer") ||
+            namaKomp.includes("potensiometer");
+          const adalahRfidIni =
+            idKomp.includes("rfid") || namaKomp.includes("rfid");
+
           const adalahLed =
             idKomp.includes("led") && !idKomp.includes("oled");
           const adalahBuzzer =
             idKomp.includes("buzzer") || namaKomp.includes("buzzer");
-          const adalahKipasAtauPompa =
+          const adalahAktuatorGerak =
             idKomp.includes("kipas") ||
             idKomp.includes("pompa") ||
-            idKomp.includes("servo");
+            idKomp.includes("servo") ||
+            idKomp.includes("solenoid") ||
+            idKomp.includes("relay");
 
-          // Untuk lampu lalu lintas (>1 LED), buat bergantian Merah vs Hijau saat Running
-          const ledMenyalaSaatIni =
+          // Aktuator HANYA menyala jika simulasiAktif DAN syaratInteraksiTerpenuhi === true!
+          const aktuatorMenyalaSaatIni =
             simulasiAktif &&
-            (perilakuKode.adaKedipHighLow
+            syaratInteraksiTerpenuhi &&
+            (perilakuKode.adaKedipHighLow && !adaKomponenInputInteraktif
               ? idxSlot % 2 === 0
                 ? detakKodeDinamis % 2 === 0
                 : detakKodeDinamis % 2 === 1
@@ -836,18 +1311,24 @@ export const WokwiMultiSlotCanvas: React.FC<{
                 width={slot.boxW}
                 height={slot.boxH}
                 rx={14}
-                fill={simulasiAktif ? "#071f1b" : "#111827"}
+                fill={
+                  !simulasiAktif
+                    ? "#111827"
+                    : aktuatorMenyalaSaatIni
+                    ? "#071f1b"
+                    : "#171926"
+                }
                 stroke={
-                  simulasiAktif
-                    ? ledMenyalaSaatIni
-                      ? "#34d399"
-                      : "#0d9488"
-                    : "#475569"
+                  !simulasiAktif
+                    ? "#475569"
+                    : aktuatorMenyalaSaatIni
+                    ? "#34d399"
+                    : "#f59e0b"
                 }
                 strokeWidth={2.2}
               />
 
-              {/* Header Status Slot: Menampilkan OFF saat belum Running, dan ON + Nilai Sinyal saat Running! */}
+              {/* Header Status Slot */}
               <rect
                 x={slot.boxX + 12}
                 y={slot.boxY + 8}
@@ -859,30 +1340,41 @@ export const WokwiMultiSlotCanvas: React.FC<{
               <text
                 x={slot.boxX + 20}
                 y={slot.boxY + 21}
-                fill={simulasiAktif ? "#34d399" : "#94a3b8"}
-                fontSize="8.8"
+                fill={
+                  !simulasiAktif
+                    ? "#94a3b8"
+                    : aktuatorMenyalaSaatIni
+                    ? "#34d399"
+                    : "#fbbf24"
+                }
+                fontSize="8.5"
                 fontWeight="bold"
               >
                 SLOT #{slot.nomorSlot}:{" "}
-                {(infoTerpasang.namaKartu || slot.namaTarget).slice(0, 20)}{" "}
-                {simulasiAktif
-                  ? adalahLed
-                    ? ledMenyalaSaatIni
-                      ? `💡 ON (${Math.round(kekuatanSinyal * 100)}%)`
-                      : "⚫ OFF (LOW)"
-                    : adalahBuzzer
-                    ? ledMenyalaSaatIni
-                      ? `🔊 BEEP! (${perilakuKode.frekuensiBuzzerHz}Hz)`
-                      : "🔇 SILENT"
-                    : "⚡ ACTIVE"
-                  : "[STANDBY / OFF]"}
+                {(infoTerpasang.namaKartu || slot.namaTarget).slice(0, 18)}{" "}
+                {!simulasiAktif
+                  ? "[STANDBY]"
+                  : adalahPushButtonIni
+                  ? tombolFisikDitekan
+                    ? "👇 [DITEKAN / LOW]"
+                    : "👆 [KLIK TOMBOL INI!]"
+                  : adalahPotensioIni
+                  ? `🎛️ [${adcPotensioPutar} ADC]`
+                  : adalahLed
+                  ? aktuatorMenyalaSaatIni
+                    ? `💡 ON (${Math.round(kekuatanSinyal * 100)}%)`
+                    : "⚫ OFF (MENUNGGU INPUT)"
+                  : adalahBuzzer
+                  ? aktuatorMenyalaSaatIni
+                    ? `🔊 BEEP!`
+                    : "🔇 SILENT (MENUNGGU INPUT)"
+                  : aktuatorMenyalaSaatIni
+                  ? "⚡ BEKERJA (ON)"
+                  : "⏸ DIAM (MENUNGGU INPUT)"}
               </text>
 
-              {/* ========================================================= */}
-              {/* EFEK VISUAL AKTIF SAAT RUNNING (TERGANTUNG KODINGAN!)     */}
-              {/* ========================================================= */}
-              {/* 1. Pendaran Cahaya (Glow Halo) LED sesuai PWM & Resistor */}
-              {adalahLed && ledMenyalaSaatIni && (
+              {/* Efek Pendaran Cahaya LED (HANYA jika aktuatorMenyalaSaatIni === true) */}
+              {adalahLed && aktuatorMenyalaSaatIni && (
                 <>
                   <circle
                     cx={centerX}
@@ -903,8 +1395,8 @@ export const WokwiMultiSlotCanvas: React.FC<{
                 </>
               )}
 
-              {/* 2. Gelombang Sinyal Suara Buzzer sesuai besarnya Sinyal / PPM */}
-              {adalahBuzzer && ledMenyalaSaatIni && (
+              {/* Gelombang Suara Buzzer (HANYA jika aktuatorMenyalaSaatIni === true) */}
+              {adalahBuzzer && aktuatorMenyalaSaatIni && (
                 <g>
                   {[1, 2, 3].map((ring) => (
                     <circle
@@ -930,28 +1422,18 @@ export const WokwiMultiSlotCanvas: React.FC<{
                       />
                     </circle>
                   ))}
-                  <text
-                    x={centerX}
-                    y={slot.boxY + slot.boxH - 6}
-                    textAnchor="middle"
-                    fill="#fda4af"
-                    fontSize="8"
-                    fontWeight="bold"
-                  >
-                    🔊 BEEP {perilakuKode.frekuensiBuzzerHz}Hz!
-                  </text>
                 </g>
               )}
 
-              {/* 3. Indikator Putaran / Aliran Aktuator */}
-              {adalahKipasAtauPompa && simulasiAktif && (
+              {/* Lingkaran Putaran Aktuator (Kipas / Pompa / Servo / Relay) HANYA saat syarat terpenuhi */}
+              {adalahAktuatorGerak && aktuatorMenyalaSaatIni && (
                 <circle
                   cx={centerX}
                   cy={centerY}
                   r={24}
                   fill="none"
                   stroke="#38bdf8"
-                  strokeWidth={2}
+                  strokeWidth={2.2}
                   strokeDasharray="5 4"
                 >
                   <animateTransform
@@ -965,13 +1447,31 @@ export const WokwiMultiSlotCanvas: React.FC<{
                 </circle>
               )}
 
-              {/* Render Ikon Komponen: Redup/Diam jika belum Running, Terang jika Running! */}
+              {/* Render Ikon Komponen */}
               <g
+                onClick={() => {
+                  if (adalahPushButtonIni) {
+                    setTombolFisikDitekan((v) => !v);
+                  } else if (adalahRfidIni) {
+                    setFisika((f) => ({
+                      ...f,
+                      rfidKartuDekat: !f.rfidKartuDekat,
+                    }));
+                  } else if (adalahPotensioIni) {
+                    setAdcPotensioPutar((v) => (v >= 3000 ? 0 : v + 1500));
+                  }
+                }}
+                className={
+                  adalahPushButtonIni || adalahRfidIni || adalahPotensioIni
+                    ? "cursor-pointer"
+                    : ""
+                }
                 opacity={
                   !simulasiAktif
                     ? 0.55
-                    : adalahLed && !ledMenyalaSaatIni
-                    ? 0.35
+                    : (adalahLed || adalahBuzzer || adalahAktuatorGerak) &&
+                      !aktuatorMenyalaSaatIni
+                    ? 0.4
                     : 1
                 }
               >
@@ -990,14 +1490,100 @@ export const WokwiMultiSlotCanvas: React.FC<{
                 </svg>
               </g>
 
-              {/* Masking Penghenti Animasi Bawaan Saat Belum Running (Agar Tidak Kedap-Kedip Sebelum Running!) */}
-              {!simulasiAktif && adalahLed && (
+              {/* Tombol Interaktif Langsung di Atas Kanvas untuk Push Button / RFID / Potensio */}
+              {simulasiAktif && adalahPushButtonIni && (
+                <g
+                  onClick={() => setTombolFisikDitekan((v) => !v)}
+                  className="cursor-pointer"
+                >
+                  <rect
+                    x={iconX - 8}
+                    y={slot.boxY + slot.boxH - 22}
+                    width={84}
+                    height={18}
+                    rx={5}
+                    fill={tombolFisikDitekan ? "#10b981" : "#e11d48"}
+                  />
+                  <text
+                    x={iconX + 34}
+                    y={slot.boxY + slot.boxH - 10}
+                    textAnchor="middle"
+                    fill="#ffffff"
+                    fontSize="7.8"
+                    fontWeight="bold"
+                  >
+                    {tombolFisikDitekan ? "👇 DITEKAN (ON)" : "👆 KLIK TEKAN"}
+                  </text>
+                </g>
+              )}
+
+              {simulasiAktif && adalahPotensioIni && (
+                <g
+                  onClick={() =>
+                    setAdcPotensioPutar((v) => (v >= 3500 ? 0 : v + 1200))
+                  }
+                  className="cursor-pointer"
+                >
+                  <rect
+                    x={iconX - 10}
+                    y={slot.boxY + slot.boxH - 22}
+                    width={88}
+                    height={18}
+                    rx={5}
+                    fill={syaratInteraksiTerpenuhi ? "#10b981" : "#d97706"}
+                  />
+                  <text
+                    x={iconX + 34}
+                    y={slot.boxY + slot.boxH - 10}
+                    textAnchor="middle"
+                    fill="#ffffff"
+                    fontSize="7.5"
+                    fontWeight="bold"
+                  >
+                    🎛️ KLIK PUTAR ({Math.round((adcPotensioPutar / 4095) * 100)}%)
+                  </text>
+                </g>
+              )}
+
+              {simulasiAktif && adalahRfidIni && (
+                <g
+                  onClick={() =>
+                    setFisika((f) => ({
+                      ...f,
+                      rfidKartuDekat: !f.rfidKartuDekat,
+                    }))
+                  }
+                  className="cursor-pointer"
+                >
+                  <rect
+                    x={iconX - 10}
+                    y={slot.boxY + slot.boxH - 22}
+                    width={88}
+                    height={18}
+                    rx={5}
+                    fill={fisika.rfidKartuDekat ? "#10b981" : "#0284c7"}
+                  />
+                  <text
+                    x={iconX + 34}
+                    y={slot.boxY + slot.boxH - 10}
+                    textAnchor="middle"
+                    fill="#ffffff"
+                    fontSize="7.5"
+                    fontWeight="bold"
+                  >
+                    {fisika.rfidKartuDekat ? "🪪 KARTU DEKAT" : "🪪 TAP KARTU"}
+                  </text>
+                </g>
+              )}
+
+              {/* Masking Gelap Saat LED Belum Menyala */}
+              {(!simulasiAktif || !aktuatorMenyalaSaatIni) && adalahLed && (
                 <circle
                   cx={centerX}
                   cy={centerY - 6}
                   r={12}
                   fill="#450a0a"
-                  opacity={0.75}
+                  opacity={0.78}
                   pointerEvents="none"
                 />
               )}
@@ -1162,7 +1748,7 @@ export const WokwiMultiSlotCanvas: React.FC<{
           />
         )}
 
-        {/* KABEL TERPASANG SIKU-SIKU + ANIMASI ALIRAN SINYAL LISTRIK SAAT RUNNING! */}
+        {/* KABEL TERPASANG SIKU-SIKU (ALIRAN LISTRIK HANYA MENGALIR SAAT SYARAT INTERAKSI TERPENUHI!) */}
         {kabelTerpasangList.map((k, idx) => {
           const p1 = semuaTitikPinPeta[k.pinAsalId];
           const p2 = semuaTitikPinPeta[k.pinTujuanId];
@@ -1194,7 +1780,6 @@ export const WokwiMultiSlotCanvas: React.FC<{
                 strokeWidth={16}
                 strokeLinejoin="round"
               />
-              {/* Kabel dasar */}
               <path
                 d={ruteSiku.pathSvg}
                 fill="none"
@@ -1203,30 +1788,34 @@ export const WokwiMultiSlotCanvas: React.FC<{
                 strokeLinejoin="round"
                 strokeLinecap="round"
                 strokeDasharray={adalahValid ? "none" : "6 4"}
-                opacity={simulasiAktif ? 0.95 : 0.75}
+                opacity={simulasiAktif && syaratInteraksiTerpenuhi ? 0.98 : 0.65}
               />
 
-              {/* Pulsa Sinyal Listrik Mengalir di Sepanjang Kabel Siku-Siku Saat Running! */}
-              {simulasiAktif && adalahValid && sedangFaseHighKode && (
-                <path
-                  d={ruteSiku.pathSvg}
-                  fill="none"
-                  stroke="#fef08a"
-                  strokeWidth={2.5 + kekuatanSinyal * 2.5}
-                  strokeLinejoin="round"
-                  strokeDasharray="10 18"
-                >
-                  <animate
-                    attributeName="stroke-dashoffset"
-                    from="56"
-                    to="0"
-                    dur={`${Math.max(0.25, 0.85 - kekuatanSinyal * 0.45).toFixed(2)}s`}
-                    repeatCount="indefinite"
-                  />
-                </path>
-              )}
+              {simulasiAktif &&
+                adalahValid &&
+                sedangFaseHighKode &&
+                syaratInteraksiTerpenuhi && (
+                  <path
+                    d={ruteSiku.pathSvg}
+                    fill="none"
+                    stroke="#fef08a"
+                    strokeWidth={2.5 + kekuatanSinyal * 2.5}
+                    strokeLinejoin="round"
+                    strokeDasharray="10 18"
+                  >
+                    <animate
+                      attributeName="stroke-dashoffset"
+                      from="56"
+                      to="0"
+                      dur={`${Math.max(
+                        0.25,
+                        0.85 - kekuatanSinyal * 0.45
+                      ).toFixed(2)}s`}
+                      repeatCount="indefinite"
+                    />
+                  </path>
+                )}
 
-              {/* Tombol Hapus 1 Kabel */}
               <circle
                 cx={ruteSiku.midX}
                 cy={ruteSiku.midY}
