@@ -801,6 +801,7 @@ export const WokwiStepByStepAcademy: React.FC<{
         pinYangSalahAtauKurangIds={pinYangSalahAtauKurangIds}
         fisika={fisika}
         setFisika={setFisika}
+        kodeKetikanUser={kodeKetikanUser}
       />
 
       {/* PANEL BAWAH: INSTRUKSI PERMANEN DI KIRI & EDITOR KODE DI KANAN */}

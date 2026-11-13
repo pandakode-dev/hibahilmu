@@ -220,7 +220,18 @@ export const MiniaturSvgGudang48: React.FC<{
   idItem: string;
   namaItem?: string;
   nilaiOhmResistor?: number;
-}> = ({ idItem, namaItem = "", nilaiOhmResistor = 220 }) => {
+  aktif?: boolean;
+  intensitas?: number; // 0.0 s.d. 1.0 (tergantung kodingan PWM / sinyal)
+  kecepatanMs?: number; // kecepatan kedip/putar dari delay() kodingan
+}> = ({
+  idItem,
+  namaItem = "",
+  nilaiOhmResistor = 220,
+  aktif = true,
+  intensitas = 1,
+  kecepatanMs = 800,
+}) => {
+  const durasiAnim = `${Math.max(0.18, Math.min(2.5, kecepatanMs / 1000)).toFixed(2)}s`;
   const key = `${idItem} ${namaItem}`.toLowerCase();
   const gelang = hitungGelangWarnaResistor(nilaiOhmResistor);
 

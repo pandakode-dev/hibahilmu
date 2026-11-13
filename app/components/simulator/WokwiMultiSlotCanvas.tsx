@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useRef } from "react";
-import { Sliders, Trash2, Cable } from "lucide-react";
+import React, { useRef, useEffect, useState } from "react";
+import { Sliders, Trash2, Cable, Volume2, VolumeX, Zap } from "lucide-react";
 import {
   PIN_FISIK_ESP32_STANDAR,
   MiniaturSvgGudang48,
@@ -20,6 +20,57 @@ export interface KabelMultiPinTersambung {
   warna: string;
 }
 
+// Hasil pembacaan isi kodingan C++ siswa secara real-time!
+export interface HasilAnalisisKodeRuntime {
+  delayMs: number;
+  adaKedipHighLow: boolean;
+  adaHighSaja: boolean;
+  nilaiPwmKode: number | null; // Jika ada analogWrite(pin, val)
+  frekuensiBuzzerHz: number; // Dari tone() atau nilai PPM/ADC
+  ambangBatasSensor: number | null; // Dari if (adc < ...) atau if (ppm >= ...)
+}
+
+export function analisisPerilakuKodeCpp(kode: string): HasilAnalisisKodeRuntime {
+  const bersih = (kode || "")
+    .replace(/\/\/.*$/gm, "")
+    .replace(/\/\*[\s\S]*?\*\//g, "");
+
+  // 1. Baca nilai delay(...) di dalam kode siswa
+  const matchDelay = bersih.match(/delay\s*\(\s*(\d+)\s*\)/);
+  const delayMs = matchDelay ? Math.max(80, parseInt(matchDelay[1], 10)) : 800;
+
+  // 2. Cek apakah kode menyalakan HIGH dan mematikan LOW (berkedip) atau hanya HIGH terus
+  const adaHigh = /HIGH/.test(bersih) || /analogWrite/.test(bersih) || /write\s*\(/.test(bersih);
+  const adaLow = /LOW/.test(bersih);
+  const adaKedipHighLow = adaHigh && adaLow && /delay\s*\(/.test(bersih);
+  const adaHighSaja = adaHigh && !adaKedipHighLow;
+
+  // 3. Cek nilai analogWrite(pin, nilai) di kode
+  const matchPwm = bersih.match(/analogWrite\s*\(\s*\d+\s*,\s*(\d+)\s*\)/);
+  const nilaiPwmKode = matchPwm
+    ? Math.min(255, Math.max(0, parseInt(matchPwm[1], 10)))
+    : null;
+
+  // 4. Cek frekuensi tone(pin, freq) jika ada
+  const matchTone = bersih.match(/tone\s*\(\s*\d+\s*,\s*(\d+)/);
+  const frekuensiBuzzerHz = matchTone ? parseInt(matchTone[1], 10) : 880;
+
+  // 5. Cek ambang batas if (misal if (ppm >= 500) atau if (adc < 1000))
+  const matchThreshold = bersih.match(/if\s*\([^)]*?[<>]=?\s*(\d+)/);
+  const ambangBatasSensor = matchThreshold
+    ? parseInt(matchThreshold[1], 10)
+    : null;
+
+  return {
+    delayMs,
+    adaKedipHighLow,
+    adaHighSaja,
+    nilaiPwmKode,
+    frekuensiBuzzerHz,
+    ambangBatasSensor,
+  };
+}
+
 const PILIHAN_OHM_RESISTOR = [100, 220, 330, 470, 1000, 4700, 10000];
 
 const PIN_ESP32_KANVAS_LEBAR: TitikPinFisik[] = PIN_FISIK_ESP32_STANDAR.map(
@@ -30,27 +81,18 @@ const PIN_ESP32_KANVAS_LEBAR: TitikPinFisik[] = PIN_FISIK_ESP32_STANDAR.map(
   })
 );
 
-// ============================================================================
-// MESIN ROUTING KABEL SIKU-SIKU 90 DERAJAT (ORTHOGONAL MANHATTAN PCB ROUTING)
-// Menghindari tabrakan dengan badan ESP32 maupun kotak komponen Slot #2..#10!
-// ============================================================================
 function buatJalurKabelSikuSiku(
   p1: TitikPinFisik,
   p2: TitikPinFisik,
   indeksJalur: number
 ): { pathSvg: string; midX: number; midY: number } {
-  // Pastikan titik A adalah yang lebih di kiri (atau ESP32) dan titik B di kanan
   const aIsLeft = p1.x <= p2.x;
   const A = aIsLeft ? p1 : p2;
   const B = aIsLeft ? p2 : p1;
-
-  // Offset spasi antar-kabel (7px per kabel) agar garis vertikal/horizontal tidak saling bertumpuk
   const offset = ((indeksJalur % 7) - 3) * 7;
 
-  // KASUS 1: Sambungan Seri Antar-Periferal (Misal Katoda LED Slot #3 di x=645 ke Resistor Slot #4 di x=330, atau vertikal x sama)
   if (A.posisiKomponen === "periferal" && B.posisiKomponen === "periferal") {
     if (Math.abs(A.x - B.x) < 15) {
-      // Satu kolom vertikal (misal Slot #2 ke Slot #3 di x=390)
       const xSaluran = A.x - 36 + offset;
       const midY = (A.y + B.y) / 2;
       return {
@@ -59,7 +101,6 @@ function buatJalurKabelSikuSiku(
         midY,
       };
     } else {
-      // Beda kolom (misal dari Kolom 2 ke Kolom 1 melewati lorong tengah horizontal y=154)
       const yLorongTengah = 154 + offset;
       const xKiriA = A.x - 24;
       const xKiriB = B.x - 24;
@@ -72,13 +113,9 @@ function buatJalurKabelSikuSiku(
     }
   }
 
-  // KASUS 2: Pin Asal berada di SISI KIRI ESP32 (x = 48, seperti GPIO 35, 19, 25, 26, 27, 32, 33, 34)
-  // Jangan menembus tengah badan ESP32! Belok siku ke kiri luar (x=18), turun ke bawah ESP32 (y=282), lalu ke kanan!
   if (A.x <= 55) {
-    const xLuarKiri = 18 + ((indeksJalur % 3) * 5);
-    const yBawahEsp = 282 + ((indeksJalur % 3) * 6);
-
-    // Jika menuju ke Komponen Kolom 1 (B.x sekitar 330..390)
+    const xLuarKiri = 18 + (indeksJalur % 3) * 5;
+    const yBawahEsp = 282 + (indeksJalur % 3) * 6;
     if (B.x < 500) {
       const xKoridor1 = 265 + offset;
       return {
@@ -87,7 +124,6 @@ function buatJalurKabelSikuSiku(
         midY: (yBawahEsp + B.y) / 2,
       };
     } else {
-      // Jika menuju ke Komponen Kolom 2 (B.x >= 600), lewat bawah lalu naik di koridor tengah antar-kolom (x=612)!
       const xKoridorAntarKolom = B.x - 32 + offset;
       return {
         pathSvg: `M ${A.x} ${A.y} L ${xLuarKiri} ${A.y} L ${xLuarKiri} ${yBawahEsp} L ${xKoridorAntarKolom} ${yBawahEsp} L ${xKoridorAntarKolom} ${B.y} L ${B.x} ${B.y}`,
@@ -97,8 +133,6 @@ function buatJalurKabelSikuSiku(
     }
   }
 
-  // KASUS 3: Pin Asal di SISI KANAN ESP32 (x = 204) menuju ke KOMPONEN KOLOM 2 (B.x >= 550)
-  // Agar TIDAK menabrak kotak komponen di Kolom 1 (x=330..585), belok lewat Lorong Tengah Horizontal (y=154)!
   if (B.x >= 550) {
     const xKoridor1 = 258 + offset;
     const yLorongTengah = 154 + offset;
@@ -110,7 +144,6 @@ function buatJalurKabelSikuSiku(
     };
   }
 
-  // KASUS 4: Standar Siku-Siku (Z-Bend 90 Derajat) dari Kanan ESP32 (x=204) ke Komponen Kolom 1 (x=330..390)
   const xTengah = Math.round((A.x + B.x) / 2) + offset;
   const midY = (A.y + B.y) / 2;
   return {
@@ -155,6 +188,7 @@ export const WokwiMultiSlotCanvas: React.FC<{
   pinYangSalahAtauKurangIds: string[];
   fisika: ParameterFisikaInteraktif;
   setFisika: React.Dispatch<React.SetStateAction<ParameterFisikaInteraktif>>;
+  kodeKetikanUser?: string;
 }> = ({
   kanvasContainerRef,
   getarMerahRangkaian,
@@ -185,9 +219,89 @@ export const WokwiMultiSlotCanvas: React.FC<{
   pinYangSalahAtauKurangIds,
   fisika,
   setFisika,
+  kodeKetikanUser = "",
 }) => {
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const [suaraBuzzerAktif, setSuaraBuzzerAktif] = useState<boolean>(true);
+  const [detakKodeDinamis, setDetakKodeDinamis] = useState<number>(0);
+
   const infoResistor = hitungGelangResistorModular(fisika.nilaiOhmResistor);
+  const perilakuKode = analisisPerilakuKodeCpp(kodeKetikanUser);
+
+  // Hitung besarnya sinyal/intensitas (0.15 s.d. 1.0) dari kodingan PWM + Resistor + Slider Fisika
+  const pwmAktif = perilakuKode.nilaiPwmKode ?? fisika.pwmLedBrightness;
+  const faktorHambatan =
+    fisika.nilaiOhmResistor <= 220
+      ? 1.0
+      : fisika.nilaiOhmResistor <= 1000
+      ? 0.72
+      : 0.42;
+  const kekuatanSinyal = Math.max(0.18, (pwmAktif / 255) * faktorHambatan);
+
+  // Cek apakah ada komponen Buzzer di rangkaian yang sedang aktif
+  const adaBuzzerTerpasang = daftarSlotPeriferal.some(
+    (s) =>
+      slotPeriferalTerpasangMap[s.nomorSlot]?.terpasang &&
+      (s.idGambarMiniatur.includes("buzzer") ||
+        s.namaTarget.toLowerCase().includes("buzzer"))
+  );
+
+  // Timer detak yang kecepatannya mengikuti nilai delay(...) di dalam kodingan C++ siswa!
+  useEffect(() => {
+    if (!simulasiAktif) {
+      setDetakKodeDinamis(0);
+      return;
+    }
+    const timer = setInterval(() => {
+      setDetakKodeDinamis((d) => d + 1);
+    }, perilakuKode.delayMs);
+    return () => clearInterval(timer);
+  }, [simulasiAktif, perilakuKode.delayMs]);
+
+  // Synthesizer Suara Buzzer Piezo Nyata (Web Audio API) saat Running & Buzzer Menyala!
+  useEffect(() => {
+    if (!simulasiAktif || !suaraBuzzerAktif || !adaBuzzerTerpasang) return;
+    const faseHidup = perilakuKode.adaKedipHighLow
+      ? detakKodeDinamis % 2 === 0
+      : true;
+    if (!faseHidup) return;
+
+    try {
+      const AudioCtx =
+        window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      // Frekuensi nada buzzer tergantung besarnya sinyal PPM Gas / PWM
+      const freq =
+        perilakuKode.frekuensiBuzzerHz +
+        Math.round((fisika.kadarGasPpm - 300) * 0.6);
+      osc.type = "square";
+      osc.frequency.setValueAtTime(Math.max(440, Math.min(2200, freq)), ctx.currentTime);
+
+      gain.gain.setValueAtTime(0.04 * kekuatanSinyal, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.16);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.17);
+      setTimeout(() => ctx.close().catch(() => {}), 220);
+    } catch {
+      // Abaikan jika browser memblokir autoplay audio sebelum klik
+    }
+  }, [
+    simulasiAktif,
+    detakKodeDinamis,
+    suaraBuzzerAktif,
+    adaBuzzerTerpasang,
+    fisika.kadarGasPpm,
+    kekuatanSinyal,
+    perilakuKode.adaKedipHighLow,
+    perilakuKode.frekuensiBuzzerHz,
+  ]);
 
   const lebarKanvas = 940;
   const tinggiKanvas = Math.max(
@@ -247,6 +361,12 @@ export const WokwiMultiSlotCanvas: React.FC<{
         )
       : null;
 
+  // Apakah pada detak ini komponen output sedang dalam siklus HIGH (Menyala)?
+  // HANYA menyala jika simulasiAktif === true (Tombol Periksa & Jalankan sudah diklik dan lulus)!
+  const sedangFaseHighKode =
+    simulasiAktif &&
+    (perilakuKode.adaKedipHighLow ? detakKodeDinamis % 2 === 0 : true);
+
   return (
     <div
       ref={kanvasContainerRef}
@@ -256,10 +376,52 @@ export const WokwiMultiSlotCanvas: React.FC<{
           : statusVerifikasi === "gagal_rangkaian"
           ? "border-rose-500"
           : simulasiAktif
-          ? "border-emerald-400"
+          ? "border-emerald-400 shadow-emerald-950/50"
           : "border-slate-800"
       }`}
     >
+      {/* Baris Status Eksekusi Runtime & Tombol Mute Suara Buzzer */}
+      <div className="mb-3 flex flex-wrap justify-between items-center gap-2 border-b border-slate-800/80 pb-2.5 text-xs">
+        <div className="flex flex-wrap items-center gap-2">
+          <span
+            className={`px-3 py-1 rounded-full font-extrabold text-[11px] flex items-center gap-1.5 ${
+              simulasiAktif
+                ? "bg-emerald-400 text-slate-950 animate-pulse"
+                : "bg-slate-800 text-slate-400"
+            }`}
+          >
+            <Zap className="w-3.5 h-3.5" />
+            {simulasiAktif
+              ? `⚡ RUNNING LIVE (Delay Kode: ${perilakuKode.delayMs} ms | Sinyal: ${Math.round(
+                  kekuatanSinyal * 100
+                )}%)`
+              : "⏹ STANDBY (Komponen Mati — Klik 'Periksa & Jalankan' untuk Menyalakan)"}
+          </span>
+        </div>
+
+        {adaBuzzerTerpasang && (
+          <button
+            type="button"
+            onClick={() => setSuaraBuzzerAktif(!suaraBuzzerAktif)}
+            className={`px-3 py-1 rounded-xl font-bold text-[11px] flex items-center gap-1.5 cursor-pointer border ${
+              suaraBuzzerAktif
+                ? "bg-pink-950/80 border-pink-500 text-pink-200"
+                : "bg-slate-900 border-slate-700 text-slate-400"
+            }`}
+          >
+            {suaraBuzzerAktif ? (
+              <>
+                <Volume2 className="w-3.5 h-3.5 text-pink-400" /> 🔊 Suara Buzzer: ON
+              </>
+            ) : (
+              <>
+                <VolumeX className="w-3.5 h-3.5" /> 🔇 Suara Buzzer: MUTE
+              </>
+            )}
+          </button>
+        )}
+      </div>
+
       {/* Baris Indikator Slot */}
       <div className="mb-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
         <div
@@ -313,11 +475,13 @@ export const WokwiMultiSlotCanvas: React.FC<{
               ? `👉 Langkah Berikutnya: Tarik '${slotPeriferalKosongBerikutnya.namaTarget}' dari Gudang ke kotak [Slot #${slotPeriferalKosongBerikutnya.nomorSlot}] di sebelah kanan!`
               : sambunganBerkedipTarget
               ? `🔌 Hubungkan Semua Kaki Pin (${kabelTerpasangList.length}/${semuaSambunganWajibLevelIni.length}): ${sambunganBerkedipTarget.keteranganJalur}`
-              : `✅ Seluruh ${totalKomponenWajib} Komponen & Semua ${semuaSambunganWajibLevelIni.length} Kaki Pin Sudah Terhubung! Silakan jalankan program di bawah.`)}
+              : simulasiAktif
+              ? `🎉 SIMULASI RUNNING! Komponen menyala & bergerak mengikuti kodingan C++ kamu!`
+              : `✅ Seluruh Komponen & Kaki Pin Terhubung! Sekarang klik tombol hijau '1. Periksa Semua Kaki & Jalankan' di bawah agar komponen menyala!`)}
         </span>
       </div>
 
-      {/* KANVAS UTAMA DENGAN JALUR KABEL SIKU-SIKU 90 DERAJAT */}
+      {/* KANVAS UTAMA DENGAN JALUR KABEL SIKU-SIKU & EFEK VISUAL BERBASIS KODE */}
       <svg
         ref={svgRef}
         viewBox={`0 0 ${lebarKanvas} ${tinggiKanvas}`}
@@ -402,7 +566,7 @@ export const WokwiMultiSlotCanvas: React.FC<{
               height={236}
               rx={12}
               fill="#1e293b"
-              stroke="#64748b"
+              stroke={simulasiAktif ? "#34d399" : "#64748b"}
               strokeWidth={2.2}
             />
             <rect
@@ -425,18 +589,27 @@ export const WokwiMultiSlotCanvas: React.FC<{
               ESP-WROOM-32
             </text>
 
-            <circle cx={108} cy={234} r={4} fill="#ef4444" />
+            {/* LED Power & LED Biru GPIO 2 (HANYA menyala saat simulasiAktif === true!) */}
+            <circle
+              cx={108}
+              cy={234}
+              r={4}
+              fill={simulasiAktif ? "#ef4444" : "#450a0a"}
+            />
+            {sedangFaseHighKode && (
+              <circle
+                cx={144}
+                cy={234}
+                r={12 * kekuatanSinyal + 6}
+                fill="rgba(56, 189, 248, 0.45)"
+              />
+            )}
             <circle
               cx={144}
               cy={234}
               r={5.5}
-              fill={
-                (simulasiAktif || daftarSlotPeriferal.length === 0) &&
-                detakSimulasi % 2 === 0
-                  ? "#38bdf8"
-                  : "#1e3a8a"
-              }
-              stroke="#ffffff"
+              fill={sedangFaseHighKode ? "#38bdf8" : "#0f172a"}
+              stroke="#64748b"
               strokeWidth={1.2}
             />
             <rect
@@ -553,8 +726,10 @@ export const WokwiMultiSlotCanvas: React.FC<{
           </g>
         )}
 
-        {/* SLOT KOMPONEN PERIFERAL */}
-        {daftarSlotPeriferal.map((slot) => {
+        {/* =============================================================== */}
+        {/* SLOT KOMPONEN PERIFERAL (DIAM SAAT STANDBY, AKTIF SAAT RUNNING) */}
+        {/* =============================================================== */}
+        {daftarSlotPeriferal.map((slot, idxSlot) => {
           const infoTerpasang = slotPeriferalTerpasangMap[slot.nomorSlot];
           const sudahTerpasang = Boolean(infoTerpasang?.terpasang);
 
@@ -623,6 +798,36 @@ export const WokwiMultiSlotCanvas: React.FC<{
             );
           }
 
+          const idKomp = (
+            infoTerpasang.idKartu || slot.idGambarMiniatur
+          ).toLowerCase();
+          const namaKomp = (
+            infoTerpasang.namaKartu || slot.namaTarget
+          ).toLowerCase();
+
+          const adalahLed =
+            idKomp.includes("led") && !idKomp.includes("oled");
+          const adalahBuzzer =
+            idKomp.includes("buzzer") || namaKomp.includes("buzzer");
+          const adalahKipasAtauPompa =
+            idKomp.includes("kipas") ||
+            idKomp.includes("pompa") ||
+            idKomp.includes("servo");
+
+          // Untuk lampu lalu lintas (>1 LED), buat bergantian Merah vs Hijau saat Running
+          const ledMenyalaSaatIni =
+            simulasiAktif &&
+            (perilakuKode.adaKedipHighLow
+              ? idxSlot % 2 === 0
+                ? detakKodeDinamis % 2 === 0
+                : detakKodeDinamis % 2 === 1
+              : true);
+
+          const iconX = slot.boxX + slot.boxW - 84;
+          const iconY = slot.boxY + 32;
+          const centerX = iconX + 36;
+          const centerY = iconY + 33;
+
           return (
             <g key={slot.nomorSlot}>
               <rect
@@ -631,11 +836,18 @@ export const WokwiMultiSlotCanvas: React.FC<{
                 width={slot.boxW}
                 height={slot.boxH}
                 rx={14}
-                fill={simulasiAktif ? "#064e3b" : "#111827"}
-                stroke={simulasiAktif ? "#34d399" : "#475569"}
+                fill={simulasiAktif ? "#071f1b" : "#111827"}
+                stroke={
+                  simulasiAktif
+                    ? ledMenyalaSaatIni
+                      ? "#34d399"
+                      : "#0d9488"
+                    : "#475569"
+                }
                 strokeWidth={2.2}
               />
 
+              {/* Header Status Slot: Menampilkan OFF saat belum Running, dan ON + Nilai Sinyal saat Running! */}
               <rect
                 x={slot.boxX + 12}
                 y={slot.boxY + 8}
@@ -647,27 +859,150 @@ export const WokwiMultiSlotCanvas: React.FC<{
               <text
                 x={slot.boxX + 20}
                 y={slot.boxY + 21}
-                fill="#38bdf8"
-                fontSize="9"
+                fill={simulasiAktif ? "#34d399" : "#94a3b8"}
+                fontSize="8.8"
                 fontWeight="bold"
               >
-                SLOT #{slot.nomorSlot}: {(infoTerpasang.namaKartu || slot.namaTarget).slice(0, 26)}
+                SLOT #{slot.nomorSlot}:{" "}
+                {(infoTerpasang.namaKartu || slot.namaTarget).slice(0, 20)}{" "}
+                {simulasiAktif
+                  ? adalahLed
+                    ? ledMenyalaSaatIni
+                      ? `💡 ON (${Math.round(kekuatanSinyal * 100)}%)`
+                      : "⚫ OFF (LOW)"
+                    : adalahBuzzer
+                    ? ledMenyalaSaatIni
+                      ? `🔊 BEEP! (${perilakuKode.frekuensiBuzzerHz}Hz)`
+                      : "🔇 SILENT"
+                    : "⚡ ACTIVE"
+                  : "[STANDBY / OFF]"}
               </text>
 
-              <svg
-                x={slot.boxX + slot.boxW - 84}
-                y={slot.boxY + 32}
-                width={72}
-                height={66}
-                viewBox="0 0 64 56"
-              >
-                <MiniaturSvgGudang48
-                  idItem={infoTerpasang.idKartu || slot.idGambarMiniatur}
-                  namaItem=""
-                  nilaiOhmResistor={fisika.nilaiOhmResistor}
-                />
-              </svg>
+              {/* ========================================================= */}
+              {/* EFEK VISUAL AKTIF SAAT RUNNING (TERGANTUNG KODINGAN!)     */}
+              {/* ========================================================= */}
+              {/* 1. Pendaran Cahaya (Glow Halo) LED sesuai PWM & Resistor */}
+              {adalahLed && ledMenyalaSaatIni && (
+                <>
+                  <circle
+                    cx={centerX}
+                    cy={centerY - 4}
+                    r={16 + kekuatanSinyal * 26}
+                    fill={
+                      idKomp.includes("hijau")
+                        ? `rgba(34, 197, 94, ${(0.45 * kekuatanSinyal).toFixed(2)})`
+                        : `rgba(239, 68, 68, ${(0.48 * kekuatanSinyal).toFixed(2)})`
+                    }
+                  />
+                  <circle
+                    cx={centerX}
+                    cy={centerY - 4}
+                    r={8 + kekuatanSinyal * 12}
+                    fill="rgba(254, 240, 138, 0.65)"
+                  />
+                </>
+              )}
 
+              {/* 2. Gelombang Sinyal Suara Buzzer sesuai besarnya Sinyal / PPM */}
+              {adalahBuzzer && ledMenyalaSaatIni && (
+                <g>
+                  {[1, 2, 3].map((ring) => (
+                    <circle
+                      key={ring}
+                      cx={centerX - 4}
+                      cy={centerY}
+                      r={10 + ring * (8 * kekuatanSinyal)}
+                      fill="none"
+                      stroke="#f43f5e"
+                      strokeWidth={2.2}
+                    >
+                      <animate
+                        attributeName="r"
+                        values={`10;${18 + ring * 14};10`}
+                        dur="0.45s"
+                        repeatCount="indefinite"
+                      />
+                      <animate
+                        attributeName="opacity"
+                        values="0.95;0.05;0.95"
+                        dur="0.45s"
+                        repeatCount="indefinite"
+                      />
+                    </circle>
+                  ))}
+                  <text
+                    x={centerX}
+                    y={slot.boxY + slot.boxH - 6}
+                    textAnchor="middle"
+                    fill="#fda4af"
+                    fontSize="8"
+                    fontWeight="bold"
+                  >
+                    🔊 BEEP {perilakuKode.frekuensiBuzzerHz}Hz!
+                  </text>
+                </g>
+              )}
+
+              {/* 3. Indikator Putaran / Aliran Aktuator */}
+              {adalahKipasAtauPompa && simulasiAktif && (
+                <circle
+                  cx={centerX}
+                  cy={centerY}
+                  r={24}
+                  fill="none"
+                  stroke="#38bdf8"
+                  strokeWidth={2}
+                  strokeDasharray="5 4"
+                >
+                  <animateTransform
+                    attributeName="transform"
+                    type="rotate"
+                    from={`0 ${centerX} ${centerY}`}
+                    to={`360 ${centerX} ${centerY}`}
+                    dur="0.6s"
+                    repeatCount="indefinite"
+                  />
+                </circle>
+              )}
+
+              {/* Render Ikon Komponen: Redup/Diam jika belum Running, Terang jika Running! */}
+              <g
+                opacity={
+                  !simulasiAktif
+                    ? 0.55
+                    : adalahLed && !ledMenyalaSaatIni
+                    ? 0.35
+                    : 1
+                }
+              >
+                <svg
+                  x={iconX}
+                  y={iconY}
+                  width={72}
+                  height={66}
+                  viewBox="0 0 64 56"
+                >
+                  <MiniaturSvgGudang48
+                    idItem={infoTerpasang.idKartu || slot.idGambarMiniatur}
+                    namaItem=""
+                    nilaiOhmResistor={fisika.nilaiOhmResistor}
+                  />
+                </svg>
+              </g>
+
+              {/* Masking Penghenti Animasi Bawaan Saat Belum Running (Agar Tidak Kedap-Kedip Sebelum Running!) */}
+              {!simulasiAktif && adalahLed && (
+                <circle
+                  cx={centerX}
+                  cy={centerY - 6}
+                  r={12}
+                  fill="#450a0a"
+                  opacity={0.75}
+                  pointerEvents="none"
+                />
+              )}
+
+              {/* Titik Kaki Pin pada Komponen Ini */}
               {slot.daftarPinKomponenIni.map((pin) => {
                 const sedangDipegang = pinAwalDiklik?.idPin === pin.idPin;
                 const harusBerkedip =
@@ -785,7 +1120,7 @@ export const WokwiMultiSlotCanvas: React.FC<{
           );
         })}
 
-        {/* GARIS BAYANGAN PANDUAN SIKU-SIKU 90 DERAJAT */}
+        {/* GARIS BAYANGAN PANDUAN SIKU-SIKU */}
         {semuaKomponenSudahDitaruh &&
           tampilkanBayanganPanduan &&
           jalurPanduanSiku && (
@@ -827,7 +1162,7 @@ export const WokwiMultiSlotCanvas: React.FC<{
           />
         )}
 
-        {/* KABEL TERPASANG SIKU-SIKU 90 DERAJAT (ORTHOGONAL ROUTING) */}
+        {/* KABEL TERPASANG SIKU-SIKU + ANIMASI ALIRAN SINYAL LISTRIK SAAT RUNNING! */}
         {kabelTerpasangList.map((k, idx) => {
           const p1 = semuaTitikPinPeta[k.pinAsalId];
           const p2 = semuaTitikPinPeta[k.pinTujuanId];
@@ -859,6 +1194,7 @@ export const WokwiMultiSlotCanvas: React.FC<{
                 strokeWidth={16}
                 strokeLinejoin="round"
               />
+              {/* Kabel dasar */}
               <path
                 d={ruteSiku.pathSvg}
                 fill="none"
@@ -867,8 +1203,30 @@ export const WokwiMultiSlotCanvas: React.FC<{
                 strokeLinejoin="round"
                 strokeLinecap="round"
                 strokeDasharray={adalahValid ? "none" : "6 4"}
+                opacity={simulasiAktif ? 0.95 : 0.75}
               />
-              {/* Titik Solder Siku & Tombol Hapus 1 Kabel */}
+
+              {/* Pulsa Sinyal Listrik Mengalir di Sepanjang Kabel Siku-Siku Saat Running! */}
+              {simulasiAktif && adalahValid && sedangFaseHighKode && (
+                <path
+                  d={ruteSiku.pathSvg}
+                  fill="none"
+                  stroke="#fef08a"
+                  strokeWidth={2.5 + kekuatanSinyal * 2.5}
+                  strokeLinejoin="round"
+                  strokeDasharray="10 18"
+                >
+                  <animate
+                    attributeName="stroke-dashoffset"
+                    from="56"
+                    to="0"
+                    dur={`${Math.max(0.25, 0.85 - kekuatanSinyal * 0.45).toFixed(2)}s`}
+                    repeatCount="indefinite"
+                  />
+                </path>
+              )}
+
+              {/* Tombol Hapus 1 Kabel */}
               <circle
                 cx={ruteSiku.midX}
                 cy={ruteSiku.midY}
@@ -957,7 +1315,7 @@ export const WokwiMultiSlotCanvas: React.FC<{
       <div className="mt-3 bg-slate-900/95 p-4 rounded-2xl border border-emerald-500/40 space-y-3 text-xs">
         <div className="flex flex-wrap justify-between items-center gap-2 border-b border-slate-800 pb-2">
           <span className="font-bold text-emerald-400 flex items-center gap-1.5">
-            <Sliders className="w-4 h-4" /> Pengatur Parameter Fisika &amp; Animasi Komponen Live:
+            <Sliders className="w-4 h-4" /> Pengatur Parameter Fisika &amp; Kekuatan Sinyal Live:
           </span>
           <span className="font-mono text-amber-300">
             Resistor: <strong>{infoResistor.labelFormatted}</strong> ({infoResistor.teksGelang})
@@ -967,9 +1325,9 @@ export const WokwiMultiSlotCanvas: React.FC<{
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
             <div className="flex justify-between font-semibold">
-              <span className="text-slate-300">💡 Terang/Redup LED (PWM):</span>
+              <span className="text-slate-300">💡 Besar Sinyal / PWM LED:</span>
               <span className="text-amber-300">
-                {Math.round((fisika.pwmLedBrightness / 255) * 100)}%
+                {Math.round(kekuatanSinyal * 100)}%
               </span>
             </div>
             <input
@@ -1016,7 +1374,7 @@ export const WokwiMultiSlotCanvas: React.FC<{
 
           <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
             <div className="flex justify-between font-semibold">
-              <span className="text-slate-300">🔥 Suhu Panas &amp; Asap PPM:</span>
+              <span className="text-slate-300">🔥 Suhu &amp; Sinyal Gas/Buzzer:</span>
               <span className="text-rose-400">
                 {fisika.suhuCelcius}°C | {fisika.kadarGasPpm} PPM
               </span>
