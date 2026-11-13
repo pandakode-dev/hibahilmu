@@ -27,7 +27,7 @@ export interface AturanSambunganKabelReal {
 }
 
 export interface DefinisiSlotPeriferalMultiPin {
-  nomorSlot: number; // Slot #2 s.d. Slot #10
+  nomorSlot: number;
   namaTarget: string;
   fungsiSingkat: string;
   daftarIdGudangValid: string[];
@@ -43,7 +43,7 @@ export interface DefinisiSlotPeriferalMultiPin {
 export interface BlueprintMultiPinLevel {
   analogiMudahPaham: string;
   ringkasanCaraKerja: string;
-  tinggiKanvasSvg: number; // Otomatis membesar jika komponen ada 5, 7, atau 10 item!
+  tinggiKanvasSvg: number;
   slotPeriferalList: DefinisiSlotPeriferalMultiPin[];
   sambunganWajibList: AturanSambunganKabelReal[];
 }
@@ -135,14 +135,14 @@ export function apakahKartuGudangValidUntukSlot(
 }
 
 // ============================================================================
-// GENERATOR TATA LETAK MULTI-ITEM DINAMIS (1, 3, 5, 7, SAMPAI 10 KOMPONEN!)
+// GENERATOR TATA LETAK KANVAS LEBAR (920PX) BEBAS TABRAKAN TEKS
 // ============================================================================
 export function ambilBlueprintMultiPinRealistis(
   materi: ExtendedLessonStepIoT
 ): BlueprintMultiPinLevel {
   const judul = (materi.judulMateri || "").toLowerCase();
 
-  // 1. STANDALONE 1-BOARD ESP32 (1 ITEM KOMPONEN)
+  // 1. STANDALONE 1-BOARD ESP32 (Tanpa Komponen Luar)
   if (
     judul.includes("internal") ||
     judul.includes("tanpa komponen") ||
@@ -156,7 +156,7 @@ export function ambilBlueprintMultiPinRealistis(
         "Di level ini kita memprogram fitur yang sudah tertanam di dalam papan ESP32 itu sendiri (LED Biru On-Board di GPIO 2, Timer Kristal 80MHz, dan Radio Wi-Fi HibahIlmu-Guest). Jadi kamu cukup menaruh 1 papan ESP32 tanpa kabel luar!",
       ringkasanCaraKerja:
         "Tarik 1 papan ESP32 DevKit V1 ke Slot #1 di kanvas, lalu ketik kode C++ di sebelah kanan.",
-      tinggiKanvasSvg: 250,
+      tinggiKanvasSvg: 300,
       slotPeriferalList: [],
       sambunganWajibList: [],
     };
@@ -179,38 +179,38 @@ export function ambilBlueprintMultiPinRealistis(
         "Agar rangkaian listrik benar-benar hidup seperti aslinya, semua kaki komponen wajib tersambung membentuk lingkaran tertutup (Loop)! Arus 3.3V keluar dari [GPIO 2 ESP32] ➔ masuk ke [1. Anoda LED (+)] ➔ keluar dari [2. Katoda LED (-)] ➔ masuk ke [1. Kaki 1 Resistor] ➔ lalu keluar dari [2. Kaki 2 Resistor] kembali ke [GND ESP32]!",
       ringkasanCaraKerja:
         "Tarik 3 Item Komponen (ESP32, LED Merah 5mm, dan Resistor 220Ω) lalu sambungkan ke-3 kabel serinya!",
-      tinggiKanvasSvg: 250,
+      tinggiKanvasSvg: 300,
       slotPeriferalList: [
         {
           nomorSlot: 2,
-          namaTarget: "LED Merah 5mm (2 Kaki: Anoda & Katoda)",
+          namaTarget: "LED Merah 5mm",
           fungsiSingkat: "Anoda (+) untuk arus masuk dan Katoda (-) menuju Resistor.",
           daftarIdGudangValid: ["led_merah", "led_hijau", "pas_led_merah", "pas_led_hijau"],
           kataKunciCocokGudang: ["led merah", "led hijau"],
           idGambarMiniatur: "led_merah",
-          boxX: 335,
-          boxY: 22,
-          boxW: 225,
-          boxH: 92,
+          boxX: 390,
+          boxY: 28,
+          boxW: 360,
+          boxH: 108,
           daftarPinKomponenIni: [
-            { idPin: "LED_ANODA", labelPin: "1. Anoda LED (+)", x: 345, y: 48, warnaPin: "#ef4444", posisiKomponen: "periferal" },
-            { idPin: "LED_KATODA", labelPin: "2. Katoda LED (-)", x: 345, y: 90, warnaPin: "#38bdf8", posisiKomponen: "periferal" },
+            { idPin: "LED_ANODA", labelPin: "1. Anoda LED (+)", x: 390, y: 58, warnaPin: "#ef4444", posisiKomponen: "periferal" },
+            { idPin: "LED_KATODA", labelPin: "2. Katoda LED (-)", x: 390, y: 104, warnaPin: "#38bdf8", posisiKomponen: "periferal" },
           ],
         },
         {
           nomorSlot: 3,
-          namaTarget: "Resistor Gelang 220Ω (2 Kaki: In & Out)",
+          namaTarget: "Resistor Gelang 220Ω",
           fungsiSingkat: "Kaki 1 menerima dari Katoda LED, Kaki 2 kembali ke GND ESP32.",
           daftarIdGudangValid: ["resistor_gelang", "pas_resistor", "resistor_220"],
           kataKunciCocokGudang: ["resistor"],
           idGambarMiniatur: "resistor_gelang",
-          boxX: 335,
-          boxY: 132,
-          boxW: 225,
-          boxH: 92,
+          boxX: 390,
+          boxY: 158,
+          boxW: 360,
+          boxH: 108,
           daftarPinKomponenIni: [
-            { idPin: "RES_KAKI_1", labelPin: "1. Kaki 1 Resistor (In)", x: 345, y: 158, warnaPin: "#f59e0b", posisiKomponen: "periferal" },
-            { idPin: "RES_KAKI_2", labelPin: "2. Kaki 2 Resistor (GND)", x: 345, y: 200, warnaPin: "#64748b", posisiKomponen: "periferal" },
+            { idPin: "RES_KAKI_1", labelPin: "1. Resistor In", x: 390, y: 188, warnaPin: "#f59e0b", posisiKomponen: "periferal" },
+            { idPin: "RES_KAKI_2", labelPin: "2. Resistor GND", x: 390, y: 234, warnaPin: "#64748b", posisiKomponen: "periferal" },
           ],
         },
       ],
@@ -229,56 +229,56 @@ export function ambilBlueprintMultiPinRealistis(
           pinAsalId: "LED_KATODA",
           labelPinAsal: "2. Katoda LED (-)",
           pinTujuanId: "RES_KAKI_1",
-          labelPinTujuan: "1. Kaki 1 Resistor (In)",
+          labelPinTujuan: "1. Resistor In",
           warnaKabel: "#facc15",
-          keteranganJalur: "Kabel 2 (Seri): Klik [2. Katoda LED (-)] di Slot #2 ➔ Klik [1. Kaki 1 Resistor (In)] di Slot #3",
+          keteranganJalur: "Kabel 2 (Seri): Klik [2. Katoda LED (-)] di Slot #2 ➔ Klik [1. Resistor In] di Slot #3",
         },
         {
           idSambungan: "WIRE_3_RES2_GND",
           pinAsalId: "ESP_GND",
           labelPinAsal: "GND",
           pinTujuanId: "RES_KAKI_2",
-          labelPinTujuan: "2. Kaki 2 Resistor (GND)",
+          labelPinTujuan: "2. Resistor GND",
           warnaKabel: "#64748b",
-          keteranganJalur: "Kabel 3 (Ground): Klik [2. Kaki 2 Resistor (GND)] di Slot #3 ➔ Klik [GND] di ESP32",
+          keteranganJalur: "Kabel 3 (Ground): Klik [2. Resistor GND] di Slot #3 ➔ Klik [GND] di ESP32",
         },
       ],
     };
   }
 
-  // 3. PUSH BUTTON + LED + RESISTOR + BUZZER (VARIASI 5 ITEM KOMPONEN!)
+  // 3. PUSH BUTTON + LED + RESISTOR + BUZZER (VARIASI 5 ITEM KOMPONEN LEGA & RAPI!)
   if (judul.includes("button") || judul.includes("tombol") || judul.includes("interrupt")) {
     const daftar5: DefinisiSlotPeriferalMultiPin[] = [
       {
         nomorSlot: 2,
-        namaTarget: "Push Button Switch (Input)",
+        namaTarget: "Push Button Switch",
         fungsiSingkat: "Sakelar pemicu sinyal LOW ke GPIO 4.",
         daftarIdGudangValid: ["push_button_sw", "pas_button", "keypad_4x4"],
         kataKunciCocokGudang: ["push button", "tombol"],
         idGambarMiniatur: "push_button_sw",
-        boxX: 255,
-        boxY: 18,
-        boxW: 155,
-        boxH: 96,
+        boxX: 310,
+        boxY: 26,
+        boxW: 275,
+        boxH: 110,
         daftarPinKomponenIni: [
-          { idPin: "B5_SIG", labelPin: "1. Tombol SIG", x: 262, y: 46, warnaPin: "#38bdf8", posisiKomponen: "periferal" },
-          { idPin: "B5_GND", labelPin: "2. Tombol GND", x: 262, y: 88, warnaPin: "#64748b", posisiKomponen: "periferal" },
+          { idPin: "B5_SIG", labelPin: "1. Tombol SIG", x: 310, y: 58, warnaPin: "#38bdf8", posisiKomponen: "periferal" },
+          { idPin: "B5_GND", labelPin: "2. Tombol GND", x: 310, y: 104, warnaPin: "#64748b", posisiKomponen: "periferal" },
         ],
       },
       {
         nomorSlot: 3,
-        namaTarget: "LED Merah 5mm (Indikator)",
+        namaTarget: "LED Merah 5mm",
         fungsiSingkat: "Menyala saat tombol ditekan (GPIO 2).",
         daftarIdGudangValid: ["led_merah", "led_hijau", "pas_led_merah"],
         kataKunciCocokGudang: ["led merah", "led hijau"],
         idGambarMiniatur: "led_merah",
-        boxX: 435,
-        boxY: 18,
-        boxW: 155,
-        boxH: 96,
+        boxX: 620,
+        boxY: 26,
+        boxW: 275,
+        boxH: 110,
         daftarPinKomponenIni: [
-          { idPin: "B5_LED_A", labelPin: "1. Anoda LED (+)", x: 442, y: 46, warnaPin: "#ef4444", posisiKomponen: "periferal" },
-          { idPin: "B5_LED_K", labelPin: "2. Katoda LED (-)", x: 442, y: 88, warnaPin: "#facc15", posisiKomponen: "periferal" },
+          { idPin: "B5_LED_A", labelPin: "1. Anoda LED (+)", x: 620, y: 58, warnaPin: "#ef4444", posisiKomponen: "periferal" },
+          { idPin: "B5_LED_K", labelPin: "2. Katoda LED (-)", x: 620, y: 104, warnaPin: "#facc15", posisiKomponen: "periferal" },
         ],
       },
       {
@@ -288,29 +288,29 @@ export function ambilBlueprintMultiPinRealistis(
         daftarIdGudangValid: ["resistor_gelang", "pas_resistor"],
         kataKunciCocokGudang: ["resistor"],
         idGambarMiniatur: "resistor_gelang",
-        boxX: 255,
-        boxY: 132,
-        boxW: 155,
-        boxH: 96,
+        boxX: 310,
+        boxY: 160,
+        boxW: 275,
+        boxH: 110,
         daftarPinKomponenIni: [
-          { idPin: "B5_RES_1", labelPin: "1. Resistor In", x: 262, y: 160, warnaPin: "#facc15", posisiKomponen: "periferal" },
-          { idPin: "B5_RES_2", labelPin: "2. Resistor GND", x: 262, y: 202, warnaPin: "#64748b", posisiKomponen: "periferal" },
+          { idPin: "B5_RES_1", labelPin: "1. Resistor In", x: 310, y: 192, warnaPin: "#facc15", posisiKomponen: "periferal" },
+          { idPin: "B5_RES_2", labelPin: "2. Resistor GND", x: 310, y: 238, warnaPin: "#64748b", posisiKomponen: "periferal" },
         ],
       },
       {
         nomorSlot: 5,
-        namaTarget: "Buzzer Piezo Alarm Beep",
+        namaTarget: "Buzzer Piezo (2p)",
         fungsiSingkat: "Berbunyi bersama LED saat tombol aktif.",
         daftarIdGudangValid: ["buzzer_piezo", "akt_buzzer"],
         kataKunciCocokGudang: ["buzzer"],
         idGambarMiniatur: "buzzer_piezo",
-        boxX: 435,
-        boxY: 132,
-        boxW: 155,
-        boxH: 96,
+        boxX: 620,
+        boxY: 160,
+        boxW: 275,
+        boxH: 110,
         daftarPinKomponenIni: [
-          { idPin: "B5_BUZ_P", labelPin: "1. Buzzer (+)", x: 442, y: 160, warnaPin: "#ec4899", posisiKomponen: "periferal" },
-          { idPin: "B5_BUZ_N", labelPin: "2. Buzzer (-)", x: 442, y: 202, warnaPin: "#64748b", posisiKomponen: "periferal" },
+          { idPin: "B5_BUZ_P", labelPin: "1. Buzzer (+)", x: 620, y: 192, warnaPin: "#ec4899", posisiKomponen: "periferal" },
+          { idPin: "B5_BUZ_N", labelPin: "2. Buzzer (-)", x: 620, y: 238, warnaPin: "#64748b", posisiKomponen: "periferal" },
         ],
       },
     ];
@@ -320,7 +320,7 @@ export function ambilBlueprintMultiPinRealistis(
         "Dalam rangkaian 5 Item Komponen ini, kamu merakit sistem tombol darurat lengkap: (1) ESP32, (2) Push Button Switch, (3) Lampu LED Indikator, (4) Resistor 220Ω, dan (5) Buzzer Alarm!",
       ringkasanCaraKerja:
         "Tarik kelima komponen satu per satu ke Slot #1 s.d. Slot #5, lalu sambungkan semua kaki pinnya!",
-      tinggiKanvasSvg: 250,
+      tinggiKanvasSvg: 300,
       slotPeriferalList: daftar5,
       sambunganWajibList: [
         { idSambungan: "B5_W1", pinAsalId: "ESP_GPIO4", labelPinAsal: "GPIO 4", pinTujuanId: "B5_SIG", labelPinTujuan: "1. Tombol SIG", warnaKabel: "#38bdf8", keteranganJalur: "Kabel 1: Klik [GPIO 4] ➔ Klik [1. Tombol SIG] (Slot #2)" },
@@ -335,34 +335,33 @@ export function ambilBlueprintMultiPinRealistis(
   }
 
   // ==========================================================================
-  // 4. LAYOUT OTOMATIS UNTUK VARIASI 3, 5, 7, ATAU 10 ITEM DARI MAP!
+  // 4. LAYOUT OTOMATIS PADA KANVAS LEBAR 920PX UNTUK VARIASI 3, 5, 7, 10 ITEM
   // ==========================================================================
   const spekMulti = cariSpesifikasiMultiItemSesuaiModul(materi);
   const items = spekMulti.daftarPeriferal;
-  const jmlPerif = items.length; // Bisa 2, 4, 6, atau 9 item
+  const jmlPerif = items.length;
 
-  // Hitung jumlah kolom & ukuran kotak secara proporsional:
-  // - Jika 2 item periferal (Total 3 Item): 1 kolom di kanan (lebar 230, tinggi 92)
-  // - Jika 4 item periferal (Total 5 Item): Grid 2 kolom x 2 baris
-  // - Jika 6 item periferal (Total 7 Item): Grid 2 kolom x 3 baris
-  // - Jika 9 item periferal (Total 10 Item): Grid 3 kolom x 3 baris
-  const jmlKolom = jmlPerif <= 2 ? 1 : jmlPerif <= 6 ? 2 : 3;
+  // Gunakan maksimal 2 kolom yang lebar di sebelah kanan ESP32 agar tidak pernah sempit!
+  const jmlKolom = jmlPerif <= 2 ? 1 : 2;
   const jmlBaris = Math.ceil(jmlPerif / jmlKolom);
 
-  const boxW = jmlKolom === 1 ? 230 : jmlKolom === 2 ? 165 : 122;
-  const boxH = jmlBaris <= 2 ? 94 : 84;
-  const gapX = jmlKolom === 3 ? 10 : 16;
-  const gapY = 14;
-  const startX = jmlKolom === 1 ? 330 : jmlKolom === 2 ? 235 : 202;
-  const startY = 16;
+  const boxW = jmlKolom === 1 ? 360 : 280;
+  const boxH = 106;
+  const gapX = 32;
+  const gapY = 20;
+  const startX = jmlKolom === 1 ? 390 : 305;
+  const startY = 24;
 
-  const tinggiKanvasSvg = Math.max(250, startY * 2 + jmlBaris * (boxH + gapY));
+  const tinggiKanvasSvg = Math.max(
+    300,
+    startY * 2 + jmlBaris * boxH + (jmlBaris - 1) * gapY
+  );
 
   const slotPeriferalList: DefinisiSlotPeriferalMultiPin[] = [];
   const sambunganWajibList: AturanSambunganKabelReal[] = [];
 
   items.forEach((it, idx) => {
-    const nomorSlot = idx + 2; // Dimulai dari Slot #2
+    const nomorSlot = idx + 2;
     const col = idx % jmlKolom;
     const row = Math.floor(idx / jmlKolom);
 
@@ -372,8 +371,8 @@ export function ambilBlueprintMultiPinRealistis(
     const pin1Id = `SLOT${nomorSlot}_PIN1`;
     const pin2Id = `SLOT${nomorSlot}_PIN2`;
 
-    const pin1Y = by + Math.round(boxH * 0.32);
-    const pin2Y = by + Math.round(boxH * 0.76);
+    const pin1Y = by + 32;
+    const pin2Y = by + 78;
 
     slotPeriferalList.push({
       nomorSlot,
@@ -390,7 +389,7 @@ export function ambilBlueprintMultiPinRealistis(
         {
           idPin: pin1Id,
           labelPin: it.pin1Label,
-          x: bx + 8,
+          x: bx,
           y: pin1Y,
           warnaPin: it.pinEspKePin1.warna,
           posisiKomponen: "periferal",
@@ -398,7 +397,7 @@ export function ambilBlueprintMultiPinRealistis(
         {
           idPin: pin2Id,
           labelPin: it.pin2Label,
-          x: bx + 8,
+          x: bx,
           y: pin2Y,
           warnaPin: it.pinEspKePin2.warna,
           posisiKomponen: "periferal",
