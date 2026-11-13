@@ -166,11 +166,7 @@ export const AnimasiVisualDasarTeoriModal: React.FC<{
             <g key={s.nomorSlot}>
               {/* Garis Kabel Beranimasi dari ESP32 ke Slot Ini */}
               <path
-                d={`M 138 ${targetEspY} C ${
-                  (138 + gx) / 2
-                } ${targetEspY}, ${(138 + gx) / 2} ${gy + h / 2}, ${gx} ${
-                  gy + h / 2
-                }`}
+                d={`M 138 ${targetEspY} L ${165 + (idx % 4) * 7} ${targetEspY} L ${165 + (idx % 4) * 7} ${gy + h / 2} L ${gx} ${gy + h / 2}`}
                 fill="none"
                 stroke={warnaGaris}
                 strokeWidth={2.5}

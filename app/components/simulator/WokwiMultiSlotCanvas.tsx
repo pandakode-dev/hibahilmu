@@ -22,7 +22,6 @@ export interface KabelMultiPinTersambung {
 
 const PILIHAN_OHM_RESISTOR = [100, 220, 330, 470, 1000, 4700, 10000];
 
-// Geser posisi pin ESP32 sedikit lebih lega di kanvas lebar 920px agar tidak menabrak chip WROOM
 const PIN_ESP32_KANVAS_LEBAR: TitikPinFisik[] = PIN_FISIK_ESP32_STANDAR.map(
   (p) => ({
     ...p,
@@ -30,6 +29,96 @@ const PIN_ESP32_KANVAS_LEBAR: TitikPinFisik[] = PIN_FISIK_ESP32_STANDAR.map(
     y: p.y + 18,
   })
 );
+
+// ============================================================================
+// MESIN ROUTING KABEL SIKU-SIKU 90 DERAJAT (ORTHOGONAL MANHATTAN PCB ROUTING)
+// Menghindari tabrakan dengan badan ESP32 maupun kotak komponen Slot #2..#10!
+// ============================================================================
+function buatJalurKabelSikuSiku(
+  p1: TitikPinFisik,
+  p2: TitikPinFisik,
+  indeksJalur: number
+): { pathSvg: string; midX: number; midY: number } {
+  // Pastikan titik A adalah yang lebih di kiri (atau ESP32) dan titik B di kanan
+  const aIsLeft = p1.x <= p2.x;
+  const A = aIsLeft ? p1 : p2;
+  const B = aIsLeft ? p2 : p1;
+
+  // Offset spasi antar-kabel (7px per kabel) agar garis vertikal/horizontal tidak saling bertumpuk
+  const offset = ((indeksJalur % 7) - 3) * 7;
+
+  // KASUS 1: Sambungan Seri Antar-Periferal (Misal Katoda LED Slot #3 di x=645 ke Resistor Slot #4 di x=330, atau vertikal x sama)
+  if (A.posisiKomponen === "periferal" && B.posisiKomponen === "periferal") {
+    if (Math.abs(A.x - B.x) < 15) {
+      // Satu kolom vertikal (misal Slot #2 ke Slot #3 di x=390)
+      const xSaluran = A.x - 36 + offset;
+      const midY = (A.y + B.y) / 2;
+      return {
+        pathSvg: `M ${A.x} ${A.y} L ${xSaluran} ${A.y} L ${xSaluran} ${B.y} L ${B.x} ${B.y}`,
+        midX: xSaluran,
+        midY,
+      };
+    } else {
+      // Beda kolom (misal dari Kolom 2 ke Kolom 1 melewati lorong tengah horizontal y=154)
+      const yLorongTengah = 154 + offset;
+      const xKiriA = A.x - 24;
+      const xKiriB = B.x - 24;
+      const midX = (xKiriA + xKiriB) / 2;
+      return {
+        pathSvg: `M ${A.x} ${A.y} L ${xKiriA} ${A.y} L ${xKiriA} ${yLorongTengah} L ${xKiriB} ${yLorongTengah} L ${xKiriB} ${B.y} L ${B.x} ${B.y}`,
+        midX,
+        midY: yLorongTengah,
+      };
+    }
+  }
+
+  // KASUS 2: Pin Asal berada di SISI KIRI ESP32 (x = 48, seperti GPIO 35, 19, 25, 26, 27, 32, 33, 34)
+  // Jangan menembus tengah badan ESP32! Belok siku ke kiri luar (x=18), turun ke bawah ESP32 (y=282), lalu ke kanan!
+  if (A.x <= 55) {
+    const xLuarKiri = 18 + ((indeksJalur % 3) * 5);
+    const yBawahEsp = 282 + ((indeksJalur % 3) * 6);
+
+    // Jika menuju ke Komponen Kolom 1 (B.x sekitar 330..390)
+    if (B.x < 500) {
+      const xKoridor1 = 265 + offset;
+      return {
+        pathSvg: `M ${A.x} ${A.y} L ${xLuarKiri} ${A.y} L ${xLuarKiri} ${yBawahEsp} L ${xKoridor1} ${yBawahEsp} L ${xKoridor1} ${B.y} L ${B.x} ${B.y}`,
+        midX: xKoridor1,
+        midY: (yBawahEsp + B.y) / 2,
+      };
+    } else {
+      // Jika menuju ke Komponen Kolom 2 (B.x >= 600), lewat bawah lalu naik di koridor tengah antar-kolom (x=612)!
+      const xKoridorAntarKolom = B.x - 32 + offset;
+      return {
+        pathSvg: `M ${A.x} ${A.y} L ${xLuarKiri} ${A.y} L ${xLuarKiri} ${yBawahEsp} L ${xKoridorAntarKolom} ${yBawahEsp} L ${xKoridorAntarKolom} ${B.y} L ${B.x} ${B.y}`,
+        midX: xKoridorAntarKolom,
+        midY: (yBawahEsp + B.y) / 2,
+      };
+    }
+  }
+
+  // KASUS 3: Pin Asal di SISI KANAN ESP32 (x = 204) menuju ke KOMPONEN KOLOM 2 (B.x >= 550)
+  // Agar TIDAK menabrak kotak komponen di Kolom 1 (x=330..585), belok lewat Lorong Tengah Horizontal (y=154)!
+  if (B.x >= 550) {
+    const xKoridor1 = 258 + offset;
+    const yLorongTengah = 154 + offset;
+    const xKoridor2 = B.x - 28 + offset;
+    return {
+      pathSvg: `M ${A.x} ${A.y} L ${xKoridor1} ${A.y} L ${xKoridor1} ${yLorongTengah} L ${xKoridor2} ${yLorongTengah} L ${xKoridor2} ${B.y} L ${B.x} ${B.y}`,
+      midX: (xKoridor1 + xKoridor2) / 2,
+      midY: yLorongTengah,
+    };
+  }
+
+  // KASUS 4: Standar Siku-Siku (Z-Bend 90 Derajat) dari Kanan ESP32 (x=204) ke Komponen Kolom 1 (x=330..390)
+  const xTengah = Math.round((A.x + B.x) / 2) + offset;
+  const midY = (A.y + B.y) / 2;
+  return {
+    pathSvg: `M ${A.x} ${A.y} L ${xTengah} ${A.y} L ${xTengah} ${B.y} L ${B.x} ${B.y}`,
+    midX: xTengah,
+    midY,
+  };
+}
 
 export const WokwiMultiSlotCanvas: React.FC<{
   kanvasContainerRef: React.RefObject<HTMLDivElement | null>;
@@ -100,10 +189,10 @@ export const WokwiMultiSlotCanvas: React.FC<{
   const svgRef = useRef<SVGSVGElement | null>(null);
   const infoResistor = hitungGelangResistorModular(fisika.nilaiOhmResistor);
 
-  const lebarKanvas = 920;
+  const lebarKanvas = 940;
   const tinggiKanvas = Math.max(
-    300,
-    daftarSlotPeriferal.reduce((m, s) => Math.max(m, s.boxY + s.boxH + 28), 300)
+    315,
+    daftarSlotPeriferal.reduce((m, s) => Math.max(m, s.boxY + s.boxH + 34), 315)
   );
 
   const semuaTitikPinPeta: Record<string, TitikPinFisik> = {};
@@ -148,6 +237,15 @@ export const WokwiMultiSlotCanvas: React.FC<{
   const pinTujuanBerkedipObj = sambunganBerkedipTarget
     ? semuaTitikPinPeta[sambunganBerkedipTarget.pinTujuanId]
     : null;
+
+  const jalurPanduanSiku =
+    pinAsalBerkedipObj && pinTujuanBerkedipObj
+      ? buatJalurKabelSikuSiku(
+          pinAsalBerkedipObj,
+          pinTujuanBerkedipObj,
+          kabelTerpasangList.length
+        )
+      : null;
 
   return (
     <div
@@ -219,7 +317,7 @@ export const WokwiMultiSlotCanvas: React.FC<{
         </span>
       </div>
 
-      {/* KANVAS UTAMA SUPER LEGA (LEBAR 920PX, TINGGI DINAMIS) */}
+      {/* KANVAS UTAMA DENGAN JALUR KABEL SIKU-SIKU 90 DERAJAT */}
       <svg
         ref={svgRef}
         viewBox={`0 0 ${lebarKanvas} ${tinggiKanvas}`}
@@ -230,7 +328,7 @@ export const WokwiMultiSlotCanvas: React.FC<{
         className="w-full min-h-[340px] sm:min-h-[430px] select-none"
       >
         {/* Grid Titik Breadboard */}
-        {Array.from({ length: 32 }).map((_, gx) =>
+        {Array.from({ length: 33 }).map((_, gx) =>
           Array.from({ length: Math.ceil(tinggiKanvas / 28) }).map((__, gy) => (
             <circle
               key={`${gx}-${gy}`}
@@ -242,9 +340,7 @@ export const WokwiMultiSlotCanvas: React.FC<{
           ))
         )}
 
-        {/* =============================================================== */}
-        {/* SLOT #1: PAPAN ESP32 DENGAN HEADER WROOM DI ATAS (TIDAK TERTUTUP) */}
-        {/* =============================================================== */}
+        {/* SLOT #1: PAPAN ESP32 */}
         {!slot1Esp32Terpasang ? (
           <g
             onDragOver={(e) => e.preventDefault()}
@@ -299,7 +395,6 @@ export const WokwiMultiSlotCanvas: React.FC<{
           </g>
         ) : (
           <g>
-            {/* Badan PCB ESP32 */}
             <rect
               x={48}
               y={20}
@@ -310,7 +405,6 @@ export const WokwiMultiSlotCanvas: React.FC<{
               stroke="#64748b"
               strokeWidth={2.2}
             />
-            {/* Kaleng Perak ESP-WROOM-32 diletakkan di y=28..60 (di atas deretan pin agar tidak pernah tertutup!) */}
             <rect
               x={76}
               y={27}
@@ -331,7 +425,6 @@ export const WokwiMultiSlotCanvas: React.FC<{
               ESP-WROOM-32
             </text>
 
-            {/* LED Indikator & Port USB di Bawah */}
             <circle cx={108} cy={234} r={4} fill="#ef4444" />
             <circle
               cx={144}
@@ -355,7 +448,6 @@ export const WokwiMultiSlotCanvas: React.FC<{
               fill="#94a3b8"
             />
 
-            {/* Titik Kaki Pin ESP32 */}
             {PIN_ESP32_KANVAS_LEBAR.map((pin) => {
               const sedangDipegang = pinAwalDiklik?.idPin === pin.idPin;
               const harusBerkedip =
@@ -461,9 +553,7 @@ export const WokwiMultiSlotCanvas: React.FC<{
           </g>
         )}
 
-        {/* =============================================================== */}
-        {/* SLOT KOMPONEN PERIFERAL (LABEL PIN DI DALAM KOTAK AGAR RAPI!)   */}
-        {/* =============================================================== */}
+        {/* SLOT KOMPONEN PERIFERAL */}
         {daftarSlotPeriferal.map((slot) => {
           const infoTerpasang = slotPeriferalTerpasangMap[slot.nomorSlot];
           const sudahTerpasang = Boolean(infoTerpasang?.terpasang);
@@ -535,7 +625,6 @@ export const WokwiMultiSlotCanvas: React.FC<{
 
           return (
             <g key={slot.nomorSlot}>
-              {/* Kotak Utama Slot Komponen */}
               <rect
                 x={slot.boxX}
                 y={slot.boxY}
@@ -547,7 +636,6 @@ export const WokwiMultiSlotCanvas: React.FC<{
                 strokeWidth={2.2}
               />
 
-              {/* Header Judul Komponen di Bagian Atas Dalam Kotak */}
               <rect
                 x={slot.boxX + 12}
                 y={slot.boxY + 8}
@@ -566,11 +654,10 @@ export const WokwiMultiSlotCanvas: React.FC<{
                 SLOT #{slot.nomorSlot}: {(infoTerpasang.namaKartu || slot.namaTarget).slice(0, 26)}
               </text>
 
-              {/* Gambar Ikon Komponen di Sisi Kanan Dalam Kotak (Tidak Tertabrak Label Pin!) */}
               <svg
-                x={slot.boxX + slot.boxW - 88}
+                x={slot.boxX + slot.boxW - 84}
                 y={slot.boxY + 32}
-                width={74}
+                width={72}
                 height={66}
                 viewBox="0 0 64 56"
               >
@@ -581,7 +668,6 @@ export const WokwiMultiSlotCanvas: React.FC<{
                 />
               </svg>
 
-              {/* Render Titik Pin di Tepi Kiri Kotak + Label Pin di DALAM Kiri Kotak (ZERO OVERLAP!) */}
               {slot.daftarPinKomponenIni.map((pin) => {
                 const sedangDipegang = pinAwalDiklik?.idPin === pin.idPin;
                 const harusBerkedip =
@@ -599,7 +685,6 @@ export const WokwiMultiSlotCanvas: React.FC<{
                     onClick={(e) => handleKlikTitikPinFisik(e, pin)}
                     className="cursor-pointer"
                   >
-                    {/* Garis Kaki Logam Pendek ke Dalam */}
                     <line
                       x1={pin.x}
                       y1={pin.y}
@@ -609,11 +694,10 @@ export const WokwiMultiSlotCanvas: React.FC<{
                       strokeWidth={3}
                     />
 
-                    {/* Kotak Label Pin DI DALAM KOTAK KOMPONEN (Mulai dari pin.x + 14 ke kanan) */}
                     <rect
                       x={pin.x + 14}
                       y={pin.y - 10}
-                      width={136}
+                      width={132}
                       height={20}
                       rx={5}
                       fill={
@@ -627,7 +711,7 @@ export const WokwiMultiSlotCanvas: React.FC<{
                       strokeWidth={1.2}
                     />
                     <text
-                      x={pin.x + 82}
+                      x={pin.x + 80}
                       y={pin.y + 3.5}
                       textAnchor="middle"
                       fill={
@@ -678,7 +762,6 @@ export const WokwiMultiSlotCanvas: React.FC<{
                       </circle>
                     )}
 
-                    {/* Bulatan Titik Pin Tepat di Garis Tepi Kiri Kotak */}
                     <circle
                       cx={pin.x}
                       cy={pin.y}
@@ -702,33 +785,18 @@ export const WokwiMultiSlotCanvas: React.FC<{
           );
         })}
 
-        {/* GARIS BAYANGAN PANDUAN ANTAR-KAKI */}
+        {/* GARIS BAYANGAN PANDUAN SIKU-SIKU 90 DERAJAT */}
         {semuaKomponenSudahDitaruh &&
           tampilkanBayanganPanduan &&
-          pinAsalBerkedipObj &&
-          pinTujuanBerkedipObj && (
+          jalurPanduanSiku && (
             <path
               pointerEvents="none"
-              d={
-                pinAsalBerkedipObj.x === pinTujuanBerkedipObj.x
-                  ? `M ${pinAsalBerkedipObj.x} ${pinAsalBerkedipObj.y} C ${
-                      pinAsalBerkedipObj.x - 55
-                    } ${pinAsalBerkedipObj.y}, ${
-                      pinTujuanBerkedipObj.x - 55
-                    } ${pinTujuanBerkedipObj.y}, ${pinTujuanBerkedipObj.x} ${
-                      pinTujuanBerkedipObj.y
-                    }`
-                  : `M ${pinAsalBerkedipObj.x} ${pinAsalBerkedipObj.y} C ${
-                      (pinAsalBerkedipObj.x + pinTujuanBerkedipObj.x) / 2
-                    } ${pinAsalBerkedipObj.y - 20}, ${
-                      (pinAsalBerkedipObj.x + pinTujuanBerkedipObj.x) / 2
-                    } ${pinTujuanBerkedipObj.y + 20}, ${
-                      pinTujuanBerkedipObj.x
-                    } ${pinTujuanBerkedipObj.y}`
-              }
+              d={jalurPanduanSiku.pathSvg}
               fill="none"
               stroke="#facc15"
               strokeWidth={4}
+              strokeLinejoin="round"
+              strokeLinecap="round"
               strokeDasharray="8 6"
               opacity={0.85}
             >
@@ -742,23 +810,24 @@ export const WokwiMultiSlotCanvas: React.FC<{
             </path>
           )}
 
-        {/* KABEL MENGIKUTI MOUSE */}
+        {/* KABEL SIKU-SIKU SAAT MENGIKUTI KURSOR MOUSE */}
         {pinAwalDiklik && (
           <path
             pointerEvents="none"
-            d={`M ${pinAwalDiklik.x} ${pinAwalDiklik.y} Q ${
+            d={`M ${pinAwalDiklik.x} ${pinAwalDiklik.y} L ${
               (pinAwalDiklik.x + posisiKursorSvg.x) / 2
-            } ${Math.min(pinAwalDiklik.y, posisiKursorSvg.y) - 20}, ${
-              posisiKursorSvg.x
-            } ${posisiKursorSvg.y}`}
+            } ${pinAwalDiklik.y} L ${
+              (pinAwalDiklik.x + posisiKursorSvg.x) / 2
+            } ${posisiKursorSvg.y} L ${posisiKursorSvg.x} ${posisiKursorSvg.y}`}
             fill="none"
             stroke="#38bdf8"
             strokeWidth={4}
+            strokeLinejoin="round"
             strokeDasharray="5 4"
           />
         )}
 
-        {/* KABEL YANG SUDAH TERSAMBUNG (KLIK UNTUK HAPUS 1 KABEL SAJA) */}
+        {/* KABEL TERPASANG SIKU-SIKU 90 DERAJAT (ORTHOGONAL ROUTING) */}
         {kabelTerpasangList.map((k, idx) => {
           const p1 = semuaTitikPinPeta[k.pinAsalId];
           const p2 = semuaTitikPinPeta[k.pinTujuanId];
@@ -772,17 +841,7 @@ export const WokwiMultiSlotCanvas: React.FC<{
                 w.pinTujuanId === k.pinAsalId)
           );
 
-          const isVertikal = p1.x === p2.x;
-          const midX = isVertikal ? p1.x - 42 : (p1.x + p2.x) / 2;
-          const midY = (p1.y + p2.y) / 2;
-
-          const pathData = isVertikal
-            ? `M ${p1.x} ${p1.y} C ${p1.x - 55} ${p1.y}, ${p2.x - 55} ${
-                p2.y
-              }, ${p2.x} ${p2.y}`
-            : `M ${p1.x} ${p1.y} C ${(p1.x + p2.x) / 2} ${p1.y}, ${
-                (p1.x + p2.x) / 2
-              } ${p2.y}, ${p2.x} ${p2.y}`;
+          const ruteSiku = buatJalurKabelSikuSiku(p1, p2, idx);
 
           return (
             <g
@@ -794,30 +853,33 @@ export const WokwiMultiSlotCanvas: React.FC<{
               className="cursor-pointer"
             >
               <path
-                d={pathData}
+                d={ruteSiku.pathSvg}
                 fill="none"
                 stroke="transparent"
                 strokeWidth={16}
+                strokeLinejoin="round"
               />
               <path
-                d={pathData}
+                d={ruteSiku.pathSvg}
                 fill="none"
                 stroke={adalahValid ? k.warna : "#f43f5e"}
-                strokeWidth={4.5}
-                strokeDasharray={adalahValid ? "none" : "6 4"}
+                strokeWidth={4}
+                strokeLinejoin="round"
                 strokeLinecap="round"
+                strokeDasharray={adalahValid ? "none" : "6 4"}
               />
+              {/* Titik Solder Siku & Tombol Hapus 1 Kabel */}
               <circle
-                cx={midX}
-                cy={midY}
+                cx={ruteSiku.midX}
+                cy={ruteSiku.midY}
                 r={8.5}
                 fill={adalahValid ? "#0f172a" : "#e11d48"}
                 stroke={adalahValid ? k.warna : "#ffffff"}
-                strokeWidth={1.5}
+                strokeWidth={1.8}
               />
               <text
-                x={midX}
-                y={midY + 3}
+                x={ruteSiku.midX}
+                y={ruteSiku.midY + 3}
                 textAnchor="middle"
                 fill="#ffffff"
                 fontSize="8.5"
@@ -834,7 +896,7 @@ export const WokwiMultiSlotCanvas: React.FC<{
       <div className="mt-3 px-4 py-2.5 rounded-2xl bg-slate-900 border border-slate-800 flex flex-wrap justify-between items-center gap-2 text-xs">
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-bold text-sky-400 flex items-center gap-1">
-            <Cable className="w-4 h-4" /> Kabel Terpasang (Klik ✕ untuk hapus 1 kabel saja):
+            <Cable className="w-4 h-4" /> Kabel Siku-Siku Terpasang (Klik ✕ untuk hapus 1 kabel saja):
           </span>
 
           {kabelTerpasangList.length === 0 ? (
