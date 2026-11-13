@@ -1,6 +1,7 @@
 // app/components/simulator/wokwiAcademyBlueprints.ts
 import { TitikPinFisik } from "./wokwiHardwareVisuals";
 import { LessonStepIoT } from "./wokwiCurriculumData";
+import { cariSpesifikasiKomponenSesuaiModul } from "./wokwiLevelComponentMap";
 
 export type KategoriKesulitanAcademy =
   | "Semua"
@@ -29,7 +30,6 @@ export interface DefinisiSlotPeriferalMultiPin {
   nomorSlot: number;
   namaTarget: string;
   fungsiSingkat: string;
-  // ID Eksak dari Gudang 48 Komponen yang diizinkan masuk ke slot ini (Mencegah OLED masuk ke LED!)
   daftarIdGudangValid: string[];
   kataKunciCocokGudang: string[];
   idGambarMiniatur: string;
@@ -104,21 +104,19 @@ export function dapatkanBabDariLevel(item: ExtendedLessonStepIoT): string {
   return "Bab 5: Multi-MCU, NPK, GPS & 10-Node Mesh";
 }
 
-// Fungsi pencocokan ketat agar komponen seperti OLED ("o-led") TIDAK BISA masuk ke slot LED!
 export function apakahKartuGudangValidUntukSlot(
   item: { id: string; nama: string; cocokUntukDropZone?: string },
   slot: DefinisiSlotPeriferalMultiPin
 ): boolean {
-  if (item.cocokUntukDropZone === "esp32_board") return false;
   const idLower = item.id.toLowerCase();
   const namaLower = item.nama.toLowerCase();
 
-  // 1. Cek daftar ID eksak terlebih dahulu
+  // 1. Cek daftar ID eksak yang diizinkan untuk slot ini
   if (slot.daftarIdGudangValid.includes(idLower)) {
     return true;
   }
 
-  // 2. Proteksi khusus: jika slot meminta LED, tolak keras OLED / LCD!
+  // 2. Proteksi ketat: jangan izinkan OLED/LCD masuk ke slot LED!
   const slotMintaLed = slot.daftarIdGudangValid.some((id) =>
     id.startsWith("led_")
   );
@@ -132,21 +130,16 @@ export function apakahKartuGudangValidUntukSlot(
     return false;
   }
 
-  // 3. Cek kata kunci dengan batas kata (word boundary)
-  return slot.kataKunciCocokGudang.some((kw) => {
-    const regex = new RegExp(`(^|\\s|_|-)${kw.toLowerCase()}($|\\s|_|-|5mm)`, "i");
-    return regex.test(idLower) || regex.test(namaLower);
-  });
+  // 3. Cek kecocokan kata kunci spesifik
+  return slot.kataKunciCocokGudang.some((kw) =>
+    namaLower.includes(kw.toLowerCase())
+  );
 }
 
-// ============================================================================
-// GENERATOR BLUEPRINT MULTI-PIN REALISTIS (VALIDASI KOMPONEN KETAT & 2 KAKI)
-// ============================================================================
 export function ambilBlueprintMultiPinRealistis(
   materi: ExtendedLessonStepIoT
 ): BlueprintMultiPinLevel {
   const judul = (materi.judulMateri || "").toLowerCase();
-  const kode = (materi.kodeTargetBenar || "").toLowerCase();
 
   // 1. STANDALONE 1-BOARD ESP32 (Tanpa Komponen Luar)
   if (
@@ -171,7 +164,8 @@ export function ambilBlueprintMultiPinRealistis(
   if (
     judul.includes("1 komponen output") ||
     judul.includes("1 led") ||
-    judul.includes("pwm") ||
+    judul.includes("mengedipkan lampu led") ||
+    judul.includes("pulse width modulation") ||
     (judul.includes("led") &&
       !judul.includes("lalu lintas") &&
       !judul.includes("button") &&
@@ -189,29 +183,15 @@ export function ambilBlueprintMultiPinRealistis(
           namaTarget: "LED Merah 5mm (2 Kaki: Anoda & Katoda)",
           fungsiSingkat: "Memiliki 2 kaki: Anoda (+) untuk arus masuk dan Katoda (-) menuju Resistor.",
           daftarIdGudangValid: ["led_merah", "led_hijau", "pas_led_merah", "pas_led_hijau"],
-          kataKunciCocokGudang: ["led merah", "led hijau", "led_merah", "led_hijau"],
+          kataKunciCocokGudang: ["led merah", "led hijau"],
           idGambarMiniatur: "led_merah",
           boxX: 335,
           boxY: 22,
           boxW: 225,
           boxH: 92,
           daftarPinKomponenIni: [
-            {
-              idPin: "LED_ANODA",
-              labelPin: "1. Anoda LED (+)",
-              x: 345,
-              y: 48,
-              warnaPin: "#ef4444",
-              posisiKomponen: "periferal",
-            },
-            {
-              idPin: "LED_KATODA",
-              labelPin: "2. Katoda LED (-)",
-              x: 345,
-              y: 90,
-              warnaPin: "#38bdf8",
-              posisiKomponen: "periferal",
-            },
+            { idPin: "LED_ANODA", labelPin: "1. Anoda LED (+)", x: 345, y: 48, warnaPin: "#ef4444", posisiKomponen: "periferal" },
+            { idPin: "LED_KATODA", labelPin: "2. Katoda LED (-)", x: 345, y: 90, warnaPin: "#38bdf8", posisiKomponen: "periferal" },
           ],
         },
         {
@@ -226,22 +206,8 @@ export function ambilBlueprintMultiPinRealistis(
           boxW: 225,
           boxH: 92,
           daftarPinKomponenIni: [
-            {
-              idPin: "RES_KAKI_1",
-              labelPin: "1. Kaki 1 Resistor (In)",
-              x: 345,
-              y: 158,
-              warnaPin: "#f59e0b",
-              posisiKomponen: "periferal",
-            },
-            {
-              idPin: "RES_KAKI_2",
-              labelPin: "2. Kaki 2 Resistor (GND)",
-              x: 345,
-              y: 200,
-              warnaPin: "#64748b",
-              posisiKomponen: "periferal",
-            },
+            { idPin: "RES_KAKI_1", labelPin: "1. Kaki 1 Resistor (In)", x: 345, y: 158, warnaPin: "#f59e0b", posisiKomponen: "periferal" },
+            { idPin: "RES_KAKI_2", labelPin: "2. Kaki 2 Resistor (GND)", x: 345, y: 200, warnaPin: "#64748b", posisiKomponen: "periferal" },
           ],
         },
       ],
@@ -277,7 +243,7 @@ export function ambilBlueprintMultiPinRealistis(
     };
   }
 
-  // 3. LAMPU LALU LINTAS MULTI-LED (LED MERAH 2 KAKI + LED HIJAU 2 KAKI)
+  // 3. LAMPU LALU LINTAS MULTI-LED
   if (judul.includes("lalu lintas") || (judul.includes("merah") && judul.includes("hijau"))) {
     return {
       analogiMudahPaham:
@@ -290,7 +256,7 @@ export function ambilBlueprintMultiPinRealistis(
           namaTarget: "LED Merah 5mm (2 Kaki: Anoda & Katoda)",
           fungsiSingkat: "Kaki Anoda (+) ke GPIO 2, Kaki Katoda (-) ke GND.",
           daftarIdGudangValid: ["led_merah", "pas_led_merah"],
-          kataKunciCocokGudang: ["led merah", "led_merah"],
+          kataKunciCocokGudang: ["led merah"],
           idGambarMiniatur: "led_merah",
           boxX: 335,
           boxY: 22,
@@ -306,7 +272,7 @@ export function ambilBlueprintMultiPinRealistis(
           namaTarget: "LED Hijau 5mm (2 Kaki: Anoda & Katoda)",
           fungsiSingkat: "Kaki Anoda (+) ke GPIO 15, Kaki Katoda (-) ke GND.",
           daftarIdGudangValid: ["led_hijau", "pas_led_hijau"],
-          kataKunciCocokGudang: ["led hijau", "led_hijau"],
+          kataKunciCocokGudang: ["led hijau"],
           idGambarMiniatur: "led_hijau",
           boxX: 335,
           boxY: 132,
@@ -441,139 +407,69 @@ export function ambilBlueprintMultiPinRealistis(
     };
   }
 
-  // 5. SENSOR & AKTUATOR SPESIFIK LEVEL (VALIDASI ID KETAT SESUAI TUTORIAL!)
-  const pinSensorGpio = kode.includes("34")
-    ? { id: "ESP_GPIO34", label: "GPIO 34" }
-    : kode.includes("32")
-    ? { id: "ESP_GPIO32", label: "GPIO 32" }
-    : kode.includes("35")
-    ? { id: "ESP_GPIO35", label: "GPIO 35" }
-    : kode.includes("15")
-    ? { id: "ESP_GPIO15", label: "GPIO 15" }
-    : kode.includes("16")
-    ? { id: "ESP_GPIO16", label: "RX2 (16)" }
-    : { id: "ESP_GPIO4", label: "GPIO 4" };
-
-  const pinAktuatorGpio = kode.includes("26")
-    ? { id: "ESP_GPIO26", label: "GPIO 26" }
-    : kode.includes("27")
-    ? { id: "ESP_GPIO27", label: "GPIO 27" }
-    : kode.includes("33")
-    ? { id: "ESP_GPIO33", label: "GPIO 33" }
-    : kode.includes("19")
-    ? { id: "ESP_GPIO19", label: "GPIO 19" }
-    : kode.includes("13")
-    ? { id: "ESP_GPIO13", label: "GPIO 13" }
-    : kode.includes("17")
-    ? { id: "ESP_GPIO17", label: "TX2 (17)" }
-    : { id: "ESP_GPIO2", label: "GPIO 2" };
-
-  const namaKomp2 =
-    materi.komponenDimasukkan[1]?.namaKomponen.replace(/^Slot \d+:\s*/i, "") ||
-    "Sensor Modul (Slot #2)";
-  const namaKomp3 =
-    materi.komponenDimasukkan[2]?.namaKomponen.replace(/^Slot \d+:\s*/i, "") ||
-    "Aktuator Modul (Slot #3)";
-
-  // Tentukan ID Gudang yang valid secara spesifik berdasarkan topik modul
-  const idValidSlot2 = judul.includes("potensiometer")
-    ? ["potensiometer", "pas_potensio"]
-    : judul.includes("ldr") || judul.includes("cahaya")
-    ? ["sensor_ldr", "sen_ldr", "sensor_pir", "sen_pir"]
-    : judul.includes("ultrasonik")
-    ? ["ultrasonik_hcsr04", "sen_ultrasonik"]
-    : judul.includes("rfid")
-    ? ["rfid_rc522", "sen_rfid"]
-    : judul.includes("dht") || judul.includes("greenhouse")
-    ? ["sensor_suhu_dht", "sen_dht22", "kelembapan_tanah", "sen_soil"]
-    : judul.includes("mq") || judul.includes("gas") || judul.includes("kebakaran")
-    ? ["sensor_mq2", "sen_mq2", "sensor_flame", "sen_flame", "sensor_mq135", "sen_mq135"]
-    : judul.includes("npk")
-    ? ["sensor_npk", "sen_npk"]
-    : judul.includes("baterai")
-    ? ["socket_baterai", "pwr_batt18650"]
-    : ["nodemcu_esp8266", "mcu_esp32_node2", "sensor_npk", "gps_neo6m"];
-
-  const idValidSlot3 = judul.includes("potensiometer")
-    ? ["led_merah", "led_hijau", "pas_led_merah", "pas_led_hijau"]
-    : judul.includes("ldr")
-    ? ["relay_1ch", "rel_1ch", "relay_2ch"]
-    : judul.includes("ultrasonik") || judul.includes("servo")
-    ? ["servo_sg90", "akt_servo180", "solenoid_lock", "akt_solenoid"]
-    : judul.includes("rfid") || judul.includes("solenoid")
-    ? ["solenoid_lock", "akt_solenoid", "servo_sg90", "akt_servo180"]
-    : judul.includes("dht") || judul.includes("greenhouse")
-    ? ["kipas_dc", "akt_kipas", "pompa_air", "akt_pompa", "relay_2ch", "rel_2ch"]
-    : judul.includes("mq") || judul.includes("gas") || judul.includes("kebakaran")
-    ? ["buzzer_piezo", "akt_buzzer", "pompa_air", "akt_pompa", "relay_1ch"]
-    : judul.includes("npk") || judul.includes("gps")
-    ? ["gps_neo6m", "sen_gps"]
-    : judul.includes("baterai") || judul.includes("tegangan")
-    ? ["sensor_tegangan", "pwr_ina219", "sensor_pzem"]
-    : ["layar_oled", "dsp_oled", "lcd_16x2", "relay_4ch", "nodemcu_esp8266", "mcu_gateway10"];
+  // 5. AMBIL PEMETAAN EKSPLISIT AKURAT DARI wokwiLevelComponentMap.ts
+  const spek = cariSpesifikasiKomponenSesuaiModul(materi);
 
   return {
-    analogiMudahPaham:
-      "Pada perangkat sensor dan aktuator dunia nyata, setiap komponen wajib memiliki sambungan Kaki Sinyal/Data ke GPIO DAN Kaki Daya/Ground (3V3/GND) agar arusnya mengalir membentuk rangkaian tertutup!",
-    ringkasanCaraKerja:
-      "Tarik komponen yang diminta modul ke Slot #1, Slot #2, dan Slot #3, lalu hubungkan ke-2 kaki pada setiap komponen (total 4 kabel)!",
+    analogiMudahPaham: spek.analogiMudah,
+    ringkasanCaraKerja: `Tarik ESP32 ke Slot #1, '${spek.namaTampilSlot2}' ke Slot #2, dan '${spek.namaTampilSlot3}' ke Slot #3, lalu hubungkan keempat kakinya!`,
     slotPeriferalList: [
       {
         nomorSlot: 2,
-        namaTarget: `${namaKomp2} (2 Kaki)`,
-        fungsiSingkat: `Kaki 1 (Sinyal) ke ${pinSensorGpio.label} & Kaki 2 (Daya) ke 3V3.`,
-        daftarIdGudangValid: idValidSlot2,
-        kataKunciCocokGudang: idValidSlot2,
-        idGambarMiniatur: idValidSlot2[0] || "sensor_ldr",
+        namaTarget: spek.namaTampilSlot2,
+        fungsiSingkat: spek.fungsiSlot2,
+        daftarIdGudangValid: spek.idGudangValidSlot2,
+        kataKunciCocokGudang: spek.kataKunciValidSlot2,
+        idGambarMiniatur: spek.idGambarSlot2,
         boxX: 335,
         boxY: 22,
         boxW: 225,
         boxH: 92,
         daftarPinKomponenIni: [
           {
-            idPin: "MOD2_PIN_SIG",
-            labelPin: `1. Pin Data/SIG`,
+            idPin: "MOD2_PIN_1",
+            labelPin: spek.pin1Slot2Label,
             x: 345,
             y: 48,
-            warnaPin: "#22c55e",
+            warnaPin: spek.pinEspKeSlot2Pin1.warna,
             posisiKomponen: "periferal",
           },
           {
-            idPin: "MOD2_PIN_VCC",
-            labelPin: `2. Pin VCC (3.3V)`,
+            idPin: "MOD2_PIN_2",
+            labelPin: spek.pin2Slot2Label,
             x: 345,
             y: 90,
-            warnaPin: "#ef4444",
+            warnaPin: spek.pinEspKeSlot2Pin2.warna,
             posisiKomponen: "periferal",
           },
         ],
       },
       {
         nomorSlot: 3,
-        namaTarget: `${namaKomp3} (2 Kaki)`,
-        fungsiSingkat: `Kaki 1 (Kontrol) ke ${pinAktuatorGpio.label} & Kaki 2 ke GND.`,
-        daftarIdGudangValid: idValidSlot3,
-        kataKunciCocokGudang: idValidSlot3,
-        idGambarMiniatur: idValidSlot3[0] || "relay_1ch",
+        namaTarget: spek.namaTampilSlot3,
+        fungsiSingkat: spek.fungsiSlot3,
+        daftarIdGudangValid: spek.idGudangValidSlot3,
+        kataKunciCocokGudang: spek.kataKunciValidSlot3,
+        idGambarMiniatur: spek.idGambarSlot3,
         boxX: 335,
         boxY: 132,
         boxW: 225,
         boxH: 92,
         daftarPinKomponenIni: [
           {
-            idPin: "MOD3_PIN_IN",
-            labelPin: `1. Pin Kontrol IN`,
+            idPin: "MOD3_PIN_1",
+            labelPin: spek.pin1Slot3Label,
             x: 345,
             y: 158,
-            warnaPin: "#facc15",
+            warnaPin: spek.pinEspKeSlot3Pin1.warna,
             posisiKomponen: "periferal",
           },
           {
-            idPin: "MOD3_PIN_GND",
-            labelPin: `2. Pin Ground (GND)`,
+            idPin: "MOD3_PIN_2",
+            labelPin: spek.pin2Slot3Label,
             x: 345,
             y: 200,
-            warnaPin: "#64748b",
+            warnaPin: spek.pinEspKeSlot3Pin2.warna,
             posisiKomponen: "periferal",
           },
         ],
@@ -582,39 +478,39 @@ export function ambilBlueprintMultiPinRealistis(
     sambunganWajibList: [
       {
         idSambungan: "M_W1",
-        pinAsalId: pinSensorGpio.id,
-        labelPinAsal: pinSensorGpio.label,
-        pinTujuanId: "MOD2_PIN_SIG",
-        labelPinTujuan: "1. Pin Data/SIG (Slot #2)",
-        warnaKabel: "#22c55e",
-        keteranganJalur: `Kabel 1: Klik [${pinSensorGpio.label}] di ESP32 ➔ Klik [1. Pin Data/SIG] di Slot #2`,
+        pinAsalId: spek.pinEspKeSlot2Pin1.id,
+        labelPinAsal: spek.pinEspKeSlot2Pin1.label,
+        pinTujuanId: "MOD2_PIN_1",
+        labelPinTujuan: `${spek.pin1Slot2Label} (Slot #2)`,
+        warnaKabel: spek.pinEspKeSlot2Pin1.warna,
+        keteranganJalur: `Kabel 1: Klik [${spek.pinEspKeSlot2Pin1.label}] di ESP32 ➔ Klik [${spek.pin1Slot2Label}] di Slot #2`,
       },
       {
         idSambungan: "M_W2",
-        pinAsalId: "ESP_3V3",
-        labelPinAsal: "3V3",
-        pinTujuanId: "MOD2_PIN_VCC",
-        labelPinTujuan: "2. Pin VCC (3.3V) (Slot #2)",
-        warnaKabel: "#ef4444",
-        keteranganJalur: "Kabel 2: Klik [3V3] di ESP32 ➔ Klik [2. Pin VCC (3.3V)] di Slot #2",
+        pinAsalId: spek.pinEspKeSlot2Pin2.id,
+        labelPinAsal: spek.pinEspKeSlot2Pin2.label,
+        pinTujuanId: "MOD2_PIN_2",
+        labelPinTujuan: `${spek.pin2Slot2Label} (Slot #2)`,
+        warnaKabel: spek.pinEspKeSlot2Pin2.warna,
+        keteranganJalur: `Kabel 2: Klik [${spek.pinEspKeSlot2Pin2.label}] di ESP32 ➔ Klik [${spek.pin2Slot2Label}] di Slot #2`,
       },
       {
         idSambungan: "M_W3",
-        pinAsalId: pinAktuatorGpio.id,
-        labelPinAsal: pinAktuatorGpio.label,
-        pinTujuanId: "MOD3_PIN_IN",
-        labelPinTujuan: "1. Pin Kontrol IN (Slot #3)",
-        warnaKabel: "#facc15",
-        keteranganJalur: `Kabel 3: Klik [${pinAktuatorGpio.label}] di ESP32 ➔ Klik [1. Pin Kontrol IN] di Slot #3`,
+        pinAsalId: spek.pinEspKeSlot3Pin1.id,
+        labelPinAsal: spek.pinEspKeSlot3Pin1.label,
+        pinTujuanId: "MOD3_PIN_1",
+        labelPinTujuan: `${spek.pin1Slot3Label} (Slot #3)`,
+        warnaKabel: spek.pinEspKeSlot3Pin1.warna,
+        keteranganJalur: `Kabel 3: Klik [${spek.pinEspKeSlot3Pin1.label}] di ESP32 ➔ Klik [${spek.pin1Slot3Label}] di Slot #3`,
       },
       {
         idSambungan: "M_W4",
-        pinAsalId: "ESP_GND",
-        labelPinAsal: "GND",
-        pinTujuanId: "MOD3_PIN_GND",
-        labelPinTujuan: "2. Pin Ground (GND) (Slot #3)",
-        warnaKabel: "#64748b",
-        keteranganJalur: "Kabel 4: Klik [GND] di ESP32 ➔ Klik [2. Pin Ground (GND)] di Slot #3",
+        pinAsalId: spek.pinEspKeSlot3Pin2.id,
+        labelPinAsal: spek.pinEspKeSlot3Pin2.label,
+        pinTujuanId: "MOD3_PIN_2",
+        labelPinTujuan: `${spek.pin2Slot3Label} (Slot #3)`,
+        warnaKabel: spek.pinEspKeSlot3Pin2.warna,
+        keteranganJalur: `Kabel 4: Klik [${spek.pinEspKeSlot3Pin2.label}] di ESP32 ➔ Klik [${spek.pin2Slot3Label}] di Slot #3`,
       },
     ],
   };
