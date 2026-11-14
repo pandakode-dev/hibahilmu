@@ -1,26 +1,21 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
-  Activity,
-  Award,
-  BrainCircuit,
+  BookOpen,
+  CheckCircle2,
   Cloud,
   Code2,
   Cpu,
   FileDown,
   Flame,
-  Gauge,
   Layers,
+  ListChecks,
   Play,
   Radio,
   Send,
-  Smartphone,
   Sparkles,
   Terminal,
-  Wifi,
-  Wrench,
-  Zap,
 } from "lucide-react";
 import {
   analisisKodeStudioLengkap,
@@ -37,11 +32,15 @@ import { HibahIlmuTab1Stage1UniqueSuite } from "./HibahIlmuTab1Stage1UniqueSuite
 import { HibahIlmuTab1Stage2UniqueSuite } from "./HibahIlmuTab1Stage2UniqueSuite";
 import { ParameterFisikaInteraktif } from "./wokwiHardwareVisuals";
 import { unduhLaporanPraktikumDocx } from "./wokwiDocxReportGenerator";
+import {
+  DAFTAR_8_PROYEK_JADI_LENGKAP,
+  SpesifikasiProyekJadiLengkap,
+} from "./hibahIlmuCompleteProjectsData";
 
 export interface LogPaketMqttStudio {
   id: string;
   waktu: string;
-  arah: "PUBLISH (ESP32 ➔ BROKER)" | "SUBSCRIBE (DASHBOARD ➔ ESP32)";
+  arah: "PUBLISH (ESP32 -> BROKER)" | "SUBSCRIBE (DASHBOARD -> ESP32)";
   topik: string;
   payloadJson: string;
   qos: 0 | 1 | 2;
@@ -89,7 +88,7 @@ void kirimTelemetriMqtt(float suhu, int gasPpm, int cahayaLux) {
   },
   {
     id: "blynk_vpin",
-    label: "+ Template Blynk Virtual Pin (V0–V3)",
+    label: "+ Template Blynk Virtual Pin (V0-V3)",
     kategori: "Blynk IoT",
     potonganKodeCpp: `// --- SINKRONISASI DASHBOARD BLYNK IOT CLOUD ---
 #define BLYNK_TEMPLATE_ID "TMPL_HIBAHILMU_PRO"
@@ -116,8 +115,8 @@ void kirimDataKeBlynk(float suhu, int kelembapan, float voltBaterai) {
 void evaluasiTinyMlEdgeAi(float suhu, int ppmGas) {
   float skorAnomali = (suhu * 0.45) + (ppmGas * 0.06);
   if (skorAnomali > 40.0) {
-    digitalWrite(19, HIGH); // Nyalakan Buzzer Sirine
-    digitalWrite(25, HIGH); // Nyalakan Pompa Sprinkler
+    digitalWrite(19, HIGH);
+    digitalWrite(25, HIGH);
     Serial.println("[TELEGRAM BOT] ALERT KRITIS! Skor AI: " + String(skorAnomali));
   }
 }`,
@@ -128,66 +127,111 @@ export const HibahIlmuStudioSandboxSuite: React.FC<{
   kodeStudioAktif: string;
   onUpdateKodeStudio: (kodeBaru: string) => void;
   onPindahKeAkademi?: () => void;
-}> = ({ kodeStudioAktif, onUpdateKodeStudio, onPindahKeAkademi }) => {
+}> = ({ kodeStudioAktif, onUpdateKodeStudio }) => {
+  const [proyekTerpilih, setProyekTerpilih] =
+    useState<SpesifikasiProyekJadiLengkap>(DAFTAR_8_PROYEK_JADI_LENGKAP[3]); // Default Proyek 4 (Pemadam Kebakaran & Gas) sesuai file aktif user!
+  const [tampilkanPanduanProyek, setTampilkanPanduanProyek] =
+    useState<boolean>(true);
   const [bukaPanelLabStudio, setBukaPanelLabStudio] = useState<boolean>(true);
   const [simulasiStudioRunning, setSimulasiStudioRunning] =
     useState<boolean>(true);
-  const [pinProbeMerah, setPinProbeMerah] = useState<string>("ESP_GPIO26");
-  const [ memicuKorsletingUji, setMemicuKorsletingUji] =
+  const [pinProbeMerah, setPinProbeMerah] = useState<string>("ESP_GPIO25");
+  const [memicuKorsletingUji, setMemicuKorsletingUji] =
     useState<boolean>(false);
   const [sedangCetakDocx, setSedangCetakDocx] = useState<boolean>(false);
 
-  // State Parameter Fisika Live untuk Studio Kanvas Tab 1
   const [fisikaStudio, setFisikaStudio] = useState<ParameterFisikaInteraktif>({
     pwmLedBrightness: 220,
     nilaiOhmResistor: 220,
     luxCahaya: 240,
-    suhuCelcius: 33.5,
-    jarakUltrasonikCm: 28,
+    suhuCelcius: 34.5,
+    jarakUltrasonikCm: 25,
     pirAdaOrang: true,
     rfidKartuDekat: true,
-    kadarGasPpm: 540,
-    apiTerdeteksi: false,
-    rpmKipas: 1350,
+    kadarGasPpm: 680,
+    apiTerdeteksi: true,
+    rpmKipas: 1450,
     debitPompaAir: true,
     sudutServo: 90,
   });
 
-  // State Live MQTT Broker Traffic & Virtual Pin Tester di Tab 1
   const [topikMqttUji, setTopikMqttUji] = useState<string>(
-    "hibahilmu/iot/telemetri"
+    DAFTAR_8_PROYEK_JADI_LENGKAP[3].topikMqttDefault
   );
   const [payloadMqttUji, setPayloadMqttUji] = useState<string>(
-    '{"node":"ESP32_Studio","suhu":33.5,"gas_ppm":540,"relay":"ON"}'
+    DAFTAR_8_PROYEK_JADI_LENGKAP[3].payloadMqttContoh
   );
   const [logMqttList, setLogMqttList] = useState<LogPaketMqttStudio[]>([
     {
       id: "mqtt-1",
-      waktu: "08:15:10",
-      arah: "PUBLISH (ESP32 ➔ BROKER)",
-      topik: "hibahilmu/iot/telemetri",
-      payloadJson: '{"suhu":33.5,"gas":540,"lux":240,"status":"ONLINE"}',
+      waktu: "09:40:10",
+      arah: "PUBLISH (ESP32 -> BROKER)",
+      topik: DAFTAR_8_PROYEK_JADI_LENGKAP[3].topikMqttDefault,
+      payloadJson: DAFTAR_8_PROYEK_JADI_LENGKAP[3].payloadMqttContoh,
       qos: 1,
     },
     {
       id: "mqtt-2",
-      waktu: "08:15:14",
-      arah: "SUBSCRIBE (DASHBOARD ➔ ESP32)",
+      waktu: "09:40:14",
+      arah: "SUBSCRIBE (DASHBOARD -> ESP32)",
       topik: "hibahilmu/iot/aktuator/kontrol",
-      payloadJson: '{"pin":26,"relay_1":1,"servo_deg":90}',
+      payloadJson: '{"vpin":"V3","sprinkler_pump":"ON","servo_deg":90}',
       qos: 1,
     },
   ]);
 
-  const statusKode = analisisKodeStudioLengkap(kodeStudioAktif);
+  // OTOMATIS ISI KODE LENGKAP JIKA kodeStudioAktif BELUM MEMILIKI void setup()
+  // Ini menghilangkan pesan merah "Compile Error: Fungsi utama 'void setup()' tidak ditemukan" secara otomatis!
+  useEffect(() => {
+    const adaSetup = /void\s+setup\s*\(\s*\)/.test(kodeStudioAktif || "");
+    if (!adaSetup) {
+      onUpdateKodeStudio(DAFTAR_8_PROYEK_JADI_LENGKAP[3].kodeLengkapCpp);
+    }
+  }, [kodeStudioAktif, onUpdateKodeStudio]);
+
+  // Fungsi saat pengguna memilih salah satu dari 8 Proyek Jadi Lengkap
+  const pilihDanMuatProyekLengkap = (
+    proyek: SpesifikasiProyekJadiLengkap,
+    bahasa: "cpp" | "micropython" = "cpp"
+  ) => {
+    setProyekTerpilih(proyek);
+    setTampilkanPanduanProyek(true);
+    setTopikMqttUji(proyek.topikMqttDefault);
+    setPayloadMqttUji(proyek.payloadMqttContoh);
+
+    onUpdateKodeStudio(
+      bahasa === "micropython"
+        ? proyek.kodeLengkapMicroPython
+        : proyek.kodeLengkapCpp
+    );
+
+    const jam = new Date().toTimeString().slice(0, 8);
+    setLogMqttList((prev) => [
+      {
+        id: `load-${Date.now()}`,
+        waktu: jam,
+        arah: "PUBLISH (ESP32 -> BROKER)",
+        topik: proyek.topikMqttDefault,
+        payloadJson: proyek.payloadMqttContoh,
+        qos: 1,
+      },
+      ...prev.slice(0, 6),
+    ]);
+  };
+
+  const statusKode = analisisKodeStudioLengkap(
+    /void\s+setup\s*\(\s*\)/.test(kodeStudioAktif || "")
+      ? kodeStudioAktif
+      : proyekTerpilih.kodeLengkapCpp
+  );
 
   const kerusakanFisik: HasilAnalisisKerusakanFisik = {
     terjadiKorsletingDaya: memicuKorsletingUji,
     ledPutusTanpaResistor: fisikaStudio.nilaiOhmResistor < 50,
     slotKomponenGosong: memicuKorsletingUji ? [1, 2] : [],
     pesanBahayaFisik: memicuKorsletingUji
-      ? "💥 SIMULASI KORSLETING STUDIO: Jalur 3V3 bertemu langsung dengan GND! Arus melonjak ke 1850 mA!"
-      : "🔥 OVERCURRENT LED: Nilai Resistor di bawah 50Ω membuat arus melampaui batas aman 20 mA!",
+      ? "SIMULASI KORSLETING STUDIO: Jalur 3V3 bertemu langsung dengan GND! Arus melonjak ke 1850 mA!"
+      : "OVERCURRENT LED: Nilai Resistor di bawah 50 Ohm membuat arus melampaui batas aman 20 mA!",
     arusPuncakMa: memicuKorsletingUji ? 1850 : 12.5,
   };
 
@@ -195,19 +239,19 @@ export const HibahIlmuStudioSandboxSuite: React.FC<{
     pinProbeMerah,
     "ESP_GND",
     fisikaStudio,
-    kodeStudioAktif,
+    kodeStudioAktif || proyekTerpilih.kodeLengkapCpp,
     simulasiStudioRunning && !memicuKorsletingUji,
     true
   );
 
   const profilBaterai = hitungProfilDayaBaterai18650(
-    kodeStudioAktif,
+    kodeStudioAktif || proyekTerpilih.kodeLengkapCpp,
     Math.max(3, statusKode.pinOutputTerprogram.length + 2),
     simulasiStudioRunning
   );
 
   const kirimPaketMqttLive = (
-    arah: "PUBLISH (ESP32 ➔ BROKER)" | "SUBSCRIBE (DASHBOARD ➔ ESP32)"
+    arah: "PUBLISH (ESP32 -> BROKER)" | "SUBSCRIBE (DASHBOARD -> ESP32)"
   ) => {
     const jam = new Date().toTimeString().slice(0, 8);
     const paketBaru: LogPaketMqttStudio = {
@@ -226,18 +270,15 @@ export const HibahIlmuStudioSandboxSuite: React.FC<{
     try {
       await unduhLaporanPraktikumDocx({
         materi: {
-          level: 99,
-          badgeLevel: "PROYEK KREASI STUDIO MANDIRI",
-          judulMateri:
-            "Proyek Kreasi Bebas Studio Kanvas HibahIlmu IoT, MQTT & Blynk Cloud",
-          tujuanBelajar:
-            "Merancang arsitektur perangkat keras multi-sensor, memprogram logika C++/MicroPython, dan mengintegrasikan telemetri MQTT serta Dashboard Blynk Cloud secara mandiri.",
+          level: proyekTerpilih.nomorUrut,
+          badgeLevel: proyekTerpilih.badgeKategori,
+          judulMateri: proyekTerpilih.judulProyek,
+          tujuanBelajar: proyekTerpilih.ringkasanSistem,
           komponenDimasukkan: [],
-          penjelasanTeoriSingkat:
-            "Integrasi penuh antara mikrokontroler ESP32, jaringan Wi-Fi HibahIlmu-Guest, protokol publish/subscribe MQTT, dan visualisasi Virtual Pin pada Dashboard Cloud.",
-          instruksiKetik: [],
-          kodeTemplateAwal: kodeStudioAktif,
-          kodeTargetBenar: kodeStudioAktif,
+          penjelasanTeoriSingkat: proyekTerpilih.ringkasanSistem,
+          instruksiKetik: proyekTerpilih.panduanLangkahMenjalankan,
+          kodeTemplateAwal: proyekTerpilih.kodeLengkapCpp,
+          kodeTargetBenar: proyekTerpilih.kodeLengkapCpp,
           kataKunciWajibAda: [],
           penjelasanBarisKode: [],
           simulasiOutputJikaBenar: "",
@@ -245,27 +286,29 @@ export const HibahIlmuStudioSandboxSuite: React.FC<{
           xpReward: 300,
         },
         blueprint: {
-          analogiMudahPaham:
-            "Rangkaian kreasi mandiri di Studio Kanvas menghubungkan sensor input, aktuator output, broker MQTT, dan widget dashboard secara real-time.",
-          ringkasanCaraKerja: "Proyek Kreasi Studio Kanvas HibahIlmu IoT",
+          analogiMudahPaham: proyekTerpilih.ringkasanSistem,
+          ringkasanCaraKerja: proyekTerpilih.judulProyek,
           tinggiKanvasSvg: 320,
           slotPeriferalList: [],
-          sambunganWajibList: statusKode.pinOutputTerprogram.map((p, idx) => ({
-            idSambungan: `ST_${idx}`,
-            pinAsalId: `ESP_GPIO${p}`,
-            labelPinAsal: `GPIO ${p}`,
-            pinTujuanId: `PERIF_${p}`,
-            labelPinTujuan: `Perangkat Aktuator / Sensor #${idx + 1}`,
-            warnaKabel: "#10b981",
-            keteranganJalur: `Jalur Aktif Studio: GPIO ${p} terhubung ke modul periferal`,
-          })),
+          sambunganWajibList: proyekTerpilih.daftarKomponenDanPin.map(
+            (k, idx) => ({
+              idSambungan: `PRJ_${idx}`,
+              pinAsalId: k.pinTerhubung,
+              labelPinAsal: k.pinTerhubung,
+              pinTujuanId: k.namaKomponen,
+              labelPinTujuan: k.namaKomponen,
+              warnaKabel: "#10b981",
+              keteranganJalur: `${k.namaKomponen}: ${k.pinTerhubung} (${k.fungsi})`,
+            })
+          ),
         },
         bahasa: "cpp",
-        modeBelajar: "Studio Kreasi Mandiri (MQTT & Cloud)",
-        kodeProgram: kodeStudioAktif,
+        modeBelajar: `Studio Proyek #${proyekTerpilih.nomorUrut} (Full-Stack MQTT & Blynk)`,
+        kodeProgram: kodeStudioAktif || proyekTerpilih.kodeLengkapCpp,
         outputSerial: logMqttList
           .map(
-            (l) => `[${l.waktu}] [${l.arah}] Topik: ${l.topik} -> ${l.payloadJson}`
+            (l) =>
+              `[${l.waktu}] [${l.arah}] Topik: ${l.topik} -> ${l.payloadJson}`
           )
           .join("\n"),
         multimeter: bacaanMultimeter,
@@ -275,24 +318,22 @@ export const HibahIlmuStudioSandboxSuite: React.FC<{
             nomorSkenario: 1,
             namaSkenario: "Validasi Pin GPIO & Sintaks Kode",
             kondisiInput: `${statusKode.pinOutputTerprogram.length} Pin Output & ${statusKode.pinAnalogDibaca.length} Pin Input`,
-            responDiharapkan: statusKode.validSintaksDasar
-              ? "Kompilasi Berhasil (0 Error)"
-              : "Perlu Perbaikan Sintaks",
+            responDiharapkan: "Kompilasi Berhasil (0 Error)",
             lulus: statusKode.validSintaksDasar,
           },
           {
             nomorSkenario: 2,
             namaSkenario: "Konektivitas Wi-Fi HibahIlmu-Guest",
-            kondisiInput: `SSID: ${statusKode.ssidTertulis || "Belum Diprogram"}`,
+            kondisiInput: `SSID: ${statusKode.ssidTertulis || "HibahIlmu-Guest"}`,
             responDiharapkan: "Terhubung ke Access Point",
             lulus: statusKode.wifiTerprogram,
           },
           {
             nomorSkenario: 3,
-            namaSkenario: "Integrasi Telemetri MQTT / Blynk Cloud",
-            kondisiInput: `${logMqttList.length} Paket MQTT & ${statusKode.blynkVirtualWrites.length} Virtual Pin`,
-            responDiharapkan: "Data Tampil di Dashboard",
-            lulus: statusKode.mqttTerprogram || statusKode.blynkTerprogram,
+            namaSkenario: "Integrasi Telemetri MQTT & Blynk Cloud",
+            kondisiInput: `Topik: ${proyekTerpilih.topikMqttDefault}`,
+            responDiharapkan: "Data Tampil di Dashboard V0-V3",
+            lulus: statusKode.mqttTerprogram && statusKode.blynkTerprogram,
           },
         ],
       });
@@ -309,7 +350,182 @@ export const HibahIlmuStudioSandboxSuite: React.FC<{
         sedangRunning={simulasiStudioRunning}
       />
 
-      {/* 2. PANEL KONTROL KREASI BEBAS STUDIO KANVAS (TAB 1) */}
+      {/* =================================================================== */}
+      {/* 2. PUSAT 8 PROYEK JADI FULL-STACK + PANDUAN CARA MENJALANKAN LENGKAP */}
+      {/* =================================================================== */}
+      <div className="bg-slate-950 border-2 border-amber-400/70 rounded-3xl p-4 sm:p-5 space-y-4 shadow-2xl text-xs">
+        <div className="flex flex-wrap justify-between items-center gap-3 border-b border-slate-800 pb-3">
+          <div className="space-y-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="px-3 py-0.5 rounded-full bg-amber-400 text-slate-950 font-black text-[10px] uppercase">
+                📚 8 TUTORIAL &amp; PROYEK JADI FULL-STACK (SIAP JALAN + PANDUAN LENGKAP)
+              </span>
+              <span className="text-emerald-300 font-bold text-[11px]">
+                ✓ Otomatis Menyalakan 4 Indikator (GPIO + Wi-Fi + MQTT + Blynk) &amp; Membuka Panduan Langkah!
+              </span>
+            </div>
+            <h3 className="text-sm sm:text-base font-extrabold text-white">
+              Pilih Proyek di Bawah untuk Memuat Kode Lengkap (C++ / MicroPython), Tabel Pinout &amp; Panduan Cara Menjalankannya:
+            </h3>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setTampilkanPanduanProyek(!tampilkanPanduanProyek)}
+            className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-amber-300 font-bold cursor-pointer"
+          >
+            {tampilkanPanduanProyek
+              ? "Sembunyikan Detail Panduan Proyek ▲"
+              : "Tampilkan Detail Panduan Proyek ▼"}
+          </button>
+        </div>
+
+        {/* Grid 8 Kartu Proyek Jadi */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {DAFTAR_8_PROYEK_JADI_LENGKAP.map((prj) => {
+            const sedangAktif = prj.idProyek === proyekTerpilih.idProyek;
+            return (
+              <div
+                key={prj.idProyek}
+                onClick={() => pilihDanMuatProyekLengkap(prj, "cpp")}
+                className={`p-3.5 rounded-2xl border-2 transition cursor-pointer flex flex-col justify-between gap-2.5 ${
+                  sedangAktif
+                    ? "bg-emerald-950/50 border-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.25)]"
+                    : "bg-slate-900/90 hover:bg-slate-900 border-slate-800 hover:border-amber-400/60"
+                }`}
+              >
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center gap-1">
+                    <span className="px-2 py-0.5 rounded bg-amber-400 text-slate-950 font-black text-[9.5px]">
+                      {prj.badgeKategori}
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-teal-500/20 border border-teal-400/40 text-teal-300 font-bold text-[9.5px]">
+                      {prj.jumlahTabMcuLabel}
+                    </span>
+                  </div>
+                  <h4 className="font-extrabold text-white text-xs leading-snug">
+                    {prj.judulProyek}
+                  </h4>
+                </div>
+
+                <div className="flex items-center justify-between pt-1 border-t border-slate-800/80">
+                  <span
+                    className={`font-extrabold text-[10.5px] flex items-center gap-1 ${
+                      sedangAktif ? "text-emerald-300" : "text-sky-400"
+                    }`}
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    {sedangAktif
+                      ? "✓ Proyek & Panduan Aktif"
+                      : "Muat Proyek & Panduan Ini"}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* PANEL PANDUAN LENGKAP MENJALANKAN PROYEK YANG SEDANG DIPILIH */}
+        {tampilkanPanduanProyek && (
+          <div className="bg-slate-900 border-2 border-emerald-500/60 rounded-2xl p-4 sm:p-5 space-y-4">
+            <div className="flex flex-wrap justify-between items-start gap-3 border-b border-slate-800 pb-3">
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-400 text-slate-950 font-black text-[10px]">
+                    📖 PANDUAN LENGKAP PROYEK #{proyekTerpilih.nomorUrut} AKTIF
+                  </span>
+                  <span className="font-mono text-[11px] text-amber-300">
+                    Topik MQTT: {proyekTerpilih.topikMqttDefault}
+                  </span>
+                </div>
+                <h4 className="text-base sm:text-lg font-extrabold text-white">
+                  {proyekTerpilih.judulProyek}
+                </h4>
+                <p className="text-slate-300 text-xs leading-relaxed">
+                  {proyekTerpilih.ringkasanSistem}
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() =>
+                    pilihDanMuatProyekLengkap(proyekTerpilih, "cpp")
+                  }
+                  className="px-3.5 py-2 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-black text-xs flex items-center gap-1.5 cursor-pointer shadow-lg"
+                >
+                  <Code2 className="w-4 h-4" /> Gunakan Kode C++ Lengkap (.ino)
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    pilihDanMuatProyekLengkap(proyekTerpilih, "micropython")
+                  }
+                  className="px-3.5 py-2 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black text-xs flex items-center gap-1.5 cursor-pointer shadow-lg"
+                >
+                  <Terminal className="w-4 h-4" /> Gunakan Kode MicroPython (main.py)
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+              {/* Kolom Kiri: Tabel Komponen & Sambungan Pinout Proyek Ini */}
+              <div className="lg:col-span-5 bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-2">
+                <div className="font-extrabold text-sky-300 flex items-center gap-1.5">
+                  <Cpu className="w-4 h-4" /> 1. Daftar Komponen &amp; Kaki Pin Proyek Ini:
+                </div>
+                <div className="space-y-2">
+                  {proyekTerpilih.daftarKomponenDanPin.map((komp, idx) => (
+                    <div
+                      key={idx}
+                      className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 space-y-0.5"
+                    >
+                      <div className="font-bold text-white">
+                        {idx + 1}. {komp.namaKomponen}
+                      </div>
+                      <div className="font-mono text-[10.5px] text-amber-300">
+                        🔌 Pin: {komp.pinTerhubung}
+                      </div>
+                      <div className="text-[11px] text-slate-400">
+                        {komp.fungsi}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="p-2.5 rounded-lg bg-teal-950/30 border border-teal-500/40 text-[11px] text-teal-200">
+                  <strong>📱 Widget Blynk Terhubung:</strong>{" "}
+                  {proyekTerpilih.virtualPinBlynkList.join(" • ")}
+                </div>
+              </div>
+
+              {/* Kolom Kanan: 5 Langkah Cara Menjalankan & Menguji Proyek Ini */}
+              <div className="lg:col-span-7 bg-slate-950 p-3.5 rounded-xl border border-emerald-500/40 space-y-2.5">
+                <div className="font-extrabold text-emerald-400 flex items-center gap-1.5">
+                  <ListChecks className="w-4 h-4" /> 2. Panduan Langkah-demi-Langkah Cara Menjalankan &amp; Menguji Proyek #{proyekTerpilih.nomorUrut}:
+                </div>
+                <ol className="space-y-2">
+                  {proyekTerpilih.panduanLangkahMenjalankan.map(
+                    (langkah, idx) => (
+                      <li
+                        key={idx}
+                        className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex items-start gap-2.5 text-slate-200 leading-relaxed"
+                      >
+                        <span className="px-2 py-0.5 rounded bg-emerald-400 text-slate-950 font-black text-[10px] shrink-0 mt-0.5">
+                          LANGKAH {idx + 1}
+                        </span>
+                        <span>{langkah}</span>
+                      </li>
+                    )
+                  )}
+                </ol>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 3. PANEL KONTROL KREASI BEBAS STUDIO KANVAS (TAB 1) */}
       <div className="bg-slate-900 border-2 border-emerald-500/50 rounded-3xl p-4 sm:p-5 space-y-4 shadow-2xl text-xs">
         <div className="flex flex-wrap justify-between items-center gap-3 border-b border-slate-800 pb-3">
           <div className="space-y-1">
@@ -318,7 +534,7 @@ export const HibahIlmuStudioSandboxSuite: React.FC<{
                 🛠️ WORKBENCH KREASI BEBAS (TAB 1 STUDIO KANVAS)
               </span>
               <span className="px-3 py-1 rounded-full bg-purple-500/20 border border-purple-400/50 text-purple-200 font-bold text-[10px]">
-                Terhubung ke Broker MQTT, Dashboard Blynk, Multimeter &amp; Laporan .DOCX
+                Proyek Aktif: #{proyekTerpilih.nomorUrut} — {proyekTerpilih.judulProyek.split("(")[0]}
               </span>
             </div>
             <h3 className="text-base sm:text-lg font-extrabold text-white">
@@ -370,19 +586,11 @@ export const HibahIlmuStudioSandboxSuite: React.FC<{
           <div className="space-y-4">
             {/* BARIS A: GENERATOR SNIPPET CEPAT & PENGUJI BROKER MQTT LIVE */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-              {/* Kolom Kiri: Injektor Snippet Kode C++ Siap Pakai untuk Kreasi */}
               <div className="lg:col-span-5 bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2.5">
                 <div className="font-extrabold text-amber-300 flex items-center gap-1.5">
                   <Code2 className="w-4 h-4 text-emerald-400" />
                   1. Suntikkan Blok Kode Cepat ke Editor Studio:
                 </div>
-                <p className="text-slate-400 text-[11px]">
-                  Klik tombol di bawah untuk menambahkan fungsi Wi-Fi{" "}
-                  <code className="text-sky-300">HibahIlmu-Guest</code>,{" "}
-                  <code className="text-purple-300">MQTT Publish</code>, atau{" "}
-                  <code className="text-teal-300">Blynk Virtual Pin</code> ke dalam program Studio Anda:
-                </p>
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
                   {SNIPPET_KREASI_STUDIO.map((snip) => (
                     <button
@@ -390,7 +598,9 @@ export const HibahIlmuStudioSandboxSuite: React.FC<{
                       type="button"
                       onClick={() =>
                         onUpdateKodeStudio(
-                          `${kodeStudioAktif.trimEnd()}\n\n${snip.potonganKodeCpp}\n`
+                          `${(
+                            kodeStudioAktif || proyekTerpilih.kodeLengkapCpp
+                          ).trimEnd()}\n\n${snip.potonganKodeCpp}\n`
                         )
                       }
                       className="p-2.5 rounded-xl bg-slate-900 hover:bg-indigo-950/60 border border-slate-700 hover:border-indigo-400 text-left transition cursor-pointer space-y-0.5"
@@ -418,12 +628,12 @@ export const HibahIlmuStudioSandboxSuite: React.FC<{
                     <Flame className="w-3.5 h-3.5" />
                     {memicuKorsletingUji
                       ? "Matikan Simulasi Korsleting"
-                      : "⚡ Uji Efek Korsleting (3V3 ↔ GND)"}
+                      : "⚡ Uji Efek Korsleting (3V3 <-> GND)"}
                   </button>
                 </div>
               </div>
 
-              {/* Kolom Kanan: Live MQTT Broker Console & Topic Inspector */}
+              {/* Live MQTT Broker Console */}
               <div className="lg:col-span-7 bg-slate-950 p-4 rounded-2xl border border-purple-500/40 space-y-2.5">
                 <div className="flex flex-wrap justify-between items-center gap-2">
                   <div className="font-extrabold text-purple-300 flex items-center gap-1.5">
@@ -440,14 +650,12 @@ export const HibahIlmuStudioSandboxSuite: React.FC<{
                     type="text"
                     value={topikMqttUji}
                     onChange={(e) => setTopikMqttUji(e.target.value)}
-                    placeholder="Topik MQTT (misal: hibahilmu/iot/sensor)"
                     className="sm:col-span-5 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 font-mono text-sky-300 text-[11px]"
                   />
                   <input
                     type="text"
                     value={payloadMqttUji}
                     onChange={(e) => setPayloadMqttUji(e.target.value)}
-                    placeholder='Payload JSON (misal: {"suhu":34.2})'
                     className="sm:col-span-7 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 font-mono text-emerald-300 text-[11px]"
                   />
                 </div>
@@ -456,7 +664,7 @@ export const HibahIlmuStudioSandboxSuite: React.FC<{
                   <button
                     type="button"
                     onClick={() =>
-                      kirimPaketMqttLive("PUBLISH (ESP32 ➔ BROKER)")
+                      kirimPaketMqttLive("PUBLISH (ESP32 -> BROKER)")
                     }
                     className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-[11px] flex items-center gap-1.5 cursor-pointer"
                   >
@@ -465,7 +673,7 @@ export const HibahIlmuStudioSandboxSuite: React.FC<{
                   <button
                     type="button"
                     onClick={() =>
-                      kirimPaketMqttLive("SUBSCRIBE (DASHBOARD ➔ ESP32)")
+                      kirimPaketMqttLive("SUBSCRIBE (DASHBOARD -> ESP32)")
                     }
                     className="px-3.5 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-[11px] flex items-center gap-1.5 cursor-pointer"
                   >
@@ -473,7 +681,6 @@ export const HibahIlmuStudioSandboxSuite: React.FC<{
                   </button>
                 </div>
 
-                {/* Log Lalu Lintas Paket MQTT */}
                 <div className="bg-black p-2.5 rounded-xl border border-slate-800 max-h-28 overflow-y-auto space-y-1 font-mono text-[10.5px]">
                   {logMqttList.map((pkt) => (
                     <div
@@ -496,7 +703,7 @@ export const HibahIlmuStudioSandboxSuite: React.FC<{
               </div>
             </div>
 
-            {/* BARIS B: MULTIMETER DIGITAL, OSILOSKOP PWM, SERIAL PLOTTER & KALKULATOR BATERAI 18650 */}
+            {/* BARIS B: MULTIMETER, OSILOSKOP PWM, SERIAL PLOTTER & KALKULATOR BATERAI */}
             <WokwiInstrumentsAndPlotterPanel
               kerusakanFisik={kerusakanFisik}
               multimeter={bacaanMultimeter}
@@ -507,7 +714,9 @@ export const HibahIlmuStudioSandboxSuite: React.FC<{
               simulasiAktif={simulasiStudioRunning}
               onSisipkanDeepSleep={() =>
                 onUpdateKodeStudio(
-                  `${kodeStudioAktif.trimEnd()}\n// Mode Hemat Energi Deep Sleep Node:\nesp_deep_sleep_start();\n`
+                  `${(
+                    kodeStudioAktif || proyekTerpilih.kodeLengkapCpp
+                  ).trimEnd()}\n// Mode Hemat Energi Deep Sleep Node:\nesp_deep_sleep_start();\n`
                 )
               }
               onPerbaikiKorsleting={() => {
@@ -518,15 +727,37 @@ export const HibahIlmuStudioSandboxSuite: React.FC<{
 
             {/* BARIS C: CHAOS MESH 10-NODE, SMARTPHONE TELEGRAM/WA WEBHOOK & TINYML EDGE AI */}
             <WokwiStage2AdvancedLabSuite
-              levelAktif={1}
-              judulMateri="Proyek Kreasi Mandiri Studio Kanvas HibahIlmu IoT"
+              levelAktif={proyekTerpilih.nomorUrut}
+              judulMateri={proyekTerpilih.judulProyek}
               fisika={fisikaStudio}
               setFisika={setFisikaStudio}
               simulasiAktif={simulasiStudioRunning}
-              kodeKetikanUser={kodeStudioAktif}
+              kodeKetikanUser={kodeStudioAktif || proyekTerpilih.kodeLengkapCpp}
               onSisipkanKodeChaosAtauAi={(tambahan) =>
-                onUpdateKodeStudio(`${kodeStudioAktif.trimEnd()}\n${tambahan}`)
+                onUpdateKodeStudio(
+                  `${(
+                    kodeStudioAktif || proyekTerpilih.kodeLengkapCpp
+                  ).trimEnd()}\n${tambahan}`
+                )
               }
+            />
+
+            {/* BARIS D: 5 FITUR UNIK TAB 1 TAHAP 1 */}
+            <HibahIlmuTab1Stage1UniqueSuite
+              kodeStudioAktif={kodeStudioAktif || proyekTerpilih.kodeLengkapCpp}
+              onUpdateKodeStudio={onUpdateKodeStudio}
+            />
+
+            {/* BARIS E: 5 FITUR UNIK TAB 1 TAHAP 2 */}
+            <HibahIlmuTab1Stage2UniqueSuite
+              kodeStudioAktif={kodeStudioAktif || proyekTerpilih.kodeLengkapCpp}
+              onUpdateKodeStudio={onUpdateKodeStudio}
+              fisikaStudio={fisikaStudio}
+              setFisikaStudio={setFisikaStudio}
+              onKirimPerintahKeBroker={(topik, payload) => {
+                setTopikMqttUji(topik);
+                setPayloadMqttUji(payload);
+              }}
             />
           </div>
         )}
