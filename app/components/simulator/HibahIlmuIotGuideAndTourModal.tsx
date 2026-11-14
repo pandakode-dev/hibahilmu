@@ -11,347 +11,13 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
+import {
+  KATALOG_FITUR_HIBAHILMU_IOT,
+  TUR_SPOTLIGHT_TAB_1_STUDIO,
+  TUR_SPOTLIGHT_TAB_2_AKADEMI,
+} from "./hibahIlmuGuideCatalogData";
 
-export interface ItemKatalogFiturSimulator {
-  id: string;
-  kategori:
-    | "Dasar & Perakitan"
-    | "Bahasa & Latihan"
-    | "Instrumen Lab Virtual"
-    | "AIoT, Mesh & Laporan";
-  badge: string;
-  judulFitur: string;
-  deskripsiLengkap: string;
-  caraPakaiSingkat: string[];
-  kataKunciTargetDom: string[]; // Digunakan untuk melompat & menyorot langsung elemen tersebut!
-  warnaaksen: string;
-}
-
-export interface LangkahSpotlightCoachmark {
-  langkah: number;
-  badgeArea: string;
-  judul: string;
-  isi: string;
-  tipsPraktis: string;
-  kataKunciElemenDom: string[]; // Pencarian cerdas elemen di layar untuk diberi efek berkedip!
-}
-
-// ============================================================================
-// 1. REGISTRI KATALOG FITUR LENGKAP (DENGAN TOMBOL "SOROT LOKASINYA DI LAYAR")
-// ============================================================================
-export const KATALOG_FITUR_HIBAHILMU_IOT: ItemKatalogFiturSimulator[] = [
-  {
-    id: "studio_sandbox_mqtt_blynk",
-    kategori: "AIoT, Mesh & Laporan",
-    badge: "FITUR STUDIO TAB 1",
-    judulFitur:
-      "Workbench Kreasi Bebas (Tab 1): Live MQTT Broker, Blynk Cloud & Denah Ruangan",
-    deskripsiLengkap:
-      "Gunakan Tab 1 (Studio Kanvas HibahIlmu IoT Simulator) untuk berkreasi bebas merakit proyek sendiri lengkap dengan Denah Ruangan Fisik, Konsol Broker MQTT (Publish/Subscribe JSON), Widget Blynk Virtual Pin, Multimeter, dan Ekspor Dokumentasi Proyek (.docx).",
-    caraPakaiSingkat: [
-      "Buka Tab '1. Studio Kanvas HibahIlmu IoT Simulator' di bagian kiri atas.",
-      "Gunakan tombol '+ Suntikkan Blok Kode Cepat' untuk memasukkan template Wi-Fi HibahIlmu-Guest, MQTT Publish, atau Blynk Virtual Pin.",
-      "Uji pengiriman payload JSON secara langsung pada panel '2. Live MQTT Broker Inspector' dan unduh dokumentasi proyek (.docx).",
-    ],
-    kataKunciTargetDom: [
-      "WORKBENCH KREASI BEBAS",
-      "Live MQTT Broker Inspector",
-      "7 TUTORIAL & CONTOH RANGKAIAN",
-    ],
-    warnaaksen: "border-emerald-400 bg-emerald-950/30",
-  },
-  {
-    id: "multi_slot_ortho",
-    kategori: "Dasar & Perakitan",
-    badge: "FITUR INTI #1",
-    judulFitur: "Kanvas Multi-Slot (1–10 Komponen) & Kabel Siku-Siku 90°",
-    deskripsiLengkap:
-      "Merakit perangkat keras seperti di meja praktikum nyata. Mendukung 1 hingga 10 komponen sekaligus dengan 2 kaki pin fisik per komponen (Hukum Kirchhoff Loop Tertutup) dan jalur kabel siku-siku 90° (Manhattan PCB Routing) bebas tumpang-tindih.",
-    caraPakaiSingkat: [
-      "Tarik (Drag) komponen yang berkedip dari Gudang 48 Perangkat ke kotak Slot #1 s.d. Slot #N di kanvas.",
-      "Klik titik kaki pin ke-1 lalu klik titik kaki pin ke-2 untuk memasang kabel siku-siku.",
-      "Jika salah pasang 1 kabel, cukup klik tombol bulat '✕' di tengah garis kabel tersebut tanpa menghapus kabel lain.",
-    ],
-    kataKunciTargetDom: [
-      "Slot #1: ESP32 DevKit V1",
-      "Kabel Siku-Siku Terpasang",
-      "GUDANG KOMPONEN (48 ITEM)",
-    ],
-    warnaaksen: "border-emerald-500/60 bg-emerald-950/20",
-  },
-  {
-    id: "interaksi_fisik_nyata",
-    kategori: "Dasar & Perakitan",
-    badge: "FITUR INTI #2",
-    judulFitur: "Simulasi Interaksi Fisik Sensor & Sakelar (Event-Driven)",
-    deskripsiLengkap:
-      "Aktuator (LED, Buzzer, Relay, Servo, Solenoid, Kipas, Pompa) tidak menyala sendiri secara palsu, melainkan menunggu interaksi fisik dari Anda setelah program dijalankan.",
-    caraPakaiSingkat: [
-      "Klik tombol hijau '1. Periksa Semua Kaki & Jalankan' terlebih dahulu.",
-      "Tekan tombol '👆 KLIK TEKAN' pada Push Button, putar slider Potensiometer melewati ambang ADC, atau gelapkan slider Cahaya LDR agar aktuator bereaksi.",
-    ],
-    kataKunciTargetDom: [
-      "Pengatur Parameter Fisika & Kekuatan Sinyal Live",
-      "PANEL UJI INTERAKSI FISIK PERANGKAT KERAS",
-    ],
-    warnaaksen: "border-amber-500/60 bg-amber-950/20",
-  },
-  {
-    id: "dual_language_cpp_py",
-    kategori: "Bahasa & Latihan",
-    badge: "FITUR INTI #3",
-    judulFitur:
-      "Dukungan Ganda: Bahasa C++ Arduino (sketch.ino) & MicroPython (main.py)",
-    deskripsiLengkap:
-      "Pelajari pemrograman sistem tertanam dalam dua bahasa industri sekaligus. Dilengkapi Asisten Checklist Baris Kode Real-Time dan tombol '+ Sisipkan Baris Ini' bagi pemula yang kesulitan mengetik sintaks.",
-    caraPakaiSingkat: [
-      "Gunakan tombol switcher '⚡ C++ Arduino' atau '🐍 MicroPython' di bagian kanan atas.",
-      "Perhatikan kotak checklist di sebelah kiri editor yang berubah menjadi hijau (✓ SUDAH TEPAT) setiap kali baris kode diketik dengan benar.",
-    ],
-    kataKunciTargetDom: [
-      "C++ Arduino (sketch.ino)",
-      "Panduan Ketik",
-      "Editor C++",
-    ],
-    warnaaksen: "border-sky-500/60 bg-sky-950/20",
-  },
-  {
-    id: "mode_latihan_mandiri",
-    kategori: "Bahasa & Latihan",
-    badge: "FITUR INTI #4",
-    judulFitur:
-      "Mode Ujian Latihan Mandiri (Rotasi Pin GPIO Baru & Studi Kasus)",
-    deskripsiLengkap:
-      "Menguji pemahaman nyata tanpa bantuan garis berkedip. Sistem otomatis memindahkan kewajiban sambungan ke nomor Pin GPIO baru disertai narasi masalah lapangan dan 3 Clue bertahap.",
-    caraPakaiSingkat: [
-      "Klik tombol merah muda '🎯 Latihan Mandiri (Pin Baru!)' di header atas.",
-      "Baca daftar perubahan nomor pin pada kotak studi kasus di kiri bawah, lalu rakit dan modifikasi kode sesuai pin baru tersebut.",
-    ],
-    kataKunciTargetDom: [
-      "Latihan Mandiri (Pin Baru!)",
-      "Mode Terpandu",
-    ],
-    warnaaksen: "border-rose-500/60 bg-rose-950/20",
-  },
-  {
-    id: "korsleting_multimeter_osiloskop",
-    kategori: "Instrumen Lab Virtual",
-    badge: "FITUR LAB #5",
-    judulFitur:
-      "Detektor Korsleting/Komponen Gosong, Multimeter Digital & Osiloskop PWM",
-    deskripsiLengkap:
-      "Mendeteksi hubung-singkat (3V3 langsung ke GND) dan arus lebih pada LED tanpa resistor. Dilengkapi Multimeter Digital (Volt, mA, Ohm) serta layar Osiloskop untuk melihat gelombang kotak PWM Duty Cycle secara live.",
-    caraPakaiSingkat: [
-      "Buka panel '🔬 Instrumen Laboratorium Virtual' tepat di bawah kanvas.",
-      "Pilih kaki pin yang ingin diukur pada dropdown 'Probe Merah (+)' untuk membaca tegangan dan melihat bentuk gelombang PWM.",
-    ],
-    kataKunciTargetDom: [
-      "Instrumen Laboratorium Virtual",
-      "1. Multimeter & Osiloskop PWM",
-    ],
-    warnaaksen: "border-indigo-500/60 bg-indigo-950/20",
-  },
-  {
-    id: "serial_plotter_power_profiler",
-    kategori: "Instrumen Lab Virtual",
-    badge: "FITUR LAB #6",
-    judulFitur:
-      "Live Serial Plotter Multi-Variabel & Kalkulator Baterai 18650 (Deep Sleep)",
-    deskripsiLengkap:
-      "Menampilkan grafik pergerakan nilai Suhu, Gas PPM, Cahaya Lux, dan PWM secara real-time, serta menghitung konsumsi arus (mA) dan estimasi masa pakai baterai Li-Ion 18650 (2500 mAh) saat aktif vs mode Deep Sleep.",
-    caraPakaiSingkat: [
-      "Klik tab '2. Live Serial Plotter' lalu geser slider sensor untuk melihat kurva grafik bergerak.",
-      "Klik tab '3. Kalkulator Baterai 18650' lalu klik '+ Sisipkan Kode Deep Sleep' untuk menghemat 99% daya baterai.",
-    ],
-    kataKunciTargetDom: [
-      "2. Live Serial Plotter (Grafik)",
-      "3. Kalkulator Baterai 18650",
-    ],
-    warnaaksen: "border-teal-500/60 bg-teal-950/20",
-  },
-  {
-    id: "debugger_testbench_grader",
-    kategori: "Instrumen Lab Virtual",
-    badge: "FITUR LAB #7",
-    judulFitur:
-      "Step-by-Step Code Debugger (Lompatan ISR) & Automated 3-Scenario Testbench",
-    deskripsiLengkap:
-      "Menyorot baris kode yang sedang dieksekusi CPU secara perlahan (termasuk melompat ke fungsi IRAM_ATTR saat Interrupt ditekan) dan menguji kelayakan rangkaian secara otomatis dalam 3 skenario beruntun.",
-    caraPakaiSingkat: [
-      "Klik '🐢 Jalankan Step-by-Step Debugger' untuk melihat sorotan kuning baris demi baris di editor.",
-      "Klik '🧪 Uji Otomatis 3 Skenario (Grader)' untuk memvalidasi kondisi Aktif, Idle, dan Keamanan Arus sekaligus.",
-    ],
-    kataKunciTargetDom: [
-      "Jalankan Step-by-Step Debugger",
-      "Uji Otomatis 3 Skenario",
-    ],
-    warnaaksen: "border-amber-400/60 bg-amber-950/20",
-  },
-  {
-    id: "chaos_webhook_tinyml_docx",
-    kategori: "AIoT, Mesh & Laporan",
-    badge: "FITUR AIoT #8–#10",
-    judulFitur:
-      "Chaos 10-Node Self-Healing Mesh, Smartphone Webhook, TinyML AI & Ekspor .DOCX",
-    deskripsiLengkap:
-      "Simulasikan gangguan cuaca badai & node mati pada jaringan 10-Node ESP-NOW, terima notifikasi darurat di layar HP virtual (Telegram/WhatsApp), jalankan inferensi TinyML Edge AI di ESP32, dan unduh Laporan Resmi Praktikum berformat Microsoft Word (.docx).",
-    caraPakaiSingkat: [
-      "Buka panel '🚀 Fitur Lanjutan Tahap 2' di bagian bawah untuk mematikan node mesh, mengirim chat ke HP virtual, atau menguji skor TinyML AI.",
-      "Klik tombol biru '📄 Unduh Laporan Praktikum (.docx)' untuk mencetak laporan lengkap siap kumpul.",
-    ],
-    kataKunciTargetDom: [
-      "Fitur Lanjutan Tahap 2: Chaos Mesh Injection",
-      "1. Chaos & Self-Healing Mesh",
-    ],
-    warnaaksen: "border-purple-500/60 bg-purple-950/20",
-  },
-];
-
-// ============================================================================
-// 2. DAFTAR LANGKAH TUR SPOTLIGHT KONTEKSTUAL (TAB 1 STUDIO & TAB 2 AKADEMI)
-// ============================================================================
-const TUR_SPOTLIGHT_TAB_1_STUDIO: LangkahSpotlightCoachmark[] = [
-  {
-    langkah: 1,
-    badgeArea: "AREA 1 • MONITOR SINKRONISASI KODE & CLOUD",
-    judul: "1. Status Sinkronisasi Kode C++ ➔ Rangkaian ➔ MQTT & Blynk",
-    isi: "Kotak yang sedang berkedip ini memantau apakah Pin GPIO, Wi-Fi HibahIlmu-Guest, Broker MQTT, dan Virtual Pin Blynk sudah dideklarasikan dengan benar di dalam kodingan Anda.",
-    tipsPraktis:
-      "Pastikan keempat indikator di kotak ini menyala hijau/biru agar rangkaian dan dashboard bekerja sinkron!",
-    kataKunciElemenDom: [
-      "MESIN SINKRONISASI KODINGAN C++",
-      "1. Pin GPIO di Kodingan:",
-    ],
-  },
-  {
-    langkah: 2,
-    badgeArea: "AREA 2 • INJEKTOR KODE & LIVE MQTT BROKER",
-    judul: "2. Suntikkan Snippet Cepat & Uji Lalu Lintas Paket MQTT",
-    isi: "Di area ini Anda bisa langsung menyuntikkan blok kode Wi-Fi, MQTT Publish, atau Blynk Virtual Pin dengan 1 klik, sekaligus menguji pengiriman payload JSON secara real-time di Live MQTT Broker Inspector!",
-    tipsPraktis:
-      "Klik tombol 'Publish dari ESP32 ke Dashboard' atau 'Uji Efek Korsleting' untuk melihat simulasi langsung.",
-    kataKunciElemenDom: [
-      "1. Suntikkan Blok Kode Cepat ke Editor Studio:",
-      "2. Live MQTT Broker Inspector",
-    ],
-  },
-  {
-    langkah: 3,
-    badgeArea: "AREA 3 • ALAT UKUR LAB VIRTUAL STUDIO",
-    judul: "3. Multimeter Digital, Osiloskop PWM, Serial Plotter & Baterai 18650",
-    isi: "Saat merakit proyek kreasi bebas, gunakan panel ini untuk mengukur voltase & arus (mA), memantau gelombang PWM di Osiloskop, melihat grafik multi-sensor di Serial Plotter, dan menghitung masa pakai baterai 18650.",
-    tipsPraktis:
-      "Pilih pin yang ingin diukur pada dropdown 'Probe Merah (+)' atau klik tab '2. Live Serial Plotter'.",
-    kataKunciElemenDom: [
-      "Instrumen Laboratorium Virtual",
-      "1. Multimeter & Osiloskop PWM",
-    ],
-  },
-  {
-    langkah: 4,
-    badgeArea: "AREA 4 • CHAOS MESH, WEBHOOK HP & TINYML AI",
-    judul: "4. Uji Ketahanan 10-Node Mesh, Notifikasi HP & TinyML Edge AI",
-    isi: "Di kotak ini Anda dapat mematikan node secara paksa untuk menguji Self-Healing Mesh, mengirim alert darurat ke layar Smartphone Telegram/WhatsApp virtual, dan menjalankan klasifikasi TinyML Edge AI.",
-    tipsPraktis:
-      "Klik tombol '📄 Unduh Dokumentasi Proyek Studio (.docx)' di atas untuk mencetak laporan Word otomatis!",
-    kataKunciElemenDom: [
-      "Fitur Lanjutan Tahap 2: Chaos Mesh Injection",
-      "1. Chaos & Self-Healing Mesh",
-    ],
-  },
-  {
-    langkah: 5,
-    badgeArea: "AREA 5 • TEMPLATE PROYEK & DENAH RUANGAN",
-    judul: "5. Muat 7 Proyek Jadi & Denah Ruangan Fisik (Packet Tracer Mode)",
-    isi: "Anda bisa memuat 7 contoh proyek industri siap pakai (Smart Door Lock, Greenhouse, Pemadam Api, hingga Triple-MCU) dan mengatur penempatan sensor di dalam Denah Ruangan Gedung!",
-    tipsPraktis:
-      "Klik salah satu kartu 'Muat Template Ini' untuk langsung memuat rangkaian beserta kode lengkapnya.",
-    kataKunciElemenDom: [
-      "7 TUTORIAL & CONTOH RANGKAIAN PROJECT JADI",
-      "PHYSICAL PACKET TRACER MODE",
-    ],
-  },
-  {
-    langkah: 6,
-    badgeArea: "AREA 6 • GUDANG 48 KOMPONEN STUDIO",
-    judul: "6. Gudang 48 Komponen (Tarik Bebas ke Meja Kanvas Studio)",
-    isi: "Kotak Gudang Komponen yang sedang berkedip ini berisi 48 perangkat (ESP32, Arduino Uno, STM32, Sensor NPK, GPS, Relay, Pompa, Servo). Tarik (Drag) komponen apa saja ke meja kanvas di bawahnya!",
-    tipsPraktis:
-      "Gunakan tab kategori atau kotak pencarian untuk menemukan sensor yang Anda butuhkan dengan cepat.",
-    kataKunciElemenDom: [
-      "GUDANG KOMPONEN (48 ITEM)",
-      "Cari NPK, Pompa, RFID",
-    ],
-  },
-];
-
-const TUR_SPOTLIGHT_TAB_2_AKADEMI: LangkahSpotlightCoachmark[] = [
-  {
-    langkah: 1,
-    badgeArea: "AREA 1 • BAHASA PEMROGRAMAN & MODE LATIHAN",
-    judul: "1. Pilih Bahasa (C++ / MicroPython) & Mode Terpandu vs Latihan Mandiri",
-    isi: "Pada header yang sedang disorot ini, Anda bebas berganti antara bahasa ⚡ C++ Arduino (sketch.ino) dan 🐍 MicroPython (main.py). Gunakan '👁️ Mode Terpandu' untuk belajar dengan bantuan berkedip, atau klik '🎯 Latihan Mandiri (Pin Baru!)' untuk ujian studi kasus dengan alokasi Pin GPIO baru!",
-    tipsPraktis:
-      "Di bawahnya Anda juga bisa memilih Bab 1 s.d. Bab 5 serta Level 1 s.d. Level 15/20.",
-    kataKunciElemenDom: [
-      "Akademi IoT HibahIlmu (C++ & MicroPython)",
-      "Latihan Mandiri (Pin Baru!)",
-    ],
-  },
-  {
-    langkah: 2,
-    badgeArea: "AREA 2 • GUDANG 48 KOMPONEN BERKEDIP",
-    judul: "2. Tarik Komponen yang Berkedip dari Gudang ke Slot Kanvas",
-    isi: "Perhatikan kotak Gudang Komponen yang sedang disorot ini! Pada Mode Terpandu, kartu komponen yang wajib Anda ambil akan menyala berkedip kuning. Tarik (Drag) atau klik kartu tersebut lalu masukkan ke Slot #1 s.d. Slot #N di kanvas bawah.",
-    tipsPraktis:
-      "Setiap slot hanya menerima komponen yang sesuai dengan instruksi modul agar perakitan akurat.",
-    kataKunciElemenDom: [
-      "Gudang Komponen (Tarik Komponen yang Berkedip",
-      "Gudang Komponen — Mode Latihan Mandiri",
-    ],
-  },
-  {
-    langkah: 3,
-    badgeArea: "AREA 3 • KANVAS MULTI-SLOT, KABEL SIKU & INTERAKSI FISIK",
-    judul: "3. Pasang Kabel Siku-Siku 90° & Tekan Tombol / Sensor Secara Fisik",
-    isi: "Di meja kanvas ini, klik titik kaki pin ke-1 lalu klik titik kaki ke-2 untuk menyambung kabel siku-siku. Saat simulasi dijalankan (RUNNING), aktuator TIDAK langsung menyala sendiri—Anda wajib menekan tombol Push Button atau menggeser slider Potensio/LDR/Suhu di kanvas agar aktuator bekerja!",
-    tipsPraktis:
-      "Jika salah menyambung 1 kabel, cukup klik bulatan '✕' di tengah kabel tersebut untuk menghapus 1 kabel itu saja.",
-    kataKunciElemenDom: [
-      "Slot #1: ESP32 DevKit V1",
-      "Kabel Siku-Siku Terpasang",
-    ],
-  },
-  {
-    langkah: 4,
-    badgeArea: "AREA 4 • MULTIMETER, OSILOSKOP PWM & SERIAL PLOTTER",
-    judul: "4. Ukur Tegangan/Arus, Pantau Osiloskop PWM & Umur Baterai 18650",
-    isi: "Panel instrumen laboratorium ini mendeteksi korsleting (3V3 ke GND) atau LED putus tanpa resistor. Anda dapat menempelkan Probe Multimeter ke pin mana pun, melihat grafik gelombang PWM di Osiloskop, grafik Serial Plotter, hingga menguji penghematan baterai Deep Sleep.",
-    tipsPraktis:
-      "Di bawah panel ini juga tersedia tombol '🐢 Step-by-Step Debugger', '🧪 Uji 3 Skenario', dan '📄 Unduh Laporan (.docx)'.",
-    kataKunciElemenDom: [
-      "Instrumen Laboratorium Virtual",
-      "1. Multimeter & Osiloskop PWM",
-    ],
-  },
-  {
-    langkah: 5,
-    badgeArea: "AREA 5 • ASISTEN KODE BARIS DEMI BARIS & EDITOR",
-    judul: "5. Checklist Kode Real-Time, '+ Sisipkan Baris' & Eksekusi Program",
-    isi: "Panel kiri menampilkan daftar baris kode yang 100% sinkron dengan pemeriksa (otomatis berubah hijau saat Anda mengetiknya, atau klik '+ Sisipkan Baris Ini' jika kesulitan). Setelah lengkap, klik tombol hijau '1. Periksa Semua Kaki & Jalankan' di bawah editor kanan!",
-    tipsPraktis:
-      "Jika bingung, Anda juga bisa mengklik tombol '👁️ Intip Kode Utuh' atau '✨ Bantuan Rakit & Kode'.",
-    kataKunciElemenDom: [
-      "Editor C++ — Level",
-      "Editor MicroPython — Level",
-      "1. Periksa Semua Kaki & Jalankan",
-    ],
-  },
-];
-
-// ============================================================================
-// FUNGSI PENCARI ELEMEN DOM CERDAS (MENCARI CONTAINER KOTAK TERDEKAT DI LAYAR)
-// ============================================================================
+// Pencari elemen DOM di layar agar Spotlight bisa menyorot bagian mana saja dari Gambar 1–5
 function cariElemenTargetDiLayar(kataKunciList: string[]): HTMLElement | null {
   if (typeof document === "undefined") return null;
 
@@ -362,18 +28,16 @@ function cariElemenTargetDiLayar(kataKunciList: string[]): HTMLElement | null {
   for (const kw of kataKunciList) {
     const kwLower = kw.toLowerCase();
     for (const el of kandidatTags) {
-      // Abaikan elemen di dalam modal/overlay tur itu sendiri
       if (el.closest("[data-tour-overlay='true']")) continue;
 
       const teksLangsung = (el.textContent || "").trim().toLowerCase();
-      if (teksLangsung.includes(kwLower) && teksLangsung.length < 600) {
-        // Cari container kartu/kotak pembungkus terdekat yang memiliki border/background rapi
+      if (teksLangsung.includes(kwLower) && teksLangsung.length < 750) {
         const cardContainer =
           (el.closest(
-            ".rounded-3xl, .rounded-2xl"
+            ".rounded-3xl, .rounded-2xl, .rounded-xl"
           ) as HTMLElement | null) || el;
         const rect = cardContainer.getBoundingClientRect();
-        if (rect.width > 120 && rect.height > 40 && rect.height < 950) {
+        if (rect.width > 110 && rect.height > 32 && rect.height < 1100) {
           return cardContainer;
         }
       }
@@ -386,12 +50,11 @@ export const HibahIlmuIotGuideBannerAndModal: React.FC = () => {
   const [bukaModalPanduan, setBukaModalPanduan] = useState<boolean>(false);
   const [bukaTurSpotlight, setBukaTurSpotlight] = useState<boolean>(false);
   const [modeTabTur, setModeTabTur] = useState<"tab1_studio" | "tab2_akademi">(
-    "tab2_akademi"
+    "tab1_studio"
   );
   const [indeksTur, setIndeksTur] = useState<number>(0);
   const [filterKategori, setFilterKategori] = useState<string>("Semua");
 
-  // Koordinat kotak elemen yang sedang disorot di layar (Spotlight Box)
   const [kotakSorot, setKotakSorot] = useState<{
     top: number;
     left: number;
@@ -407,7 +70,6 @@ export const HibahIlmuIotGuideBannerAndModal: React.FC = () => {
   const langkahSaatIni =
     daftarLangkahAktif[indeksTur] || daftarLangkahAktif[0];
 
-  // Deteksi apakah user sedang di Tab 1 (Studio) atau Tab 2 (Akademi) lalu mulai tur
   const mulaiTurKontekstual = (
     paksaMode?: "tab1_studio" | "tab2_akademi"
   ) => {
@@ -426,7 +88,6 @@ export const HibahIlmuIotGuideBannerAndModal: React.FC = () => {
     setBukaTurSpotlight(true);
   };
 
-  // Fungsi untuk menggulir layar ke elemen target dan menghitung kotak sorotan berkedip
   const sinkronkanSorotanElemen = useCallback(
     (lakukanScroll: boolean) => {
       if (!bukaTurSpotlight || !langkahSaatIni) return;
@@ -475,7 +136,6 @@ export const HibahIlmuIotGuideBannerAndModal: React.FC = () => {
     };
   }, [bukaTurSpotlight, indeksTur, modeTabTur, sinkronkanSorotanElemen]);
 
-  // Fungsi untuk langsung menyorot lokasi fitur tertentu dari Katalog Fitur
   const sorotFiturDariKatalog = (kataKunciDom: string[]) => {
     setBukaModalPanduan(false);
     setTimeout(() => {
@@ -499,44 +159,41 @@ export const HibahIlmuIotGuideBannerAndModal: React.FC = () => {
     (f) => filterKategori === "Semua" || f.kategori === filterKategori
   );
 
-  // Hitung posisi Popover Coachmark agar muncul tepat di dekat kotak yang disorot (di bawah atau di atasnya)
-  let popoverTop = 120;
+  let popoverTop = 110;
   let popoverLeft = 24;
   let panahDiAtas = true;
 
   if (typeof window !== "undefined" && kotakSorot) {
-    const tinggiPopoverEstimasi = 245;
+    const tinggiPopoverEstimasi = 255;
     const ruangDiBawah =
       window.innerHeight - (kotakSorot.top + kotakSorot.height);
 
-    if (ruangDiBawah >= tinggiPopoverEstimasi + 20) {
-      // Taruh tepat di bawah kotak yang berkedip
-      popoverTop = kotakSorot.top + kotakSorot.height + 16;
+    if (ruangDiBawah >= tinggiPopoverEstimasi + 16) {
+      popoverTop = kotakSorot.top + kotakSorot.height + 14;
       panahDiAtas = true;
-    } else if (kotakSorot.top >= tinggiPopoverEstimasi + 20) {
-      // Taruh tepat di atas kotak yang berkedip
-      popoverTop = Math.max(16, kotakSorot.top - tinggiPopoverEstimasi - 14);
+    } else if (kotakSorot.top >= tinggiPopoverEstimasi + 16) {
+      popoverTop = Math.max(14, kotakSorot.top - tinggiPopoverEstimasi - 14);
       panahDiAtas = false;
     } else {
-      // Jika kotak sangat besar (misal seluruh kanvas), taruh di pojok kanan atas/bawah area tersebut
-      popoverTop = Math.max(20, Math.min(window.innerHeight - 270, kotakSorot.top + 24));
+      popoverTop = Math.max(
+        18,
+        Math.min(window.innerHeight - 275, kotakSorot.top + 20)
+      );
       panahDiAtas = true;
     }
 
     popoverLeft = Math.max(
       16,
       Math.min(
-        window.innerWidth - 440,
-        kotakSorot.left + Math.min(60, kotakSorot.width / 6)
+        window.innerWidth - 450,
+        kotakSorot.left + Math.min(50, kotakSorot.width / 6)
       )
     );
   }
 
   return (
     <>
-      {/* =================================================================== */}
-      {/* BANNER HIGHLIGHT BERKEDIP KHUSUS PEMULA DI ATAS SIMULATOR           */}
-      {/* =================================================================== */}
+      {/* BANNER HIGHLIGHT BERKEDIP DI ATAS SIMULATOR */}
       <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-indigo-950 border-2 border-amber-400 rounded-3xl p-4 sm:p-5 shadow-2xl flex flex-wrap justify-between items-center gap-4">
         <div className="flex items-start sm:items-center gap-3.5">
           <div className="p-3 rounded-2xl bg-amber-400 text-slate-950 font-black animate-bounce shrink-0 shadow-lg">
@@ -545,50 +202,54 @@ export const HibahIlmuIotGuideBannerAndModal: React.FC = () => {
           <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-2">
               <span className="px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 font-black text-[10px] uppercase animate-pulse">
-                ✨ PANDUAN INTERAKTIF HIBAHILMU IOT SIMULATOR (TAB 1 &amp; TAB 2)
+                ✨ PANDUAN LENGKAP SELURUH BAGIAN SIMULATOR (11 AREA STUDIO &amp; 8 AREA AKADEMI)
               </span>
               <span className="text-xs font-bold text-emerald-300">
-                Sorotan Langsung ke Komponen • Multi-Pin Realistis • C++ &amp; MicroPython
+                Kanvas • Inspector • Multi-MCU • MQTT • 16 Widget Blynk • HP Android • AIoT
               </span>
             </div>
             <h3 className="text-base sm:text-lg font-extrabold text-white">
-              Bingung Mulai dari Mana? Jalankan Tur Sorotan Area (Spotlight Coachmark)!
+              Jelajahi Setiap Tombol &amp; Panel dengan Tur Sorotan Berkedip (Spotlight Coachmark)
             </h3>
             <p className="text-xs text-slate-300">
-              Kotak panduan akan muncul tepat di samping area yang dijelaskan dan membuat komponen/fitur tersebut berkedip secara langsung!
+              Klik tombol di kanan untuk menyorot dan mengedipkan satu per satu bagian (mulai dari Warna Kabel, Inspector Ruangan, Konverter MicroPython, 16 Widget Blynk, hingga Chaos Mesh &amp; Checklist Kode)!
             </p>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <button
             type="button"
-            onClick={() => mulaiTurKontekstual()}
-            className="flex-1 sm:flex-initial px-4 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center justify-center gap-2 cursor-pointer shadow-xl ring-4 ring-amber-400/30 animate-pulse"
+            onClick={() => mulaiTurKontekstual("tab1_studio")}
+            className="flex-1 sm:flex-initial px-3.5 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-xl ring-4 ring-amber-400/30 animate-pulse"
           >
-            <Crosshair className="w-4 h-4" /> 🎯 Mulai Tur Sorotan Area (Tab Ini)
+            <Crosshair className="w-4 h-4" /> 🎯 Tur Sorot Tab 1 Studio (11 Bagian)
+          </button>
+
+          <button
+            type="button"
+            onClick={() => mulaiTurKontekstual("tab2_akademi")}
+            className="flex-1 sm:flex-initial px-3.5 py-3 rounded-2xl bg-sky-400 hover:bg-sky-300 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-xl"
+          >
+            <Crosshair className="w-4 h-4" /> 🎓 Tur Sorot Tab 2 Akademi (8 Bagian)
           </button>
 
           <button
             type="button"
             onClick={() => setBukaModalPanduan(true)}
-            className="flex-1 sm:flex-initial px-4 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center justify-center gap-2 cursor-pointer shadow-xl"
+            className="flex-1 sm:flex-initial px-3.5 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-xl"
           >
-            <BookOpen className="w-4 h-4" /> 📖 Katalog Fitur &amp; Cari Lokasi
+            <BookOpen className="w-4 h-4" /> 📖 Katalog Penjelasan Semua Bagian
           </button>
         </div>
       </div>
 
-      {/* =================================================================== */}
-      {/* OVERLAY 1: SPOTLIGHT COACHMARK KEKINIAN (MENGOTAKKAN AREA & POPUP   */}
-      {/*            MUNCUL TEPAT DI SEKITAR DAERAH YANG SEDANG BERKEDIP!)    */}
-      {/* =================================================================== */}
+      {/* OVERLAY SPOTLIGHT COACHMARK KEKINIAN DI SEKITAR AREA TARGET */}
       {bukaTurSpotlight && (
         <div
           data-tour-overlay="true"
           className="fixed inset-0 z-50 pointer-events-none"
         >
-          {/* Kotak Sorotan Berlubang (Cutout Spotlight) + Bingkai Berkedip pada Area Target */}
           {kotakSorot ? (
             <div
               style={{
@@ -601,25 +262,22 @@ export const HibahIlmuIotGuideBannerAndModal: React.FC = () => {
               }}
               className="rounded-3xl border-4 border-amber-400 ring-8 ring-emerald-400/40 animate-pulse transition-all duration-300 pointer-events-none"
             >
-              {/* Badge Penunjuk di Sudut Kiri Atas Kotak yang Sedang Disorot */}
               <div className="absolute -top-4 left-4 px-3 py-1 rounded-full bg-amber-400 text-slate-950 font-black text-[10px] shadow-xl flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" /> 👇 AREA INI YANG SEDANG DIJELASKAN ({langkahSaatIni.badgeArea})
+                <Sparkles className="w-3.5 h-3.5" /> 👇 AREA YANG SEDANG DIJELASKAN ({langkahSaatIni.badgeArea})
               </div>
             </div>
           ) : (
             <div className="fixed inset-0 bg-slate-950/75" />
           )}
 
-          {/* Kartu Popover Kekinian di Sekitar Daerah yang Disorot */}
           <div
             style={{
               position: "fixed",
               top: popoverTop,
               left: popoverLeft,
             }}
-            className="w-[92vw] max-w-[425px] bg-slate-900/95 backdrop-blur-md border-2 border-emerald-400 rounded-3xl p-5 shadow-[0_20px_60px_rgba(0,0,0,0.9)] space-y-3.5 pointer-events-auto transition-all duration-300"
+            className="w-[92vw] max-w-[440px] bg-slate-900/95 backdrop-blur-md border-2 border-emerald-400 rounded-3xl p-5 shadow-[0_20px_60px_rgba(0,0,0,0.9)] space-y-3.5 pointer-events-auto transition-all duration-300"
           >
-            {/* Segitiga Panah Penunjuk ke Area yang Disorot */}
             {kotakSorot && (
               <div
                 className={`w-4 h-4 bg-slate-900 border-emerald-400 transform rotate-45 absolute left-10 ${
@@ -630,7 +288,6 @@ export const HibahIlmuIotGuideBannerAndModal: React.FC = () => {
               />
             )}
 
-            {/* Baris Pilih Tab Tur (Tab 1 Studio vs Tab 2 Akademi) & Tombol Tutup */}
             <div className="flex justify-between items-center gap-2 border-b border-slate-800 pb-2.5">
               <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-[10px] font-bold">
                 <button
@@ -645,7 +302,7 @@ export const HibahIlmuIotGuideBannerAndModal: React.FC = () => {
                       : "text-slate-400 hover:text-white"
                   }`}
                 >
-                  🛠️ Tur Tab 1 (Studio)
+                  🛠️ Tab 1 Studio (11 Bagian)
                 </button>
                 <button
                   type="button"
@@ -659,7 +316,7 @@ export const HibahIlmuIotGuideBannerAndModal: React.FC = () => {
                       : "text-slate-400 hover:text-white"
                   }`}
                 >
-                  🎓 Tur Tab 2 (Akademi)
+                  🎓 Tab 2 Akademi (8 Bagian)
                 </button>
               </div>
 
@@ -672,12 +329,11 @@ export const HibahIlmuIotGuideBannerAndModal: React.FC = () => {
               </button>
             </div>
 
-            {/* Konten Penjelasan Langkah Saat Ini */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-[10px] font-black text-amber-300">
                 <span>{langkahSaatIni.badgeArea}</span>
                 <span>
-                  LANGKAH {indeksTur + 1} / {daftarLangkahAktif.length}
+                  BAGIAN {indeksTur + 1} DARI {daftarLangkahAktif.length}
                 </span>
               </div>
               <h4 className="text-sm sm:text-base font-extrabold text-white leading-snug">
@@ -691,7 +347,6 @@ export const HibahIlmuIotGuideBannerAndModal: React.FC = () => {
               </div>
             </div>
 
-            {/* Navigasi Langkah Tur */}
             <div className="flex justify-between items-center pt-1">
               <button
                 type="button"
@@ -699,18 +354,18 @@ export const HibahIlmuIotGuideBannerAndModal: React.FC = () => {
                 onClick={() => setIndeksTur((i) => Math.max(0, i - 1))}
                 className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 disabled:opacity-40 font-bold text-xs flex items-center gap-1 cursor-pointer"
               >
-                <ChevronLeft className="w-4 h-4" /> Kembali
+                <ChevronLeft className="w-4 h-4" /> Sebelumnya
               </button>
 
-              <div className="flex gap-1.5">
+              <div className="flex gap-1 overflow-x-auto max-w-[160px] py-1">
                 {daftarLangkahAktif.map((_, i) => (
                   <button
                     key={i}
                     type="button"
                     onClick={() => setIndeksTur(i)}
-                    className={`h-2 rounded-full cursor-pointer transition-all ${
+                    className={`h-2 rounded-full cursor-pointer transition-all shrink-0 ${
                       i === indeksTur
-                        ? "w-6 bg-amber-400"
+                        ? "w-5 bg-amber-400"
                         : "w-2 bg-slate-700 hover:bg-slate-500"
                     }`}
                   />
@@ -723,7 +378,7 @@ export const HibahIlmuIotGuideBannerAndModal: React.FC = () => {
                   onClick={() => setIndeksTur((i) => i + 1)}
                   className="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center gap-1 cursor-pointer shadow-lg"
                 >
-                  Lanjut Sorot <ChevronRight className="w-4 h-4" />
+                  Bagian Berikutnya <ChevronRight className="w-4 h-4" />
                 </button>
               ) : (
                 <button
@@ -739,9 +394,7 @@ export const HibahIlmuIotGuideBannerAndModal: React.FC = () => {
         </div>
       )}
 
-      {/* =================================================================== */}
-      {/* MODAL 2: KATALOG FITUR LENGKAP + TOMBOL "SOROT AREA INI DI LAYAR"   */}
-      {/* =================================================================== */}
+      {/* MODAL KATALOG PENJELASAN LENGKAP SEMUA BAGIAN */}
       {bukaModalPanduan && (
         <div
           data-tour-overlay="true"
@@ -752,14 +405,14 @@ export const HibahIlmuIotGuideBannerAndModal: React.FC = () => {
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <span className="px-3 py-1 rounded-full bg-emerald-400 text-slate-950 font-black text-xs">
-                    KATALOG INTERAKTIF HIBAHILMU IOT SIMULATOR
+                    ENSIKLOPEDIA LENGKAP HIBAHILMU IOT SIMULATOR
                   </span>
                   <span className="px-3 py-1 rounded-full bg-amber-400/20 border border-amber-400/40 text-amber-300 font-bold text-xs">
-                    Klik &quot;Sorot Area Ini di Layar&quot; untuk Melompat ke Fiturnya!
+                    Klik &quot;Sorot &amp; Kedipkan Bagian Ini&quot; untuk Melompat ke Lokasinya!
                   </span>
                 </div>
                 <h3 className="text-xl sm:text-2xl font-extrabold text-white">
-                  Katalog Lengkap Fitur Simulator (Tab 1 Studio &amp; Tab 2 Akademi)
+                  Penjelasan Detail Seluruh Bagian Studio Kanvas, Inspector, Multi-MCU, Blynk &amp; Akademi
                 </h3>
               </div>
 
@@ -775,10 +428,10 @@ export const HibahIlmuIotGuideBannerAndModal: React.FC = () => {
             <div className="flex flex-wrap gap-2 shrink-0">
               {[
                 "Semua",
-                "Dasar & Perakitan",
-                "Bahasa & Latihan",
-                "Instrumen Lab Virtual",
-                "AIoT, Mesh & Laporan",
+                "Studio Kanvas & Inspector (Tab 1)",
+                "Multi-MCU IDE & Konverter Kode",
+                "Server MQTT, Blynk & HP Android",
+                "Akademi, Instrumen Lab & AIoT (Tab 2)",
               ].map((kat) => (
                 <button
                   key={kat}
@@ -821,7 +474,7 @@ export const HibahIlmuIotGuideBannerAndModal: React.FC = () => {
                   <div className="space-y-2">
                     <div className="p-3 rounded-xl bg-slate-950/90 border border-slate-800 space-y-1 text-xs">
                       <div className="font-bold text-amber-300">
-                        👉 Cara Mencobanya:
+                        👉 Cara Menggunakan Bagian Ini:
                       </div>
                       <ol className="list-decimal list-inside space-y-1 text-slate-200 text-[11px]">
                         {item.caraPakaiSingkat.map((langkah, idx) => (
@@ -837,7 +490,7 @@ export const HibahIlmuIotGuideBannerAndModal: React.FC = () => {
                       }
                       className="w-full py-2 px-3 rounded-xl bg-amber-400/20 hover:bg-amber-400 text-amber-300 hover:text-slate-950 border border-amber-400/50 font-extrabold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition"
                     >
-                      <Crosshair className="w-3.5 h-3.5" /> 🎯 Sorot &amp; Kedipkan Area Fitur Ini di Layar
+                      <Crosshair className="w-3.5 h-3.5" /> 🎯 Sorot &amp; Kedipkan Bagian Ini di Layar
                     </button>
                   </div>
                 </div>
