@@ -1,7 +1,7 @@
-import { HibahIlmuStudioSandboxSuite } from "./HibahIlmuStudioSandboxSuite";
-import { HibahIlmuIotGuideBannerAndModal } from "./HibahIlmuIotGuideAndTourModal";
 "use client";
 
+import { HibahIlmuStudioSandboxSuite } from "./HibahIlmuStudioSandboxSuite";
+import { HibahIlmuIotGuideBannerAndModal } from "./HibahIlmuIotGuideAndTourModal";
 import React, { useState } from "react";
 import {
   Terminal,
@@ -374,8 +374,6 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
                 onUpdateKodeDariCloud={(kodeBaru) => setKodeEditor(kodeBaru)}
               />
             </div>
-          )}
-            />
           )}
 
           {subModeWokwi === "akademi_belajar" && (
