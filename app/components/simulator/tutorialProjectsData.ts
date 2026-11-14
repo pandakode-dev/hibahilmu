@@ -61,7 +61,7 @@ void setup() {
 void loop() {
   int lux = analogRead(PIN_LDR_ADC);
   digitalWrite(PIN_RELAY_IN, lux < 300 ? HIGH : LOW);
-  Serial.println("[LDR Telemetry]: Intensitas = " + String(lux) + " Lux -> Relay ON");
+  Serial.println("[LDR Telemetry]: Intensitas = " + String(lux) + " Lux -> Relay " + String(lux < 300 ? "ON (MENYALA)" : "OFF (MATI)"));
   delay(1000);
 }`,
     },
