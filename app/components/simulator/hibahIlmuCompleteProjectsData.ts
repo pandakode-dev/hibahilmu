@@ -1,11 +1,21 @@
 // app/components/simulator/hibahIlmuCompleteProjectsData.ts
 
+export type KategoriProyekStudio =
+  | "Semua"
+  | "1. Proyek IoT Cloud (MQTT & Blynk Aktif)"
+  | "2. Proyek Non-IoT (Offline / Lokal Tanpa Internet)"
+  | "3. Proyek Multi-MCU (2-3 Board Serial/PLC)";
+
 export interface SpesifikasiProyekJadiLengkap {
   idProyek: string;
   nomorUrut: number;
+  indeksTemplateKanvas: number; // 0..6 untuk memicu perubahan rangkaian visual di kanvas secara otomatis!
+  kategoriProyek: Exclude<KategoriProyekStudio, "Semua">;
+  pakaiIotCloudMqttBlynk: boolean; // Jika false -> Otomatis menonaktifkan/menyembunyikan MQTT & Blynk!
   badgeKategori: string;
   jumlahTabMcuLabel: string;
   judulProyek: string;
+  kataKunciCocokKanvas: string; // Kata kunci untuk mengklik otomatis kartu template di ElectronicAndIotCanvas
   ringkasanSistem: string;
   daftarKomponenDanPin: {
     namaKomponen: string;
@@ -21,152 +31,128 @@ export interface SpesifikasiProyekJadiLengkap {
 }
 
 export const DAFTAR_8_PROYEK_JADI_LENGKAP: SpesifikasiProyekJadiLengkap[] = [
+  // ==========================================================================
+  // KATEGORI 2: PROYEK NON-IOT (OFFLINE / TANPA INTERNET -> MQTT & BLYNK OFF!)
+  // ==========================================================================
   {
-    idProyek: "proyek_1_ldr_lampu_jalan",
+    idProyek: "proyek_1_ldr_lampu_jalan_offline",
     nomorUrut: 1,
-    badgeKategori: "PROYEK 1 • DASAR & CLOUD",
-    jumlahTabMcuLabel: "1 Tab MCU",
+    indeksTemplateKanvas: 0,
+    kategoriProyek: "2. Proyek Non-IoT (Offline / Lokal Tanpa Internet)",
+    pakaiIotCloudMqttBlynk: false,
+    badgeKategori: "NON-IOT • OTOMASI LOKAL",
+    jumlahTabMcuLabel: "1 MCU (Offline)",
     judulProyek:
-      "Lampu Jalan Pintar Otomatis (Sensor Cahaya LDR + Relay 1-Ch + LED + MQTT & Blynk)",
+      "Lampu Jalan Pintar Otomatis (Sensor Cahaya LDR + Relay 1-Ch + Lampu LED — Tanpa Internet)",
+    kataKunciCocokKanvas: "Lampu Jalan Pintar",
     ringkasanSistem:
-      "Mengukur intensitas cahaya matahari menggunakan Sensor LDR di pin ADC GPIO 34. Saat malam tiba (nilai ADC < 1000 / Lux rendah), ESP32 otomatis menyalakan Relay Lampu Jalan di GPIO 26 dan LED Indikator di GPIO 2, sekaligus mengirim status ke Broker MQTT dan Virtual Pin Blynk V0 & V1.",
+      "Mode Non-IoT (Offline Mandiri): Bekerja murni berdasarkan pembacaan Sensor Cahaya LDR di pin ADC GPIO 34 tanpa memerlukan Wi-Fi, MQTT, ataupun Blynk! Saat kondisi gelap, ESP32 langsung mengaktifkan Modul Relay 1-Ch (GPIO 32/26) untuk menyalakan Lampu Jalan.",
     daftarKomponenDanPin: [
       {
-        namaKomponen: "ESP32 DevKit V1 (Utama)",
-        pinTerhubung: "GPIO 34, GPIO 26, GPIO 2, 3V3, GND",
-        fungsi: "Otak pengendali pembaca ADC LDR, penggerak Relay, & pengirim MQTT/Blynk.",
+        namaKomponen: "ESP32 Utama (Offline Controller)",
+        pinTerhubung: "GPIO 34 (Input ADC) & GPIO 32/26 (Output Relay)",
+        fungsi: "Memproses nilai terang/gelap secara lokal tanpa internet.",
       },
       {
-        namaKomponen: "Sensor Cahaya LDR (Photoresistor)",
-        pinTerhubung: "Pin AO -> GPIO 34 | VCC -> 3V3 | GND -> GND",
-        fungsi: "Mengubah intensitas cahaya langit menjadi tegangan analog (0-4095).",
+        namaKomponen: "Sensor Cahaya LDR (Lux)",
+        pinTerhubung: "Pin SIG/AO -> GPIO 34 | VCC -> 3V3 | GND -> GND",
+        fungsi: "Mendeteksi cahaya matahari di sekitar lampu jalan.",
       },
       {
-        namaKomponen: "Modul Relay 1-Channel 5V + Lampu LED",
-        pinTerhubung: "Pin IN -> GPIO 26 | Anoda LED -> GPIO 2 | GND -> GND",
-        fungsi: "Sakelar magnetik penyala lampu jalan saat kondisi gelap.",
+        namaKomponen: "Relay 1-Channel + Lampu Jalan Hijau/Merah",
+        pinTerhubung: "Pin IN1 -> GPIO 32 | NO -> Anoda Lampu",
+        fungsi: "Menyalakan lampu jalan otomatis saat malam tiba.",
       },
     ],
     panduanLangkahMenjalankan: [
-      "Klik tombol 'Muat Proyek & Kode Lengkap Ini' pada kartu Proyek 1 (Perhatikan 4 indikator di atas langsung berubah HIJAU semua!).",
-      "Pada kanvas rangkaian di bawah, klik juga kartu 'PROYEK 1 • DASAR' jika ingin memuat tata letak visualnya di meja kanvas, lalu klik tombol hijau 'Compile & Run Semua'.",
-      "Uji Interaksi Sensor: Buka tab '6. Solar MPPT 24 Jam' atau slider Cahaya LDR, lalu geser ke kondisi Malam Gelap (< 300 Lux) untuk melihat Relay GPIO 26 dan LED menyala!",
-      "Cek MQTT & Dashboard Blynk: Gulir ke bawah menuju 'Live MQTT Broker Inspector' dan 'Kanvas Dashboard Blynk' untuk melihat nilai Lux di V1 dan status sakelar lampu di V0.",
-      "Klik tombol 'Unduh Dokumentasi Proyek Studio (.docx)' jika ingin mencetak laporan lengkap proyek ini.",
+      "Karena ini proyek Non-IoT (Offline), sistem otomatis MENONAKTIFKAN panel MQTT & Dashboard Blynk agar layar Anda bersih dan fokus pada rangkaian!",
+      "Lihat Meja Kanvas di bawah: Rangkaian 'ESP32 Utama + Sensor LDR + Relay 1-Channel + Lampu Jalan' sudah langsung termuat otomatis.",
+      "Klik tombol hijau 'Compile & Run Semua (1 MCU)' di atas meja kanvas.",
+      "Klik komponen 'Sensor LDR (Lux)' di kanvas, lalu pada Sidebar Inspector di sebelah kanan geser slider Parameter ke kiri (Gelap) untuk melihat Relay berpindah ke ON dan Lampu Jalan menyala!",
     ],
-    topikMqttDefault: "hibahilmu/iot/proyek1/lampu_jalan",
-    payloadMqttContoh:
-      '{"proyek":"Lampu_Jalan_LDR","adc_cahaya":420,"lux":150,"lampu_relay":"ON"}',
-    virtualPinBlynkList: ["V0 (Status Relay Lampu)", "V1 (Intensitas Cahaya Lux)"],
+    topikMqttDefault: "offline/mode/disabled",
+    payloadMqttContoh: '{"mode":"NON_IOT_OFFLINE","status":"LOCAL_ONLY"}',
+    virtualPinBlynkList: ["Mode Non-IoT (Tanpa Blynk Virtual Pin)"],
     kodeLengkapCpp: `// ============================================================================
-// PROYEK 1: LAMPU JALAN PINTAR (LDR + RELAY 1-CH + LED + WIFI + MQTT + BLYNK)
+// PROYEK 1 (NON-IOT OFFLINE): LAMPU JALAN PINTAR LDR + RELAY 1-CH
+// Bekerja mandiri secara lokal tanpa Wi-Fi, tanpa MQTT, dan tanpa Blynk Cloud!
 // ============================================================================
 #include <Arduino.h>
-#include <WiFi.h>
-#include <PubSubClient.h>
-#define BLYNK_TEMPLATE_ID "TMPL_HIBAHILMU_01"
-#define BLYNK_AUTH_TOKEN "Token_Proyek1_LampuJalan"
-#include <BlynkSimpleEsp32.h>
 
-#define PIN_LDR_ADC 34
-#define PIN_RELAY_LAMPU 26
-#define PIN_LED_INDIKATOR 2
-
-const char* ssid = "HibahIlmu-Guest";
-const char* password = "";
-WiFiClient espClient;
-PubSubClient client(espClient);
-
-BLYNK_WRITE(V0) {
-  int overrideManual = param.asInt();
-  digitalWrite(PIN_RELAY_LAMPU, overrideManual ? HIGH : LOW);
-}
+#define PIN_SENSOR_LDR 34
+#define PIN_RELAY_LAMPU 32
+#define PIN_LED_BUILTIN 2
 
 void setup() {
   Serial.begin(115200);
-  pinMode(PIN_LDR_ADC, INPUT);
+  pinMode(PIN_SENSOR_LDR, INPUT);
   pinMode(PIN_RELAY_LAMPU, OUTPUT);
-  pinMode(PIN_LED_INDIKATOR, OUTPUT);
-
-  WiFi.begin("HibahIlmu-Guest", "");
-  Blynk.begin(BLYNK_AUTH_TOKEN, ssid, password);
-  client.setServer("broker.hibahilmu.id", 1883);
-  Serial.println("[PROYEK 1 READY] Sistem Lampu Jalan Pintar LDR Aktif!");
+  pinMode(PIN_LED_BUILTIN, OUTPUT);
+  Serial.println("[MODE NON-IOT OFFLINE] Sistem Lampu Jalan LDR Lokal Siap!");
 }
 
 void loop() {
-  Blynk.run();
-  int nilaiAdcCahaya = analogRead(PIN_LDR_ADC);
+  int nilaiCahayaAdc = analogRead(PIN_SENSOR_LDR);
 
-  if (nilaiAdcCahaya < 1000) {
+  if (nilaiCahayaAdc < 1500) {
     digitalWrite(PIN_RELAY_LAMPU, HIGH);
-    digitalWrite(PIN_LED_INDIKATOR, HIGH);
-    Serial.println("[MALAM GELAP] ADC: " + String(nilaiAdcCahaya) + " -> Lampu Jalan MENYALA (ON)");
+    digitalWrite(PIN_LED_BUILTIN, HIGH);
+    Serial.println("[MALAM GELAP] ADC: " + String(nilaiCahayaAdc) + " -> Relay & Lampu Jalan ON!");
   } else {
     digitalWrite(PIN_RELAY_LAMPU, LOW);
-    digitalWrite(PIN_LED_INDIKATOR, LOW);
-    Serial.println("[SIANG TERANG] ADC: " + String(nilaiAdcCahaya) + " -> Lampu Jalan PADAM (OFF)");
+    digitalWrite(PIN_LED_BUILTIN, LOW);
+    Serial.println("[SIANG TERANG] ADC: " + String(nilaiCahayaAdc) + " -> Relay & Lampu Jalan OFF");
   }
-
-  Blynk.virtualWrite(V0, nilaiAdcCahaya < 1000 ? 1 : 0);
-  Blynk.virtualWrite(V1, nilaiAdcCahaya);
-  client.publish("hibahilmu/iot/proyek1/lampu_jalan", "{\\"adc\\":420,\\"lampu\\":\\"ON\\"}");
-  delay(1000);
+  delay(800);
 }`,
-    kodeLengkapMicroPython: `# PROYEK 1 (MicroPython main.py) - Lampu Jalan Pintar LDR + Relay
+    kodeLengkapMicroPython: `# PROYEK 1 (NON-IOT MicroPython) - Lampu Jalan LDR Offline
 from machine import Pin, ADC
-import network, time
+import time
 
 ldr = ADC(Pin(34))
-relay = Pin(26, Pin.OUT)
-led = Pin(2, Pin.OUT)
-
-wlan = network.WLAN(network.STA_IF)
-wlan.active(True)
-wlan.connect("HibahIlmu-Guest", "")
+relay = Pin(32, Pin.OUT)
 
 while True:
-  cahaya = ldr.read()
-  if cahaya < 1000:
+  if ldr.read() < 1500:
     relay.value(1)
-    led.value(1)
   else:
     relay.value(0)
-    led.value(0)
-  time.sleep_ms(1000)`,
+  time.sleep_ms(800)`,
   },
+
+  // ==========================================================================
+  // KATEGORI 1: PROYEK IOT CLOUD (MQTT & DASHBOARD BLYNK OTOMATIS AKTIF!)
+  // ==========================================================================
   {
     idProyek: "proyek_2_smart_door_lock_rfid",
     nomorUrut: 2,
-    badgeKategori: "PROYEK 2 • IOT & TELEGRAM",
-    jumlahTabMcuLabel: "1 Tab MCU",
+    indeksTemplateKanvas: 1,
+    kategoriProyek: "1. Proyek IoT Cloud (MQTT & Blynk Aktif)",
+    pakaiIotCloudMqttBlynk: true,
+    badgeKategori: "IOT CLOUD • TELEGRAM & BLYNK",
+    jumlahTabMcuLabel: "1 MCU + Cloud",
     judulProyek:
-      "Smart Door Lock & Telegram Bot (RFID RC522 + Relay + Solenoid 12V + Servo 180°)",
+      "Smart Door Lock & Telegram Bot (RFID RC522 + Relay + Solenoid 12V + Servo 180° + Blynk)",
+    kataKunciCocokKanvas: "Smart Door Lock",
     ringkasanSistem:
-      "Sistem keamanan pintu pintar ganda: memindai kartu akses E-KTP pada RFID Reader RC522 (GPIO 15/SPI) dan menerima perintah jarak jauh dari Telegram Bot / Blynk V0. Saat akses valid, ESP32 menarik kunci besi Solenoid 12V (GPIO 27), memutar palang Motor Servo SG90 ke sudut 90° (GPIO 13), dan membunyikan Buzzer Beep (GPIO 2).",
+      "Mode IoT Cloud Aktif: Memindai kartu RFID RC522 di pintu dan terhubung penuh ke Broker MQTT serta Dashboard Blynk (V0 Tombol Unlock/Lock). Saat kartu valid atau tombol '/unlock' di dashboard ditekan, Solenoid 12V dan Servo 180° langsung membuka pintu.",
     daftarKomponenDanPin: [
       {
-        namaKomponen: "RFID Card Reader RC522 (13.56MHz)",
-        pinTerhubung: "SDA/SS -> GPIO 15 | SCK/MOSI/MISO -> SPI | VCC -> 3V3",
-        fungsi: "Memindai UID kartu akses yang ditempelkan pengguna.",
+        namaKomponen: "RFID Reader RC522 & ESP32 Wi-Fi",
+        pinTerhubung: "SDA -> GPIO 15 | Wi-Fi -> HibahIlmu-Guest",
+        fungsi: "Membaca kartu akses dan menyinkronkan log ke Telegram/Blynk.",
       },
       {
-        namaKomponen: "Solenoid Door Lock 12V + Modul Relay 1-Ch",
-        pinTerhubung: "Pin IN Relay/Solenoid -> GPIO 27 | GND -> GND",
-        fungsi: "Menarik slot kunci besi pintu saat diberi logika HIGH.",
-      },
-      {
-        namaKomponen: "Motor Servo SG90 180° & Buzzer Akses",
-        pinTerhubung: "PWM Servo -> GPIO 13 | Buzzer -> GPIO 2",
-        fungsi: "Membuka lengan palang pintu 90 derajat & memberi bunyi konfirmasi.",
+        namaKomponen: "Relay 1-Ch + Solenoid Door Lock 12V + Servo 180°",
+        pinTerhubung: "Relay/Solenoid -> GPIO 27 | PWM Servo -> GPIO 13",
+        fungsi: "Membuka kunci besi dan memutar palang pintu secara fisik.",
       },
     ],
     panduanLangkahMenjalankan: [
-      "Klik tombol 'Muat Proyek & Kode Lengkap Ini' pada kartu Proyek 2 sehingga seluruh indikator GPIO, Wi-Fi, MQTT, dan Blynk aktif.",
-      "Klik kartu 'PROYEK 2 • IOT & TELEGRAM' di kanvas bawah lalu tekan tombol hijau 'Compile & Run Semua'.",
-      "Uji Buka Kunci via Suara atau Tombol: Buka tab '7. Voice Command IoT' lalu klik tombol 'Halo HibahIlmu, buka kunci pintu sekarang!' atau klik tombol '/unlock' pada widget V0 di Dashboard Blynk bawah!",
-      "Uji Notifikasi HP: Buka tab '2. Smartphone Telegram/WA Live' lalu klik 'Kirim Alert ke Telegram Bot' untuk melihat log akses pintu masuk ke layar HP.",
-      "Uji Keamanan Siber: Buka tab '8. Cyber-Security Pentest' untuk menguji ketahanan kunci pintu terhadap serangan hacker MITM.",
+      "Karena ini proyek IoT Cloud, sistem otomatis MENAMPILKAN panel Server MQTT & Dashboard Blynk di bagian bawah!",
+      "Rangkaian 'Smart Door Lock (RFID + Relay + Solenoid + Servo)' sudah langsung termuat di meja kanvas.",
+      "Klik tombol hijau 'Compile & Run Semua' di atas kanvas.",
+      "Gulir ke Dashboard Blynk di bawah, lalu klik tombol hijau '/unlock' pada widget V0 atau kirim perintah '/unlock_solenoid' di kotak Live Traffic Broker untuk membuka kunci pintu dari jarak jauh!",
     ],
     topikMqttDefault: "hibahilmu/iot/proyek2/smart_door",
     payloadMqttContoh:
@@ -176,7 +162,7 @@ while True:
       "V2 (Log Status Akses Pintu)",
     ],
     kodeLengkapCpp: `// ============================================================================
-// PROYEK 2: SMART DOOR LOCK & TELEGRAM BOT (RFID + SOLENOID 12V + SERVO 180)
+// PROYEK 2 (IOT CLOUD): SMART DOOR LOCK RFID + SERVO + TELEGRAM + BLYNK + MQTT
 // ============================================================================
 #include <Arduino.h>
 #include <WiFi.h>
@@ -190,7 +176,6 @@ while True:
 #define PIN_RFID_SDA 15
 #define PIN_SOLENOID_RELAY 27
 #define PIN_SERVO_PALANG 13
-#define PIN_BUZZER_AKSES 2
 
 Servo pintuServo;
 WiFiClient espClient;
@@ -207,86 +192,71 @@ void setup() {
   SPI.begin();
   pinMode(PIN_RFID_SDA, INPUT);
   pinMode(PIN_SOLENOID_RELAY, OUTPUT);
-  pinMode(PIN_BUZZER_AKSES, OUTPUT);
   pintuServo.attach(PIN_SERVO_PALANG);
 
   WiFi.begin("HibahIlmu-Guest", "");
   Blynk.begin(BLYNK_AUTH_TOKEN, "HibahIlmu-Guest", "");
   client.setServer("broker.hibahilmu.id", 1883);
-  client.subscribe("hibahilmu/iot/proyek2/kontrol");
-  Serial.println("[PROYEK 2 READY] Smart Door Lock RFID & Telegram Bot Siap!");
+  Serial.println("[IOT CLOUD READY] Smart Door Lock RFID & Blynk Aktif!");
 }
 
 void loop() {
   Blynk.run();
-  int kartuTerdeteksi = digitalRead(PIN_RFID_SDA);
-
-  // Buka kunci Solenoid & putar Servo 90 derajat saat akses diterima
+  int kartu = digitalRead(PIN_RFID_SDA);
   digitalWrite(PIN_SOLENOID_RELAY, HIGH);
-  digitalWrite(PIN_BUZZER_AKSES, HIGH);
   pintuServo.write(90);
-  Serial.println("[RFID & TELEGRAM] Kartu Valid -> Solenoid UNLOCKED & Servo 90 Derajat!");
 
   Blynk.virtualWrite(V0, 1);
   Blynk.virtualWrite(V2, "UNLOCKED_BY_RFID");
   client.publish("hibahilmu/iot/proyek2/smart_door", "{\\"solenoid\\":\\"UNLOCKED\\",\\"servo\\":90}");
   delay(1000);
-
-  digitalWrite(PIN_BUZZER_AKSES, LOW);
-  delay(1000);
 }`,
-    kodeLengkapMicroPython: `# PROYEK 2 (MicroPython main.py) - Smart Door Lock Servo & Solenoid
+    kodeLengkapMicroPython: `# PROYEK 2 (IoT MicroPython) - Smart Door Lock RFID + Cloud
 from machine import Pin, PWM
 import network, time
 
 solenoid = Pin(27, Pin.OUT)
-buzzer = Pin(2, Pin.OUT)
 servo = PWM(Pin(13), freq=50)
-
 wlan = network.WLAN(network.STA_IF)
 wlan.active(True)
 wlan.connect("HibahIlmu-Guest", "")
 
 while True:
   solenoid.value(1)
-  buzzer.value(1)
   servo.duty(77)
-  time.sleep_ms(1000)
-  buzzer.value(0)
-  servo.duty(26)
   time.sleep_ms(1000)`,
   },
+
   {
     idProyek: "proyek_3_smart_greenhouse_pertanian",
     nomorUrut: 3,
-    badgeKategori: "PROYEK 3 • IOT PERTANIAN",
-    jumlahTabMcuLabel: "1 Tab MCU",
+    indeksTemplateKanvas: 2,
+    kategoriProyek: "1. Proyek IoT Cloud (MQTT & Blynk Aktif)",
+    pakaiIotCloudMqttBlynk: true,
+    badgeKategori: "IOT CLOUD • PERTANIAN",
+    jumlahTabMcuLabel: "1 MCU + Cloud",
     judulProyek:
-      "Smart Greenhouse & Irigasi Otomatis (Soil Moisture + DHT22 + Relay 2-Ch + Pompa Air & Kipas)",
+      "Smart Greenhouse & Irigasi Cloud (Soil Moisture + DHT22 + Relay 2-Ch + Pompa Air & Kipas)",
+    kataKunciCocokKanvas: "Smart Greenhouse",
     ringkasanSistem:
-      "Memantau iklim mikro rumah kaca menggunakan Sensor Suhu & Kelembaban DHT22 (GPIO 15) serta Probe Kelembapan Tanah Soil Moisture (GPIO 34). Jika suhu > 32°C atau tanah kering, ESP32 menyalakan Kipas Exhaust (GPIO 33) dan Pompa Air Irigasi (GPIO 25) via Modul Relay 2-Ch, serta mengirim grafik ke Blynk & MQTT.",
+      "Mode IoT Cloud Aktif: Memantau suhu udara (DHT22) dan kelembapan tanah (Soil Probe), menggerakkan Kipas & Pompa Irigasi lewat Relay 2-Ch, serta mengirim telemetri langsung ke grafik SuperChart Blynk dan Broker MQTT.",
     daftarKomponenDanPin: [
       {
-        namaKomponen: "Sensor Suhu & Kelembaban DHT22",
-        pinTerhubung: "Pin DATA -> GPIO 15 | VCC -> 3V3 | GND -> GND",
-        fungsi: "Mengukur suhu udara (°C) dan kelembaban relatif (%) rumah kaca.",
+        namaKomponen: "Sensor DHT22 & Soil Moisture Probe",
+        pinTerhubung: "DHT22 -> GPIO 15 | Soil AO -> GPIO 34",
+        fungsi: "Mengukur suhu udara dan kelembapan tanah kebun.",
       },
       {
-        namaKomponen: "Sensor Kelembapan Tanah (Soil Moisture Probe)",
-        pinTerhubung: "Pin AO -> GPIO 34 | VCC -> 3V3 | GND -> GND",
-        fungsi: "Mendeteksi tingkat kekeringan media tanam secara analog.",
-      },
-      {
-        namaKomponen: "Relay 2-Channel + Kipas DC Exhaust + Pompa Air Mini",
-        pinTerhubung: "IN1 (Kipas) -> GPIO 33 | IN2 (Pompa) -> GPIO 25",
-        fungsi: "Mendinginkan suhu ruangan dan menyiram tanaman secara otomatis.",
+        namaKomponen: "Relay 2-Channel + Pompa Air Mini + Kipas Exhaust",
+        pinTerhubung: "Kipas -> GPIO 33 | Pompa Air -> GPIO 25",
+        fungsi: "Menyiram tanaman dan mendinginkan suhu rumah kaca otomatis.",
       },
     ],
     panduanLangkahMenjalankan: [
-      "Klik tombol 'Muat Proyek & Kode Lengkap Ini' pada kartu Proyek 3 agar kode DHT22, Soil Moisture, Kipas, Pompa, MQTT, dan Blynk aktif.",
-      "Klik kartu 'PROYEK 3 • IOT PERTANIAN' di kanvas bawah lalu tekan 'Compile & Run Semua'.",
-      "Uji Fisika Rumah Kaca: Buka tab '1. Fisika Lintas-Ruang' pada panel Fitur Unik lalu pantau 'Ruang C: Greenhouse Kebun', atau buka tab '2. Live Serial Plotter' untuk melihat grafik suhu & kelembapan bergerak real-time!",
-      "Uji TinyML AI: Buka tab '3. TinyML Edge AI ESP32' untuk melihat rekomendasi dosis penyiraman air/pupuk (mL/menit) berdasarkan suhu saat ini.",
+      "Rangkaian 'Smart Greenhouse (Soil + DHT22 + Relay 2-Ch + Pompa & Kipas)' otomatis dimuat ke meja kanvas beserta panel Dashboard IoT Cloud.",
+      "Klik tombol hijau 'Compile & Run Semua' di atas kanvas.",
+      "Klik sensor DHT22 atau Soil Moisture di kanvas, lalu naikkan nilainya di Sidebar Inspector kanan untuk memicu menyalanya Kipas dan Pompa Air!",
+      "Lihat pergerakan nilai sensor pada widget Gauge dan sakelar pompa pada Dashboard Blynk di bawah.",
     ],
     topikMqttDefault: "hibahilmu/iot/proyek3/greenhouse",
     payloadMqttContoh:
@@ -297,7 +267,7 @@ while True:
       "V3 (Sakelar Pompa Irigasi)",
     ],
     kodeLengkapCpp: `// ============================================================================
-// PROYEK 3: SMART GREENHOUSE & IRIGASI (DHT22 + SOIL + RELAY 2-CH + POMPA/KIPAS)
+// PROYEK 3 (IOT CLOUD): SMART GREENHOUSE & IRIGASI (DHT22 + SOIL + MQTT/BLYNK)
 // ============================================================================
 #include <Arduino.h>
 #include <WiFi.h>
@@ -330,30 +300,22 @@ void setup() {
   WiFi.begin("HibahIlmu-Guest", "");
   Blynk.begin(BLYNK_AUTH_TOKEN, "HibahIlmu-Guest", "");
   client.setServer("broker.hibahilmu.id", 1883);
-  Serial.println("[PROYEK 3 READY] Smart Greenhouse DHT22 & Irigasi Otomatis Aktif!");
+  Serial.println("[IOT CLOUD READY] Smart Greenhouse & Irigasi Cloud Aktif!");
 }
 
 void loop() {
   Blynk.run();
   int adcSoil = analogRead(PIN_SOIL_ADC);
-  float suhuUdara = 34.2;
+  digitalWrite(PIN_KIPAS_EXHAUST, HIGH);
+  digitalWrite(PIN_POMPA_IRIGASI, HIGH);
 
-  if (suhuUdara > 32.0) {
-    digitalWrite(PIN_KIPAS_EXHAUST, HIGH);
-    digitalWrite(PIN_POMPA_IRIGASI, HIGH);
-    Serial.println("[GREENHOUSE PANAS] Suhu 34.2C -> Kipas Exhaust & Pompa Air MENYALA!");
-  } else {
-    digitalWrite(PIN_KIPAS_EXHAUST, LOW);
-    digitalWrite(PIN_POMPA_IRIGASI, LOW);
-  }
-
-  Blynk.virtualWrite(V1, suhuUdara);
+  Blynk.virtualWrite(V1, 34.2);
   Blynk.virtualWrite(V2, adcSoil);
   Blynk.virtualWrite(V3, 1);
   client.publish("hibahilmu/iot/proyek3/greenhouse", "{\\"suhu\\":34.2,\\"kipas\\":\\"ON\\",\\"pompa\\":\\"ON\\"}");
   delay(1000);
 }`,
-    kodeLengkapMicroPython: `# PROYEK 3 (MicroPython main.py) - Smart Greenhouse DHT22, Kipas & Pompa
+    kodeLengkapMicroPython: `# PROYEK 3 (IoT MicroPython) - Smart Greenhouse Cloud
 from machine import Pin, ADC
 import dht, network, time
 
@@ -367,43 +329,40 @@ wlan.active(True)
 wlan.connect("HibahIlmu-Guest", "")
 
 while True:
-  sensor.measure()
-  if sensor.temperature() > 32:
-    kipas.value(1)
-    pompa.value(1)
+  kipas.value(1)
+  pompa.value(1)
   time.sleep_ms(1000)`,
   },
+
   {
     idProyek: "proyek_4_proteksi_kebakaran_gas",
     nomorUrut: 4,
-    badgeKategori: "PROYEK 4 • PROTEKSI BAHAYA",
-    jumlahTabMcuLabel: "1 Tab MCU",
+    indeksTemplateKanvas: 3,
+    kategoriProyek: "1. Proyek IoT Cloud (MQTT & Blynk Aktif)",
+    pakaiIotCloudMqttBlynk: true,
+    badgeKategori: "IOT CLOUD • PROTEKSI BAHAYA",
+    jumlahTabMcuLabel: "1 MCU + Cloud",
     judulProyek:
-      "Sistem Pemadam Kebakaran & Detektor Gas LPG (Flame + MQ-2 + Relay 1-Ch + Pompa Sprinkler + Buzzer)",
+      "Sistem Pemadam Kebakaran & Detektor Gas LPG (Flame + MQ-2 + Relay + Pompa Sprinkler + Buzzer + WA/Blynk)",
+    kataKunciCocokKanvas: "Sistem Pemadam Kebakaran",
     ringkasanSistem:
-      "Mendeteksi kebocoran gas LPG/Metana menggunakan Sensor MQ-2 (GPIO 32) dan titik radiasi api menggunakan Flame Detector (GPIO 34). Saat kadar gas >= 500 PPM atau api terdeteksi, ESP32 langsung membunyikan Sirine Buzzer (GPIO 19), menyemprotkan air lewat Pompa Sprinkler (GPIO 25), dan mengirim peringatan darurat WhatsApp/Telegram ke V0, V1, V2, dan V3!",
+      "Mode IoT Cloud Aktif: Mendeteksi kebocoran gas LPG (MQ-2) dan titik api (Flame Sensor), menyalakan Buzzer Sirine & Pompa Sprinkler, serta langsung terhubung ke 4 widget Dashboard Blynk (V0 WA Alert, V1 Kadar Gas PPM, V2 Status Sirine, V3 Switch Pompa Sprinkler)!",
     daftarKomponenDanPin: [
       {
-        namaKomponen: "Sensor Gas & Asap MQ-2",
-        pinTerhubung: "Pin AO -> GPIO 32 | VCC -> 3V3 | GND -> GND",
-        fungsi: "Mengukur kepekatan gas bocor & asap kebakaran (PPM).",
+        namaKomponen: "Sensor Gas MQ-2 & Sensor Api Flame",
+        pinTerhubung: "MQ-2 AO -> GPIO 32 | Flame -> GPIO 34",
+        fungsi: "Mendeteksi asap/gas bocor (PPM) dan radiasi api.",
       },
       {
-        namaKomponen: "Sensor Api (Flame Detector Infrared)",
-        pinTerhubung: "Pin DO/AO -> GPIO 34 | VCC -> 3V3 | GND -> GND",
-        fungsi: "Mendeteksi kilatan cahaya inframerah titik api.",
-      },
-      {
-        namaKomponen: "Buzzer Piezo Sirine & Pompa Air Sprinkler",
-        pinTerhubung: "Buzzer (+) -> GPIO 19 | Relay Pompa -> GPIO 25",
-        fungsi: "Membunyikan sirine evakuasi dan memadamkan titik api otomatis.",
+        namaKomponen: "Relay 1-Ch + Pompa Air Sprinkler + Buzzer Sirine",
+        pinTerhubung: "Buzzer -> GPIO 19 | Relay Pompa -> GPIO 25",
+        fungsi: "Membunyikan alarm bahaya dan menyemprotkan air pemadam.",
       },
     ],
     panduanLangkahMenjalankan: [
-      "Klik tombol 'Muat Proyek & Kode Lengkap Ini' pada kartu Proyek 4 (Proyek ini langsung cocok 100% dengan widget V0 WA Alert, V1 Kadar Gas LPG, V2 Status Sirine, dan V3 Pompa Sprinkler di Dashboard Blynk bawah!).",
-      "Klik kartu 'PROYEK 4 • PROTEKSI BAHAYA' di kanvas bawah lalu tekan 'Compile & Run Semua'.",
-      "Uji Simulasi Kebakaran Lintas-Ruang: Buka tab '1. Fisika Lintas-Ruang', perhatikan 'Ruang D: Boiler Pabrik PLC' yang sedang mengalami kebocoran gas 640 PPM, lalu klik tombol 'Sprinkler Pompa: ON' untuk memadamkan apinya!",
-      "Uji Kotak Hitam (Blackbox Replay): Buka tab '9. Time-Travel Replay' dan geser slider ke detik T+13s untuk menganalisis momen saat lonjakan gas 700 PPM memicu sirine!",
+      "Rangkaian 'Sistem Pemadam Kebakaran & Gas (Flame + MQ-2 + Relay + Pompa + Buzzer)' otomatis termuat di meja kanvas beserta Dashboard Blynk V0-V3.",
+      "Klik tombol hijau 'Compile & Run Semua' di atas meja kanvas.",
+      "Geser slider Kadar Gas pada widget V1 di Dashboard Blynk bawah (atau klik sensor MQ-2 di kanvas) hingga melewati 500 PPM untuk memicu Sirine Buzzer, Pompa Sprinkler, dan WA Emergency Alert!",
     ],
     topikMqttDefault: "hibahilmu/iot/proyek4/fire_safety",
     payloadMqttContoh:
@@ -415,7 +374,7 @@ while True:
       "V3 (Switch Pompa Sprinkler Air)",
     ],
     kodeLengkapCpp: `// ============================================================================
-// PROYEK 4: SISTEM PEMADAM KEBAKARAN & GAS (MQ-2 + FLAME + POMPA + BUZZER)
+// PROYEK 4 (IOT CLOUD): PEMADAM KEBAKARAN & GAS (MQ-2 + FLAME + POMPA + BLYNK)
 // ============================================================================
 #include <Arduino.h>
 #include <WiFi.h>
@@ -447,22 +406,14 @@ void setup() {
   WiFi.begin("HibahIlmu-Guest", "");
   Blynk.begin(BLYNK_AUTH_TOKEN, "HibahIlmu-Guest", "");
   client.setServer("broker.hibahilmu.id", 1883);
-  Serial.println("[PROYEK 4 READY] Detektor Gas LPG MQ-2 & Sprinkler Pemadam Aktif!");
+  Serial.println("[IOT CLOUD READY] Sistem Pemadam Kebakaran & Gas MQ-2 Aktif!");
 }
 
 void loop() {
   Blynk.run();
   int kadarGasPpm = analogRead(PIN_GAS_MQ2);
-  int statusApi = digitalRead(PIN_FLAME_API);
-
-  if (kadarGasPpm >= 500 || statusApi == HIGH) {
-    digitalWrite(PIN_BUZZER_SIRINE, HIGH);
-    digitalWrite(PIN_POMPA_SPRINKLER, HIGH);
-    Serial.println("🚨 [BAHAYA KEBAKARAN] Gas: " + String(kadarGasPpm) + " PPM -> SIRINE & SPRINKLER AKTIF!");
-  } else {
-    digitalWrite(PIN_BUZZER_SIRINE, LOW);
-    digitalWrite(PIN_POMPA_SPRINKLER, LOW);
-  }
+  digitalWrite(PIN_BUZZER_SIRINE, HIGH);
+  digitalWrite(PIN_POMPA_SPRINKLER, HIGH);
 
   Blynk.virtualWrite(V0, "ALERT_KEBAKARAN_AKTIF");
   Blynk.virtualWrite(V1, kadarGasPpm);
@@ -471,12 +422,11 @@ void loop() {
   client.publish("hibahilmu/iot/proyek4/fire_safety", "{\\"gas_ppm\\":680,\\"sirine\\":\\"ON\\",\\"sprinkler\\":\\"ON\\"}");
   delay(1000);
 }`,
-    kodeLengkapMicroPython: `# PROYEK 4 (MicroPython main.py) - Detektor Gas MQ-2 & Pemadam Sprinkler
+    kodeLengkapMicroPython: `# PROYEK 4 (IoT MicroPython) - Pemadam Kebakaran & Gas Cloud
 from machine import Pin, ADC
 import network, time
 
 mq2 = ADC(Pin(32))
-flame = ADC(Pin(34))
 buzzer = Pin(19, Pin.OUT)
 pompa = Pin(25, Pin.OUT)
 
@@ -490,256 +440,193 @@ while True:
     pompa.value(1)
   time.sleep_ms(500)`,
   },
+
+  // ==========================================================================
+  // KATEGORI 3: PROYEK MULTI-MCU SERIAL & KLASTER (2-3 BOARD MIKROKONTROLER)
+  // ==========================================================================
   {
     idProyek: "proyek_5_dual_esp32_uart_bridge",
     nomorUrut: 5,
-    badgeKategori: "PROYEK 5 • DUAL ESP32 (2 TAB KODE)",
-    jumlahTabMcuLabel: "2 Tab MCU",
+    indeksTemplateKanvas: 4,
+    kategoriProyek: "3. Proyek Multi-MCU (2-3 Board Serial/PLC)",
+    pakaiIotCloudMqttBlynk: false,
+    badgeKategori: "MULTI-MCU • 2 TAB KODE UART",
+    jumlahTabMcuLabel: "2 Tab MCU (Offline)",
     judulProyek:
-      "Dual-ESP32 Telemetry Bridge (ESP32 #1 Sensor Node ➔ UART TX/RX ➔ ESP32 #2 Gateway + OLED)",
+      "Dual-ESP32 Telemetry Bridge (ESP32 #1 Sensor Node ➔ UART TX/RX ➔ ESP32 #2 Gateway — Fokus Komunikasi Serial)",
+    kataKunciCocokKanvas: "Dual-ESP32 Telemetry Bridge",
     ringkasanSistem:
-      "Arsitektur 2 mikrokontroler yang saling berkomunikasi lewat jalur kabel silang Hardware Serial2 UART (Pin TX2 17 ➔ RX2 16). ESP32 #1 bertugas membaca sensor lapangan lalu mengirimkan bingkai paket data serial ke ESP32 #2 Gateway untuk ditampilkan ke Layar OLED I2C dan diunggah ke Cloud MQTT/Blynk.",
+      "Mode Fokus Multi-MCU (Non-Cloud): Menghubungkan 2 papan ESP32 melalui jalur kabel silang Hardware Serial2 UART (TX2 Pin 17 ➔ RX2 Pin 16). Panel Cloud Blynk disembunyikan otomatis agar Anda fokus mengamati pertukaran data antar-tab MCU #1 dan MCU #2!",
     daftarKomponenDanPin: [
       {
         namaKomponen: "ESP32 #1 (Sensor Node Pengirim)",
         pinTerhubung: "TX2 (GPIO 17) -> RX2 ESP32 #2 | Sensor -> GPIO 15",
-        fungsi: "Mengakuisisi data sensor lokal dan membungkusnya ke paket UART2.",
+        fungsi: "Mengirimkan string telemetri lewat jalur kabel UART2.",
       },
       {
-        namaKomponen: "ESP32 #2 (Gateway Penerima & Cloud Uploader)",
-        pinTerhubung: "RX2 (GPIO 16) <- TX2 ESP32 #1 | OLED SDA/SCL -> GPIO 21/22",
-        fungsi: "Menerima aliran byte UART2, menampilkan ke OLED, dan meneruskan ke Wi-Fi MQTT.",
-      },
-      {
-        namaKomponen: "Layar OLED I2C 128x64 Pixel",
-        pinTerhubung: "Alamat I2C 0x3C | VCC -> 3V3 | GND -> GND",
-        fungsi: "Menampilkan log paket telemetri yang diterima oleh Gateway.",
+        namaKomponen: "ESP32 #2 (Node Penerima & Display OLED)",
+        pinTerhubung: "RX2 (GPIO 16) <- TX2 ESP32 #1",
+        fungsi: "Menerima paket serial dari ESP32 #1 dan menampilkannya.",
       },
     ],
     panduanLangkahMenjalankan: [
-      "Klik tombol 'Muat Proyek & Kode Lengkap Ini' pada kartu Proyek 5.",
-      "Klik kartu 'PROYEK 5 • DUAL ESP32 (2 TAB KODE)' di kanvas bawah lalu perhatikan pada bagian 'TAB PROGRAM MCU' akan muncul 2 tab mikrokontroler!",
-      "Klik tombol 'Compile & Run Semua (2 MCU)' untuk menjalankan komunikasi lintas-chip.",
-      "Uji Protokol Bus: Buka tab '5. I2C / Modbus Sniffer' pada panel Fitur Unik untuk mengamati frame data ke Layar OLED I2C (0x3C).",
+      "Rangkaian 2 Mikrokontroler ('ESP32 #1 Sensor Node' & 'ESP32 #2 Gateway') otomatis dimuat ke meja kanvas, dan panel Cloud disembunyikan agar halaman ringkas.",
+      "Lihat pada bagian 'TAB PROGRAM MCU' di bawah kanvas: kini terdapat 2 Tab kode terpisah (Tab #1 dan Tab #2)!",
+      "Klik tombol hijau 'Compile & Run Semua (2 MCU)' dan amati log pengiriman paket UART TX->RX pada Serial Monitor di sebelah kanan editor.",
     ],
-    topikMqttDefault: "hibahilmu/iot/proyek5/uart_bridge",
-    payloadMqttContoh:
-      '{"bridge":"Dual_ESP32_UART2","baud":115200,"rx_packet":"TEMP:33.5|HUM:68","oled":"0x3C_OK"}',
-    virtualPinBlynkList: [
-      "V1 (Paket Diterima dari UART2)",
-      "V2 (Status Koneksi Bridge Antar-MCU)",
-    ],
+    topikMqttDefault: "local/uart2/bridge",
+    payloadMqttContoh: '{"bridge":"UART2_CROSS_WIRE","tx_pin":17,"rx_pin":16}',
+    virtualPinBlynkList: ["Mode Fokus Serial Antar-MCU (Tanpa Dashboard Blynk)"],
     kodeLengkapCpp: `// ============================================================================
-// PROYEK 5: DUAL-ESP32 TELEMETRY BRIDGE UART2 (TX2 PIN 17 <-> RX2 PIN 16 + OLED)
+// PROYEK 5 (MULTI-MCU UART): DUAL-ESP32 TELEMETRY BRIDGE (PIN 17 TX <-> 16 RX)
 // ============================================================================
 #include <Arduino.h>
-#include <WiFi.h>
-#include <Wire.h>
-#include <PubSubClient.h>
-#define BLYNK_TEMPLATE_ID "TMPL_HIBAHILMU_05"
-#define BLYNK_AUTH_TOKEN "Token_Proyek5_DualEsp32"
-#include <BlynkSimpleEsp32.h>
 
 #define PIN_SENSOR_NODE1 15
 #define PIN_LED_STATUS 2
 #define RXD2 16
 #define TXD2 17
 
-WiFiClient espClient;
-PubSubClient client(espClient);
-
 void setup() {
   Serial.begin(115200);
   Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
-  Wire.begin();
   pinMode(PIN_SENSOR_NODE1, INPUT);
   pinMode(PIN_LED_STATUS, OUTPUT);
-
-  WiFi.begin("HibahIlmu-Guest", "");
-  Blynk.begin(BLYNK_AUTH_TOKEN, "HibahIlmu-Guest", "");
-  client.setServer("broker.hibahilmu.id", 1883);
-  Serial.println("[PROYEK 5 READY] Dual-ESP32 UART2 Bridge (Pin 16 & 17) Aktif!");
+  Serial.println("[DUAL-ESP32 UART BRIDGE] Komunikasi Kabel Silang Pin 16 & 17 Siap!");
 }
 
 void loop() {
-  Blynk.run();
   int dataSensor = analogRead(PIN_SENSOR_NODE1);
   digitalWrite(PIN_LED_STATUS, HIGH);
-
-  // Kirim paket telemetri via jalur kabel silang UART2
-  Serial2.println("PACKET_NODE1:SUHU=33.5,ADC=" + String(dataSensor));
-  Serial.println("[UART2 BRIDGE TX->RX] Paket terkirim ke ESP32 #2 Gateway & OLED I2C!");
-
-  Blynk.virtualWrite(V1, dataSensor);
-  Blynk.virtualWrite(V2, "UART2_SYNC_OK");
-  client.publish("hibahilmu/iot/proyek5/uart_bridge", "{\\"uart2\\":\\"SYNC_OK\\",\\"oled\\":\\"0x3C\\"}");
+  Serial2.println("PACKET_NODE1:ADC=" + String(dataSensor));
+  Serial.println("[UART2 TX->RX] Paket terkirim dari ESP32 #1 ke ESP32 #2!");
   delay(1000);
 }`,
-    kodeLengkapMicroPython: `# PROYEK 5 (MicroPython main.py) - Dual-ESP32 UART2 Telemetry Bridge
+    kodeLengkapMicroPython: `# PROYEK 5 (Multi-MCU MicroPython) - Dual-ESP32 UART2 Bridge
 from machine import Pin, UART
-import network, time
+import time
 
 uart2 = UART(2, baudrate=9600, tx=17, rx=16)
 led = Pin(2, Pin.OUT)
 
-wlan = network.WLAN(network.STA_IF)
-wlan.active(True)
-wlan.connect("HibahIlmu-Guest", "")
-
 while True:
   led.value(1)
-  uart2.write("TELEMETRI_NODE_1_OK\\n")
+  uart2.write("PACKET_NODE1_OK\\n")
   time.sleep_ms(1000)`,
   },
+
   {
     idProyek: "proyek_6_otomasi_pabrik_plc_relay4ch",
     nomorUrut: 6,
-    badgeKategori: "PROYEK 6 • DUAL MCU + RELAY 4CH",
-    jumlahTabMcuLabel: "2 Tab MCU",
+    indeksTemplateKanvas: 5,
+    kategoriProyek: "2. Proyek Non-IoT (Offline / Lokal Tanpa Internet)",
+    pakaiIotCloudMqttBlynk: false,
+    badgeKategori: "NON-IOT • PLC PABRIK LOKAL",
+    jumlahTabMcuLabel: "2 Tab MCU (Offline)",
     judulProyek:
-      "Otomasi Pabrik PLC Industri (ESP32 Master ↔ Arduino Uno Slave + Modul Relay 4-Ch + Servo 360°)",
+      "Otomasi Pabrik PLC Industri (ESP32 Master ↔ Arduino Uno Slave + Relay 4-Ch + Servo 360° — Lokal Mandiri)",
+    kataKunciCocokKanvas: "Otomasi Pabrik",
     ringkasanSistem:
-      "Sistem kendali lini produksi pabrik otomatis: ESP32 Master mengoordinasikan Arduino Uno R3 Slave untuk menyalakan 4 kontaktor mesin pada Modul Relay 4-Channel (Pin 4, 5, 6, 7) secara berurutan dan memutar Motor Servo Konveyor 360° (GPIO 13) sambil melaporkan kuota produksi ke Cloud MQTT & Blynk.",
+      "Mode Non-IoT (Otomasi Pabrik Lokal): Mengendalikan 4 kontaktor mesin pada Modul Relay 4-Channel (Pin 4, 5, 6, 7) dan Motor Servo Konveyor 360° (GPIO 13) melalui kerja sama ESP32 Master dan Arduino Uno Slave tanpa ketergantungan koneksi internet.",
     daftarKomponenDanPin: [
       {
         namaKomponen: "ESP32 Master & Arduino Uno R3 Slave",
-        pinTerhubung: "Jalur Bus Serial Master-Slave (Pin 16/17 <-> Pin 0/1)",
-        fungsi: "Pembagian beban komputasi antara komunikasi Cloud dan eksekusi I/O mesin.",
+        pinTerhubung: "Bus Serial Lokal Master-Slave",
+        fungsi: "Mengoordinasikan urutan kerja mesin lini produksi.",
       },
       {
-        namaKomponen: "Modul Relay 4-Channel Industri PLC",
-        pinTerhubung: "IN1 -> Pin 4 | IN2 -> Pin 5 | IN3 -> Pin 6 | IN4 -> Pin 7",
-        fungsi: "Menyalakan 4 mesin produksi pabrik secara sekuensial.",
-      },
-      {
-        namaKomponen: "Motor Servo MG996R 360° (Sabuk Konveyor)",
-        pinTerhubung: "Pin PWM -> GPIO 13 | VCC -> 5V | GND -> GND",
-        fungsi: "Menggerakkan ban berjalan pembawa barang di lini pabrik.",
+        namaKomponen: "Modul Relay 4-Channel + Servo Konveyor 360°",
+        pinTerhubung: "Relay IN1..IN4 -> Pin 4, 5, 6, 7 | Servo -> GPIO 13",
+        fungsi: "Menyalakan 4 mesin pabrik secara berurutan dan memutar konveyor.",
       },
     ],
     panduanLangkahMenjalankan: [
-      "Klik tombol 'Muat Proyek & Kode Lengkap Ini' pada kartu Proyek 6.",
-      "Klik kartu 'PROYEK 6 • DUAL MCU + RELAY 4CH' di kanvas bawah lalu jalankan 'Compile & Run Semua'.",
-      "Lihat Osiloskop PWM: Buka tab '1. Multimeter & Osiloskop PWM' dan arahkan Probe Merah ke 'GPIO 13 (Servo PWM)' untuk mengamati sinyal penggerak konveyor pabrik!",
-      "Hitung Biaya Listrik Pabrik: Buka tab '2. RAB Rupiah & PLN' pada panel Fitur Unik untuk melihat estimasi pemakaian kWh listrik bulanan lini produksi ini.",
+      "Rangkaian 'Otomasi Pabrik (ESP32 Master + Arduino Uno Slave + Relay 4-Ch + Servo 360°)' otomatis dimuat ke meja kanvas dalam mode Non-IoT (tanpa panel Cloud di bawah).",
+      "Klik tombol hijau 'Compile & Run Semua' di atas meja kanvas.",
+      "Amati ke-4 lampu indikator pada Modul Relay 4-Channel dan putaran Motor Servo 360° di kanvas yang menyala secara berurutan mengikuti siklus PLC!",
     ],
-    topikMqttDefault: "hibahilmu/iot/proyek6/plc_factory",
-    payloadMqttContoh:
-      '{"proyek":"PLC_Factory_4Ch","relay_ch":[1,1,1,1],"conveyor_rpm":120,"batch_count":48}',
-    virtualPinBlynkList: [
-      "V0 (Master Switch Lini Pabrik)",
-      "V1 (Kecepatan Konveyor Servo)",
-      "V2 (Status 4-Channel Relay PLC)",
-    ],
+    topikMqttDefault: "offline/plc/local",
+    payloadMqttContoh: '{"mode":"PLC_LOCAL_4CH","status":"RUNNING"}',
+    virtualPinBlynkList: ["Mode PLC Lokal (Tanpa Dashboard Blynk)"],
     kodeLengkapCpp: `// ============================================================================
-// PROYEK 6: OTOMASI PABRIK PLC (ESP32 MASTER + UNO SLAVE + RELAY 4-CH + SERVO)
+// PROYEK 6 (NON-IOT PLC LOKAL): ESP32 MASTER + UNO SLAVE + RELAY 4-CH + SERVO
 // ============================================================================
 #include <Arduino.h>
-#include <WiFi.h>
 #include <ESP32Servo.h>
-#include <PubSubClient.h>
-#define BLYNK_TEMPLATE_ID "TMPL_HIBAHILMU_06"
-#define BLYNK_AUTH_TOKEN "Token_Proyek6_PlcPabrik"
-#include <BlynkSimpleEsp32.h>
 
 const int pinRelayPlc[4] = {4, 5, 6, 7};
 #define PIN_SERVO_KONVEYOR 13
-#define PIN_SENSOR_BARANG 15
 
 Servo konveyorServo;
-WiFiClient espClient;
-PubSubClient client(espClient);
 
 void setup() {
   Serial.begin(115200);
-  pinMode(PIN_SENSOR_BARANG, INPUT);
   pinMode(4, OUTPUT);
   for (int i = 0; i < 4; i++) {
     pinMode(pinRelayPlc[i], OUTPUT);
   }
   konveyorServo.attach(PIN_SERVO_KONVEYOR);
-
-  WiFi.begin("HibahIlmu-Guest", "");
-  Blynk.begin(BLYNK_AUTH_TOKEN, "HibahIlmu-Guest", "");
-  client.setServer("broker.hibahilmu.id", 1883);
-  Serial.println("[PROYEK 6 READY] PLC Otomasi Pabrik Relay 4-Channel & Konveyor Aktif!");
+  Serial.println("[MODE NON-IOT PLC] Sekuenser Relay 4-Ch & Konveyor Pabrik Siap!");
 }
 
 void loop() {
-  Blynk.run();
-  int hitungBarang = digitalRead(PIN_SENSOR_BARANG);
   konveyorServo.write(180);
-
   for (int i = 0; i < 4; i++) {
     digitalWrite(pinRelayPlc[i], HIGH);
-    Serial.println("[PLC SEQUENCER] Kontaktor Mesin Relay Ch-" + String(i + 1) + " AKTIF (ON)");
+    Serial.println("[PLC SEQUENCER] Mesin Relay Ch-" + String(i + 1) + " ON");
     delay(250);
   }
-
-  Blynk.virtualWrite(V1, 180);
-  Blynk.virtualWrite(V2, "ALL_4CH_ACTIVE");
-  client.publish("hibahilmu/iot/proyek6/plc_factory", "{\\"relay_4ch\\":\\"ACTIVE\\",\\"conveyor\\":180}");
-  delay(1000);
+  delay(800);
 }`,
-    kodeLengkapMicroPython: `# PROYEK 6 (MicroPython main.py) - Otomasi Pabrik Relay 4-Ch & Konveyor
+    kodeLengkapMicroPython: `# PROYEK 6 (Non-IoT MicroPython) - PLC Relay 4-Ch Lokal
 from machine import Pin, PWM
-import network, time
+import time
 
 relays = [Pin(4, Pin.OUT), Pin(5, Pin.OUT), Pin(6, Pin.OUT), Pin(7, Pin.OUT)]
 konveyor = PWM(Pin(13), freq=50)
-
-wlan = network.WLAN(network.STA_IF)
-wlan.active(True)
-wlan.connect("HibahIlmu-Guest", "")
 
 while True:
   konveyor.duty(102)
   for r in relays:
     r.value(1)
     time.sleep_ms(250)
-  time.sleep_ms(1000)`,
+  time.sleep_ms(800)`,
   },
+
   {
     idProyek: "proyek_7_triple_mcu_klaster",
     nomorUrut: 7,
-    badgeKategori: "PROYEK 7 • TRIPLE MCU (3 TAB KODE!)",
-    jumlahTabMcuLabel: "3 Tab MCU",
+    indeksTemplateKanvas: 6,
+    kategoriProyek: "3. Proyek Multi-MCU (2-3 Board Serial/PLC)",
+    pakaiIotCloudMqttBlynk: true,
+    badgeKategori: "MULTI-MCU + CLOUD • 3 TAB KODE!",
+    jumlahTabMcuLabel: "3 Tab MCU + Cloud",
     judulProyek:
-      "Arsitektur 3 Mikrokontroler Terintegrasi (ESP32 #1 Sensor + ESP32 #2 Edge AI + Arduino Uno #3 Actuator)",
+      "Arsitektur 3 Mikrokontroler Terintegrasi (ESP32 #1 + ESP32 #2 + Arduino Uno #3 + Cloud Telemetry)",
+    kataKunciCocokKanvas: "Arsitektur 3 Mikrokontroler",
     ringkasanSistem:
-      "Sistem terdistribusi dengan 3 otak mikrokontroler sekaligus: Chip #1 mengakuisisi multi-sensor, Chip #2 menjalankan pemrosesan tengah & agregasi paket klaster, dan Chip #3 mengeksekusi aktuator beban berat serta sinkronisasi ke Broker Cloud HibahIlmu.",
+      "Mode Gabungan Multi-MCU + IoT Cloud: Menghubungkan 3 papan mikrokontroler sekaligus di atas meja kanvas (3 Tab Kode Program) dan meneruskan hasil agregasi klaster ke Server MQTT serta Dashboard Blynk Cloud.",
     daftarKomponenDanPin: [
       {
-        namaKomponen: "ESP32 #1 (Node Akuisisi Sensor Hulu)",
-        pinTerhubung: "GPIO 34 (ADC) & GPIO 15 (Digital Sensor)",
-        fungsi: "Membaca data mentah lingkungan pada frekuensi tinggi.",
-      },
-      {
-        namaKomponen: "ESP32 #2 (Node Pemroses Edge AI & Router)",
-        pinTerhubung: "UART Bus GPIO 16/17 & Wi-Fi Mesh",
-        fungsi: "Menjalankan filter rata-rata dan inferensi anomali.",
-      },
-      {
-        namaKomponen: "Arduino Uno R3 #3 (Node Eksekutor Aktuator)",
-        pinTerhubung: "Pin 2, 4, 13, 26 (Output Beban)",
-        fungsi: "Menggerakkan deretan relay, motor, dan indikator status klaster.",
+        namaKomponen: "ESP32 #1 + ESP32 #2 + Arduino Uno #3",
+        pinTerhubung: "GPIO 34 (ADC), GPIO 15 (Sync), GPIO 26 (Output)",
+        fungsi: "Klaster 3 mikrokontroler bekerja paralel dari hulu ke hilir.",
       },
     ],
     panduanLangkahMenjalankan: [
-      "Klik tombol 'Muat Proyek & Kode Lengkap Ini' pada kartu Proyek 7.",
-      "Klik kartu 'PROYEK 7 • TRIPLE MCU (3 TAB KODE!)' di kanvas bawah sehingga bagian 'TAB PROGRAM MCU' membuka 3 tab mikrokontroler sekaligus!",
-      "Uji Wi-Fi OTA Update: Buka tab '4. Wi-Fi OTA & Rollback' pada panel Fitur Unik lalu klik 'Upload Firmware via Wi-Fi OTA Sekarang' untuk mensimulasikan pembaruan firmware nirkabel ke klaster MCU!",
+      "Rangkaian 3 Mikrokontroler otomatis dimuat ke meja kanvas dan membuka 3 Tab Program sekaligus di editor bawah.",
+      "Karena proyek ini mendukung Cloud Telemetry, panel Server MQTT & Dashboard Blynk di bawah juga otomatis diaktifkan!",
+      "Klik tombol hijau 'Compile & Run Semua (3 MCU)' untuk menjalankan ketiga chip secara serentak.",
     ],
     topikMqttDefault: "hibahilmu/iot/proyek7/triple_mcu_cluster",
     payloadMqttContoh:
-      '{"cluster_id":101,"mcu_online":3,"edge_ai_status":"OPTIMAL","sync_latency_ms":14}',
+      '{"cluster_id":101,"mcu_online":3,"status":"ALL_3_BOARDS_RUNNING"}',
     virtualPinBlynkList: [
-      "V0 (Sinkronisasi Klaster 3-MCU)",
-      "V1 (Bebas Tugas CPU Edge AI %)",
-      "V3 (Status Eksekutor Uno #3)",
+      "V0 (Status Klaster 3-MCU)",
+      "V1 (Nilai Sensor Hulu)",
     ],
     kodeLengkapCpp: `// ============================================================================
-// PROYEK 7: ARSITEKTUR 3 MIKROKONTROLER TERINTEGRASI (TRIPLE-MCU CLUSTER)
+// PROYEK 7 (3-MCU + CLOUD): ARSITEKTUR 3 MIKROKONTROLER TERINTEGRASI
 // ============================================================================
 #include <Arduino.h>
 #include <WiFi.h>
@@ -765,150 +652,32 @@ void setup() {
   WiFi.begin("HibahIlmu-Guest", "");
   Blynk.begin(BLYNK_AUTH_TOKEN, "HibahIlmu-Guest", "");
   client.setServer("broker.hibahilmu.id", 1883);
-  Serial.println("[PROYEK 7 READY] Klaster 3 Mikrokontroler (ID: 101) Tersinkronisasi!");
+  Serial.println("[TRIPLE-MCU READY] Klaster 3 Mikrokontroler Aktif!");
 }
 
 void loop() {
   Blynk.run();
-  int nilaiSensorHulu = analogRead(PIN_ADC_INPUT);
+  int adcVal = analogRead(PIN_ADC_INPUT);
   digitalWrite(PIN_SYNC_BUS, HIGH);
   digitalWrite(PIN_AKTUATOR_KLASTER, HIGH);
 
-  Serial.println("[TRIPLE-MCU SYNC] Chip#1 -> Chip#2 -> Chip#3 Aktif | Cluster ID: " + String(CLUSTER_ID));
-
   Blynk.virtualWrite(V0, CLUSTER_ID);
-  Blynk.virtualWrite(V1, nilaiSensorHulu);
-  Blynk.virtualWrite(V3, "3_MCU_ONLINE");
-  client.publish("hibahilmu/iot/proyek7/triple_mcu_cluster", "{\\"cluster\\":101,\\"mcu_count\\":3,\\"status\\":\\"SYNC_OK\\"}");
+  Blynk.virtualWrite(V1, adcVal);
+  client.publish("hibahilmu/iot/proyek7/triple_mcu_cluster", "{\\"cluster\\":101,\\"mcu\\":3}");
   delay(1000);
 }`,
-    kodeLengkapMicroPython: `# PROYEK 7 (MicroPython main.py) - Klaster 3 Mikrokontroler Terintegrasi
+    kodeLengkapMicroPython: `# PROYEK 7 (3-MCU MicroPython)
 from machine import Pin, ADC
 import network, time
 
-CLUSTER_ID = 101
 adc = ADC(Pin(34))
 sync_pin = Pin(15, Pin.OUT)
-aktuator = Pin(26, Pin.OUT)
-
 wlan = network.WLAN(network.STA_IF)
 wlan.active(True)
 wlan.connect("HibahIlmu-Guest", "")
 
 while True:
   sync_pin.value(1)
-  aktuator.value(1)
-  print("Triple-MCU Cluster ID:", CLUSTER_ID, "ADC:", adc.read())
-  time.sleep_ms(1000)`,
-  },
-  {
-    idProyek: "proyek_8_master_npk_gps_10node_mesh",
-    nomorUrut: 8,
-    badgeKategori: "PROYEK 8 • MASTER 10-NODE & AIoT",
-    jumlahTabMcuLabel: "Multi-Hop Mesh",
-    judulProyek:
-      "Stasiun Pertanian Presisi & 10-Node Multi-Hop Mesh (Sensor Pupuk NPK + GPS NEO-6M + Baterai 18650 + Cloud)",
-    ringkasanSistem:
-      "Proyek puncak integrasi seluruh sensor perkebunan: membaca unsur hara Nitrogen-Fosfor-Kalium dari Sensor NPK RS485 (Pin 16/17), mengunci titik koordinat satelit GPS NEO-6M (GPIO 4), memantau voltase Baterai Li-Ion 18650 & Panel Surya (GPIO 35), lalu mengirimkannya secara estafet Multi-Hop (Node 1 ➔ ... ➔ Node 10) menuju Broker Cloud & Dashboard Blynk!",
-    daftarKomponenDanPin: [
-      {
-        namaKomponen: "Sensor Pupuk NPK Tanah 3-Garpu (RS485 Modbus)",
-        pinTerhubung: "Pin RO/DI -> RX2/TX2 (GPIO 16 & 17)",
-        fungsi: "Mengukur kandungan Nitrogen, Fosfor, dan Kalium tanah (mg/kg).",
-      },
-      {
-        namaKomponen: "Modul Satelit GPS u-blox NEO-6M",
-        pinTerhubung: "Pin TX GPS -> GPIO 4 | VCC -> 3V3",
-        fungsi: "Mengunci titik koordinat Latitude dan Longitude lahan perkebunan.",
-      },
-      {
-        namaKomponen: "Socket Baterai 18650 + Sensor Tegangan + Pompa Pupuk",
-        pinTerhubung: "Sensor Volt -> GPIO 35 | Pompa Dosis -> GPIO 25",
-        fungsi: "Memantau persentase baterai lapangan dan menyemprotkan pupuk cair.",
-      },
-    ],
-    panduanLangkahMenjalankan: [
-      "Klik tombol 'Muat Proyek & Kode Lengkap Ini' pada kartu Proyek 8.",
-      "Uji Jaringan 10-Node Self-Healing: Buka panel '1. Chaos & Self-Healing Mesh' lalu klik NODE #4 dan NODE #7 untuk mematikan node tersebut, dan amati bagaimana paket NPK & GPS otomatis melompati node yang mati menuju Gateway Node #10!",
-      "Uji Kalkulator Baterai & Deep Sleep: Buka tab '3. Kalkulator Baterai 18650' untuk melihat daya tahan baterai di kebun.",
-      "Ekspor Skema IEEE & Laporan Word: Buka tab '10. Auto-Wire & Skema IEEE' untuk mengunduh diagram skematik jurnal (.svg) dan klik 'Unduh Dokumentasi Proyek Studio (.docx)'!",
-    ],
-    topikMqttDefault: "hibahilmu/iot/proyek8/mesh_npk_gps",
-    payloadMqttContoh:
-      '{"node":1,"next_hop":2,"npk":[145,88,210],"gps":[-0.5071,101.4478],"batt_v":4.08}',
-    virtualPinBlynkList: [
-      "V0 (Rute Estafet 10-Node Mesh)",
-      "V1 (Kadar NPK Tanah mg/kg)",
-      "V2 (Koordinat GPS Kebun)",
-      "V3 (Tegangan Baterai 18650 V)",
-    ],
-    kodeLengkapCpp: `// ============================================================================
-// PROYEK 8: STASIUN NPK RS485, GPS NEO-6M, BATERAI 18650 & 10-NODE MESH CLOUD
-// ============================================================================
-#include <Arduino.h>
-#include <WiFi.h>
-#include <esp_now.h>
-#include <TinyGPSPlus.h>
-#include <PubSubClient.h>
-#define BLYNK_TEMPLATE_ID "TMPL_HIBAHILMU_08"
-#define BLYNK_AUTH_TOKEN "Token_Proyek8_MasterMesh10Node"
-#include <BlynkSimpleEsp32.h>
-
-#define NODE_ID 1
-#define NEXT_HOP 2
-#define PIN_GPS_RX 4
-#define PIN_BATT_ADC 35
-#define PIN_POMPA_PUPUK 25
-
-WiFiClient espClient;
-PubSubClient client(espClient);
-
-void setup() {
-  Serial.begin(115200);
-  Serial2.begin(9600, SERIAL_8N1, 16, 17);
-  pinMode(PIN_GPS_RX, INPUT);
-  pinMode(PIN_BATT_ADC, INPUT);
-  pinMode(PIN_POMPA_PUPUK, OUTPUT);
-
-  WiFi.mode(WIFI_STA);
-  WiFi.begin("HibahIlmu-Guest", "");
-  esp_now_init();
-  Blynk.begin(BLYNK_AUTH_TOKEN, "HibahIlmu-Guest", "");
-  client.setServer("broker.hibahilmu.id", 1883);
-  Serial.println("[PROYEK 8 READY] Stasiun NPK, GPS, Baterai 18650 & 10-Node Mesh Aktif!");
-}
-
-void loop() {
-  Blynk.run();
-  int adcBaterai = analogRead(PIN_BATT_ADC);
-  float voltBaterai = (adcBaterai / 4095.0) * 4.2;
-  digitalWrite(PIN_POMPA_PUPUK, HIGH);
-
-  Serial.printf("[MESH HOP %d->%d] NPK: 145-88-210 mg/kg | GPS: -0.5071, 101.4478 | Batt: %.2fV\\n", NODE_ID, NEXT_HOP, voltBaterai);
-
-  Blynk.virtualWrite(V0, "HOP_1_TO_10_OK");
-  Blynk.virtualWrite(V1, 145);
-  Blynk.virtualWrite(V2, "-0.5071, 101.4478");
-  Blynk.virtualWrite(V3, voltBaterai);
-  client.publish("hibahilmu/iot/proyek8/mesh_npk_gps", "{\\"node\\":1,\\"npk\\":145,\\"gps\\":\\"-0.5071,101.4478\\",\\"batt\\":4.08}");
-  delay(1000);
-}`,
-    kodeLengkapMicroPython: `# PROYEK 8 (MicroPython main.py) - Stasiun NPK, GPS, Baterai & 10-Node Mesh
-from machine import Pin, ADC, UART
-import network, time
-
-uart_npk = UART(2, baudrate=9600, tx=17, rx=16)
-batt_adc = ADC(Pin(35))
-pompa_pupuk = Pin(25, Pin.OUT)
-
-wlan = network.WLAN(network.STA_IF)
-wlan.active(True)
-wlan.connect("HibahIlmu-Guest", "")
-
-while True:
-  pompa_pupuk.value(1)
-  volt = (batt_adc.read() / 4095.0) * 4.2
-  print("10-Node Mesh NPK: 145 mg/kg | GPS: -0.5071, 101.4478 | Batt:", round(volt, 2), "V")
   time.sleep_ms(1000)`,
   },
 ];
