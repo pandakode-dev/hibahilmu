@@ -43,6 +43,20 @@ export interface ItemKatalogFiturSimulator {
 // ============================================================================
 export const KATALOG_FITUR_HIBAHILMU_IOT: ItemKatalogFiturSimulator[] = [
   {
+    id: "studio_sandbox_mqtt_blynk",
+    kategori: "AIoT, Mesh & Laporan",
+    badge: "FITUR STUDIO TAB 1",
+    judulFitur: "Workbench Kreasi Bebas (Tab 1): Live MQTT Broker, Blynk Cloud & Denah Ruangan",
+    deskripsiLengkap:
+      "Setelah lulus dari Tab 2 (Akademi), gunakan Tab 1 (Studio Kanvas HibahIlmu IoT Simulator) untuk berkreasi bebas merakit proyek sendiri lengkap dengan Denah Ruangan Fisik, Konsol Broker MQTT (Publish/Subscribe JSON), Widget Blynk Virtual Pin, Multimeter, dan Ekspor Dokumentasi Proyek (.docx).",
+    caraPakaiSingkat: [
+      "Buka Tab '1. Studio Kanvas HibahIlmu IoT Simulator' di bagian kiri atas.",
+      "Gunakan tombol '+ Suntikkan Blok Kode Cepat' untuk memasukkan template Wi-Fi HibahIlmu-Guest, MQTT Publish, atau Blynk Virtual Pin.",
+      "Uji pengiriman payload JSON secara langsung pada panel '2. Live MQTT Broker Inspector' dan unduh dokumentasi proyek (.docx).",
+    ],
+    warnaaksen: "border-emerald-400 bg-emerald-950/30",
+  },
+  {
     id: "multi_slot_ortho",
     kategori: "Dasar & Perakitan",
     badge: "FITUR INTI #1",

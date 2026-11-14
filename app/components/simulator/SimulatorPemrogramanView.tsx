@@ -1,3 +1,4 @@
+import { HibahIlmuStudioSandboxSuite } from "./HibahIlmuStudioSandboxSuite";
 import { HibahIlmuIotGuideBannerAndModal } from "./HibahIlmuIotGuideAndTourModal";
 "use client";
 
@@ -361,10 +362,19 @@ export const SimulatorPemrogramanView: React.FC<SimulatorPemrogramanProps> = ({
 
           {/* TAMPILKAN HANYA 1 SUB-KATEGORI YANG DIPILIH AGAR TIDAK PANJANG KE BAWAH */}
           {subModeWokwi === "kanvas_studio" && (
-            <ElectronicAndIotCanvas
-              mode="wokwi"
-              userLogin={userLogin}
-              onUpdateKodeDariCloud={(kodeBaru) => setKodeEditor(kodeBaru)}
+            <div className="space-y-5">
+              <HibahIlmuIotGuideBannerAndModal />
+              <HibahIlmuStudioSandboxSuite
+                kodeStudioAktif={kodeEditor}
+                onUpdateKodeStudio={(kodeBaru) => setKodeEditor(kodeBaru)}
+              />
+              <ElectronicAndIotCanvas
+                mode="wokwi"
+                userLogin={userLogin}
+                onUpdateKodeDariCloud={(kodeBaru) => setKodeEditor(kodeBaru)}
+              />
+            </div>
+          )}
             />
           )}
 
