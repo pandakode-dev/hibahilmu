@@ -25,14 +25,13 @@ export interface LangkahSpotlightCoachmark {
 }
 
 // ============================================================================
-// 1. TUR SOROTAN LENGKAP TAB 1 (STUDIO KANVAS — 11 TITIK SOROTAN DETAIL!)
-// Mencakup semua bagian di Gambar 1, Gambar 2, dan Gambar 3
+// 1. TUR SOROTAN LENGKAP TAB 1 (STUDIO KANVAS - 11 TITIK SOROTAN DETAIL)
 // ============================================================================
 export const TUR_SPOTLIGHT_TAB_1_STUDIO: LangkahSpotlightCoachmark[] = [
   {
     langkah: 1,
-    badgeArea: "BAGIAN 1 • MONITOR SINKRONISASI KODE & CLOUD",
-    judul: "1. Bar Sinkronisasi Kode C++ ➔ Rangkaian ➔ MQTT & Blynk",
+    badgeArea: "BAGIAN 1 - MONITOR SINKRONISASI KODE & CLOUD",
+    judul: "1. Bar Sinkronisasi Kode C++ -> Rangkaian -> MQTT & Blynk",
     isi: "Kotak paling atas ini memeriksa secara real-time apakah Pin GPIO, koneksi Wi-Fi HibahIlmu-Guest, fungsi Publish MQTT, dan Virtual Pin Blynk sudah Anda tulis di dalam kode program.",
     tipsPraktis:
       "Jika indikator masih abu-abu/merah, gunakan tombol suntik kode cepat di bawahnya.",
@@ -43,11 +42,11 @@ export const TUR_SPOTLIGHT_TAB_1_STUDIO: LangkahSpotlightCoachmark[] = [
   },
   {
     langkah: 2,
-    badgeArea: "BAGIAN 2 • WORKBENCH KREASI, INJEKTOR KODE & LAPORAN .DOCX",
+    badgeArea: "BAGIAN 2 - WORKBENCH KREASI, INJEKTOR KODE & LAPORAN .DOCX",
     judul: "2. Suntikkan Snippet Kode Cepat, Live MQTT Tester & Ekspor .DOCX",
     isi: "Di panel Workbench ini, Anda bisa menyuntikkan kode Wi-Fi/MQTT/Blynk dalam 1 klik, menguji pengiriman JSON ke Broker MQTT, membuka Multimeter/Osiloskop, dan mengunduh Dokumentasi Proyek (.docx)!",
     tipsPraktis:
-      "Klik tombol biru '📄 Unduh Dokumentasi Proyek Studio (.docx)' kapan saja untuk mencetak laporan lengkap.",
+      "Klik tombol biru 'Unduh Dokumentasi Proyek Studio (.docx)' kapan saja untuk mencetak laporan lengkap.",
     kataKunciElemenDom: [
       "WORKBENCH KREASI BEBAS",
       "1. Suntikkan Blok Kode Cepat ke Editor Studio:",
@@ -55,9 +54,9 @@ export const TUR_SPOTLIGHT_TAB_1_STUDIO: LangkahSpotlightCoachmark[] = [
   },
   {
     langkah: 3,
-    badgeArea: "BAGIAN 3 • TEMPLATE 7 PROYEK JADI & DENAH RUANGAN GEDUNG",
+    badgeArea: "BAGIAN 3 - TEMPLATE 7 PROYEK JADI & DENAH RUANGAN GEDUNG",
     judul: "3. Muat 7 Proyek Industri Jadi & Atur Denah Ruangan (Packet Tracer Mode)",
-    isi: "Pilih salah satu dari 7 template proyek siap pakai (Lampu Jalan LDR, Smart Door Lock, Greenhouse, Pemadam Api, hingga Triple-MCU) dan aktifkan Denah 2–4 Ruangan untuk menaruh sensor di ruangan berbeda!",
+    isi: "Pilih salah satu dari 7 template proyek siap pakai (Lampu Jalan LDR, Smart Door Lock, Greenhouse, Pemadam Api, hingga Triple-MCU) dan aktifkan Denah 2-4 Ruangan untuk menaruh sensor di ruangan berbeda!",
     tipsPraktis:
       "Anda bisa menambahkan ruangan baru (misal: Garasi / Kebun) dan memilih tema warnanya.",
     kataKunciElemenDom: [
@@ -67,7 +66,7 @@ export const TUR_SPOTLIGHT_TAB_1_STUDIO: LangkahSpotlightCoachmark[] = [
   },
   {
     langkah: 4,
-    badgeArea: "BAGIAN 4 • GUDANG 48 KOMPONEN PERANGKAT KERAS",
+    badgeArea: "BAGIAN 4 - GUDANG 48 KOMPONEN PERANGKAT KERAS",
     judul: "4. Gudang 48 Komponen (MCU, Sensor, Relay, Motor & Baterai)",
     isi: "Berisi 48 jenis perangkat keras lengkap dengan label jumlah kaki pinnya. Tarik (Drag & Drop) komponen yang Anda inginkan langsung ke dalam zona ruangan di meja kanvas bawah!",
     tipsPraktis:
@@ -79,9 +78,9 @@ export const TUR_SPOTLIGHT_TAB_1_STUDIO: LangkahSpotlightCoachmark[] = [
   },
   {
     langkah: 5,
-    badgeArea: "BAGIAN 5 • TOOLBAR COMPILE, DUPLIKAT & 7 WARNA KABEL",
+    badgeArea: "BAGIAN 5 - TOOLBAR COMPILE, DUPLIKAT & 7 WARNA KABEL",
     judul: "5. Tombol Compile & Run Semua MCU, Duplikat Komponen & Warna Kabel",
-    isi: "Gunakan tombol hijau '▶ Compile & Run Semua' untuk menyalakan seluruh mikrokontroler di kanvas, tombol '📋 Duplikat' untuk menggandakan komponen terpilih, dan 7 pilihan warna kabel (Merah, Hitam, Biru, Hijau, Kuning, Ungu, Oranye) agar jalur kabel rapi!",
+    isi: "Gunakan tombol hijau 'Compile & Run Semua' untuk menyalakan seluruh mikrokontroler di kanvas, tombol 'Duplikat' untuk menggandakan komponen terpilih, dan 7 pilihan warna kabel (Merah, Hitam, Biru, Hijau, Kuning, Ungu, Oranye) agar jalur kabel rapi!",
     tipsPraktis:
       "Klik dulu warna kabel yang diinginkan sebelum menarik garis antar kaki pin di kanvas.",
     kataKunciElemenDom: [
@@ -91,9 +90,9 @@ export const TUR_SPOTLIGHT_TAB_1_STUDIO: LangkahSpotlightCoachmark[] = [
   },
   {
     langkah: 6,
-    badgeArea: "BAGIAN 6 • KANVAS ZONA RUANGAN & CHIP DAFTAR KABEL",
+    badgeArea: "BAGIAN 6 - KANVAS ZONA RUANGAN & CHIP DAFTAR KABEL",
     judul: "6. Meja Kanvas Multi-Zona & Baris 'Pilih / Edit Kabel'",
-    isi: "Di bagian atas meja kanvas terdapat deretan tombol chip 'Pilih / Edit Kabel (#1 SIG➔GPIO4, dst.)'. Klik chip tersebut untuk menyorot atau menghapus kabel tertentu. Di bawahnya adalah meja perakitan dengan dukungan cabang T-Junction dan tekukan kabel fleksibel!",
+    isi: "Di bagian atas meja kanvas terdapat deretan tombol chip 'Pilih / Edit Kabel (#1 SIG->GPIO4, dst.)'. Klik chip tersebut untuk menyorot atau menghapus kabel tertentu. Di bawahnya adalah meja perakitan dengan dukungan cabang T-Junction dan tekukan kabel fleksibel!",
     tipsPraktis:
       "Geser komponen ke dalam kotak Zona Ruangan (Ruang A / Ruang B) agar terdata di denah gedung.",
     kataKunciElemenDom: [
@@ -103,7 +102,7 @@ export const TUR_SPOTLIGHT_TAB_1_STUDIO: LangkahSpotlightCoachmark[] = [
   },
   {
     langkah: 7,
-    badgeArea: "BAGIAN 7 • SIDEBAR INSPECTOR, MANUAL OVERRIDE & PINOUT",
+    badgeArea: "BAGIAN 7 - SIDEBAR INSPECTOR, MANUAL OVERRIDE & PINOUT",
     judul: "7. Sidebar Inspector: Lokasi Ruangan, Sakelar Uji Paksa & Info Kaki Pin",
     isi: "Saat Anda mengklik komponen di kanvas, sidebar kanan ini menampilkan: (1) Lokasi Ruangan & Nama Komponen, (2) Tombol Hijau 'STATUS: ON/HIGH' untuk menyalakan/mematikan aktuator secara manual, dan (3) Penjelasan fungsi setiap kaki pinnya (Anoda, Katoda, VCC, GND, SIG)!",
     tipsPraktis:
@@ -115,9 +114,9 @@ export const TUR_SPOTLIGHT_TAB_1_STUDIO: LangkahSpotlightCoachmark[] = [
   },
   {
     langkah: 8,
-    badgeArea: "BAGIAN 8 • MULTI-MCU IDE, KONVERTER MICROPYTHON & LIBRARY",
-    judul: "8. Editor Multi-Board, Konverter '⇄ Ubah ke MicroPython' & Library #include",
-    isi: "Bagian ini adalah IDE pemrograman untuk setiap board MCU di kanvas (Tab #1, Tab #2, dst.). Dilengkapi tombol emas '⇄ Ubah ke MicroPython' yang menerjemahkan kode C++ ke Python secara otomatis, bar '+ Sisipkan Library Resmi (#include)', serta Serial Monitor di sebelah kanan!",
+    badgeArea: "BAGIAN 8 - MULTI-MCU IDE, KONVERTER MICROPYTHON & LIBRARY",
+    judul: "8. Editor Multi-Board, Konverter 'Ubah ke MicroPython' & Library #include",
+    isi: "Bagian ini adalah IDE pemrograman untuk setiap board MCU di kanvas (Tab #1, Tab #2, dst.). Dilengkapi tombol emas 'Ubah ke MicroPython' yang menerjemahkan kode C++ ke Python secara otomatis, bar '+ Sisipkan Library Resmi (#include)', serta Serial Monitor di sebelah kanan!",
     tipsPraktis:
       "Klik tombol '+ #include <DHT.h>' atau '+ #include <WiFi.h>' agar tidak salah mengetik nama library.",
     kataKunciElemenDom: [
@@ -128,9 +127,9 @@ export const TUR_SPOTLIGHT_TAB_1_STUDIO: LangkahSpotlightCoachmark[] = [
   },
   {
     langkah: 9,
-    badgeArea: "BAGIAN 9 • SERVER BROKER MANDIRI & GUDANG 16 WIDGET BLYNK",
+    badgeArea: "BAGIAN 9 - SERVER BROKER MANDIRI & GUDANG 16 WIDGET BLYNK",
     judul: "9. Server MQTT/REST Mandiri, Kode ESP32 Fisik & Gudang 16 Widget Blynk",
-    isi: "Di bagian ini Anda dapat mengontrol Server Broker Mandiri, membuat kode C++ untuk di-upload ke ESP32 fisik nyata ('</> Buat Kode ESP32 Asli'), serta menarik 16 jenis Widget Blynk (Gauge, Switch, Slider PWM, SuperChart, Telegram, WhatsApp, Joystick, zeRGBa) ke kanvas dashboard!",
+    isi: "Di bagian ini Anda dapat mengontrol Server Broker Mandiri, membuat kode C++ untuk di-upload ke ESP32 fisik nyata ('Buat Kode ESP32 Asli'), serta menarik 16 jenis Widget Blynk (Gauge, Switch, Slider PWM, SuperChart, Telegram, WhatsApp, Joystick, zeRGBa) ke kanvas dashboard!",
     tipsPraktis:
       "Klik atau tarik kartu widget dari Gudang Widget Blynk untuk menambahkannya ke dashboard bawah.",
     kataKunciElemenDom: [
@@ -140,9 +139,9 @@ export const TUR_SPOTLIGHT_TAB_1_STUDIO: LangkahSpotlightCoachmark[] = [
   },
   {
     langkah: 10,
-    badgeArea: "BAGIAN 10 • KANVAS DASHBOARD BLYNK (V0–V3) & HP ANDROID APP",
+    badgeArea: "BAGIAN 10 - KANVAS DASHBOARD BLYNK (V0-V3) & HP ANDROID APP",
     judul: "10. Kanvas Widget Virtual Pin (V0..V3) & Layar Blynk Android App Live",
-    isi: "Susun kartu widget Virtual Pin (V0 WA Alert, V1 Kadar Gas, V2 Sirine, V3 Pompa) di kanvas kiri, klik '⊞ Rapikan Posisi Widget Otomatis', dan lihat tampilan sinkronnya secara langsung di layar smartphone 'Blynk Android App' di sebelah kanan beserta URL Endpoint API-nya!",
+    isi: "Susun kartu widget Virtual Pin (V0 WA Alert, V1 Kadar Gas, V2 Sirine, V3 Pompa) di kanvas kiri, klik 'Rapikan Posisi Widget Otomatis', dan lihat tampilan sinkronnya secara langsung di layar smartphone 'Blynk Android App' di sebelah kanan beserta URL Endpoint API-nya!",
     tipsPraktis:
       "Klik tombol '/unlock', slider, atau sakelar ON/OFF di dalam widget untuk mengirim perintah balik ke rangkaian ESP32.",
     kataKunciElemenDom: [
@@ -153,7 +152,7 @@ export const TUR_SPOTLIGHT_TAB_1_STUDIO: LangkahSpotlightCoachmark[] = [
   },
   {
     langkah: 11,
-    badgeArea: "BAGIAN 11 • PILIH BROKER, TOKEN UNIK AKUN & LIVE TRAFFIC",
+    badgeArea: "BAGIAN 11 - PILIH BROKER, TOKEN UNIK AKUN & LIVE TRAFFIC",
     judul: "11. Konfigurasi Server Broker, Token Unik Proyek & Penguji Live Traffic",
     isi: "Tiga kotak di bagian paling bawah ini berfungsi untuk: (1) Memilih Broker Web HibahIlmu atau Public HiveMQ beserta Wi-Fi 5G, (2) Menyalin atau mengacak ulang Token Unik Proyek Anda, dan (3) Mengirim perintah uji langsung (seperti '/unlock_solenoid') ke trafik broker!",
     tipsPraktis:
@@ -167,15 +166,14 @@ export const TUR_SPOTLIGHT_TAB_1_STUDIO: LangkahSpotlightCoachmark[] = [
 ];
 
 // ============================================================================
-// 2. TUR SOROTAN LENGKAP TAB 2 (AKADEMI BELAJAR — 8 TITIK SOROTAN DETAIL!)
-// Mencakup semua bagian di Gambar 4 dan Gambar 5
+// 2. TUR SOROTAN LENGKAP TAB 2 (AKADEMI BELAJAR - 8 TITIK SOROTAN DETAIL)
 // ============================================================================
 export const TUR_SPOTLIGHT_TAB_2_AKADEMI: LangkahSpotlightCoachmark[] = [
   {
     langkah: 1,
-    badgeArea: "BAGIAN 1 • PILIH BAHASA (C++ / MICROPYTHON) & MODE LATIHAN",
+    badgeArea: "BAGIAN 1 - PILIH BAHASA (C++ / MICROPYTHON) & MODE LATIHAN",
     judul: "1. Switcher C++ vs MicroPython, Mode Latihan Mandiri (Pin Baru) & Silabus",
-    isi: "Pilih bahasa ⚡ C++ Arduino (sketch.ino) atau 🐍 MicroPython (main.py). Gunakan '👁️ Mode Terpandu' untuk panduan berkedip, atau klik '🎯 Latihan Mandiri (Pin Baru!)' untuk mengerjakan studi kasus dengan alokasi Pin GPIO baru tanpa bantuan berkedip!",
+    isi: "Pilih bahasa C++ Arduino (sketch.ino) atau MicroPython (main.py). Gunakan 'Mode Terpandu' untuk panduan berkedip, atau klik 'Latihan Mandiri (Pin Baru!)' untuk mengerjakan studi kasus dengan alokasi Pin GPIO baru tanpa bantuan berkedip!",
     tipsPraktis:
       "Klik tombol Bab 1 s.d. Bab 5 di bawahnya untuk berpindah antar-topik dari Dasar hingga 10-Node Mesh.",
     kataKunciElemenDom: [
@@ -185,23 +183,23 @@ export const TUR_SPOTLIGHT_TAB_2_AKADEMI: LangkahSpotlightCoachmark[] = [
   },
   {
     langkah: 2,
-    badgeArea: "BAGIAN 2 • GUDANG 48 KOMPONEN DENGAN SOROTAN BERKEDIP",
+    badgeArea: "BAGIAN 2 - GUDANG 48 KOMPONEN DENGAN SOROTAN BERKEDIP",
     judul: "2. Gudang Komponen Akademi (Tarik Kartu yang Berkedip ke Slot #1..#N)",
     isi: "Pada Mode Terpandu, komponen yang wajib Anda gunakan pada level ini akan menyala berkedip kuning. Tarik (Drag) atau klik komponen tersebut lalu masukkan ke kotak Slot #1 s.d. Slot #N di kanvas bawah!",
     tipsPraktis:
       "Setiap level memiliki variasi jumlah komponen mulai dari 1, 3, 5, 7, hingga 10 komponen sekaligus.",
     kataKunciElemenDom: [
       "Gudang Komponen (Tarik Komponen yang Berkedip",
-      "Gudang Komponen — Mode Latihan Mandiri",
+      "Gudang Komponen",
     ],
   },
   {
     langkah: 3,
-    badgeArea: "BAGIAN 3 • MEJA KANVAS MULTI-SLOT & KABEL SIKU-SIKU 90°",
+    badgeArea: "BAGIAN 3 - MEJA KANVAS MULTI-SLOT & KABEL SIKU-SIKU 90 DERAJAT",
     judul: "3. Perakitan Multi-Slot, Kabel Siku-Siku & Panel Interaksi Fisik Sensor",
-    isi: "Sambungkan semua titik kaki pin menggunakan kabel siku-siku 90°. Ingat: setelah program dijalankan (RUNNING), aktuator TIDAK langsung menyala sendiri! Anda wajib menekan tombol Push Button atau menggeser slider Potensio/LDR/Suhu/Gas agar aktuator bekerja seperti alat aslinya!",
+    isi: "Sambungkan semua titik kaki pin menggunakan kabel siku-siku 90 derajat. Ingat: setelah program dijalankan (RUNNING), aktuator TIDAK langsung menyala sendiri! Anda wajib menekan tombol Push Button atau menggeser slider Potensio/LDR/Suhu/Gas agar aktuator bekerja seperti alat aslinya!",
     tipsPraktis:
-      "Untuk menghapus 1 kabel yang salah pasang, cukup klik tanda bulat '✕' di tengah kabel tersebut.",
+      "Untuk menghapus 1 kabel yang salah pasang, cukup klik tanda bulat 'X' di tengah kabel tersebut.",
     kataKunciElemenDom: [
       "Slot #1: ESP32 DevKit V1",
       "Kabel Siku-Siku Terpasang",
@@ -209,7 +207,7 @@ export const TUR_SPOTLIGHT_TAB_2_AKADEMI: LangkahSpotlightCoachmark[] = [
   },
   {
     langkah: 4,
-    badgeArea: "BAGIAN 4 • MULTIMETER, OSILOSKOP PWM, PLOTTER & BATERAI 18650",
+    badgeArea: "BAGIAN 4 - MULTIMETER, OSILOSKOP PWM, PLOTTER & BATERAI 18650",
     judul: "4. Instrumen Lab Virtual: Multimeter, Osiloskop, Serial Plotter & Daya",
     isi: "Gunakan panel ini untuk mengukur tegangan & arus di kaki pin mana pun, melihat grafik gelombang kotak PWM di Osiloskop, memantau 4 kurva grafik sensor di Live Serial Plotter, serta menghitung penghematan baterai 18650 dengan mode Deep Sleep!",
     tipsPraktis:
@@ -221,11 +219,11 @@ export const TUR_SPOTLIGHT_TAB_2_AKADEMI: LangkahSpotlightCoachmark[] = [
   },
   {
     langkah: 5,
-    badgeArea: "BAGIAN 5 • STEP-BY-STEP DEBUGGER, TESTBENCH & EKSPOR .DOCX",
+    badgeArea: "BAGIAN 5 - STEP-BY-STEP DEBUGGER, TESTBENCH & EKSPOR .DOCX",
     judul: "5. Debugger Baris demi Baris, Grader 3 Skenario & Laporan Word (.docx)",
-    isi: "Klik '🐢 Jalankan Step-by-Step Debugger' untuk melihat sorotan kuning berjalan baris demi baris di editor kode, klik '🧪 Uji Otomatis 3 Skenario' untuk memvalidasi rangkaian secara menyeluruh, dan klik '📄 Unduh Laporan Praktikum (.docx)' untuk mengunduh laporan resmi!",
+    isi: "Klik 'Jalankan Step-by-Step Debugger' untuk melihat sorotan kuning berjalan baris demi baris di editor kode, klik 'Uji Otomatis 3 Skenario' untuk memvalidasi rangkaian secara menyeluruh, dan klik 'Unduh Laporan Praktikum (.docx)' untuk mengunduh laporan resmi!",
     tipsPraktis:
-      "Gunakan tombol '⚡ Uji Lompatan Interrupt ISR' untuk melihat bagaimana interupsi perangkat keras bekerja.",
+      "Gunakan tombol 'Uji Lompatan Interrupt ISR' untuk melihat bagaimana interupsi perangkat keras bekerja.",
     kataKunciElemenDom: [
       "Jalankan Step-by-Step Debugger",
       "Unduh Laporan Praktikum (.docx)",
@@ -233,9 +231,9 @@ export const TUR_SPOTLIGHT_TAB_2_AKADEMI: LangkahSpotlightCoachmark[] = [
   },
   {
     langkah: 6,
-    badgeArea: "BAGIAN 6 • CHAOS 10-NODE MESH, WEBHOOK HP & TINYML EDGE AI",
+    badgeArea: "BAGIAN 6 - CHAOS 10-NODE MESH, WEBHOOK HP & TINYML EDGE AI",
     judul: "6. Simulator Gangguan Lapangan (Chaos Mesh), Chat HP & TinyML AI",
-    isi: "Pada panel Tahap 2 ini (seperti di Gambar 4), Anda bisa mengaktifkan Hujan Badai (-84 dBm), menyuntikkan Noise Sensor, atau mengklik NODE #2..#9 untuk mematikan node dan melihat rute Self-Healing otomatis melompati node yang mati!",
+    isi: "Pada panel Tahap 2 ini, Anda bisa mengaktifkan Hujan Badai (-84 dBm), menyuntikkan Noise Sensor, atau mengklik NODE #2..#9 untuk mematikan node dan melihat rute Self-Healing otomatis melompati node yang mati!",
     tipsPraktis:
       "Buka juga tab '2. Smartphone Telegram/WA Live' dan '3. TinyML Edge AI ESP32' di sebelah kanannya.",
     kataKunciElemenDom: [
@@ -245,9 +243,9 @@ export const TUR_SPOTLIGHT_TAB_2_AKADEMI: LangkahSpotlightCoachmark[] = [
   },
   {
     langkah: 7,
-    badgeArea: "BAGIAN 7 • CHECKLIST TARGET KODE & TOMBOL '+ SISIPKAN BARIS INI'",
+    badgeArea: "BAGIAN 7 - CHECKLIST TARGET KODE & TOMBOL '+ SISIPKAN BARIS INI'",
     judul: "7. Panel Asisten Kiri: Teori, Checklist Kabel & Target Ketik Baris demi Baris",
-    isi: "Kotak di sebelah kiri bawah (seperti di Gambar 4) menampilkan: (1) Dasar Teori & tombol 'Lihat Skema Gambar', (2) Target Sambungan Kabel Pin, dan (3) Daftar Target Baris Kode yang otomatis berubah hijau ('✓ SUDAH TEPAT') saat diketik, lengkap dengan tombol '+ Sisipkan Baris Ini' dan '👁️ Intip Kode Utuh'!",
+    isi: "Kotak di sebelah kiri bawah menampilkan: (1) Dasar Teori & tombol 'Lihat Skema Gambar', (2) Target Sambungan Kabel Pin, dan (3) Daftar Target Baris Kode yang otomatis berubah hijau ('SUDAH TEPAT') saat diketik, lengkap dengan tombol '+ Sisipkan Baris Ini' dan 'Intip Kode Utuh'!",
     tipsPraktis:
       "Jika malas mengetik manual, klik saja tombol ungu '+ Sisipkan Baris Ini' pada setiap kotak TARGET #1, #2, dst.",
     kataKunciElemenDom: [
@@ -257,9 +255,9 @@ export const TUR_SPOTLIGHT_TAB_2_AKADEMI: LangkahSpotlightCoachmark[] = [
   },
   {
     langkah: 8,
-    badgeArea: "BAGIAN 8 • EDITOR KODE, TOMBOL JALANKAN & SERIAL MONITOR",
+    badgeArea: "BAGIAN 8 - EDITOR KODE, TOMBOL JALANKAN & SERIAL MONITOR",
     judul: "8. Editor Program (sketch.ino / main.py) & Layar Serial Monitor (115200 baud)",
-    isi: "Di sebelah kanan terdapat Editor Kode dengan penomor baris, tombol '✨ Bantuan Rakit & Kode', tombol hijau '▶ 1. Periksa Semua Kaki & Jalankan', serta kotak hitam '📟 Serial Monitor & Compiler Output (115200 baud)' di bagian bawahnya (seperti di Gambar 5) yang mencetak hasil eksekusi program!",
+    isi: "Di sebelah kanan terdapat Editor Kode dengan penomor baris, tombol 'Bantuan Rakit & Kode', tombol hijau '1. Periksa Semua Kaki & Jalankan', serta kotak hitam 'Serial Monitor & Compiler Output (115200 baud)' di bagian bawahnya yang mencetak hasil eksekusi program!",
     tipsPraktis:
       "Setelah lulus verifikasi, tombol '2. Lanjut Level Berikutnya' di sebelah kanan tombol hijau akan terbuka otomatis.",
     kataKunciElemenDom: [
@@ -270,21 +268,59 @@ export const TUR_SPOTLIGHT_TAB_2_AKADEMI: LangkahSpotlightCoachmark[] = [
 ];
 
 // ============================================================================
-// 3. KATALOG ENSIKLOPEDIA LENGKAP (MENCAKUP SEMUA BAGIAN DI GAMBAR 1–5)
+// 3. KATALOG ENSIKLOPEDIA LENGKAP (MENCAKUP SEMUA BAGIAN + 10 FITUR UNIK TAB 1)
 // ============================================================================
 export const KATALOG_FITUR_HIBAHILMU_IOT: ItemKatalogFiturSimulator[] = [
   {
+    id: "tab1_stage2_unique_6_to_10",
+    kategori: "Studio Kanvas & Inspector (Tab 1)",
+    badge: "5 FITUR UNIK TAHAP 2 (#6-#10)",
+    judulFitur:
+      "Solar Panel MPPT 24 Jam, Smart Home Voice Command, Cyber-Security Pentest, Blackbox Replay & Skema IEEE",
+    deskripsiLengkap:
+      "5 Fitur Lanjutan di Tab 1 Studio: (6) Simulator Panel Surya MPPT & siklus siang-malam 24 jam, (7) Perintah suara mikrofon Bahasa Indonesia ('Halo HibahIlmu!'), (8) Uji serangan hacker MITM Spoofing vs Enkripsi TLS 8883, (9) Perekam Kotak Hitam Time-Travel Replay 0.25x, dan (10) Auto-Wire Beautifier & Ekspor Skema Monokrom IEEE (.svg).",
+    caraPakaiSingkat: [
+      "Pada panel '5 FITUR UNIK TAB 1 STUDIO (TAHAP 2)', pilih tab 6 s.d. 10.",
+      "Klik 'Putar Otomatis Siklus 24 Jam' di Tab 6 untuk menguji pengisian surya MPPT dan ketahanan baterai malam hari.",
+      "Gunakan Tab 7 untuk bicara via mikrofon, Tab 8 untuk menguji serangan siber MQTT, Tab 9 untuk memutar ulang detik lonjakan gas, dan Tab 10 untuk mengunduh Skema IEEE (.svg).",
+    ],
+    kataKunciTargetDom: [
+      "5 FITUR UNIK TAB 1 STUDIO (TAHAP 2",
+      "Simulasi Energi Surya 24 Jam, Kendali Suara",
+    ],
+    warnaaksen: "border-amber-400 bg-amber-950/30",
+  },
+  {
+    id: "tab1_stage1_unique_5",
+    kategori: "Studio Kanvas & Inspector (Tab 1)",
+    badge: "5 FITUR UNIK TAHAP 1 (#1-#5)",
+    judulFitur:
+      "Fisika Lintas-Ruangan, Kalkulator RAB & Listrik PLN, Gedung 3D Isometrik, Wi-Fi OTA & I2C/Modbus Sniffer",
+    deskripsiLengkap:
+      "5 Fitur Rekayasa Sistem di Tab 1: (1) Perambatan panas & asap antar-ruangan dengan pintu sekat servo, (2) Hitung otomatis RAB Komponen (Rp) & tagihan kWh PLN, (3) Kamera 3D Isometrik Gedung, (4) Upload firmware Wi-Fi OTA dengan Watchdog Auto-Rollback, dan (5) Detektor tabrakan alamat I2C/Modbus.",
+    caraPakaiSingkat: [
+      "Pada panel '5 FITUR UNIK TAB 1 STUDIO (TAHAP 1)', pilih tab 1 s.d. 5.",
+      "Coba picu api di Ruang D dan buka Pintu Sekat Servo untuk melihat asap merambat ke ruangan lain.",
+      "Buka tab '2. RAB Rupiah & PLN' untuk menghitung anggaran alat skripsi/PKM atau tab '5. I2C / Modbus Sniffer' untuk menguji bentrok alamat 0x3C.",
+    ],
+    kataKunciTargetDom: [
+      "5 FITUR UNIK TAB 1 STUDIO (TAHAP 1)",
+      "Laboratorium Rekayasa Sistem IoT Gedung",
+    ],
+    warnaaksen: "border-teal-400 bg-teal-950/30",
+  },
+  {
     id: "toolbar_compile_warna_chip_kabel",
     kategori: "Studio Kanvas & Inspector (Tab 1)",
-    badge: "GAMBAR 1 • KANVAS ATAS",
+    badge: "GAMBAR 1 - KANVAS ATAS",
     judulFitur:
       "Toolbar Compile Multi-MCU, Duplikat, 7 Warna Kabel & Chip 'Pilih / Edit Kabel'",
     deskripsiLengkap:
-      "Mengendalikan eksekusi seluruh mikrokontroler sekaligus, menggandakan komponen terpilih, memilih 7 warna kabel standar industri, serta mengedit/menghapus kabel tertentu melalui barisan tombol chip '#1 SIG➔GPIO4', '#2 AO➔GPIO34', dst.",
+      "Mengendalikan eksekusi seluruh mikrokontroler sekaligus, menggandakan komponen terpilih, memilih 7 warna kabel standar industri, serta mengedit/menghapus kabel tertentu melalui barisan tombol chip '#1 SIG->GPIO4', '#2 AO->GPIO34', dst.",
     caraPakaiSingkat: [
       "Klik salah satu warna pada baris 'Warna Kabel:' sebelum menarik garis kabel di kanvas.",
       "Klik chip kabel pada baris 'Pilih / Edit Kabel' di atas kanvas untuk menyorot jalur kabel tersebut.",
-      "Klik tombol hijau '▶ Compile & Run Semua' untuk menyalakan seluruh rangkaian.",
+      "Klik tombol hijau 'Compile & Run Semua' untuk menyalakan seluruh rangkaian.",
     ],
     kataKunciTargetDom: [
       "Compile & Run Semua",
@@ -295,15 +331,15 @@ export const KATALOG_FITUR_HIBAHILMU_IOT: ItemKatalogFiturSimulator[] = [
   {
     id: "zona_ruangan_dan_sidebar_inspector",
     kategori: "Studio Kanvas & Inspector (Tab 1)",
-    badge: "GAMBAR 1 • KANAN KANVAS",
+    badge: "GAMBAR 1 - KANAN KANVAS",
     judulFitur:
       "Zona Ruangan Gedung (365x410px) & Sidebar 'Inspector & Lokasi Ruangan'",
     deskripsiLengkap:
-      "Menempatkan MCU dan sensor ke dalam zona ruangan fisik (Ruang Server, Smart Home / Ruang Tamu). Sidebar Inspector di kanan menampilkan lokasi ruangan, pengubah nama komponen, sakelar uji paksa 'STATUS: ON/HIGH (AKTIF)', dan panduan lengkap fungsi 2–4 kaki pin komponen.",
+      "Menempatkan MCU dan sensor ke dalam zona ruangan fisik (Ruang Server, Smart Home / Ruang Tamu). Sidebar Inspector di kanan menampilkan lokasi ruangan, pengubah nama komponen, sakelar uji paksa 'STATUS: ON/HIGH (AKTIF)', dan panduan lengkap fungsi 2-4 kaki pin komponen.",
     caraPakaiSingkat: [
       "Klik komponen apa saja di kanvas (misal LED Merah atau Sensor PIR) untuk membuka detailnya di Sidebar Inspector kanan.",
-      "Klik tombol hijau '⚡ STATUS: ON / HIGH (AKTIF)' di Inspector untuk mengetes aktuator secara langsung.",
-      "Lihat kotak 'ℹ️ DAFTAR & KETERANGAN PIN' di bawahnya untuk mengetahui kaki mana yang harus ke GPIO, VCC, atau GND.",
+      "Klik tombol hijau 'STATUS: ON / HIGH (AKTIF)' di Inspector untuk mengetes aktuator secara langsung.",
+      "Lihat kotak 'DAFTAR & KETERANGAN PIN' di bawahnya untuk mengetahui kaki mana yang harus ke GPIO, VCC, atau GND.",
     ],
     kataKunciTargetDom: [
       "INSPECTOR & LOKASI RUANGAN",
@@ -314,15 +350,15 @@ export const KATALOG_FITUR_HIBAHILMU_IOT: ItemKatalogFiturSimulator[] = [
   {
     id: "multi_mcu_ide_micropython_transpiler",
     kategori: "Multi-MCU IDE & Konverter Kode",
-    badge: "GAMBAR 1 & 2 • TENGAH",
+    badge: "GAMBAR 1 & 2 - TENGAH",
     judulFitur:
-      "Multi-MCU IDE (Tab per Board), Konverter '⇄ Ubah ke MicroPython' & Library #include",
+      "Multi-MCU IDE (Tab per Board), Konverter 'Ubah ke MicroPython' & Library #include",
     deskripsiLengkap:
       "Editor pemrograman yang mendukung banyak board sekaligus (ESP32-C6, ESP32 DevKit, Arduino Uno). Dilengkapi penerjemah otomatis dari C++ ke MicroPython, tombol sisip cepat 7 library resmi (#include <DHT.h>, <TinyGPSPlus.h>, <ESP32Servo.h>, dll.), serta layar Compiler & Multi-MCU Serial Monitor.",
     caraPakaiSingkat: [
-      "Klik tombol emas '⇄ Ubah ke MicroPython' untuk mengonversi kode C++ Anda menjadi kode MicroPython secara instan.",
+      "Klik tombol emas 'Ubah ke MicroPython' untuk mengonversi kode C++ Anda menjadi kode MicroPython secara instan.",
       "Klik tombol '+ #include <...>' untuk menambahkan library resmi ke baris atas editor.",
-      "Pantau hasil kompilasi dan jumlah komponen terhubung pada panel '>_ COMPILER & MULTI-MCU SERIAL MONITOR' di sebelah kanan.",
+      "Pantau hasil kompilasi dan jumlah komponen terhubung pada panel 'COMPILER & MULTI-MCU SERIAL MONITOR' di sebelah kanan.",
     ],
     kataKunciTargetDom: [
       "TAB PROGRAM MCU",
@@ -334,13 +370,13 @@ export const KATALOG_FITUR_HIBAHILMU_IOT: ItemKatalogFiturSimulator[] = [
   {
     id: "server_mqtt_gudang_16_widget_blynk",
     kategori: "Server MQTT, Blynk & HP Android",
-    badge: "GAMBAR 2 & 3 • CLOUD IOT",
+    badge: "GAMBAR 2 & 3 - CLOUD IOT",
     judulFitur:
       "Server MQTT/REST Mandiri, Generator Firmware ESP32 Asli & Gudang 16 Widget Blynk",
     deskripsiLengkap:
-      "Menjalankan broker IoT mandiri di dalam web, mengekspor kode C++ untuk di-flash ke papan ESP32 fisik ('</> Buat Kode ESP32 Asli'), serta menyediakan 16 jenis Widget Blynk (Gauge, Switch, Slider PWM, SuperChart, Telegram Bot, WhatsApp Gateway, Joystick, zeRGBa) yang bisa ditarik ke kanvas dashboard.",
+      "Menjalankan broker IoT mandiri di dalam web, mengekspor kode C++ untuk di-flash ke papan ESP32 fisik ('Buat Kode ESP32 Asli'), serta menyediakan 16 jenis Widget Blynk (Gauge, Switch, Slider PWM, SuperChart, Telegram Bot, WhatsApp Gateway, Joystick, zeRGBa) yang bisa ditarik ke kanvas dashboard.",
     caraPakaiSingkat: [
-      "Klik tombol kuning '</> Buat Kode ESP32 Asli (Ke Server Kita)' jika ingin menyambungkan alat ESP32 fisik dari dunia nyata.",
+      "Klik tombol kuning 'Buat Kode ESP32 Asli (Ke Server Kita)' jika ingin menyambungkan alat ESP32 fisik dari dunia nyata.",
       "Klik atau tarik widget dari 'Gudang Widget Blynk (16 Jenis)' untuk menambahkannya ke dashboard Virtual Pin (V0..V10).",
     ],
     kataKunciTargetDom: [
@@ -352,13 +388,13 @@ export const KATALOG_FITUR_HIBAHILMU_IOT: ItemKatalogFiturSimulator[] = [
   {
     id: "kanvas_blynk_hp_android_dan_3_kotak_broker",
     kategori: "Server MQTT, Blynk & HP Android",
-    badge: "GAMBAR 3 • DASHBOARD BAWAH",
+    badge: "GAMBAR 3 - DASHBOARD BAWAH",
     judulFitur:
-      "Kanvas Widget Virtual Pin (V0–V3), Mockup HP Android & 3 Panel Konfigurasi Broker",
+      "Kanvas Widget Virtual Pin (V0-V3), Mockup HP Android & 3 Panel Konfigurasi Broker",
     deskripsiLengkap:
       "Mengatur ukuran dan merapikan posisi widget Virtual Pin secara otomatis, menyinkronkannya secara live dengan layar 'Blynk Android App' di kanan (lengkap dengan URL Endpoint API), serta mengelola Server Broker, Token Unik Akun, dan pengiriman perintah Live Traffic ('/unlock_solenoid').",
     caraPakaiSingkat: [
-      "Klik tombol ungu '⊞ Rapikan Posisi Widget Otomatis' untuk menyusun kartu V0, V1, V2, V3 dengan rapi.",
+      "Klik tombol ungu 'Rapikan Posisi Widget Otomatis' untuk menyusun kartu V0, V1, V2, V3 dengan rapi.",
       "Gunakan 3 kotak di bagian paling bawah untuk menyalin Token Unik Proyek atau mengetes kirim perintah di '3. LIVE TRAFFIC BROKER KITA'.",
     ],
     kataKunciTargetDom: [
@@ -371,7 +407,7 @@ export const KATALOG_FITUR_HIBAHILMU_IOT: ItemKatalogFiturSimulator[] = [
   {
     id: "chaos_mesh_checklist_kode_serial_akademi",
     kategori: "Akademi, Instrumen Lab & AIoT (Tab 2)",
-    badge: "GAMBAR 4 & 5 • AKADEMI",
+    badge: "GAMBAR 4 & 5 - AKADEMI",
     judulFitur:
       "Chaos 10-Node Self-Healing Mesh, Checklist Target Kode '+ Sisipkan Baris' & Serial Monitor",
     deskripsiLengkap:
@@ -379,7 +415,7 @@ export const KATALOG_FITUR_HIBAHILMU_IOT: ItemKatalogFiturSimulator[] = [
     caraPakaiSingkat: [
       "Klik tombol 'NODE #2..#9' pada panel Chaos Engineering untuk melihat rute estafet melompati node yang mati.",
       "Klik tombol ungu '+ Sisipkan Baris Ini' pada kotak TARGET #1, #2, dst. untuk menyisipkan baris kode yang tepat ke editor.",
-      "Lihat hasil eksekusi dan pesan compiler pada kotak hitam '📟 Serial Monitor & Compiler Output (115200 baud)' di kanan bawah.",
+      "Lihat hasil eksekusi dan pesan compiler pada kotak hitam 'Serial Monitor & Compiler Output (115200 baud)' di kanan bawah.",
     ],
     kataKunciTargetDom: [
       "Simulator Gangguan Lapangan (Chaos Engineering)",

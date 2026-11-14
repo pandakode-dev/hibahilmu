@@ -33,6 +33,8 @@ import {
 } from "./wokwiLabInstrumentsEngine";
 import { WokwiInstrumentsAndPlotterPanel } from "./WokwiInstrumentsAndPlotterPanel";
 import { WokwiStage2AdvancedLabSuite } from "./WokwiStage2AdvancedLabSuite";
+import { HibahIlmuTab1Stage1UniqueSuite } from "./HibahIlmuTab1Stage1UniqueSuite";
+import { HibahIlmuTab1Stage2UniqueSuite } from "./HibahIlmuTab1Stage2UniqueSuite";
 import { ParameterFisikaInteraktif } from "./wokwiHardwareVisuals";
 import { unduhLaporanPraktikumDocx } from "./wokwiDocxReportGenerator";
 
