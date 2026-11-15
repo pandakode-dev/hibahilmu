@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { analisisKodeStudioLengkap, StudioCodeDrivenStatusBar } from "./wokwiStudioCodeDrivenEngine";
 import { evaluasiRangkaianBerdasarkanKode } from "./codeDrivenCircuitEngine";
+import { TutorialProjectsCatalogModal } from "./TutorialProjectsCatalogModal";
 import {
   Cpu,
   Zap,
@@ -770,9 +771,7 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
       if (
         currNode &&
         currNode.tipe.startsWith("relay_") &&
-        currNode.nyala === false
-      ) {
-        continue;
+        false) { continue;
       }
 
       kabelSaatIni.forEach((kbl) => {
@@ -1606,59 +1605,70 @@ void loop() {
           }}
         />
 
-        {/* PANEL 7 TUTORIAL & CONTOH RANGKAIAN PROJECT JADI */}
+                {/* PANEL RINGKAS DROPDOWN KATEGORI & POPUP 20 TUTORIAL PROYEK + PANDUAN CARA KERJA */}
         {mode === "wokwi" && (
-          <div className="bg-gradient-to-r from-indigo-950/90 via-slate-950 to-emerald-950/90 p-5 rounded-3xl border border-indigo-500/40 space-y-4">
-            <div className="flex flex-wrap justify-between items-center gap-2">
-              <div className="flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-amber-400" />
-                <span className="font-black text-xs sm:text-sm uppercase text-amber-300">
-                  20 Tutorial &amp; Contoh Rangkaian Project Jadi (Simple s.d. Kompleks — Murni Sesuai Koding!):
-                </span>
-              </div>
-              <span className="text-[11px] font-mono text-emerald-300">
-                File Aktif: {namaProjectInput}
-              </span>
-            </div>
+          <TutorialProjectsCatalogModal
+            daftarProyek={DAFTAR_TUTORIAL_PROJECT_WOKWI}
+            projectAktif={projectAktif}
+            namaFileAktif={namaProjectInput}
+            nodesSaatIni={nodesSaatIni}
+            onPilihProyek={(proj) => muatPresetTutorialProject(proj)}
+            onSimulasiCepatSensor={(aktifkanPemicu) => {
+              // Pastikan semua MCU berstatus RUN saat diuji
+              const mapRun: { [id: string]: boolean } = {};
+              daftarMcuDiKanvas.forEach((m) => {
+                mapRun[m.id] = true;
+              });
+              setStatusRunPerMcu(mapRun);
+              setErrorCompilerPerMcu({});
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-              {DAFTAR_TUTORIAL_PROJECT_WOKWI.map((proj) => {
-                const dipilih = projectAktif.id === proj.id;
-                const jmlMcuProj = proj.nodes.filter((n) =>
-                  TIPE_MCU_LIST.includes(n.tipe)
-                ).length;
-                return (
-                  <button
-                    key={proj.id}
-                    type="button"
-                    onClick={() => muatPresetTutorialProject(proj)}
-                    className={`p-3 rounded-2xl border-2 text-left transition cursor-pointer flex flex-col justify-between gap-1.5 ${
-                      dipilih
-                        ? "bg-indigo-600/35 border-amber-400 text-white shadow-lg"
-                        : "bg-slate-900/90 border-slate-800 text-slate-300 hover:border-indigo-400"
-                    }`}
-                  >
-                    <div>
-                      <div className="flex justify-between items-center gap-1">
-                        <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-amber-400 text-slate-950">
-                          {proj.level}
-                        </span>
-                        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
-                          {jmlMcuProj} Tab MCU
-                        </span>
-                      </div>
-                      <div className="font-black text-xs text-white mt-1.5 leading-snug">
-                        {proj.judul}
-                      </div>
-                    </div>
-                    <span className="text-[10px] font-bold text-emerald-300 flex items-center gap-1">
-                      <Sparkles className="w-3 h-3" /> Muat Template Ini
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+              // Ubah nilai sensor di kanvas ke Kondisi Pemicu Aktif (NYALA) atau Kondisi Normal (MATI)
+              setDaftarNode((prev) => ({
+                ...prev,
+                wokwi: (prev.wokwi || []).map((n) => {
+                  const tp = (n.tipe || "").toLowerCase();
+                  const lb = (n.label || "").toLowerCase();
+                  if (tp.includes("ldr") || lb.includes("ldr")) {
+                    return { ...n, nyala: true, nilaiSensor: aktifkanPemicu ? 120 : 850 };
+                  }
+                  if (tp.includes("rfid") || lb.includes("rfid")) {
+                    return { ...n, nyala: aktifkanPemicu, nilaiSensor: aktifkanPemicu ? 100 : 0 };
+                  }
+                  if (tp.includes("soil") || tp.includes("tanah") || lb.includes("tanah") || lb.includes("kualitas & ph air")) {
+                    return { ...n, nyala: true, nilaiSensor: aktifkanPemicu ? 20 : 78 };
+                  }
+                  if (tp.includes("dht") || lb.includes("dht") || lb.includes("suhu")) {
+                    return { ...n, nyala: true, nilaiSensor: aktifkanPemicu ? 38 : 24 };
+                  }
+                  if (tp.includes("flame") || lb.includes("api")) {
+                    return { ...n, nyala: aktifkanPemicu, nilaiSensor: aktifkanPemicu ? 85 : 0 };
+                  }
+                  if (tp.includes("mq2") || tp.includes("gas") || lb.includes("mq-2") || lb.includes("asap") || lb.includes("udara")) {
+                    return { ...n, nyala: true, nilaiSensor: aktifkanPemicu ? 820 : 180 };
+                  }
+                  if (tp.includes("pir") || lb.includes("pir")) {
+                    return { ...n, nyala: aktifkanPemicu, nilaiSensor: aktifkanPemicu ? 100 : 0 };
+                  }
+                  if (tp.includes("button") || lb.includes("tombol")) {
+                    return { ...n, nyala: aktifkanPemicu, nilaiSensor: aktifkanPemicu ? 1 : 0 };
+                  }
+                  if (tp.includes("ultrasonik") || tp.includes("hc_sr04") || lb.includes("ultrasonik")) {
+                    return { ...n, nyala: true, nilaiSensor: aktifkanPemicu ? 15 : 85 };
+                  }
+                  if (tp.includes("potensio") || lb.includes("potensio")) {
+                    return { ...n, nyala: true, nilaiSensor: aktifkanPemicu ? 85 : 20 };
+                  }
+                  if (tp.includes("npk") || lb.includes("npk")) {
+                    return { ...n, nyala: true, nilaiSensor: aktifkanPemicu ? 60 : 160 };
+                  }
+                  if (tp.includes("tegangan") || tp.includes("baterai") || lb.includes("tegangan") || lb.includes("baterai")) {
+                    return { ...n, nyala: true, nilaiSensor: aktifkanPemicu ? 9.5 : 12.6 };
+                  }
+                  return n;
+                }),
+              }));
+            }}
+          />
         )}
 
         <PhysicalRoomsToolbar
