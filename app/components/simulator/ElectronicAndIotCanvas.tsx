@@ -373,7 +373,89 @@ export const ElectronicAndIotCanvas: React.FC<CanvasProps> = ({
     };
   }, [idPemilikAktif, emailPemilikAktif, namaPemilikAktif]);
 
-  const nodesSaatIni = daftarNode[mode] || [];
+  const nodesMentah = daftarNode[mode] || [];
+  const nodesSaatIni = useMemo(() => {
+    if (mode !== "wokwi") return nodesMentah;
+
+    const adaMcuRunning = Object.values(statusRunPerMcu).some((v) => v === true);
+    const gabunganKode = Object.values(kodePerMcuMap || {}).join("\n");
+    const matchBatasLdr = gabunganKode.match(/lux\s*<\s*(\d+)/i);
+    const batasLux = matchBatasLdr ? Number(matchBatasLdr[1]) : 300;
+
+    // Cari sensor yang ada di meja kanvas saat ini
+    const sLdr = nodesMentah.find((n) => n.tipe.includes("ldr") || n.label.toLowerCase().includes("ldr"));
+    const sRfid = nodesMentah.find((n) => n.tipe.includes("rfid") || n.label.toLowerCase().includes("rfid"));
+    const sSoil = nodesMentah.find((n) => n.tipe.includes("soil") || n.tipe.includes("tanah") || n.label.toLowerCase().includes("kelembapan tanah"));
+    const sDht = nodesMentah.find((n) => n.tipe.includes("dht") || n.label.toLowerCase().includes("suhu dht"));
+    const sFlame = nodesMentah.find((n) => n.tipe.includes("flame") || n.label.toLowerCase().includes("sensor api"));
+    const sMq2 = nodesMentah.find((n) => n.tipe.includes("mq2") || n.tipe.includes("gas") || n.label.toLowerCase().includes("mq-2"));
+    const sPir = nodesMentah.find((n) => n.tipe.includes("pir") || n.label.toLowerCase().includes("pir"));
+    const sBtn = nodesMentah.find((n) => n.tipe.includes("button") || n.label.toLowerCase().includes("tombol"));
+
+    // Hitung apakah syarat sensor terpenuhi (hanya jika MCU sedang RUN)
+    const gelapLdr = adaMcuRunning && sLdr ? Boolean(sLdr.nyala !== false) && (sLdr.nilaiSensor ?? 500) < batasLux : false;
+    const rfidValid = adaMcuRunning && sRfid ? Boolean(sRfid.nyala) && (sRfid.nilaiSensor ?? 100) > 0 : false;
+    const tanahKering = adaMcuRunning && sSoil ? Boolean(sSoil.nyala !== false) && (sSoil.nilaiSensor ?? 50) < 45 : false;
+    const suhuPanas = adaMcuRunning && sDht ? Boolean(sDht.nyala !== false) && (sDht.nilaiSensor ?? 26) > 30 : false;
+    const apiTerdeteksi = adaMcuRunning && sFlame ? Boolean(sFlame.nyala) && (sFlame.nilaiSensor ?? 0) > 35 : false;
+    const gasBocor = adaMcuRunning && sMq2 ? Boolean(sMq2.nyala !== false) && (sMq2.nilaiSensor ?? 200) >= 500 : false;
+    const adaGerakPir = adaMcuRunning && sPir ? Boolean(sPir.nyala) && (sPir.nilaiSensor ?? 100) > 0 : false;
+    const tombolDitekan = adaMcuRunning && sBtn ? Boolean(sBtn.nyala) : false;
+
+    return nodesMentah.map((n) => {
+      const tp = (n.tipe || "").toLowerCase();
+      const lb = (n.label || "").toLowerCase();
+
+      // Jangan ubah papan MCU atau komponen sensor/input itu sendiri
+      if (
+        TIPE_MCU_LIST.includes(n.tipe) ||
+        tp.includes("ldr") || tp.includes("rfid") || tp.includes("soil") ||
+        tp.includes("tanah") || tp.includes("dht") || tp.includes("flame") ||
+        tp.includes("mq2") || tp.includes("pir") || tp.includes("button") ||
+        lb.includes("sensor") || lb.includes("rfid") || lb.includes("kelembapan tanah") ||
+        lb.includes("suhu dht")
+      ) {
+        return n;
+      }
+
+      // Evaluasi status nyala aktuator (Relay, Lampu, Pompa, Kipas, Solenoid, Servo, Buzzer)
+      let nyalaHasil = Boolean(n.nyala) && adaMcuRunning;
+      let nilaiHasil = n.nilaiSensor;
+
+      if (sLdr && !sSoil && !sFlame && !sRfid) {
+        // Proyek 1: Lampu Jalan LDR (Mati saat >= 300 Lux, Nyala saat < 300 Lux)
+        nyalaHasil = gelapLdr;
+      } else if (sRfid) {
+        // Proyek 2: Smart Door Lock RFID
+        nyalaHasil = rfidValid;
+        if (tp.includes("servo") || lb.includes("servo")) {
+          nilaiHasil = rfidValid ? 90 : 0;
+        }
+      } else if (sSoil || sDht) {
+        // Proyek 3: Smart Greenhouse (Pompa ikut Soil < 45%, Kipas ikut Suhu > 30C, Relay 2-Ch ikut salah satu)
+        if (tp.includes("pompa") || lb.includes("pompa")) {
+          nyalaHasil = tanahKering;
+        } else if (tp.includes("kipas") || lb.includes("kipas")) {
+          nyalaHasil = suhuPanas;
+        } else if (tp.includes("relay") || lb.includes("relay")) {
+          nyalaHasil = tanahKering || suhuPanas;
+        }
+      } else if (sFlame || sMq2) {
+        // Proyek 4: Pemadam Kebakaran & Gas (Nyala jika Api > 35% ATAU Gas >= 500 ppm)
+        nyalaHasil = apiTerdeteksi || gasBocor;
+      } else if (sPir) {
+        nyalaHasil = adaGerakPir;
+      } else if (sBtn) {
+        nyalaHasil = tombolDitekan;
+      }
+
+      return {
+        ...n,
+        nyala: nyalaHasil,
+        nilaiSensor: nilaiHasil,
+      };
+    });
+  }, [nodesMentah, mode, statusRunPerMcu, kodePerMcuMap]);
   const kabelSaatIni = daftarKabel[mode] || [];
 
   const petaPinTerhubung = useMemo(() => {
@@ -2215,7 +2297,7 @@ void loop() {
                       <ExtendedSensorLiveOverlay
                         tipe={node.tipe}
                         nilaiSensor={node.nilaiSensor}
-                        nyala={Boolean(node.nyala)}
+                        nyala={statusNyalaEfektif}
                       />
 
                       {/* TITIK PIN DENGAN INDIKATOR SOLDER TERMINAL JELAS SAAT TERHUBUNG */}
