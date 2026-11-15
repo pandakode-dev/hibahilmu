@@ -84,7 +84,7 @@ export function analisisLogikaKodeProgram(
     batasGasPpm: mGas ? Number(mGas[1] || mGas[2]) : 500,
     batasJarakCm: mJarak ? Number(mJarak[1]) : 30,
     batasPotensio: mPot ? Number(mPot[1]) : 50,
-    batasNpk: mNpk ? Number(mNpk[1]) : 100,
+    batasNpk: mNpk ? Number(mNpk[1]) : 50,
     batasTeganganVolt: mVolt ? Number(mVolt[1]) : 11,
     sudutServoAktif: mServo ? Number(mServo[1]) : 90,
     paksaHighSemuaOutput: !adaKondisi && adaHigh,
@@ -340,7 +340,7 @@ export function evaluasiRangkaianBerdasarkanKode(
       }
     }
     // 6. Radar Parkir & Palang Tol Ultrasonik
-    else if (sUltra) {
+    else if (sUltra && sPir) { nyalaAktuator = syaratDekatUltra || syaratPir; } else if (sUltra) {
       nyalaAktuator = syaratDekatUltra;
       if (tp.includes("servo") || lb.includes("servo")) {
         nilaiAktuator = syaratDekatUltra ? parsed.sudutServoAktif : 0;

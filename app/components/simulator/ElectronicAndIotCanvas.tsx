@@ -1659,7 +1659,7 @@ void loop() {
                     return { ...n, nyala: true, nilaiSensor: aktifkanPemicu ? 85 : 20 };
                   }
                   if (tp.includes("npk") || lb.includes("npk")) {
-                    return { ...n, nyala: true, nilaiSensor: aktifkanPemicu ? 60 : 160 };
+                    return { ...n, nyala: true, nilaiSensor: aktifkanPemicu ? 20 : 85 };
                   }
                   if (tp.includes("tegangan") || tp.includes("baterai") || lb.includes("tegangan") || lb.includes("baterai")) {
                     return { ...n, nyala: true, nilaiSensor: aktifkanPemicu ? 9.5 : 12.6 };

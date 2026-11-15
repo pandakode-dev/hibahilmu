@@ -108,6 +108,13 @@ export function ambilKonfigurasiRentangKomponen(tipe: string): KonfigurasiRentan
         satuan: "ppm",
         catatanFisik: "Rentang deteksi gas LPG/Propana/Asap: 100 ppm s/d 10.000 ppm.",
       };
+    case "sensor_npk":
+    case "sensor_ph":
+    case "sensor_tds":
+    case "sensor_turbidity":
+    case "sensor_do":
+    case "pzem004t_ac":
+    case "mq135_udara":
     case "soil_moisture":
     case "rain_sensor":
     case "water_level":
