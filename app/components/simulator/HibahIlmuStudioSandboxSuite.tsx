@@ -189,7 +189,7 @@ export const HibahIlmuStudioSandboxSuite: React.FC<{
           // Sembunyikan kontainer galeri duplikat tersebut agar di layar hanya ada 1 Pemilih Proyek Terpadu!
           const boxDuplikat = el.closest(".rounded-3xl, .rounded-2xl") as HTMLElement | null;
           if (boxDuplikat && !boxDuplikat.hasAttribute("data-unified-gallery")) {
-            boxDuplikat.style.display = "none";
+            boxDuplikat.style.display = "";
           }
         }
 

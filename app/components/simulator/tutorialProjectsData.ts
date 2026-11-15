@@ -6,10 +6,10 @@ import { WidgetBlynkItem } from "./BlynkWidgetSvg";
 export interface PresetTutorialProject {
   id: string;
   level: string;
-  kategoriProyek: "Dasar" | "IoT Blynk & Telegram" | "Dual & Triple MCU";
+  kategoriProyek?: string | "Dasar" | "IoT Blynk & Telegram" | "Dual & Triple MCU";
   judul: string;
-  deskripsiSingkat: string;
-  langkahWiring: string[];
+  deskripsiSingkat?: string;
+  langkahWiring?: string[];
   nodes: NodeKomponenKanvas[];
   kabel: KabelKoneksiItem[];
   kodePerMcu: { [nodeId: string]: string };
@@ -17,7 +17,9 @@ export interface PresetTutorialProject {
   blynkWidgets: WidgetBlynkItem[];
 }
 
-export const DAFTAR_TUTORIAL_PROJECT_WOKWI: PresetTutorialProject[] = [
+import { TUTORIAL_PROJECTS_PART2_8_TO_14 } from "./tutorialProjectsPart2Advanced";
+import { TUTORIAL_PROJECTS_PART3_15_TO_20 } from "./tutorialProjectsPart3Master";
+const DAFTAR_7_AWAL: PresetTutorialProject[] = [
   // ==========================================================================
   // PROJECT 1: SMART STREET LIGHT (1 MCU + LDR + RELAY 1CH + LED)
   // ==========================================================================
@@ -675,3 +677,11 @@ while True:
     ],
   },
 ];
+
+export const DAFTAR_TUTORIAL_PROJECT_WOKWI: PresetTutorialProject[] = [
+  ...DAFTAR_7_AWAL,
+  ...TUTORIAL_PROJECTS_PART2_8_TO_14,
+  ...TUTORIAL_PROJECTS_PART3_15_TO_20,
+];
+export const TUTORIAL_PROJECTS_7_LENGKAP = DAFTAR_TUTORIAL_PROJECT_WOKWI;
+export type TutorialProjectTemplate = PresetTutorialProject;

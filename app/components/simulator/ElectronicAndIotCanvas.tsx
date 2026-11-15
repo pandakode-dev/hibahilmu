@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { analisisKodeStudioLengkap, StudioCodeDrivenStatusBar } from "./wokwiStudioCodeDrivenEngine";
+import { evaluasiRangkaianBerdasarkanKode } from "./codeDrivenCircuitEngine";
 import {
   Cpu,
   Zap,
@@ -1612,7 +1613,7 @@ void loop() {
               <div className="flex items-center gap-2">
                 <BookOpen className="w-5 h-5 text-amber-400" />
                 <span className="font-black text-xs sm:text-sm uppercase text-amber-300">
-                  7 Tutorial &amp; Contoh Rangkaian Project Jadi:
+                  20 Tutorial &amp; Contoh Rangkaian Project Jadi (Simple s.d. Kompleks — Murni Sesuai Koding!):
                 </span>
               </div>
               <span className="text-[11px] font-mono text-emerald-300">
